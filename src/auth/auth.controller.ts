@@ -1,6 +1,7 @@
-import { Controller, Get, Req, Res, UseGuards, Logger, Query } from '@nestjs/common';
+import { Controller, Get, Post, Req, Res, UseGuards, Logger, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiExcludeEndpoint } from '@nestjs/swagger';
-import type { Response } from 'express';
+import type { Response, Request } from 'express';
+import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { DiscordOAuthService } from './services/discord-oauth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -14,6 +15,7 @@ export class AuthController {
   constructor(
     private authService: AuthService,
     private discordOAuthService: DiscordOAuthService,
+    private configService: ConfigService,
   ) {}
 
   @Get('discord')
@@ -75,8 +77,19 @@ export class AuthController {
       // Generate JWT token
       const jwt = await this.authService.generateJwt(user);
 
-      // Redirect to frontend with token
-      const redirectUrl = `${process.env.FRONTEND_URL}/auth/callback?token=${jwt.access_token}`;
+      // Set JWT in HttpOnly cookie
+      const cookieOptions = {
+        httpOnly: true,
+        secure: this.configService.get('auth.cookieSecure', false),
+        sameSite: this.configService.get<'strict' | 'lax' | 'none'>('auth.cookieSameSite', 'lax') as 'lax',
+        maxAge: this.configService.get<number>('auth.cookieMaxAge', 7 * 24 * 60 * 60 * 1000),
+        path: '/',
+      };
+
+      res.cookie('auth_token', jwt.access_token, cookieOptions);
+
+      // Redirect to frontend (no token in URL)
+      const redirectUrl = `${process.env.FRONTEND_URL}/auth/callback`;
       res.redirect(redirectUrl);
     } catch (error) {
       this.logger.error('OAuth callback failed:', error);
@@ -106,7 +119,59 @@ export class AuthController {
   })
   @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiBearerAuth('JWT-auth')
-  getCurrentUser(@CurrentUser() user) {
-    return user;
+  async getCurrentUser(@CurrentUser() user) {
+    try {
+      // Get fresh guild data
+      const availableGuilds = await this.authService.getUserAvailableGuilds(user.id);
+      
+      return {
+        ...user,
+        guilds: availableGuilds,
+      };
+    } catch (error) {
+      this.logger.error(`Error getting current user for ${user.id}:`, error);
+      throw error;
+    }
+  }
+
+  @Get('guilds')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get user\'s available guilds' })
+  @ApiResponse({ status: 200, description: 'User\'s available guilds with permissions' })
+  @ApiResponse({ status: 401, description: 'Invalid JWT token' })
+  @ApiBearerAuth('JWT-auth')
+  async getUserGuilds(@CurrentUser() user: any) {
+    try {
+      return await this.authService.getUserAvailableGuilds(user.id);
+    } catch (error) {
+      this.logger.error(`Error getting user guilds for ${user.id}:`, error);
+      throw error;
+    }
+  }
+
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Logout user and revoke tokens' })
+  @ApiResponse({ status: 200, description: 'User logged out successfully' })
+  @ApiResponse({ status: 401, description: 'Invalid JWT token' })
+  @ApiBearerAuth('JWT-auth')
+  async logout(@CurrentUser() user: any, @Res() res: Response) {
+    try {
+      // Clear JWT cookie
+      res.clearCookie('auth_token', {
+        httpOnly: true,
+        secure: this.configService.get('auth.cookieSecure', false),
+        sameSite: this.configService.get<'strict' | 'lax' | 'none'>('auth.cookieSameSite', 'lax') as 'lax',
+        path: '/',
+      });
+
+      // TODO: Implement token revocation when TokenManagementService is ready
+      // await this.authService.logout(user.id);
+
+      return res.json({ message: 'Logged out successfully' });
+    } catch (error) {
+      this.logger.error(`Error during logout for user ${user.id}:`, error);
+      throw error;
+    }
   }
 }

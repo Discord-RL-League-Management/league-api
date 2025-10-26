@@ -1,8 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, InternalServerErrorException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { NotFoundException } from '@nestjs/common';
 import { DiscordProfileDto } from './dto/discord-profile.dto';
+import { GuildFilteringService } from '../guilds/services/guild-filtering.service';
 
 @Injectable()
 export class AuthService {
@@ -11,6 +12,7 @@ export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
+    private guildFilteringService: GuildFilteringService,
   ) {}
 
   async validateDiscordUser(discordData: DiscordProfileDto) {
@@ -62,15 +64,59 @@ export class AuthService {
     return user;
   }
 
-  async generateJwt(user: { id: string; username: string }) {
-    const payload = { sub: user.id, username: user.username };
+  async generateJwt(user: { id: string; username: string; globalName?: string; avatar?: string; email?: string; guilds?: any[] }) {
+    const payload = {
+      sub: user.id,
+      username: user.username,
+      globalName: user.globalName,
+      avatar: user.avatar,
+      email: user.email,
+      guilds: user.guilds?.map(g => g.id) || [], // Only guild IDs
+      // SECURITY: Never include OAuth tokens in JWT
+    };
     
     return {
       access_token: this.jwtService.sign(payload),
       user: {
         id: user.id,
         username: user.username,
+        globalName: user.globalName,
+        avatar: user.avatar,
+        email: user.email,
       },
     };
+  }
+
+  /**
+   * Get user's available guilds with proper error handling
+   * Single Responsibility: Guild data retrieval
+   */
+  async getUserAvailableGuilds(userId: string): Promise<any[]> {
+    try {
+      return await this.guildFilteringService.getUserAvailableGuildsWithPermissions(userId);
+    } catch (error) {
+      this.logger.error(`Error getting user available guilds for user ${userId}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Complete OAuth flow with guild synchronization
+   * Single Responsibility: OAuth completion orchestration
+   */
+  async completeOAuthFlow(userId: string, userGuilds: any[]): Promise<any[]> {
+    try {
+      // Sync guild memberships atomically
+      await this.guildFilteringService.syncUserGuildMemberships(userId, userGuilds);
+
+      // Get enriched guild data
+      const availableGuilds = await this.getUserAvailableGuilds(userId);
+
+      this.logger.log(`Completed OAuth flow for user ${userId} with ${availableGuilds.length} available guilds`);
+      return availableGuilds;
+    } catch (error) {
+      this.logger.error(`Error completing OAuth flow for user ${userId}:`, error);
+      throw new InternalServerErrorException('Failed to complete OAuth flow');
+    }
   }
 }
