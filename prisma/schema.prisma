@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id
+  username      String
+  discriminator String?
+  globalName    String?
+  avatar        String?
+  email         String?
+  
+  accessToken   String?  @db.Text
+  refreshToken  String?  @db.Text
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  lastLoginAt   DateTime @default(now())
+  
+  // Add relationship
+  guildMembers  GuildMember[]
+  
+  @@map("users")
+}
+
+model Guild {
+  id          String   @id @db.VarChar(20) // Discord snowflake ID
+  name        String   @db.VarChar(100)
+  icon        String?  @db.VarChar(50)
+  ownerId     String   @db.VarChar(20) // Discord user snowflake ID
+  memberCount Int      @default(0)
+  joinedAt    DateTime @default(now())
+  leftAt      DateTime?
+  isActive    Boolean  @default(true)
+  
+  // Relationships
+  settings    GuildSettings?
+  members     GuildMember[]
+  
+  // Indexes for performance
+  @@index([isActive])
+  @@index([joinedAt])
+  @@index([ownerId])
+  @@map("guilds")
+}
+
+model GuildSettings {
+  id        String   @id @default(cuid())
+  guildId   String   @unique @db.VarChar(20)
+  settings  Json     // Flexible JSON configuration with validation
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relationships
+  guild     Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  
+  @@map("guild_settings")
+}
+
+model GuildMember {
+  id        String   @id @default(cuid())
+  userId    String   @db.VarChar(20) // Discord user snowflake ID
+  guildId   String   @db.VarChar(20) // Discord guild snowflake ID
+  username  String   @db.VarChar(100)
+  roles     String[] // Array of Discord role IDs
+  joinedAt  DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relationships
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guild     Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  
+  // Indexes for performance
+  @@unique([userId, guildId])
+  @@index([guildId])
+  @@index([userId])
+  @@index([joinedAt])
+  @@map("guild_members")
+}
