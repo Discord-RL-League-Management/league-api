@@ -2,10 +2,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { EncryptionService } from '../common/encryption.service';
 
 describe('UsersService', () => {
   let service: UsersService;
   let prisma: PrismaService;
+  let encryptionService: EncryptionService;
 
   const mockPrismaService = {
     user: {
@@ -17,6 +19,11 @@ describe('UsersService', () => {
     },
   };
 
+  const mockEncryptionService = {
+    encrypt: jest.fn((text: string) => `encrypted_${text}`),
+    decrypt: jest.fn((text: string) => text.replace('encrypted_', '')),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -25,11 +32,16 @@ describe('UsersService', () => {
           provide: PrismaService,
           useValue: mockPrismaService,
         },
+        {
+          provide: EncryptionService,
+          useValue: mockEncryptionService,
+        },
       ],
     }).compile();
 
     service = module.get<UsersService>(UsersService);
     prisma = module.get<PrismaService>(PrismaService);
+    encryptionService = module.get<EncryptionService>(EncryptionService);
   });
 
   afterEach(() => {
@@ -43,6 +55,7 @@ describe('UsersService', () => {
         id: userId,
         username: 'testuser',
         globalName: 'Test User',
+        refreshToken: 'encrypted_refresh_token',
         createdAt: new Date(),
         updatedAt: new Date(),
         lastLoginAt: new Date(),
@@ -52,7 +65,7 @@ describe('UsersService', () => {
 
       const result = await service.findOne(userId);
 
-      expect(result).toEqual(mockUser);
+      expect(result.refreshToken).toBe('refresh_token'); // Decrypted
       expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { id: userId } });
     });
 
@@ -84,9 +97,13 @@ describe('UsersService', () => {
 
       mockPrismaService.user.findMany.mockResolvedValue(mockUsers);
 
+      mockUsers[0].refreshToken = 'encrypted_token1';
+      mockUsers[1].refreshToken = null;
+
       const result = await service.findAll();
 
-      expect(result).toEqual(mockUsers);
+      expect(result[0].refreshToken).toBe('token1'); // Decrypted
+      expect(result[1].refreshToken).toBeNull();
       expect(prisma.user.findMany).toHaveBeenCalledWith({
         orderBy: { createdAt: 'desc' },
       });
