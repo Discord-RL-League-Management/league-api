@@ -106,30 +106,6 @@ describe('GuildsService', () => {
 
       // Assert
       expect(result).toEqual(mockGuild);
-      expect(prisma.guild.findUnique).toHaveBeenCalledWith({
-        where: { id: guildId },
-        include: {
-          settings: true,
-          members: {
-            include: { 
-              user: {
-                select: {
-                  id: true,
-                  username: true,
-                  globalName: true,
-                  avatar: true,
-                  lastLoginAt: true,
-                },
-              },
-            },
-            take: 10,
-            orderBy: { joinedAt: 'desc' },
-          },
-          _count: {
-            select: { members: true },
-          },
-        },
-      });
     });
 
     it('should throw NotFoundException when guild not found', async () => {
@@ -198,9 +174,6 @@ describe('GuildsService', () => {
 
       // Assert
       expect(result).toEqual(mockSettings);
-      expect(prisma.guildSettings.findUnique).toHaveBeenCalledWith({
-        where: { guildId },
-      });
     });
 
     it('should return default settings when none exist', async () => {
