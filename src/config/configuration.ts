@@ -11,11 +11,20 @@ export default () => ({
     apiKeySalt: process.env.API_KEY_SALT || '',
     jwtSecret: process.env.JWT_SECRET || '',
     jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
+    cookieSecure: process.env.NODE_ENV === 'production',
+    cookieSameSite: (process.env.COOKIE_SAME_SITE as 'lax' | 'strict' | 'none') || 'lax',
+    cookieMaxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  },
+  encryption: {
+    key: process.env.ENCRYPTION_KEY || '',
   },
   discord: {
     clientId: process.env.DISCORD_CLIENT_ID || '',
     clientSecret: process.env.DISCORD_CLIENT_SECRET || '',
     callbackUrl: process.env.DISCORD_CALLBACK_URL || '',
+    timeout: parseInt(process.env.DISCORD_TIMEOUT || '10000', 10),
+    retryAttempts: parseInt(process.env.DISCORD_RETRY_ATTEMPTS || '3', 10),
+    apiUrl: process.env.DISCORD_API_URL || 'https://discord.com/api',
   },
   frontend: {
     url: process.env.FRONTEND_URL || '',
