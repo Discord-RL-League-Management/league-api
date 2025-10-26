@@ -9,6 +9,7 @@ import { GlobalExceptionFilter } from './common/filters/global-exception.filter'
 import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -17,6 +18,9 @@ async function bootstrap() {
   
   const configService = app.get(ConfigService);
   const logger = new Logger('Bootstrap');
+
+  // Cookie parser for HttpOnly cookies
+  app.use(cookieParser());
 
   // Security headers
   app.use(helmet({
