@@ -7,6 +7,7 @@ import { GuildSettingsController } from './guild-settings.controller';
 import { GuildSettingsService } from './guild-settings.service';
 import { GuildsService } from './guilds.service';
 import { GuildFilteringService } from './services/guild-filtering.service';
+import { SettingsDefaultsService } from './services/settings-defaults.service';
 import { GuildMembersModule } from '../guild-members/guild-members.module';
 import { DiscordModule } from '../discord/discord.module';
 import { CommonModule } from '../common/common.module';
@@ -30,7 +31,7 @@ import { PermissionsModule } from '../permissions/permissions.module';
     }),
   ],
   controllers: [GuildsController, InternalGuildsController, GuildSettingsController],
-  providers: [GuildsService, GuildFilteringService, GuildSettingsService],
-  exports: [GuildsService, GuildFilteringService, GuildSettingsService],
+  providers: [GuildsService, GuildFilteringService, GuildSettingsService, SettingsDefaultsService],
+  exports: [GuildsService, GuildFilteringService, GuildSettingsService, SettingsDefaultsService],
 })
 export class GuildsModule {}
