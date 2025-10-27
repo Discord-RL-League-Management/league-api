@@ -5,7 +5,13 @@ import { DiscordApiService } from './discord-api.service';
 import { DiscordValidationService } from './discord-validation.service';
 
 @Module({
-  imports: [HttpModule, CacheModule],
+  imports: [
+    HttpModule,
+    CacheModule.register({
+      ttl: 300,
+      max: 100,
+    }),
+  ],
   providers: [DiscordApiService, DiscordValidationService],
   exports: [DiscordApiService, DiscordValidationService],
 })
