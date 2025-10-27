@@ -4,6 +4,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { GuildsService } from './guilds.service';
 import { GuildMembersService } from '../guild-members/guild-members.service';
 import { PermissionService } from '../permissions/permission.service';
+import { GuildSettingsService } from './guild-settings.service';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 
 @ApiTags('Guilds')
@@ -17,6 +18,7 @@ export class GuildsController {
     private guildsService: GuildsService,
     private guildMembersService: GuildMembersService,
     private permissionService: PermissionService,
+    private guildSettingsService: GuildSettingsService,
   ) {}
 
   @Get('my-guilds')
@@ -76,6 +78,6 @@ export class GuildsController {
       throw new ForbiddenException('Admin access required');
     }
 
-    return this.guildsService.getSettings(id);
+    return this.guildSettingsService.getSettings(id);
   }
 }

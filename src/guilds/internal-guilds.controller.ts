@@ -3,6 +3,7 @@ import { SkipThrottle } from '@nestjs/throttler';
 import { BotAuthGuard } from '../auth/guards/bot-auth.guard';
 import { GuildsService } from './guilds.service';
 import { GuildMembersService } from '../guild-members/guild-members.service';
+import { GuildSettingsService } from './guild-settings.service';
 import { CreateGuildDto } from './dto/create-guild.dto';
 import { UpdateGuildDto } from './dto/update-guild.dto';
 import { CreateGuildMemberDto } from '../guild-members/dto/create-guild-member.dto';
@@ -19,6 +20,7 @@ export class InternalGuildsController {
   constructor(
     private guildsService: GuildsService,
     private guildMembersService: GuildMembersService,
+    private guildSettingsService: GuildSettingsService,
   ) {}
 
   @Get()
@@ -82,7 +84,7 @@ export class InternalGuildsController {
   @ApiParam({ name: 'id', description: 'Discord guild ID' })
   async getSettings(@Param('id') id: string) {
     this.logger.log(`Bot requested settings for guild ${id}`);
-    return this.guildsService.getSettings(id);
+    return this.guildSettingsService.getSettings(id);
   }
 
   @Patch(':id/settings')
@@ -93,7 +95,8 @@ export class InternalGuildsController {
   @ApiParam({ name: 'id', description: 'Discord guild ID' })
   async updateSettings(@Param('id') id: string, @Body() settings: any) {
     this.logger.log(`Bot updating settings for guild ${id}`);
-    return this.guildsService.updateSettings(id, settings);
+    // Note: Bot endpoints don't have userId, using a placeholder for audit trail
+    return this.guildSettingsService.updateSettings(id, settings, 'bot');
   }
 
   @Post(':id/members')
