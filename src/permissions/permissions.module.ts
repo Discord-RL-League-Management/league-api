@@ -1,12 +1,21 @@
 import { Module } from '@nestjs/common';
-import { PrismaModule } from '../prisma/prisma.module';
-import { DiscordModule } from '../discord/discord.module';
-import { TokenManagementModule } from '../auth/services/token-management.module';
 import { PermissionService } from './permission.service';
+import { RoleParserModule } from './modules/role-parser/role-parser.module';
+import { PermissionSyncModule } from './modules/permission-sync/permission-sync.module';
+import { PermissionCheckModule } from './modules/permission-check/permission-check.module';
 
 @Module({
-  imports: [PrismaModule, DiscordModule, TokenManagementModule],
-  providers: [PermissionService],
-  exports: [PermissionService],
+  imports: [
+    RoleParserModule,
+    PermissionSyncModule,
+    PermissionCheckModule,
+  ],
+  providers: [PermissionService], // Kept for backward compatibility
+  exports: [
+    PermissionService, // Facade for backward compatibility
+    RoleParserModule,
+    PermissionSyncModule,
+    PermissionCheckModule,
+  ],
 })
 export class PermissionsModule {}
