@@ -3,6 +3,9 @@ import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom, timeout, retry, catchError } from 'rxjs';
 import { AxiosError } from 'axios';
+import { Inject } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 
 @Injectable()
 export class DiscordValidationService {
@@ -11,10 +14,12 @@ export class DiscordValidationService {
   private readonly apiUrl: string;
   private readonly requestTimeout: number;
   private readonly retryAttempts: number;
+  private readonly cacheTtl = 300000; // 5 minutes
 
   constructor(
     private httpService: HttpService,
     private configService: ConfigService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {
     this.botToken = this.configService.get<string>('discord.botToken') || '';
     this.apiUrl = this.configService.get<string>('discord.apiUrl') || 'https://discord.com/api/v10';
@@ -22,6 +27,74 @@ export class DiscordValidationService {
     this.retryAttempts = this.configService.get<number>('discord.retryAttempts') || 3;
 
     // Validation disabled for now - no bot token required
+  }
+
+  /**
+   * Validate multiple role IDs in a single API call
+   * Reduces N API calls to 1 API call with caching
+   * Returns Map of roleId -> isValid
+   */
+  async validateRoleIds(guildId: string, roleIds: string[]): Promise<Map<string, boolean>> {
+    const result = new Map<string, boolean>();
+
+    if (roleIds.length === 0) {
+      return result;
+    }
+
+    try {
+      // Get all roles (with cache)
+      const roles = await this.getGuildRoles(guildId);
+
+      // Validate each role ID
+      for (const roleId of roleIds) {
+        const exists = roles.some((role: any) => role.id === roleId);
+        result.set(roleId, exists);
+      }
+
+      this.logger.log(`Batch validated ${roleIds.length} roles for guild ${guildId}: ${Array.from(result.values()).filter(Boolean).length} valid`);
+      return result;
+    } catch (error) {
+      this.logger.error(`Failed to batch validate roles for guild ${guildId}:`, error);
+      // Return all false on error
+      for (const roleId of roleIds) {
+        result.set(roleId, false);
+      }
+      return result;
+    }
+  }
+
+  /**
+   * Validate multiple channel IDs in a single API call
+   * Reduces N API calls to 1 API call with caching
+   * Returns Map of channelId -> isValid
+   */
+  async validateChannelIds(guildId: string, channelIds: string[]): Promise<Map<string, boolean>> {
+    const result = new Map<string, boolean>();
+
+    if (channelIds.length === 0) {
+      return result;
+    }
+
+    try {
+      // Get all channels (with cache)
+      const channels = await this.getGuildChannels(guildId);
+
+      // Validate each channel ID
+      for (const channelId of channelIds) {
+        const exists = channels.some((channel: any) => channel.id === channelId);
+        result.set(channelId, exists);
+      }
+
+      this.logger.log(`Batch validated ${channelIds.length} channels for guild ${guildId}: ${Array.from(result.values()).filter(Boolean).length} valid`);
+      return result;
+    } catch (error) {
+      this.logger.error(`Failed to batch validate channels for guild ${guildId}:`, error);
+      // Return all false on error
+      for (const channelId of channelIds) {
+        result.set(channelId, false);
+      }
+      return result;
+    }
   }
 
   /**
@@ -83,11 +156,19 @@ export class DiscordValidationService {
   }
 
   /**
-   * Get all roles from a Discord guild
+   * Get all roles from a Discord guild (with caching)
    * Single Responsibility: Fetch guild roles for validation
    */
   async getGuildRoles(guildId: string): Promise<any[]> {
     try {
+      const cacheKey = `discord:roles:${guildId}`;
+      const cached = await this.cacheManager.get<any[]>(cacheKey);
+      
+      if (cached) {
+        this.logger.debug(`Roles cache hit for guild ${guildId}`);
+        return cached;
+      }
+
       const response = await firstValueFrom(
         this.httpService.get(`${this.apiUrl}/guilds/${guildId}/roles`, {
           headers: { Authorization: `Bot ${this.botToken}` },
@@ -98,6 +179,7 @@ export class DiscordValidationService {
         )
       );
 
+      await this.cacheManager.set(cacheKey, response.data, this.cacheTtl);
       return response.data;
     } catch (error) {
       this.logger.error(`Failed to fetch roles for guild ${guildId}:`, error);
@@ -106,11 +188,19 @@ export class DiscordValidationService {
   }
 
   /**
-   * Get all channels from a Discord guild
+   * Get all channels from a Discord guild (with caching)
    * Single Responsibility: Fetch guild channels for validation
    */
   async getGuildChannels(guildId: string): Promise<any[]> {
     try {
+      const cacheKey = `discord:channels:${guildId}`;
+      const cached = await this.cacheManager.get<any[]>(cacheKey);
+      
+      if (cached) {
+        this.logger.debug(`Channels cache hit for guild ${guildId}`);
+        return cached;
+      }
+
       const response = await firstValueFrom(
         this.httpService.get(`${this.apiUrl}/guilds/${guildId}/channels`, {
           headers: { Authorization: `Bot ${this.botToken}` },
@@ -121,6 +211,7 @@ export class DiscordValidationService {
         )
       );
 
+      await this.cacheManager.set(cacheKey, response.data, this.cacheTtl);
       return response.data;
     } catch (error) {
       this.logger.error(`Failed to fetch channels for guild ${guildId}:`, error);
