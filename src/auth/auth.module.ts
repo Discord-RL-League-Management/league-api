@@ -8,11 +8,11 @@ import { UsersModule } from '../users/users.module';
 import { DiscordModule } from '../discord/discord.module';
 import { CommonModule } from '../common/common.module';
 import { GuildsModule } from '../guilds/guilds.module';
+import { PermissionsModule } from '../permissions/permissions.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { DiscordOAuthService } from './services/discord-oauth.service';
 import { TokenManagementModule } from './services/token-management.module';
-import { PermissionService } from './services/permission.service';
 import { BotApiKeyStrategy } from './strategies/bot-api-key.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { AdminGuard } from './guards/admin.guard';
@@ -23,6 +23,7 @@ import { AdminGuard } from './guards/admin.guard';
     DiscordModule,
     CommonModule,
     forwardRef(() => GuildsModule),
+    PermissionsModule,
     TokenManagementModule,
     PassportModule,
     HttpModule, // Required for Discord API calls
@@ -43,14 +44,12 @@ import { AdminGuard } from './guards/admin.guard';
   providers: [
     AuthService,
     DiscordOAuthService,
-    PermissionService,
     BotApiKeyStrategy,
     JwtStrategy,
     AdminGuard,
   ],
   exports: [
     AuthService,
-    PermissionService,
     AdminGuard,
   ],
 })

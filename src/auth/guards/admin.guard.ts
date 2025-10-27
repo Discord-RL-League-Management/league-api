@@ -1,12 +1,12 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException, Logger } from '@nestjs/common';
-import { GuildPermissionService } from '../../guilds/services/permission.service';
+import { PermissionService } from '../../permissions/permission.service';
 
 @Injectable()
 export class AdminGuard implements CanActivate {
   private readonly logger = new Logger(AdminGuard.name);
 
   constructor(
-    private permissionService: GuildPermissionService,
+    private permissionService: PermissionService,
   ) {}
 
   /**

@@ -7,11 +7,11 @@ import { GuildSettingsController } from './guild-settings.controller';
 import { GuildSettingsService } from './guild-settings.service';
 import { GuildsService } from './guilds.service';
 import { GuildFilteringService } from './services/guild-filtering.service';
-import { GuildPermissionService } from './services/permission.service';
 import { GuildMembersModule } from '../guild-members/guild-members.module';
 import { DiscordModule } from '../discord/discord.module';
 import { CommonModule } from '../common/common.module';
 import { TokenManagementModule } from '../auth/services/token-management.module';
+import { PermissionsModule } from '../permissions/permissions.module';
 
 @Module({
   imports: [
@@ -19,6 +19,7 @@ import { TokenManagementModule } from '../auth/services/token-management.module'
     GuildMembersModule,
     DiscordModule,
     CommonModule,
+    PermissionsModule,
     HttpModule.register({
       timeout: 10000,
       maxRedirects: 5,
@@ -29,7 +30,7 @@ import { TokenManagementModule } from '../auth/services/token-management.module'
     }),
   ],
   controllers: [GuildsController, InternalGuildsController, GuildSettingsController],
-  providers: [GuildsService, GuildFilteringService, GuildPermissionService, GuildSettingsService],
-  exports: [GuildsService, GuildFilteringService, GuildPermissionService, GuildSettingsService],
+  providers: [GuildsService, GuildFilteringService, GuildSettingsService],
+  exports: [GuildsService, GuildFilteringService, GuildSettingsService],
 })
 export class GuildsModule {}

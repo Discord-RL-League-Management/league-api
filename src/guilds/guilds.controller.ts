@@ -3,7 +3,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { GuildsService } from './guilds.service';
 import { GuildMembersService } from '../guild-members/guild-members.service';
-import { GuildPermissionService } from './services/permission.service';
+import { PermissionService } from '../permissions/permission.service';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 
 @ApiTags('Guilds')
@@ -16,7 +16,7 @@ export class GuildsController {
   constructor(
     private guildsService: GuildsService,
     private guildMembersService: GuildMembersService,
-    private permissionService: GuildPermissionService,
+    private permissionService: PermissionService,
   ) {}
 
   @Get('my-guilds')
