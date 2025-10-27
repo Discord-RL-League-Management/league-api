@@ -2,12 +2,16 @@ import { Injectable, NotFoundException, ConflictException, InternalServerErrorEx
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateGuildDto } from './dto/create-guild.dto';
 import { UpdateGuildDto } from './dto/update-guild.dto';
+import { SettingsDefaultsService } from './services/settings-defaults.service';
 
 @Injectable()
 export class GuildsService {
   private readonly logger = new Logger(GuildsService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private settingsDefaults: SettingsDefaultsService,
+  ) {}
 
   /**
    * Create a new guild with default settings using transaction
@@ -34,7 +38,7 @@ export class GuildsService {
         await tx.guildSettings.create({
           data: {
             guildId: guild.id,
-            settings: this.getDefaultSettings(),
+            settings: JSON.parse(JSON.stringify(this.settingsDefaults.getDefaults())) as any,
           },
         });
 
@@ -208,131 +212,4 @@ export class GuildsService {
     }
   }
 
-  /**
-   * Get guild settings with defaults fallback
-   * Single Responsibility: Settings retrieval with fallback
-   */
-  async getSettings(guildId: string) {
-    try {
-      const settings = await this.prisma.guildSettings.findUnique({
-        where: { guildId },
-      });
-
-      if (!settings) {
-        // Return default settings if none exist
-        return { settings: this.getDefaultSettings() };
-      }
-
-      return settings;
-    } catch (error) {
-      this.logger.error(`Failed to get settings for guild ${guildId}:`, error);
-      throw new InternalServerErrorException('Failed to get guild settings');
-    }
-  }
-
-  /**
-   * Update guild settings with validation
-   * Single Responsibility: Settings updates with validation
-   */
-  async updateSettings(guildId: string, newSettings: any) {
-    try {
-      // Validate settings structure
-      this.validateSettings(newSettings);
-
-      return await this.prisma.guildSettings.upsert({
-        where: { guildId },
-        update: { 
-          settings: newSettings,
-          updatedAt: new Date(),
-        },
-        create: {
-          guildId,
-          settings: newSettings,
-        },
-      });
-    } catch (error) {
-      this.logger.error(`Failed to update settings for guild ${guildId}:`, error);
-      throw new InternalServerErrorException('Failed to update guild settings');
-    }
-  }
-
-  /**
-   * Get default settings structure
-   * Single Responsibility: Default settings definition
-   */
-  private getDefaultSettings() {
-    return {
-      channels: {
-        general: null,
-        announcements: null,
-        league_chat: null,
-        tournament_chat: null,
-        logs: null,
-      },
-      roles: {
-        admin: [],
-        moderator: [],
-        member: [],
-        league_manager: [],
-        tournament_manager: [],
-      },
-      features: {
-        league_management: true,
-        tournament_mode: false,
-        auto_roles: false,
-        statistics: true,
-        leaderboards: true,
-      },
-      permissions: {
-        create_leagues: ['admin'],
-        manage_teams: ['admin'],
-        view_stats: ['member'],
-        manage_tournaments: ['admin'],
-        manage_roles: ['admin'],
-        view_logs: ['admin', 'moderator'],
-      },
-      display: {
-        show_leaderboards: true,
-        show_member_count: false,
-        theme: 'default',
-        command_prefix: '!',
-      },
-    };
-  }
-
-  /**
-   * Validate settings structure
-   * Single Responsibility: Settings validation
-   */
-  private validateSettings(settings: any) {
-    if (!settings || typeof settings !== 'object') {
-      throw new Error('Settings must be an object');
-    }
-
-    // Validate features
-    if (settings.features) {
-      const validFeatures = ['league_management', 'tournament_mode', 'auto_roles', 'statistics', 'leaderboards'];
-      for (const [key, value] of Object.entries(settings.features)) {
-        if (!validFeatures.includes(key)) {
-          throw new Error(`Invalid feature: ${key}`);
-        }
-        if (typeof value !== 'boolean') {
-          throw new Error(`Feature ${key} must be a boolean`);
-        }
-      }
-    }
-
-    // Validate permissions
-    if (settings.permissions) {
-      const validPermissions = ['create_leagues', 'manage_teams', 'view_stats', 'manage_tournaments', 'manage_roles', 'view_logs'];
-      for (const [key, value] of Object.entries(settings.permissions)) {
-        if (!validPermissions.includes(key)) {
-          throw new Error(`Invalid permission: ${key}`);
-        }
-        if (!Array.isArray(value)) {
-          throw new Error(`Permission ${key} must be an array`);
-        }
-      }
-    }
-  }
 }
