@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { HttpModule } from '@nestjs/axios';
@@ -7,7 +7,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { UsersModule } from '../users/users.module';
 import { DiscordModule } from '../discord/discord.module';
 import { CommonModule } from '../common/common.module';
-import { GuildsModule } from '../guilds/guilds.module';
+import { UserGuildsModule } from '../user-guilds/user-guilds.module';
 import { PermissionsModule } from '../permissions/permissions.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -22,7 +22,7 @@ import { AdminGuard } from './guards/admin.guard';
     UsersModule,
     DiscordModule,
     CommonModule,
-    forwardRef(() => GuildsModule),
+    UserGuildsModule,
     PermissionsModule,
     TokenManagementModule,
     PassportModule,

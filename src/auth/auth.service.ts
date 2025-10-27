@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { NotFoundException } from '@nestjs/common';
 import { DiscordProfileDto } from './dto/discord-profile.dto';
-import { GuildFilteringService } from '../guilds/services/guild-filtering.service';
+import { UserGuildsService } from '../user-guilds/user-guilds.service';
 
 @Injectable()
 export class AuthService {
@@ -12,7 +12,7 @@ export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
-    private guildFilteringService: GuildFilteringService,
+    private userGuildsService: UserGuildsService,
   ) {}
 
   async validateDiscordUser(discordData: DiscordProfileDto) {
@@ -93,7 +93,7 @@ export class AuthService {
    */
   async getUserAvailableGuilds(userId: string): Promise<any[]> {
     try {
-      return await this.guildFilteringService.getUserAvailableGuildsWithPermissions(userId);
+      return await this.userGuildsService.getUserAvailableGuildsWithPermissions(userId);
     } catch (error) {
       this.logger.error(`Error getting user available guilds for user ${userId}:`, error);
       return [];
@@ -106,14 +106,7 @@ export class AuthService {
    */
   async completeOAuthFlow(userId: string, userGuilds: any[]): Promise<any[]> {
     try {
-      // Sync guild memberships atomically
-      await this.guildFilteringService.syncUserGuildMemberships(userId, userGuilds);
-
-      // Get enriched guild data
-      const availableGuilds = await this.getUserAvailableGuilds(userId);
-
-      this.logger.log(`Completed OAuth flow for user ${userId} with ${availableGuilds.length} available guilds`);
-      return availableGuilds;
+      return await this.userGuildsService.completeOAuthFlow(userId, userGuilds);
     } catch (error) {
       this.logger.error(`Error completing OAuth flow for user ${userId}:`, error);
       throw new InternalServerErrorException('Failed to complete OAuth flow');
