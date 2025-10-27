@@ -1,16 +1,35 @@
 import { Module } from '@nestjs/common';
+import { CacheModule } from '@nestjs/cache-manager';
+import { HttpModule } from '@nestjs/axios';
 import { GuildsController } from './guilds.controller';
 import { InternalGuildsController } from './internal-guilds.controller';
+import { GuildSettingsController } from './guild-settings.controller';
+import { GuildSettingsService } from './guild-settings.service';
 import { GuildsService } from './guilds.service';
 import { GuildFilteringService } from './services/guild-filtering.service';
+import { GuildPermissionService } from './services/permission.service';
 import { GuildMembersModule } from '../guild-members/guild-members.module';
 import { DiscordModule } from '../discord/discord.module';
 import { CommonModule } from '../common/common.module';
+import { TokenManagementModule } from '../auth/services/token-management.module';
 
 @Module({
-  imports: [GuildMembersModule, DiscordModule, CommonModule],
-  controllers: [GuildsController, InternalGuildsController],
-  providers: [GuildsService, GuildFilteringService],
-  exports: [GuildsService, GuildFilteringService],
+  imports: [
+    TokenManagementModule,
+    GuildMembersModule,
+    DiscordModule,
+    CommonModule,
+    HttpModule.register({
+      timeout: 10000,
+      maxRedirects: 5,
+    }),
+    CacheModule.register({
+      ttl: 300000, // 5 minutes in milliseconds
+      max: 1000, // Maximum number of items in cache
+    }),
+  ],
+  controllers: [GuildsController, InternalGuildsController, GuildSettingsController],
+  providers: [GuildsService, GuildFilteringService, GuildPermissionService, GuildSettingsService],
+  exports: [GuildsService, GuildFilteringService, GuildPermissionService, GuildSettingsService],
 })
 export class GuildsModule {}

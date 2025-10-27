@@ -3,6 +3,7 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { PrismaService } from '../../prisma/prisma.service';
 import { DiscordApiService } from '../../discord/discord-api.service';
 import { TokenManagementService } from '../../auth/services/token-management.service';
+import { GuildPermissionService } from './permission.service';
 import { GuildFilteringService } from './guild-filtering.service';
 import type { Cache } from 'cache-manager';
 import { DiscordFactory } from '../../../test/factories/discord.factory';
@@ -40,6 +41,10 @@ describe('GuildFilteringService', () => {
     getValidAccessToken: jest.fn(),
   };
 
+  const mockGuildPermissionService = {
+    checkAdminRoles: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -48,6 +53,7 @@ describe('GuildFilteringService', () => {
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: DiscordApiService, useValue: mockDiscordApiService },
         { provide: TokenManagementService, useValue: mockTokenManagementService },
+        { provide: GuildPermissionService, useValue: mockGuildPermissionService },
       ],
     }).compile();
 
@@ -60,6 +66,8 @@ describe('GuildFilteringService', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+    // Set default mock implementation
+    (mockGuildPermissionService.checkAdminRoles as jest.Mock).mockResolvedValue(false);
   });
 
   describe('filterUserGuilds', () => {
@@ -282,6 +290,9 @@ describe('GuildFilteringService', () => {
           },
         },
       ]);
+
+      // Mock permission check to return true for this test
+      (mockGuildPermissionService.checkAdminRoles as jest.Mock).mockResolvedValue(true);
 
       // Act
       const result = await service.getUserAvailableGuildsWithPermissions(userId);

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { HttpModule } from '@nestjs/axios';
@@ -11,17 +11,19 @@ import { GuildsModule } from '../guilds/guilds.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { DiscordOAuthService } from './services/discord-oauth.service';
-import { TokenManagementService } from './services/token-management.service';
+import { TokenManagementModule } from './services/token-management.module';
 import { PermissionService } from './services/permission.service';
 import { BotApiKeyStrategy } from './strategies/bot-api-key.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { AdminGuard } from './guards/admin.guard';
 
 @Module({
   imports: [
     UsersModule,
     DiscordModule,
     CommonModule,
-    GuildsModule,
+    forwardRef(() => GuildsModule),
+    TokenManagementModule,
     PassportModule,
     HttpModule, // Required for Discord API calls
     CacheModule.register({
@@ -41,15 +43,15 @@ import { JwtStrategy } from './strategies/jwt.strategy';
   providers: [
     AuthService,
     DiscordOAuthService,
-    TokenManagementService,
     PermissionService,
     BotApiKeyStrategy,
     JwtStrategy,
+    AdminGuard,
   ],
   exports: [
     AuthService,
-    TokenManagementService,
     PermissionService,
+    AdminGuard,
   ],
 })
 export class AuthModule {}

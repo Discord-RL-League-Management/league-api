@@ -22,9 +22,10 @@ export default () => ({
     clientId: process.env.DISCORD_CLIENT_ID || '',
     clientSecret: process.env.DISCORD_CLIENT_SECRET || '',
     callbackUrl: process.env.DISCORD_CALLBACK_URL || '',
+    botToken: process.env.DISCORD_BOT_TOKEN || '',
     timeout: parseInt(process.env.DISCORD_TIMEOUT || '10000', 10),
     retryAttempts: parseInt(process.env.DISCORD_RETRY_ATTEMPTS || '3', 10),
-    apiUrl: process.env.DISCORD_API_URL || 'https://discord.com/api',
+    apiUrl: process.env.DISCORD_API_URL || 'https://discord.com/api/v10',
   },
   frontend: {
     url: process.env.FRONTEND_URL || '',

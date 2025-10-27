@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { DiscordApiService } from '../../discord/discord-api.service';
 import { TokenManagementService } from '../../auth/services/token-management.service';
+import { GuildPermissionService } from './permission.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Inject } from '@nestjs/common';
 import type { Cache } from 'cache-manager';
@@ -23,6 +24,7 @@ export class GuildFilteringService {
     private prisma: PrismaService,
     private discordApiService: DiscordApiService,
     private tokenManagementService: TokenManagementService,
+    private permissionService: GuildPermissionService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {
     this.cacheTtl = 300; // 5 minutes cache TTL
@@ -144,31 +146,30 @@ export class GuildFilteringService {
       );
 
       // Enrich guilds with permission information
-      return guilds.map(guild => {
+      const enrichedGuilds = await Promise.all(guilds.map(async (guild) => {
         const membership = membershipMap.get(guild.id);
+        const isAdmin = membership 
+          ? await this.permissionService.checkAdminRoles(
+              membership.roles,
+              guild.id,
+              membership.guild.settings?.settings,
+              false // Don't validate with Discord for listing (performance)
+            )
+          : false;
+        
         return {
           ...guild,
           isMember: !!membership,
-          isAdmin: membership ? this.hasAdminRole(membership.roles, membership.guild.settings?.settings) : false,
+          isAdmin,
           roles: membership?.roles || [],
         };
-      });
+      }));
+
+      return enrichedGuilds;
     } catch (error) {
       this.logger.error(`Error getting user available guilds with permissions for user ${userId}:`, error);
       return [];
     }
   }
 
-  /**
-   * Check if user has admin role based on guild settings
-   * Single Responsibility: Permission checking logic
-   */
-  private hasAdminRole(userRoles: string[], guildSettings: any): boolean {
-    if (!guildSettings?.roles?.admin) {
-      return false; // No admin roles configured
-    }
-
-    const adminRoles = guildSettings.roles.admin;
-    return userRoles.some(role => adminRoles.includes(role));
-  }
 }

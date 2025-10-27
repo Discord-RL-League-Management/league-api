@@ -22,8 +22,9 @@ model User {
   updatedAt     DateTime @updatedAt
   lastLoginAt   DateTime @default(now())
   
-  // Add relationship
+  // Relationships
   guildMembers  GuildMember[]
+  settingsHistory SettingsHistory[]
   
   @@map("users")
 }
@@ -39,8 +40,9 @@ model Guild {
   isActive    Boolean  @default(true)
   
   // Relationships
-  settings    GuildSettings?
-  members     GuildMember[]
+  settings        GuildSettings?
+  members         GuildMember[]
+  settingsHistory SettingsHistory[]
   
   // Indexes for performance
   @@index([isActive])
@@ -81,4 +83,22 @@ model GuildMember {
   @@index([userId])
   @@index([joinedAt])
   @@map("guild_members")
+}
+
+model SettingsHistory {
+  id        String   @id @default(cuid())
+  guildId   String   @db.VarChar(20)
+  userId    String   @db.VarChar(20)
+  action    String   @db.VarChar(50) // 'update', 'reset', 'create'
+  changes   Json     // The changes made
+  timestamp DateTime @default(now())
+  
+  // Relationships
+  guild     Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([guildId])
+  @@index([userId])
+  @@index([timestamp])
+  @@map("settings_history")
 }

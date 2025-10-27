@@ -3,6 +3,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { GuildsService } from './guilds.service';
 import { GuildMembersService } from '../guild-members/guild-members.service';
+import { GuildPermissionService } from './services/permission.service';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 
 @ApiTags('Guilds')
@@ -15,6 +16,7 @@ export class GuildsController {
   constructor(
     private guildsService: GuildsService,
     private guildMembersService: GuildMembersService,
+    private permissionService: GuildPermissionService,
   ) {}
 
   @Get('my-guilds')
@@ -57,21 +59,23 @@ export class GuildsController {
     
     // Verify user has admin permissions in this guild
     const membership = await this.guildMembersService.findOne(user.id, id);
-    if (!membership || !this.hasAdminRole(membership.roles)) {
+    
+    // Get guild with settings for admin check
+    const guild = await this.guildsService.findOne(id);
+    
+    const isAdmin = membership 
+      ? await this.permissionService.checkAdminRoles(
+          membership.roles,
+          id,
+          guild.settings?.settings,
+          true // Validate with Discord for authorization
+        )
+      : false;
+
+    if (!membership || !isAdmin) {
       throw new ForbiddenException('Admin access required');
     }
 
     return this.guildsService.getSettings(id);
-  }
-
-  /**
-   * Check if user has admin role in guild
-   * Single Responsibility: Permission checking logic with proper validation
-   */
-  private hasAdminRole(userRoles: string[]): boolean {
-    // TODO: Implement proper Discord role checking
-    // For now, check if user has any roles (placeholder logic)
-    // In production, this should check against Discord's admin permissions
-    return userRoles.length > 0;
   }
 }

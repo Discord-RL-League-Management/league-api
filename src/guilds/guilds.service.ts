@@ -270,11 +270,11 @@ export class GuildsService {
         logs: null,
       },
       roles: {
-        admin: null,
-        moderator: null,
-        member: null,
-        league_manager: null,
-        tournament_manager: null,
+        admin: [],
+        moderator: [],
+        member: [],
+        league_manager: [],
+        tournament_manager: [],
       },
       features: {
         league_management: true,

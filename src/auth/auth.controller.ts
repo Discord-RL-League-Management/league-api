@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Req, Res, UseGuards, Logger, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiExcludeEndpoint } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 import type { Response, Request } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
@@ -9,6 +10,7 @@ import { CurrentUser } from './decorators/current-user.decorator';
 
 @ApiTags('Authentication')
 @Controller('auth')
+@SkipThrottle()
 export class AuthController {
   private readonly logger = new Logger(AuthController.name);
 
