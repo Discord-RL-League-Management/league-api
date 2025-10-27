@@ -3,7 +3,7 @@ import { ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { DiscordApiService } from '../../discord/discord-api.service';
 import { TokenManagementService } from './token-management.service';
-import { PermissionService } from './permission.service';
+import { PermissionService } from '../../permissions/permission.service';
 
 describe('PermissionService', () => {
   let service: PermissionService;

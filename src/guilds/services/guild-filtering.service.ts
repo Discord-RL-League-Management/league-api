@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { DiscordApiService } from '../../discord/discord-api.service';
 import { TokenManagementService } from '../../auth/services/token-management.service';
-import { GuildPermissionService } from './permission.service';
+import { PermissionService } from '../../permissions/permission.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Inject } from '@nestjs/common';
 import type { Cache } from 'cache-manager';
@@ -24,7 +24,7 @@ export class GuildFilteringService {
     private prisma: PrismaService,
     private discordApiService: DiscordApiService,
     private tokenManagementService: TokenManagementService,
-    private permissionService: GuildPermissionService,
+    private permissionService: PermissionService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {
     this.cacheTtl = 300; // 5 minutes cache TTL

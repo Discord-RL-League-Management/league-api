@@ -3,7 +3,7 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { PrismaService } from '../../prisma/prisma.service';
 import { DiscordApiService } from '../../discord/discord-api.service';
 import { TokenManagementService } from '../../auth/services/token-management.service';
-import { GuildPermissionService } from './permission.service';
+import { PermissionService } from '../../permissions/permission.service';
 import { GuildFilteringService } from './guild-filtering.service';
 import type { Cache } from 'cache-manager';
 import { DiscordFactory } from '../../../test/factories/discord.factory';
@@ -53,7 +53,7 @@ describe('GuildFilteringService', () => {
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: DiscordApiService, useValue: mockDiscordApiService },
         { provide: TokenManagementService, useValue: mockTokenManagementService },
-        { provide: GuildPermissionService, useValue: mockGuildPermissionService },
+        { provide: PermissionService, useValue: mockGuildPermissionService },
       ],
     }).compile();
 
