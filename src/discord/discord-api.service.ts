@@ -1,4 +1,9 @@
-import { Injectable, Logger, UnauthorizedException, ServiceUnavailableException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  UnauthorizedException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom, timeout, retry, catchError } from 'rxjs';
@@ -37,9 +42,18 @@ export class DiscordApiService {
     private httpService: HttpService,
     private configService: ConfigService,
   ) {
-    this.apiUrl = this.configService.get<string>('discord.apiUrl', 'https://discord.com/api');
-    this.requestTimeout = this.configService.get<number>('discord.timeout', 10000);
-    this.retryAttempts = this.configService.get<number>('discord.retryAttempts', 3);
+    this.apiUrl = this.configService.get<string>(
+      'discord.apiUrl',
+      'https://discord.com/api',
+    );
+    this.requestTimeout = this.configService.get<number>(
+      'discord.timeout',
+      10000,
+    );
+    this.retryAttempts = this.configService.get<number>(
+      'discord.retryAttempts',
+      3,
+    );
   }
 
   /**
@@ -49,30 +63,38 @@ export class DiscordApiService {
   async getUserGuilds(accessToken: string): Promise<DiscordGuild[]> {
     try {
       const response = await firstValueFrom(
-        this.httpService.get<DiscordGuild[]>(`${this.apiUrl}/users/@me/guilds`, {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }).pipe(
-          timeout(this.requestTimeout),
-          retry(this.retryAttempts),
-          catchError((error: AxiosError) => {
-            this.logger.error(`Discord API error: ${error.message}`, {
-              status: error.response?.status,
-              statusText: error.response?.statusText,
-              data: error.response?.data,
-            });
-            
-            if (error.response?.status === 401) {
-              throw new UnauthorizedException('Invalid Discord access token');
-            } else if (error.response?.status === 429) {
-              throw new ServiceUnavailableException('Discord API rate limited');
-            } else {
-              throw new ServiceUnavailableException('Discord API unavailable');
-            }
+        this.httpService
+          .get<DiscordGuild[]>(`${this.apiUrl}/users/@me/guilds`, {
+            headers: { Authorization: `Bearer ${accessToken}` },
           })
-        )
+          .pipe(
+            timeout(this.requestTimeout),
+            retry(this.retryAttempts),
+            catchError((error: AxiosError) => {
+              this.logger.error(`Discord API error: ${error.message}`, {
+                status: error.response?.status,
+                statusText: error.response?.statusText,
+                data: error.response?.data,
+              });
+
+              if (error.response?.status === 401) {
+                throw new UnauthorizedException('Invalid Discord access token');
+              } else if (error.response?.status === 429) {
+                throw new ServiceUnavailableException(
+                  'Discord API rate limited',
+                );
+              } else {
+                throw new ServiceUnavailableException(
+                  'Discord API unavailable',
+                );
+              }
+            }),
+          ),
       );
 
-      this.logger.log(`Successfully fetched ${response.data.length} guilds from Discord API`);
+      this.logger.log(
+        `Successfully fetched ${response.data.length} guilds from Discord API`,
+      );
       return response.data;
     } catch (error) {
       this.logger.error('Failed to fetch user guilds from Discord API:', error);
@@ -87,21 +109,26 @@ export class DiscordApiService {
   async getUserProfile(accessToken: string): Promise<DiscordUser> {
     try {
       const response = await firstValueFrom(
-        this.httpService.get<DiscordUser>(`${this.apiUrl}/users/@me`, {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }).pipe(
-          timeout(this.requestTimeout),
-          retry(this.retryAttempts),
-          catchError((error: AxiosError) => {
-            this.logger.error(`Discord profile API error: ${error.message}`);
-            throw new ServiceUnavailableException('Discord API unavailable');
+        this.httpService
+          .get<DiscordUser>(`${this.apiUrl}/users/@me`, {
+            headers: { Authorization: `Bearer ${accessToken}` },
           })
-        )
+          .pipe(
+            timeout(this.requestTimeout),
+            retry(this.retryAttempts),
+            catchError((error: AxiosError) => {
+              this.logger.error(`Discord profile API error: ${error.message}`);
+              throw new ServiceUnavailableException('Discord API unavailable');
+            }),
+          ),
       );
 
       return response.data;
     } catch (error) {
-      this.logger.error('Failed to fetch user profile from Discord API:', error);
+      this.logger.error(
+        'Failed to fetch user profile from Discord API:',
+        error,
+      );
       throw error;
     }
   }
@@ -110,23 +137,30 @@ export class DiscordApiService {
    * Check if user has specific permissions in a guild
    * Single Responsibility: Guild permission checking
    */
-  async checkGuildPermissions(accessToken: string, guildId: string): Promise<GuildPermissions> {
+  async checkGuildPermissions(
+    accessToken: string,
+    guildId: string,
+  ): Promise<GuildPermissions> {
     try {
-      const response = await firstValueFrom(
-        this.httpService.get<any>(`${this.apiUrl}/users/@me/guilds/${guildId}/member`, {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }).pipe(
-          timeout(this.requestTimeout),
-          retry(this.retryAttempts),
-          catchError((error: AxiosError) => {
-            if (error.response?.status === 404) {
-              return { data: null } as any; // User not in guild
-            }
-            this.logger.error(`Guild permission check error: ${error.message}`);
-            throw new ServiceUnavailableException('Discord API unavailable');
+      const response = (await firstValueFrom(
+        this.httpService
+          .get<any>(`${this.apiUrl}/users/@me/guilds/${guildId}/member`, {
+            headers: { Authorization: `Bearer ${accessToken}` },
           })
-        )
-      ) as any;
+          .pipe(
+            timeout(this.requestTimeout),
+            retry(this.retryAttempts),
+            catchError((error: AxiosError) => {
+              if (error.response?.status === 404) {
+                return { data: null } as any; // User not in guild
+              }
+              this.logger.error(
+                `Guild permission check error: ${error.message}`,
+              );
+              throw new ServiceUnavailableException('Discord API unavailable');
+            }),
+          ),
+      )) as any;
 
       if (!response.data) {
         return { isMember: false, permissions: [] };
@@ -142,7 +176,10 @@ export class DiscordApiService {
         permissions: memberData?.permissions || [],
       };
     } catch (error) {
-      this.logger.error(`Failed to check guild permissions for ${guildId}:`, error);
+      this.logger.error(
+        `Failed to check guild permissions for ${guildId}:`,
+        error,
+      );
       return { isMember: false, permissions: [] };
     }
   }

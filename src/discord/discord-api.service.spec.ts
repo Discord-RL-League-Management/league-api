@@ -4,7 +4,10 @@ import { ConfigService } from '@nestjs/config';
 import { DiscordApiService } from './discord-api.service';
 import { of, throwError } from 'rxjs';
 import { AxiosError, AxiosResponse } from 'axios';
-import { UnauthorizedException, ServiceUnavailableException } from '@nestjs/common';
+import {
+  UnauthorizedException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { DiscordFactory } from '../../test/factories/discord.factory';
 
 describe('DiscordApiService', () => {
@@ -66,7 +69,7 @@ describe('DiscordApiService', () => {
         expect.stringContaining('/users/@me/guilds'),
         expect.objectContaining({
           headers: { Authorization: 'Bearer valid_token' },
-        })
+        }),
       );
     });
 
@@ -86,9 +89,9 @@ describe('DiscordApiService', () => {
       mockHttpService.get.mockReturnValue(throwError(() => mockError));
 
       // Act & Assert
-      await expect(service.getUserGuilds('invalid_token'))
-        .rejects
-        .toThrow(UnauthorizedException);
+      await expect(service.getUserGuilds('invalid_token')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('should throw ServiceUnavailableException on 429 (rate limit)', async () => {
@@ -107,9 +110,9 @@ describe('DiscordApiService', () => {
       mockHttpService.get.mockReturnValue(throwError(() => mockError));
 
       // Act & Assert
-      await expect(service.getUserGuilds('valid_token'))
-        .rejects
-        .toThrow(ServiceUnavailableException);
+      await expect(service.getUserGuilds('valid_token')).rejects.toThrow(
+        ServiceUnavailableException,
+      );
     });
 
     it('should throw ServiceUnavailableException on network error', async () => {
@@ -128,19 +131,19 @@ describe('DiscordApiService', () => {
       mockHttpService.get.mockReturnValue(throwError(() => mockError));
 
       // Act & Assert
-      await expect(service.getUserGuilds('valid_token'))
-        .rejects
-        .toThrow(ServiceUnavailableException);
+      await expect(service.getUserGuilds('valid_token')).rejects.toThrow(
+        ServiceUnavailableException,
+      );
     });
 
     it('should handle timeout errors', async () => {
       // Arrange
-      mockHttpService.get.mockReturnValue(throwError(() => new Error('timeout')));
+      mockHttpService.get.mockReturnValue(
+        throwError(() => new Error('timeout')),
+      );
 
       // Act & Assert
-      await expect(service.getUserGuilds('valid_token'))
-        .rejects
-        .toThrow();
+      await expect(service.getUserGuilds('valid_token')).rejects.toThrow();
     });
   });
 
@@ -167,7 +170,7 @@ describe('DiscordApiService', () => {
         expect.stringContaining('/users/@me'),
         expect.objectContaining({
           headers: { Authorization: 'Bearer valid_token' },
-        })
+        }),
       );
     });
 
@@ -187,9 +190,9 @@ describe('DiscordApiService', () => {
       mockHttpService.get.mockReturnValue(throwError(() => mockError));
 
       // Act & Assert
-      await expect(service.getUserProfile('valid_token'))
-        .rejects
-        .toThrow(ServiceUnavailableException);
+      await expect(service.getUserProfile('valid_token')).rejects.toThrow(
+        ServiceUnavailableException,
+      );
     });
   });
 
@@ -209,7 +212,10 @@ describe('DiscordApiService', () => {
       mockHttpService.get.mockReturnValue(of(mockResponse));
 
       // Act
-      const result = await service.checkGuildPermissions('valid_token', 'guild123');
+      const result = await service.checkGuildPermissions(
+        'valid_token',
+        'guild123',
+      );
 
       // Assert
       expect(result).toEqual({
@@ -234,7 +240,10 @@ describe('DiscordApiService', () => {
       mockHttpService.get.mockReturnValue(throwError(() => mockError));
 
       // Act
-      const result = await service.checkGuildPermissions('valid_token', 'guild123');
+      const result = await service.checkGuildPermissions(
+        'valid_token',
+        'guild123',
+      );
 
       // Assert
       expect(result).toEqual({ isMember: false, permissions: [] });
@@ -242,10 +251,15 @@ describe('DiscordApiService', () => {
 
     it('should return not a member on other errors', async () => {
       // Arrange
-      mockHttpService.get.mockReturnValue(throwError(() => new Error('Network error')));
+      mockHttpService.get.mockReturnValue(
+        throwError(() => new Error('Network error')),
+      );
 
       // Act
-      const result = await service.checkGuildPermissions('valid_token', 'guild123');
+      const result = await service.checkGuildPermissions(
+        'valid_token',
+        'guild123',
+      );
 
       // Assert
       expect(result).toEqual({ isMember: false, permissions: [] });
@@ -264,7 +278,10 @@ describe('DiscordApiService', () => {
       mockHttpService.get.mockReturnValue(of(mockResponse));
 
       // Act
-      const result = await service.checkGuildPermissions('valid_token', 'guild123');
+      const result = await service.checkGuildPermissions(
+        'valid_token',
+        'guild123',
+      );
 
       // Assert
       expect(result).toEqual({
@@ -274,4 +291,3 @@ describe('DiscordApiService', () => {
     });
   });
 });
-
