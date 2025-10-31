@@ -8,14 +8,14 @@ export class CreateUserDto {
   })
   @IsString()
   @Matches(/^\d+$/, { message: 'id must be a Discord snowflake' })
-  id: string;
+  id!: string;
 
   @ApiProperty({
     description: 'Discord username',
     example: 'testuser',
   })
   @IsString()
-  username: string;
+  username!: string;
 
   @ApiPropertyOptional({
     description: 'Discord discriminator (being phased out)',
