@@ -3,7 +3,8 @@ import { Params } from 'nestjs-pino';
 import { LoggerOptions } from 'pino';
 
 export const pinoConfig = (configService: ConfigService): Params => {
-  const isProduction = configService.get<string>('app.nodeEnv') === 'production';
+  const isProduction =
+    configService.get<string>('app.nodeEnv') === 'production';
   const logLevel = configService.get<string>('logging.level');
   const fileEnabled = configService.get<boolean>('logging.fileEnabled');
   const filePath = configService.get<string>('logging.filePath');
@@ -49,15 +50,3 @@ export const pinoConfig = (configService: ConfigService): Params => {
     },
   };
 };
-
-
-
-
-
-
-
-
-
-
-
-

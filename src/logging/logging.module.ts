@@ -14,14 +14,3 @@ import { pinoConfig } from './pino.config';
   ],
 })
 export class LoggingModule {}
-
-
-
-
-
-
-
-
-
-
-
