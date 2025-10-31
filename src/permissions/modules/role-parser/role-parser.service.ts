@@ -20,7 +20,7 @@ export class RoleParserService {
       if (typeof adminRoles[0] === 'object' && 'id' in adminRoles[0]) {
         return adminRoles.map((role: any) => ({
           id: role.id,
-          name: role.name || 'Admin'
+          name: role.name || 'Admin',
         }));
       }
 
@@ -54,4 +54,3 @@ export class RoleParserService {
     return [...new Set(permissions)];
   }
 }
-

@@ -1,15 +1,15 @@
 import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
-import { PrismaService } from '../../../prisma/prisma.service';
 import { DiscordValidationService } from '../../../discord/discord-validation.service';
 import { RoleParserService } from '../role-parser/role-parser.service';
 import { AccessInfo } from '../../interfaces/permission.interface';
+import { GuildMembersService } from '../../../guild-members/guild-members.service';
 
 @Injectable()
 export class PermissionCheckService {
   private readonly logger = new Logger(PermissionCheckService.name);
 
   constructor(
-    private prisma: PrismaService,
+    private guildMembersService: GuildMembersService,
     private discordValidation: DiscordValidationService,
     private roleParser: RoleParserService,
   ) {}
@@ -20,16 +20,11 @@ export class PermissionCheckService {
    */
   async checkGuildAccess(userId: string, guildId: string): Promise<AccessInfo> {
     try {
-      const membership = await this.prisma.guildMember.findUnique({
-        where: {
-          userId_guildId: { userId, guildId },
-        },
-        include: {
-          guild: {
-            include: { settings: true },
-          },
-        },
-      });
+      const membership =
+        await this.guildMembersService.findMemberWithGuildSettings(
+          userId,
+          guildId,
+        );
 
       if (!membership) {
         return { isMember: false, isAdmin: false, permissions: [] };
@@ -37,15 +32,21 @@ export class PermissionCheckService {
 
       const settings = membership.guild.settings?.settings as any;
       const adminRoles = this.roleParser.getAdminRolesFromSettings(settings);
-      const isAdmin = adminRoles.some(adminRole => 
-        membership.roles.includes(adminRole.id)
+      const isAdmin = adminRoles.some((adminRole) =>
+        membership.roles.includes(adminRole.id),
       );
 
-      const permissions = this.roleParser.calculatePermissions(membership.roles, settings);
+      const permissions = this.roleParser.calculatePermissions(
+        membership.roles,
+        settings,
+      );
 
       return { isMember: true, isAdmin, permissions };
     } catch (error) {
-      this.logger.error(`Error checking guild access for user ${userId} in guild ${guildId}:`, error);
+      this.logger.error(
+        `Error checking guild access for user ${userId} in guild ${guildId}:`,
+        error,
+      );
       return { isMember: false, isAdmin: false, permissions: [] };
     }
   }
@@ -57,19 +58,14 @@ export class PermissionCheckService {
   async hasAdminRole(
     userId: string,
     guildId: string,
-    validateWithDiscord: boolean = true
+    validateWithDiscord: boolean = true,
   ): Promise<boolean> {
     try {
-      const membership = await this.prisma.guildMember.findUnique({
-        where: {
-          userId_guildId: { userId, guildId },
-        },
-        include: {
-          guild: {
-            include: { settings: true },
-          },
-        },
-      });
+      const membership =
+        await this.guildMembersService.findMemberWithGuildSettings(
+          userId,
+          guildId,
+        );
 
       if (!membership) {
         this.logger.warn(`User ${userId} is not a member of guild ${guildId}`);
@@ -80,10 +76,13 @@ export class PermissionCheckService {
         membership.roles,
         guildId,
         membership.guild.settings?.settings,
-        validateWithDiscord
+        validateWithDiscord,
       );
     } catch (error) {
-      this.logger.error(`Error checking admin role for user ${userId} in guild ${guildId}:`, error);
+      this.logger.error(
+        `Error checking admin role for user ${userId} in guild ${guildId}:`,
+        error,
+      );
       return false;
     }
   }
@@ -96,7 +95,7 @@ export class PermissionCheckService {
     userRoles: string[],
     guildId: string,
     guildSettings: any,
-    validateWithDiscord: boolean = true
+    validateWithDiscord: boolean = true,
   ): Promise<boolean> {
     const adminRoles = this.roleParser.getAdminRolesFromSettings(guildSettings);
 
@@ -105,8 +104,8 @@ export class PermissionCheckService {
       return false;
     }
 
-    const hasRole = userRoles.some(userRole =>
-      adminRoles.some(adminRole => adminRole.id === userRole)
+    const hasRole = userRoles.some((userRole) =>
+      adminRoles.some((adminRole) => adminRole.id === userRole),
     );
 
     if (!hasRole) {
@@ -114,19 +113,19 @@ export class PermissionCheckService {
     }
 
     if (validateWithDiscord) {
-      const userAdminRole = adminRoles.find(adminRole =>
-        userRoles.includes(adminRole.id)
+      const userAdminRole = adminRoles.find((adminRole) =>
+        userRoles.includes(adminRole.id),
       );
 
       if (userAdminRole) {
         const isValid = await this.discordValidation.validateRoleId(
           guildId,
-          userAdminRole.id
+          userAdminRole.id,
         );
 
         if (!isValid) {
           this.logger.warn(
-            `Admin role ${userAdminRole.id} does not exist in Discord guild ${guildId}`
+            `Admin role ${userAdminRole.id} does not exist in Discord guild ${guildId}`,
           );
           return false;
         }
@@ -143,7 +142,9 @@ export class PermissionCheckService {
   async requireGuildAccess(userId: string, guildId: string): Promise<void> {
     const access = await this.checkGuildAccess(userId, guildId);
     if (!access.isMember) {
-      throw new ForbiddenException('Access denied: User is not a member of this guild');
+      throw new ForbiddenException(
+        'Access denied: User is not a member of this guild',
+      );
     }
   }
 
@@ -158,4 +159,3 @@ export class PermissionCheckService {
     }
   }
 }
-

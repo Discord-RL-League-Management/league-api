@@ -6,4 +6,3 @@ import { RoleParserService } from './role-parser.service';
   exports: [RoleParserService],
 })
 export class RoleParserModule {}
-
