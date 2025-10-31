@@ -1,4 +1,11 @@
-import { IsString, IsArray, IsOptional, Matches, Length, ArrayMaxSize } from 'class-validator';
+import {
+  IsString,
+  IsArray,
+  IsOptional,
+  Matches,
+  Length,
+  ArrayMaxSize,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateGuildMemberDto {
@@ -9,11 +16,11 @@ export class CreateGuildMemberDto {
     maxLength: 20,
   })
   @IsString()
-  @Matches(/^\d{17,20}$/, { 
-    message: 'User ID must be a valid Discord snowflake ID (17-20 digits)' 
+  @Matches(/^\d{17,20}$/, {
+    message: 'User ID must be a valid Discord snowflake ID (17-20 digits)',
   })
   @Length(17, 20)
-  userId: string;
+  userId!: string;
 
   @ApiProperty({
     description: 'Discord guild ID',
@@ -22,11 +29,11 @@ export class CreateGuildMemberDto {
     maxLength: 20,
   })
   @IsString()
-  @Matches(/^\d{17,20}$/, { 
-    message: 'Guild ID must be a valid Discord snowflake ID (17-20 digits)' 
+  @Matches(/^\d{17,20}$/, {
+    message: 'Guild ID must be a valid Discord snowflake ID (17-20 digits)',
   })
   @Length(17, 20)
-  guildId: string;
+  guildId!: string;
 
   @ApiProperty({
     description: 'Discord username',
@@ -36,7 +43,7 @@ export class CreateGuildMemberDto {
   })
   @IsString()
   @Length(1, 100, { message: 'Username must be between 1 and 100 characters' })
-  username: string;
+  username!: string;
 
   @ApiPropertyOptional({
     description: 'Array of Discord role IDs',
@@ -47,9 +54,9 @@ export class CreateGuildMemberDto {
   @IsArray()
   @IsString({ each: true })
   @ArrayMaxSize(250, { message: 'Cannot have more than 250 roles' })
-  @Matches(/^\d{17,20}$/, { 
+  @Matches(/^\d{17,20}$/, {
     each: true,
-    message: 'Each role ID must be a valid Discord snowflake ID' 
+    message: 'Each role ID must be a valid Discord snowflake ID',
   })
   roles?: string[];
 }
