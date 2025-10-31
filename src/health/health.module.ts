@@ -5,7 +5,7 @@ import { DiscordApiHealthIndicator } from './indicators/discord-api.health';
 
 /**
  * HealthModule - Self-contained health check module
- * 
+ *
  * Modularity: Complete feature in its own module
  * Single Responsibility: Only handles health checks
  * Separation of Concerns: Public health separate from authenticated health
