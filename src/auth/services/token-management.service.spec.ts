@@ -113,7 +113,7 @@ describe('TokenManagementService', () => {
     it('should return false on network timeout', async () => {
       // Arrange
       mockHttpService.get.mockReturnValue(
-        throwError(() => new Error('timeout'))
+        throwError(() => new Error('timeout')),
       );
 
       // Act
@@ -188,7 +188,7 @@ describe('TokenManagementService', () => {
       });
 
       mockHttpService.post.mockReturnValue(
-        throwError(() => new Error('Network error'))
+        throwError(() => new Error('Network error')),
       );
 
       // Act
@@ -204,7 +204,7 @@ describe('TokenManagementService', () => {
       // Arrange
       const userId = 'user123';
       const validToken = 'valid_access_token';
-      
+
       mockPrismaService.user.findUnique.mockResolvedValue({
         id: userId,
         accessToken: validToken,
@@ -225,7 +225,7 @@ describe('TokenManagementService', () => {
       const userId = 'user123';
       const expiredToken = 'expired_access_token';
       const newToken = 'new_access_token';
-      
+
       mockPrismaService.user.findUnique.mockResolvedValueOnce({
         id: userId,
         accessToken: expiredToken,
@@ -233,7 +233,7 @@ describe('TokenManagementService', () => {
 
       // Mock validateDiscordToken to return false (expired)
       jest.spyOn(service, 'validateDiscordToken').mockResolvedValue(false);
-      
+
       // Mock refreshDiscordToken to return new token
       jest.spyOn(service, 'refreshDiscordToken').mockResolvedValue(newToken);
 
@@ -304,7 +304,7 @@ describe('TokenManagementService', () => {
       });
 
       mockHttpService.post.mockReturnValue(
-        throwError(() => new Error('Revocation failed'))
+        throwError(() => new Error('Revocation failed')),
       );
 
       mockPrismaService.user.update.mockResolvedValue({
@@ -343,4 +343,3 @@ describe('TokenManagementService', () => {
     });
   });
 });
-

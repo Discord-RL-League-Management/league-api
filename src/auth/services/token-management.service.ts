@@ -1,10 +1,9 @@
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../../prisma/prisma.service';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom, timeout, retry, catchError, of } from 'rxjs';
 import { AxiosError } from 'axios';
-import { EncryptionService } from '../../common/encryption.service';
+import { UsersService } from '../../users/users.service';
 
 @Injectable()
 export class TokenManagementService {
@@ -14,14 +13,22 @@ export class TokenManagementService {
   private readonly retryAttempts: number;
 
   constructor(
-    private prisma: PrismaService,
+    private usersService: UsersService,
     private httpService: HttpService,
     private configService: ConfigService,
-    private encryptionService: EncryptionService,
   ) {
-    this.discordApiUrl = this.configService.get<string>('discord.apiUrl', 'https://discord.com/api');
-    this.requestTimeout = this.configService.get<number>('discord.timeout', 10000);
-    this.retryAttempts = this.configService.get<number>('discord.retryAttempts', 3);
+    this.discordApiUrl = this.configService.get<string>(
+      'discord.apiUrl',
+      'https://discord.com/api',
+    );
+    this.requestTimeout = this.configService.get<number>(
+      'discord.timeout',
+      10000,
+    );
+    this.retryAttempts = this.configService.get<number>(
+      'discord.retryAttempts',
+      3,
+    );
   }
 
   /**
@@ -31,16 +38,20 @@ export class TokenManagementService {
   async validateDiscordToken(accessToken: string): Promise<boolean> {
     try {
       const response = await firstValueFrom(
-        this.httpService.get(`${this.discordApiUrl}/users/@me`, {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }).pipe(
-          timeout(this.requestTimeout),
-          retry(this.retryAttempts),
-          catchError((error: AxiosError) => {
-            this.logger.warn(`Discord token validation failed: ${error.message}`);
-            throw new UnauthorizedException('Invalid Discord token');
+        this.httpService
+          .get(`${this.discordApiUrl}/users/@me`, {
+            headers: { Authorization: `Bearer ${accessToken}` },
           })
-        )
+          .pipe(
+            timeout(this.requestTimeout),
+            retry(this.retryAttempts),
+            catchError((error: AxiosError) => {
+              this.logger.warn(
+                `Discord token validation failed: ${error.message}`,
+              );
+              throw new UnauthorizedException('Invalid Discord token');
+            }),
+          ),
       );
 
       return response.status === 200;
@@ -56,48 +67,44 @@ export class TokenManagementService {
    */
   async refreshDiscordToken(userId: string): Promise<string | null> {
     try {
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { refreshToken: true },
-      });
+      const tokens = await this.usersService.getUserTokens(userId);
 
-      if (!user?.refreshToken) {
+      if (!tokens.refreshToken) {
         this.logger.warn(`No refresh token found for user ${userId}`);
         return null;
       }
 
-      // Decrypt refresh token
-      const refreshToken = this.encryptionService.decrypt(user.refreshToken);
-
       const response = await firstValueFrom(
-        this.httpService.post('https://discord.com/api/oauth2/token', {
-          client_id: this.configService.get<string>('discord.clientId'),
-          client_secret: this.configService.get<string>('discord.clientSecret'),
-          grant_type: 'refresh_token',
-          refresh_token: refreshToken,
-        }).pipe(
-          timeout(this.requestTimeout),
-          retry(this.retryAttempts),
-          catchError((error: AxiosError) => {
-            this.logger.error(`Token refresh failed for user ${userId}:`, error);
-            throw new UnauthorizedException('Failed to refresh Discord token');
+        this.httpService
+          .post('https://discord.com/api/oauth2/token', {
+            client_id: this.configService.get<string>('discord.clientId'),
+            client_secret: this.configService.get<string>(
+              'discord.clientSecret',
+            ),
+            grant_type: 'refresh_token',
+            refresh_token: tokens.refreshToken,
           })
-        )
+          .pipe(
+            timeout(this.requestTimeout),
+            retry(this.retryAttempts),
+            catchError((error: AxiosError) => {
+              this.logger.error(
+                `Token refresh failed for user ${userId}:`,
+                error,
+              );
+              throw new UnauthorizedException(
+                'Failed to refresh Discord token',
+              );
+            }),
+          ),
       );
 
       const { access_token, refresh_token } = response.data;
 
-      // Encrypt new refresh token
-      const encryptedRefreshToken = this.encryptionService.encrypt(refresh_token);
-
-      // Update user tokens atomically
-      await this.prisma.user.update({
-        where: { id: userId },
-        data: {
-          accessToken: access_token,
-          refreshToken: encryptedRefreshToken,
-          updatedAt: new Date(),
-        },
+      // Update user tokens
+      await this.usersService.updateUserTokens(userId, {
+        accessToken: access_token,
+        refreshToken: refresh_token,
       });
 
       this.logger.log(`Successfully refreshed token for user ${userId}`);
@@ -114,25 +121,25 @@ export class TokenManagementService {
    */
   async getValidAccessToken(userId: string): Promise<string | null> {
     try {
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { accessToken: true },
-      });
+      const tokens = await this.usersService.getUserTokens(userId);
 
-      if (!user?.accessToken) {
+      if (!tokens.accessToken) {
         return null;
       }
 
       // Validate current token
-      const isValid = await this.validateDiscordToken(user.accessToken);
+      const isValid = await this.validateDiscordToken(tokens.accessToken);
       if (isValid) {
-        return user.accessToken;
+        return tokens.accessToken;
       }
 
       // Try to refresh token
       return await this.refreshDiscordToken(userId);
     } catch (error) {
-      this.logger.error(`Error getting valid access token for user ${userId}:`, error);
+      this.logger.error(
+        `Error getting valid access token for user ${userId}:`,
+        error,
+      );
       return null;
     }
   }
@@ -143,36 +150,35 @@ export class TokenManagementService {
    */
   async revokeTokens(userId: string): Promise<void> {
     try {
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { accessToken: true },
-      });
+      const tokens = await this.usersService.getUserTokens(userId);
 
-      if (user?.accessToken) {
+      if (tokens.accessToken) {
         // Revoke token with Discord
         await firstValueFrom(
-          this.httpService.post('https://discord.com/api/oauth2/token/revoke', {
-            client_id: this.configService.get<string>('discord.clientId'),
-            client_secret: this.configService.get<string>('discord.clientSecret'),
-            token: user.accessToken,
-          }).pipe(
-            timeout(this.requestTimeout),
-            catchError((error: AxiosError) => {
-              this.logger.warn(`Failed to revoke Discord token: ${error.message}`);
-              return of(null as any); // Don't throw, continue with cleanup
+          this.httpService
+            .post('https://discord.com/api/oauth2/token/revoke', {
+              client_id: this.configService.get<string>('discord.clientId'),
+              client_secret: this.configService.get<string>(
+                'discord.clientSecret',
+              ),
+              token: tokens.accessToken,
             })
-          )
+            .pipe(
+              timeout(this.requestTimeout),
+              catchError((error: AxiosError) => {
+                this.logger.warn(
+                  `Failed to revoke Discord token: ${error.message}`,
+                );
+                return of(null as any); // Don't throw, continue with cleanup
+              }),
+            ),
         );
       }
 
       // Clear tokens from database
-      await this.prisma.user.update({
-        where: { id: userId },
-        data: {
-          accessToken: null,
-          refreshToken: null,
-          updatedAt: new Date(),
-        },
+      await this.usersService.updateUserTokens(userId, {
+        accessToken: undefined,
+        refreshToken: undefined,
       });
 
       this.logger.log(`Successfully revoked tokens for user ${userId}`);
