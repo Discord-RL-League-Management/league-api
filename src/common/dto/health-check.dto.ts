@@ -8,7 +8,7 @@ export class HealthCheckResponseDto {
   })
   @IsString()
   @IsNotEmpty()
-  status: string;
+  status!: string;
 
   @ApiProperty({
     description: 'Status message',
@@ -16,7 +16,7 @@ export class HealthCheckResponseDto {
   })
   @IsString()
   @IsNotEmpty()
-  message: string;
+  message!: string;
 
   @ApiProperty({
     description: 'Timestamp of the health check',
@@ -24,5 +24,5 @@ export class HealthCheckResponseDto {
   })
   @IsString()
   @IsNotEmpty()
-  timestamp: string;
+  timestamp!: string;
 }

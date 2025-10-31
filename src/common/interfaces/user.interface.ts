@@ -1,6 +1,6 @@
 /**
  * Shared User interfaces for type safety across the application
- * 
+ *
  * These interfaces serve as contracts between modules, ensuring
  * consistent data structures and reducing duplication.
  */
@@ -57,3 +57,10 @@ export interface UserStats {
   losses: number;
   winRate: number;
 }
+
+/**
+ * Type for authenticated user from JWT strategy
+ * This is what the @CurrentUser() decorator returns
+ * Matches the User model from the database
+ */
+export type AuthenticatedUser = User;
