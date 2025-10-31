@@ -1,13 +1,29 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, Logger, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  UseGuards,
+  Logger,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { BotAuthGuard } from '../auth/guards/bot-auth.guard';
 import { GuildsService } from './guilds.service';
-import { GuildMembersService } from '../guild-members/guild-members.service';
 import { GuildSettingsService } from './guild-settings.service';
 import { CreateGuildDto } from './dto/create-guild.dto';
 import { UpdateGuildDto } from './dto/update-guild.dto';
-import { CreateGuildMemberDto } from '../guild-members/dto/create-guild-member.dto';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+} from '@nestjs/swagger';
 
 @ApiTags('Internal Guilds')
 @Controller('internal/guilds')
@@ -19,7 +35,6 @@ export class InternalGuildsController {
 
   constructor(
     private guildsService: GuildsService,
-    private guildMembersService: GuildMembersService,
     private guildSettingsService: GuildSettingsService,
   ) {}
 
@@ -60,7 +75,10 @@ export class InternalGuildsController {
   @ApiResponse({ status: 404, description: 'Guild not found' })
   @ApiResponse({ status: 401, description: 'Invalid bot API key' })
   @ApiParam({ name: 'id', description: 'Discord guild ID' })
-  async update(@Param('id') id: string, @Body() updateGuildDto: UpdateGuildDto) {
+  async update(
+    @Param('id') id: string,
+    @Body() updateGuildDto: UpdateGuildDto,
+  ) {
     this.logger.log(`Bot updating guild ${id}`);
     return this.guildsService.update(id, updateGuildDto);
   }
@@ -97,34 +115,5 @@ export class InternalGuildsController {
     this.logger.log(`Bot updating settings for guild ${id}`);
     // Note: Bot endpoints don't have userId, using a placeholder for audit trail
     return this.guildSettingsService.updateSettings(id, settings, 'bot');
-  }
-
-  @Post(':id/members')
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Create guild member (bot only)' })
-  @ApiResponse({ status: 201, description: 'Member created successfully' })
-  @ApiResponse({ status: 404, description: 'Guild or user not found' })
-  @ApiResponse({ status: 401, description: 'Invalid bot API key' })
-  @ApiParam({ name: 'id', description: 'Discord guild ID' })
-  async createMember(@Param('id') id: string, @Body() createMemberDto: CreateGuildMemberDto) {
-    this.logger.log(`Bot creating member ${createMemberDto.userId} in guild ${id}`);
-    return this.guildMembersService.create({
-      ...createMemberDto,
-      guildId: id,
-    });
-  }
-
-  @Post(':id/members/sync')
-  @ApiOperation({ summary: 'Sync all guild members (bot only)' })
-  @ApiResponse({ status: 200, description: 'Members synced successfully' })
-  @ApiResponse({ status: 404, description: 'Guild not found' })
-  @ApiResponse({ status: 401, description: 'Invalid bot API key' })
-  @ApiParam({ name: 'id', description: 'Discord guild ID' })
-  async syncMembers(
-    @Param('id') id: string,
-    @Body() syncData: { members: Array<{ userId: string; username: string; roles: string[] }> },
-  ) {
-    this.logger.log(`Bot syncing ${syncData.members.length} members for guild ${id}`);
-    return this.guildMembersService.syncGuildMembers(id, syncData.members);
   }
 }
