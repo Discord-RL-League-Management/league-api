@@ -16,12 +16,12 @@ describe('OAuth Guilds Integration (E2E)', () => {
   let prisma: PrismaService;
   let httpService: HttpService;
   let jwtService: JwtService;
-  
+
   const mockHttpService = {
     get: jest.fn(),
     post: jest.fn(),
   };
-  
+
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -29,14 +29,14 @@ describe('OAuth Guilds Integration (E2E)', () => {
       .overrideProvider(HttpService)
       .useValue(mockHttpService)
       .compile();
-    
+
     app = moduleFixture.createNestApplication();
     await bootstrapTestApp(app);
     prisma = app.get(PrismaService);
     httpService = app.get<HttpService>(HttpService);
     jwtService = app.get<JwtService>(JwtService);
   });
-  
+
   afterAll(async () => {
     await prisma.$disconnect();
     await app.close();
@@ -47,7 +47,7 @@ describe('OAuth Guilds Integration (E2E)', () => {
     await prisma.guildMember.deleteMany();
     await prisma.guild.deleteMany();
     await prisma.user.deleteMany();
-    
+
     // Clear all mocks
     jest.clearAllMocks();
   });
@@ -87,7 +87,13 @@ describe('OAuth Guilds Integration (E2E)', () => {
       ];
 
       mockHttpService.get.mockReturnValue(
-        of({ data: mockDiscordGuilds, status: 200, statusText: 'OK', headers: {}, config: {} } as AxiosResponse)
+        of({
+          data: mockDiscordGuilds,
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config: {},
+        } as AxiosResponse),
       );
 
       // Act
@@ -103,9 +109,7 @@ describe('OAuth Guilds Integration (E2E)', () => {
 
     it('should return 401 for unauthenticated request', async () => {
       // Act & Assert
-      await request(app.getHttpServer())
-        .get('/auth/guilds')
-        .expect(401);
+      await request(app.getHttpServer()).get('/auth/guilds').expect(401);
     });
   });
 
@@ -171,7 +175,13 @@ describe('OAuth Guilds Integration (E2E)', () => {
       const jwtToken = jwtService.sign({ sub: user.id });
 
       mockHttpService.post.mockReturnValue(
-        of({ data: {}, status: 200, statusText: 'OK', headers: {}, config: {} } as AxiosResponse)
+        of({
+          data: {},
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config: {},
+        } as AxiosResponse),
       );
 
       // Act
@@ -181,15 +191,15 @@ describe('OAuth Guilds Integration (E2E)', () => {
         .expect(200);
 
       // Assert
-      expect(response.body).toHaveProperty('message', 'Logged out successfully');
+      expect(response.body).toHaveProperty(
+        'message',
+        'Logged out successfully',
+      );
     });
 
     it('should return 401 for unauthenticated logout', async () => {
       // Act & Assert
-      await request(app.getHttpServer())
-        .post('/auth/logout')
-        .expect(401);
+      await request(app.getHttpServer()).post('/auth/logout').expect(401);
     });
   });
 });
-

@@ -13,12 +13,12 @@ describe('OAuth Security (E2E)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
   let jwtService: JwtService;
-  
+
   const mockHttpService = {
     get: jest.fn(),
     post: jest.fn(),
   };
-  
+
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -26,13 +26,13 @@ describe('OAuth Security (E2E)', () => {
       .overrideProvider(HttpService)
       .useValue(mockHttpService)
       .compile();
-    
+
     app = moduleFixture.createNestApplication();
     await bootstrapTestApp(app);
     prisma = app.get(PrismaService);
     jwtService = app.get<JwtService>(JwtService);
   });
-  
+
   afterAll(async () => {
     await prisma.$disconnect();
     await app.close();
@@ -43,7 +43,7 @@ describe('OAuth Security (E2E)', () => {
     await prisma.guildMember.deleteMany();
     await prisma.guild.deleteMany();
     await prisma.user.deleteMany();
-    
+
     jest.clearAllMocks();
   });
 
@@ -60,7 +60,13 @@ describe('OAuth Security (E2E)', () => {
       const jwtToken = jwtService.sign({ sub: user.id });
 
       mockHttpService.get.mockReturnValue(
-        of({ data: [], status: 200, statusText: 'OK', headers: {}, config: {} } as AxiosResponse)
+        of({
+          data: [],
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config: {},
+        } as AxiosResponse),
       );
 
       // Act
@@ -89,14 +95,14 @@ describe('OAuth Security (E2E)', () => {
       });
 
       // Generate JWT
-      const jwtToken = jwtService.sign({ 
-        sub: user.id, 
+      const jwtToken = jwtService.sign({
+        sub: user.id,
         username: user.username,
         // No accessToken or refreshToken should be in payload
       });
 
       // Decode JWT to verify payload
-      const decoded = jwtService.decode(jwtToken) as any;
+      const decoded = jwtService.decode(jwtToken);
 
       // Assert
       expect(decoded).toHaveProperty('sub', user.id);
@@ -153,7 +159,13 @@ describe('OAuth Security (E2E)', () => {
       const jwtToken = jwtService.sign({ sub: user.id });
 
       mockHttpService.post.mockReturnValue(
-        of({ data: {}, status: 200, statusText: 'OK', headers: {}, config: {} } as AxiosResponse)
+        of({
+          data: {},
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config: {},
+        } as AxiosResponse),
       );
 
       // Act
@@ -175,11 +187,7 @@ describe('OAuth Security (E2E)', () => {
   describe('Authentication Requirements', () => {
     it('should require authentication for protected endpoints', async () => {
       // Test multiple protected endpoints
-      const protectedEndpoints = [
-        '/auth/me',
-        '/auth/guilds',
-        '/auth/logout',
-      ];
+      const protectedEndpoints = ['/auth/me', '/auth/guilds', '/auth/logout'];
 
       for (const endpoint of protectedEndpoints) {
         const response = await request(app.getHttpServer())
@@ -202,7 +210,13 @@ describe('OAuth Security (E2E)', () => {
       const jwtToken = jwtService.sign({ sub: user.id });
 
       mockHttpService.get.mockReturnValue(
-        of({ data: [], status: 200, statusText: 'OK', headers: {}, config: {} } as AxiosResponse)
+        of({
+          data: [],
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config: {},
+        } as AxiosResponse),
       );
 
       // Act
@@ -216,4 +230,3 @@ describe('OAuth Security (E2E)', () => {
     });
   });
 });
-
