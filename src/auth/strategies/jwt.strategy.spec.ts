@@ -63,7 +63,9 @@ describe('JwtStrategy', () => {
       usersService.findOne.mockRejectedValue(new Error('User not found'));
 
       // Act & Assert
-      await expect(strategy.validate(validPayload)).rejects.toThrow('User not found');
+      await expect(strategy.validate(validPayload)).rejects.toThrow(
+        'User not found',
+      );
       expect(usersService.findOne).toHaveBeenCalledWith(validPayload.sub);
     });
 
@@ -72,7 +74,9 @@ describe('JwtStrategy', () => {
       usersService.findOne.mockResolvedValue(null as any);
 
       // Act & Assert
-      await expect(strategy.validate(validPayload)).rejects.toThrow(UnauthorizedException);
+      await expect(strategy.validate(validPayload)).rejects.toThrow(
+        UnauthorizedException,
+      );
       expect(usersService.findOne).toHaveBeenCalledWith(validPayload.sub);
     });
 
@@ -82,7 +86,11 @@ describe('JwtStrategy', () => {
         sub: '987654321098765432',
         username: 'differentuser',
       };
-      const differentUser = { ...mockUser, id: differentPayload.sub, username: differentPayload.username };
+      const differentUser = {
+        ...mockUser,
+        id: differentPayload.sub,
+        username: differentPayload.username,
+      };
       usersService.findOne.mockResolvedValue(differentUser);
 
       // Act
@@ -99,7 +107,9 @@ describe('JwtStrategy', () => {
       usersService.findOne.mockRejectedValue(databaseError);
 
       // Act & Assert
-      await expect(strategy.validate(validPayload)).rejects.toThrow('Database connection failed');
+      await expect(strategy.validate(validPayload)).rejects.toThrow(
+        'Database connection failed',
+      );
     });
 
     it('should handle empty payload', async () => {
@@ -108,7 +118,9 @@ describe('JwtStrategy', () => {
       usersService.findOne.mockRejectedValue(new Error('User not found'));
 
       // Act & Assert
-      await expect(strategy.validate(emptyPayload)).rejects.toThrow('User not found');
+      await expect(strategy.validate(emptyPayload)).rejects.toThrow(
+        'User not found',
+      );
       expect(usersService.findOne).toHaveBeenCalledWith('');
     });
   });
