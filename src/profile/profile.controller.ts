@@ -2,6 +2,8 @@ import { Controller, Get, Patch, Body, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ProfileService } from './profile.service';
+import type { AuthenticatedUser } from '../common/interfaces/user.interface';
+import type { UserSettings } from './services/user-settings.service';
 
 @Controller('api/profile')
 @UseGuards(JwtAuthGuard)
@@ -9,20 +11,20 @@ export class ProfileController {
   constructor(private profileService: ProfileService) {}
 
   @Get()
-  async getMyProfile(@CurrentUser() user) {
+  async getMyProfile(@CurrentUser() user: AuthenticatedUser) {
     // User automatically gets their own profile
     return this.profileService.getProfile(user.id);
   }
 
   @Get('stats')
-  async getMyStats(@CurrentUser() user) {
+  async getMyStats(@CurrentUser() user: AuthenticatedUser) {
     return this.profileService.getStats(user.id);
   }
 
   @Patch('settings')
   async updateSettings(
-    @CurrentUser() user,
-    @Body() settings: { notifications: boolean; theme: string },
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() settings: Partial<UserSettings>,
   ) {
     return this.profileService.updateSettings(user.id, settings);
   }
