@@ -15,7 +15,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
   });
-  
+
   const configService = app.get(ConfigService);
   const logger = new Logger('Bootstrap');
 
@@ -23,40 +23,42 @@ async function bootstrap() {
   app.use(cookieParser());
 
   // Security headers
-  app.use(helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        scriptSrc: ["'self'"],
-        imgSrc: ["'self'", "data:", "https:"],
-        connectSrc: ["'self'"],
-        fontSrc: ["'self'"],
-        objectSrc: ["'none'"],
-        mediaSrc: ["'self'"],
-        frameSrc: ["'none'"],
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          scriptSrc: ["'self'"],
+          imgSrc: ["'self'", 'data:', 'https:'],
+          connectSrc: ["'self'"],
+          fontSrc: ["'self'"],
+          objectSrc: ["'none'"],
+          mediaSrc: ["'self'"],
+          frameSrc: ["'none'"],
+        },
       },
-    },
-    crossOriginEmbedderPolicy: false,
-    hsts: {
-      maxAge: 31536000,
-      includeSubDomains: true,
-      preload: true,
-    },
-  }));
+      crossOriginEmbedderPolicy: false,
+      hsts: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true,
+      },
+    }),
+  );
 
   // CORS configuration
   app.enableCors({
-    origin: (origin, callback) => {
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
       const allowedOrigins = [
         configService.get<string>('frontend.url'),
         'http://localhost:5173', // Development frontend
         'http://localhost:3000', // Development API
       ];
-      
+
       // Allow requests with no origin (mobile apps, Postman, etc.)
       if (!origin) return callback(null, true);
-      
+
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
@@ -77,24 +79,31 @@ async function bootstrap() {
   });
 
   // Global validation pipe
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true, // Strip properties not in DTO
-    forbidNonWhitelisted: true, // Throw error for non-whitelisted properties
-    transform: true, // Transform payloads to DTO instances
-    disableErrorMessages: configService.get<string>('app.nodeEnv') === 'production',
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true, // Strip properties not in DTO
+      forbidNonWhitelisted: true, // Throw error for non-whitelisted properties
+      transform: true, // Transform payloads to DTO instances
+      disableErrorMessages:
+        configService.get<string>('app.nodeEnv') === 'production',
+    }),
+  );
 
   // Global exception filters
+  // Execution order: Filters are executed in reverse registration order
+  // PrismaExceptionFilter handles Prisma-specific errors and allows GlobalExceptionFilter to catch everything else
   app.useGlobalFilters(
-    new GlobalExceptionFilter(),
-    new PrismaExceptionFilter()
+    new PrismaExceptionFilter(), // Handles Prisma errors first
+    new GlobalExceptionFilter(configService), // Catches all other exceptions
   );
 
   // Swagger API Documentation (only in non-production)
   if (configService.get<string>('app.nodeEnv') !== 'production') {
     const config = new DocumentBuilder()
       .setTitle('League Management API')
-      .setDescription('API for Discord bot and web frontend league management system')
+      .setDescription(
+        'API for Discord bot and web frontend league management system',
+      )
       .setVersion('1.0.0')
       .addBearerAuth(
         {
@@ -124,7 +133,16 @@ async function bootstrap() {
       .build();
 
     const document = SwaggerModule.createDocument(app, config);
+    
+    // Setup Swagger at /api-docs
     SwaggerModule.setup('api-docs', app, document, {
+      swaggerOptions: {
+        persistAuthorization: true,
+      },
+    });
+
+    // Also setup at /docs for convenience (redirect)
+    SwaggerModule.setup('docs', app, document, {
       swaggerOptions: {
         persistAuthorization: true,
       },
@@ -136,12 +154,14 @@ async function bootstrap() {
 
   const port = configService.get<number>('app.port') || 3000;
   await app.listen(port);
-  
+
   logger.log(`Application is running on: http://localhost:${port}`);
   logger.log(`Environment: ${configService.get<string>('app.nodeEnv')}`);
-  
+
   if (configService.get<string>('app.nodeEnv') !== 'production') {
-    logger.log(`Swagger documentation available at: http://localhost:${port}/api-docs`);
+    logger.log(
+      `Swagger documentation available at: http://localhost:${port}/api-docs or http://localhost:${port}/docs`,
+    );
   }
 }
 bootstrap();

@@ -43,8 +43,6 @@ import { throttlerConfig } from './config/throttler.config';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(AuthLoggerMiddleware)
-      .forRoutes('*');
+    consumer.apply(AuthLoggerMiddleware).forRoutes('*');
   }
 }
