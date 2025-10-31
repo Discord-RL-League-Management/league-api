@@ -22,7 +22,9 @@ export class EncryptionService {
     const key = this.configService.get<string>('ENCRYPTION_KEY');
 
     if (!key) {
-      this.logger.warn('ENCRYPTION_KEY not set. Using default key for development only!');
+      this.logger.warn(
+        'ENCRYPTION_KEY not set. Using default key for development only!',
+      );
       // For development only - in production this should throw an error
       return crypto.scryptSync('default-key-for-development', 'salt', 32);
     }
@@ -80,7 +82,10 @@ export class EncryptionService {
 
       // Extract components
       const salt = combined.subarray(0, this.saltLength);
-      const iv = combined.subarray(this.saltLength, this.saltLength + this.ivLength);
+      const iv = combined.subarray(
+        this.saltLength,
+        this.saltLength + this.ivLength,
+      );
       const tag = combined.subarray(
         this.saltLength + this.ivLength,
         this.tagPosition + this.tagLength,
