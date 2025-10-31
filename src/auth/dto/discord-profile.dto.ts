@@ -1,4 +1,10 @@
-import { IsString, IsOptional, IsEmail, Matches, IsNotEmpty } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsEmail,
+  Matches,
+  IsNotEmpty,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class DiscordProfileDto {
@@ -8,8 +14,10 @@ export class DiscordProfileDto {
   })
   @IsString()
   @IsNotEmpty()
-  @Matches(/^\d{17,19}$/, { message: 'discordId must be a valid Discord snowflake (17-19 digits)' })
-  discordId: string;
+  @Matches(/^\d{17,19}$/, {
+    message: 'discordId must be a valid Discord snowflake (17-19 digits)',
+  })
+  discordId!: string;
 
   @ApiProperty({
     description: 'Discord username',
@@ -17,7 +25,7 @@ export class DiscordProfileDto {
   })
   @IsString()
   @IsNotEmpty()
-  username: string;
+  username!: string;
 
   @ApiPropertyOptional({
     description: 'Discord discriminator (being phased out)',
@@ -57,7 +65,7 @@ export class DiscordProfileDto {
   })
   @IsString()
   @IsNotEmpty()
-  accessToken: string;
+  accessToken!: string;
 
   @ApiProperty({
     description: 'Discord OAuth refresh token',
@@ -65,5 +73,5 @@ export class DiscordProfileDto {
   })
   @IsString()
   @IsNotEmpty()
-  refreshToken: string;
+  refreshToken!: string;
 }
