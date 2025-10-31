@@ -21,7 +21,7 @@ describe('User API (e2e)', () => {
     app = moduleFixture.createNestApplication();
     prisma = moduleFixture.get<PrismaService>(PrismaService);
     jwtService = moduleFixture.get<JwtService>(JwtService);
-    
+
     await bootstrapTestApp(app);
   });
 
@@ -32,7 +32,7 @@ describe('User API (e2e)', () => {
 
   beforeEach(async () => {
     await prisma.user.deleteMany();
-    
+
     const user = await prisma.user.create({
       data: {
         id: 'user-123',
@@ -55,16 +55,14 @@ describe('User API (e2e)', () => {
     });
 
     it('should return 401 without JWT', async () => {
-      await request(app.getHttpServer())
-        .get('/api/users/me')
-        .expect(401);
+      await request(app.getHttpServer()).get('/api/users/me').expect(401);
     });
   });
 
   describe('PATCH /api/users/me', () => {
     it('should update own user data', async () => {
       const updateData = { username: 'newusername' };
-      
+
       const response = await request(app.getHttpServer())
         .patch('/api/users/me')
         .set('Authorization', `Bearer ${validToken}`)

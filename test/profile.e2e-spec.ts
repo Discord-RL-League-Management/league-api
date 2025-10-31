@@ -21,7 +21,7 @@ describe('Profile API (e2e)', () => {
     app = moduleFixture.createNestApplication();
     prisma = moduleFixture.get<PrismaService>(PrismaService);
     jwtService = moduleFixture.get<JwtService>(JwtService);
-    
+
     await bootstrapTestApp(app);
   });
 
@@ -32,7 +32,7 @@ describe('Profile API (e2e)', () => {
 
   beforeEach(async () => {
     await prisma.user.deleteMany();
-    
+
     // Create test user and generate token
     const user = await prisma.user.create({
       data: {
@@ -60,9 +60,7 @@ describe('Profile API (e2e)', () => {
     });
 
     it('should return 401 without JWT', async () => {
-      await request(app.getHttpServer())
-        .get('/api/profile')
-        .expect(401);
+      await request(app.getHttpServer()).get('/api/profile').expect(401);
     });
   });
 
@@ -80,16 +78,14 @@ describe('Profile API (e2e)', () => {
     });
 
     it('should return 401 without JWT', async () => {
-      await request(app.getHttpServer())
-        .get('/api/profile/stats')
-        .expect(401);
+      await request(app.getHttpServer()).get('/api/profile/stats').expect(401);
     });
   });
 
   describe('PATCH /api/profile/settings', () => {
     it('should update user settings', async () => {
       const settings = { theme: 'dark', notifications: true };
-      
+
       const response = await request(app.getHttpServer())
         .patch('/api/profile/settings')
         .set('Authorization', `Bearer ${validToken}`)

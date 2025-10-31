@@ -16,7 +16,7 @@ describe('Users API (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     prisma = moduleFixture.get<PrismaService>(PrismaService);
-    
+
     await bootstrapTestApp(app);
   });
 
@@ -30,7 +30,8 @@ describe('Users API (e2e)', () => {
     await prisma.user.deleteMany();
   });
 
-  const validApiKey = '2b2b3d4b5ca4d61eb461886d4cd65d1a9b6000fd2c23bacf727056d38ecb6e32';
+  const validApiKey =
+    '2b2b3d4b5ca4d61eb461886d4cd65d1a9b6000fd2c23bacf727056d38ecb6e32';
   const invalidApiKey = 'invalid-key';
 
   describe('POST /internal/users', () => {
@@ -40,7 +41,7 @@ describe('Users API (e2e)', () => {
         username: 'testuser',
         globalName: 'Test User',
         avatar: 'avatar123',
-        email: 'test@example.com'
+        email: 'test@example.com',
       };
 
       const response = await request(app.getHttpServer())
@@ -57,14 +58,14 @@ describe('Users API (e2e)', () => {
         email: userData.email,
         createdAt: expect.any(String),
         updatedAt: expect.any(String),
-        lastLoginAt: expect.any(String)
+        lastLoginAt: expect.any(String),
       });
     });
 
     it('should reject request without API key', async () => {
       const userData = {
         id: '123456789',
-        username: 'testuser'
+        username: 'testuser',
       };
 
       await request(app.getHttpServer())
@@ -76,7 +77,7 @@ describe('Users API (e2e)', () => {
     it('should reject request with invalid API key', async () => {
       const userData = {
         id: '123456789',
-        username: 'testuser'
+        username: 'testuser',
       };
 
       await request(app.getHttpServer())
@@ -88,7 +89,7 @@ describe('Users API (e2e)', () => {
 
     it('should reject request with missing required fields', async () => {
       const userData = {
-        username: 'testuser'
+        username: 'testuser',
         // Missing required 'id' field
       };
 
@@ -109,15 +110,15 @@ describe('Users API (e2e)', () => {
             id: 'user1',
             username: 'user1',
             globalName: 'User One',
-            createdAt: new Date('2023-01-01')
+            createdAt: new Date('2023-01-01'),
           },
           {
             id: 'user2',
             username: 'user2',
             globalName: 'User Two',
-            createdAt: new Date('2023-01-02')
-          }
-        ]
+            createdAt: new Date('2023-01-02'),
+          },
+        ],
       });
     });
 
@@ -132,7 +133,7 @@ describe('Users API (e2e)', () => {
         id: expect.any(String),
         username: expect.any(String),
         globalName: expect.any(String),
-        createdAt: expect.any(String)
+        createdAt: expect.any(String),
       });
     });
 
@@ -147,9 +148,7 @@ describe('Users API (e2e)', () => {
     });
 
     it('should reject request without API key', async () => {
-      await request(app.getHttpServer())
-        .get('/internal/users')
-        .expect(401);
+      await request(app.getHttpServer()).get('/internal/users').expect(401);
     });
   });
 
@@ -159,8 +158,8 @@ describe('Users API (e2e)', () => {
         data: {
           id: 'user123',
           username: 'testuser',
-          globalName: 'Test User'
-        }
+          globalName: 'Test User',
+        },
       });
     });
 
@@ -173,7 +172,7 @@ describe('Users API (e2e)', () => {
       expect(response.body).toMatchObject({
         id: 'user123',
         username: 'testuser',
-        globalName: 'Test User'
+        globalName: 'Test User',
       });
     });
 
@@ -197,15 +196,15 @@ describe('Users API (e2e)', () => {
         data: {
           id: 'user123',
           username: 'testuser',
-          globalName: 'Test User'
-        }
+          globalName: 'Test User',
+        },
       });
     });
 
     it('should update user with valid data and API key', async () => {
       const updateData = {
         username: 'updateduser',
-        globalName: 'Updated User'
+        globalName: 'Updated User',
       };
 
       const response = await request(app.getHttpServer())
@@ -218,7 +217,7 @@ describe('Users API (e2e)', () => {
         id: 'user123',
         username: 'updateduser',
         globalName: 'Updated User',
-        updatedAt: expect.any(String)
+        updatedAt: expect.any(String),
       });
     });
 
@@ -236,8 +235,8 @@ describe('Users API (e2e)', () => {
         data: {
           id: 'user123',
           username: 'testuser',
-          globalName: 'Test User'
-        }
+          globalName: 'Test User',
+        },
       });
     });
 
