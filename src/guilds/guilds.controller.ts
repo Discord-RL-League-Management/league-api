@@ -1,11 +1,25 @@
-import { Controller, Get, Param, UseGuards, ForbiddenException, Logger } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  UseGuards,
+  ForbiddenException,
+  Logger,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { GuildsService } from './guilds.service';
 import { GuildMembersService } from '../guild-members/guild-members.service';
-import { PermissionService } from '../permissions/permission.service';
+import { PermissionCheckService } from '../permissions/modules/permission-check/permission-check.service';
 import { GuildSettingsService } from './guild-settings.service';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+} from '@nestjs/swagger';
+import type { AuthenticatedUser } from '../common/interfaces/user.interface';
 
 @ApiTags('Guilds')
 @Controller('api/guilds')
@@ -17,15 +31,15 @@ export class GuildsController {
   constructor(
     private guildsService: GuildsService,
     private guildMembersService: GuildMembersService,
-    private permissionService: PermissionService,
+    private permissionCheckService: PermissionCheckService,
     private guildSettingsService: GuildSettingsService,
   ) {}
 
   @Get('my-guilds')
-  @ApiOperation({ summary: 'Get user\'s guilds' })
-  @ApiResponse({ status: 200, description: 'List of user\'s guilds' })
+  @ApiOperation({ summary: "Get user's guilds" })
+  @ApiResponse({ status: 200, description: "List of user's guilds" })
   @ApiResponse({ status: 401, description: 'Invalid JWT token' })
-  async getMyGuilds(@CurrentUser() user) {
+  async getMyGuilds(@CurrentUser() user: AuthenticatedUser) {
     this.logger.log(`User ${user.id} requested their guilds`);
     return this.guildMembersService.getUserGuilds(user.id);
   }
@@ -37,16 +51,20 @@ export class GuildsController {
   @ApiResponse({ status: 404, description: 'Guild not found' })
   @ApiResponse({ status: 401, description: 'Invalid JWT token' })
   @ApiParam({ name: 'id', description: 'Discord guild ID' })
-  async getGuild(@Param('id') id: string, @CurrentUser() user) {
+  async getGuild(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     this.logger.log(`User ${user.id} requested guild ${id}`);
-    
+
     // Verify user is member of this guild
     const membership = await this.guildMembersService.findOne(user.id, id);
     if (!membership) {
       throw new ForbiddenException('You are not a member of this guild');
     }
 
-    return this.guildsService.findOne(id);
+    return this.guildsService.findOne(id, {
+      includeSettings: false,
+      includeMembers: false,
+      includeCount: true,
+    });
   }
 
   @Get(':id/settings')
@@ -56,21 +74,25 @@ export class GuildsController {
   @ApiResponse({ status: 404, description: 'Guild not found' })
   @ApiResponse({ status: 401, description: 'Invalid JWT token' })
   @ApiParam({ name: 'id', description: 'Discord guild ID' })
-  async getGuildSettings(@Param('id') id: string, @CurrentUser() user) {
+  async getGuildSettings(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     this.logger.log(`User ${user.id} requested settings for guild ${id}`);
-    
+
     // Verify user has admin permissions in this guild
     const membership = await this.guildMembersService.findOne(user.id, id);
-    
+
     // Get guild with settings for admin check
-    const guild = await this.guildsService.findOne(id);
-    
-    const isAdmin = membership 
-      ? await this.permissionService.checkAdminRoles(
+    const guild = await this.guildsService.findOne(id, {
+      includeSettings: true,
+      includeMembers: false,
+      includeCount: false,
+    });
+
+    const isAdmin = membership
+      ? await this.permissionCheckService.checkAdminRoles(
           membership.roles,
           id,
-          guild.settings?.settings,
-          true // Validate with Discord for authorization
+          (guild as any).settings?.settings,
+          true, // Validate with Discord for authorization
         )
       : false;
 
