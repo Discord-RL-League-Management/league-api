@@ -1,4 +1,4 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
@@ -30,10 +30,12 @@ interface DiscordGuild {
 
 @Injectable()
 export class DiscordOAuthService {
+  private readonly logger = new Logger(DiscordOAuthService.name);
   private readonly clientId: string;
   private readonly clientSecret: string;
   private readonly redirectUri: string;
-  private readonly authorizationUrl = 'https://discord.com/api/oauth2/authorize';
+  private readonly authorizationUrl =
+    'https://discord.com/api/oauth2/authorize';
   private readonly tokenUrl = 'https://discord.com/api/oauth2/token';
   private readonly userUrl = 'https://discord.com/api/users/@me';
   private readonly guildsUrl = 'https://discord.com/api/users/@me/guilds';
@@ -47,10 +49,11 @@ export class DiscordOAuthService {
     this.redirectUri = this.configService.get<string>('discord.callbackUrl')!;
 
     // Debug logging
-    console.log('DiscordOAuthService Config:');
-    console.log('  clientId:', this.clientId);
-    console.log('  clientSecret:', this.clientSecret ? '***' : 'undefined');
-    console.log('  redirectUri:', this.redirectUri);
+    this.logger.debug('DiscordOAuthService Config', {
+      clientId: this.clientId,
+      redirectUri: this.redirectUri,
+      hasClientSecret: !!this.clientSecret,
+    });
   }
 
   /**
