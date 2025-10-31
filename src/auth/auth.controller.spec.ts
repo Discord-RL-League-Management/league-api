@@ -40,7 +40,9 @@ describe('AuthController', () => {
     };
 
     const mockDiscordOAuthService = {
-      getAuthorizationUrl: jest.fn().mockReturnValue('https://discord.com/oauth2/authorize'),
+      getAuthorizationUrl: jest
+        .fn()
+        .mockReturnValue('https://discord.com/oauth2/authorize'),
       exchangeCode: jest.fn(),
       getUserInfo: jest.fn(),
       getUserGuilds: jest.fn(),
@@ -88,7 +90,9 @@ describe('AuthController', () => {
       controller.discordLogin(mockResponse as any);
 
       // Assert
-      expect(mockResponse.redirect).toHaveBeenCalledWith('https://discord.com/oauth2/authorize');
+      expect(mockResponse.redirect).toHaveBeenCalledWith(
+        'https://discord.com/oauth2/authorize',
+      );
     });
   });
 
@@ -105,11 +109,16 @@ describe('AuthController', () => {
       const error = undefined;
 
       // Act
-      await controller.discordCallback(code as any, error as any, undefined as any, mockResponse as any);
+      await controller.discordCallback(
+        code as any,
+        error as any,
+        undefined as any,
+        mockResponse as any,
+      );
 
-      // Assert  
+      // Assert
       expect(mockResponse.redirect).toHaveBeenCalledWith(
-        expect.stringContaining('/auth/error?error=no_code')
+        expect.stringContaining('/auth/error?error=no_code'),
       );
     });
 
@@ -119,11 +128,16 @@ describe('AuthController', () => {
       const error = 'access_denied';
 
       // Act
-      await controller.discordCallback(code as any, error as any, 'User denied access' as any, mockResponse as any);
+      await controller.discordCallback(
+        code as any,
+        error as any,
+        'User denied access' as any,
+        mockResponse as any,
+      );
 
       // Assert
       expect(mockResponse.redirect).toHaveBeenCalledWith(
-        expect.stringContaining('/auth/error?error=access_denied')
+        expect.stringContaining('/auth/error?error=access_denied'),
       );
     });
   });
@@ -138,7 +152,9 @@ describe('AuthController', () => {
         ...mockUser,
         guilds: [],
       });
-      expect(authService.getUserAvailableGuilds).toHaveBeenCalledWith(mockUser.id);
+      expect(authService.getUserAvailableGuilds).toHaveBeenCalledWith(
+        mockUser.id,
+      );
     });
 
     it('should return user with different data', async () => {
