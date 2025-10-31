@@ -1,5 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { HealthCheckService, MemoryHealthIndicator, DiskHealthIndicator, HealthIndicatorService } from '@nestjs/terminus';
+import {
+  HealthCheckService,
+  MemoryHealthIndicator,
+  DiskHealthIndicator,
+  HealthIndicatorService,
+} from '@nestjs/terminus';
 import { PrismaHealthIndicator } from '@nestjs/terminus';
 import { ConfigService } from '@nestjs/config';
 import { HealthController } from './health.controller';
@@ -90,7 +95,9 @@ describe('HealthController', () => {
       const result = controller.check();
 
       // Assert
-      expect(result.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+      expect(result.timestamp).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+      );
       expect(new Date(result.timestamp)).toBeInstanceOf(Date);
     });
 
@@ -166,7 +173,7 @@ describe('HealthController', () => {
     it('should return different timestamps for multiple calls', async () => {
       // Act
       const result1 = controller.check();
-      await new Promise(resolve => setTimeout(resolve, 10)); // Wait 10ms to ensure different timestamps
+      await new Promise((resolve) => setTimeout(resolve, 10)); // Wait 10ms to ensure different timestamps
       const result2 = controller.check();
 
       // Assert
@@ -176,7 +183,7 @@ describe('HealthController', () => {
     it('should return increasing uptime for multiple calls', async () => {
       // Act
       const result1 = controller.check();
-      await new Promise(resolve => setTimeout(resolve, 10)); // Wait 10ms
+      await new Promise((resolve) => setTimeout(resolve, 10)); // Wait 10ms
       const result2 = controller.check();
 
       // Assert
