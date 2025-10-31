@@ -1,13 +1,17 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException, Logger } from '@nestjs/common';
-import { PermissionService } from '../../permissions/permission.service';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Logger,
+} from '@nestjs/common';
+import { PermissionCheckService } from '../../permissions/modules/permission-check/permission-check.service';
 
 @Injectable()
 export class AdminGuard implements CanActivate {
   private readonly logger = new Logger(AdminGuard.name);
 
-  constructor(
-    private permissionService: PermissionService,
-  ) {}
+  constructor(private permissionCheckService: PermissionCheckService) {}
 
   /**
    * Check if user has admin permissions in the specified guild
@@ -25,10 +29,10 @@ export class AdminGuard implements CanActivate {
     }
 
     try {
-      const isAdmin = await this.permissionService.hasAdminRole(
+      const isAdmin = await this.permissionCheckService.hasAdminRole(
         user.id,
         guildId,
-        true // Validate with Discord
+        true, // Validate with Discord
       );
 
       if (!isAdmin) {
@@ -40,9 +44,11 @@ export class AdminGuard implements CanActivate {
       if (error instanceof ForbiddenException) {
         throw error;
       }
-      this.logger.error(`AdminGuard error for user ${user.id} in guild ${guildId}:`, error);
+      this.logger.error(
+        `AdminGuard error for user ${user.id} in guild ${guildId}:`,
+        error,
+      );
       throw new ForbiddenException('Error checking permissions');
     }
   }
 }
-
