@@ -83,8 +83,12 @@ describe('GuildsService', () => {
       });
 
       // Act & Assert
-      await expect(service.create(guildData)).rejects.toThrow(ConflictException);
-      await expect(service.create(guildData)).rejects.toThrow('Guild 123 already exists');
+      await expect(service.create(guildData)).rejects.toThrow(
+        ConflictException,
+      );
+      await expect(service.create(guildData)).rejects.toThrow(
+        'Guild 123 already exists',
+      );
     });
   });
 
@@ -115,7 +119,9 @@ describe('GuildsService', () => {
 
       // Act & Assert
       await expect(service.findOne(guildId)).rejects.toThrow(NotFoundException);
-      await expect(service.findOne(guildId)).rejects.toThrow(`Guild ${guildId} not found`);
+      await expect(service.findOne(guildId)).rejects.toThrow(
+        `Guild ${guildId} not found`,
+      );
     });
   });
 
@@ -124,8 +130,12 @@ describe('GuildsService', () => {
       // Arrange
       const guildId = '123';
       const existingGuild = { id: guildId, name: 'Test Guild' };
-      const updatedGuild = { id: guildId, isActive: false, leftAt: expect.any(Date) };
-      
+      const updatedGuild = {
+        id: guildId,
+        isActive: false,
+        leftAt: expect.any(Date),
+      };
+
       mockPrismaService.$transaction.mockImplementation(async (callback) => {
         return callback({
           guild: {
@@ -166,8 +176,12 @@ describe('GuildsService', () => {
     it('should return guild settings when they exist', async () => {
       // Arrange
       const guildId = '123';
-      const mockSettings = { settings: { features: { league_management: true } } };
-      mockPrismaService.guildSettings.findUnique.mockResolvedValue(mockSettings);
+      const mockSettings = {
+        settings: { features: { league_management: true } },
+      };
+      mockPrismaService.guildSettings.findUnique.mockResolvedValue(
+        mockSettings,
+      );
 
       // Act
       const result = await service.getSettings(guildId);
@@ -185,10 +199,12 @@ describe('GuildsService', () => {
       const result = await service.getSettings(guildId);
 
       // Assert
-      expect(result).toEqual({ settings: expect.objectContaining({
-        features: expect.any(Object),
-        permissions: expect.any(Object),
-      })});
+      expect(result).toEqual({
+        settings: expect.objectContaining({
+          features: expect.any(Object),
+          permissions: expect.any(Object),
+        }),
+      });
     });
   });
 });

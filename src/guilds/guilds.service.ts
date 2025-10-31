@@ -1,52 +1,62 @@
-import { Injectable, NotFoundException, ConflictException, InternalServerErrorException, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { CreateGuildDto } from './dto/create-guild.dto';
 import { UpdateGuildDto } from './dto/update-guild.dto';
 import { SettingsDefaultsService } from './services/settings-defaults.service';
+import {
+  GuildQueryOptions,
+  defaultGuildQueryOptions,
+} from './interfaces/guild-query.options';
+import {
+  GuildNotFoundException,
+  GuildAlreadyExistsException,
+} from './exceptions/guild.exceptions';
+import { ConflictException } from '../common/exceptions/base.exception';
+import { GuildRepository } from './repositories/guild.repository';
+import { Guild } from '@prisma/client';
 
+/**
+ * GuildsService - Business logic layer for Guild operations
+ * Single Responsibility: Orchestrates guild-related business logic
+ * 
+ * Uses GuildRepository for data access, keeping concerns separated.
+ * This service handles business rules and validation logic.
+ */
 @Injectable()
 export class GuildsService {
   private readonly logger = new Logger(GuildsService.name);
 
   constructor(
-    private prisma: PrismaService,
     private settingsDefaults: SettingsDefaultsService,
+    private guildRepository: GuildRepository,
   ) {}
 
   /**
    * Create a new guild with default settings using transaction
    * Single Responsibility: Guild creation and initialization with atomicity
    */
-  async create(createGuildDto: CreateGuildDto) {
+  async create(createGuildDto: CreateGuildDto): Promise<Guild> {
     try {
-      return await this.prisma.$transaction(async (tx) => {
-        // Check if guild already exists
-        const existingGuild = await tx.guild.findUnique({
-          where: { id: createGuildDto.id },
-        });
+      // Check if guild already exists
+      const existingGuild = await this.guildRepository.exists(createGuildDto.id);
 
-        if (existingGuild) {
-          throw new ConflictException(`Guild ${createGuildDto.id} already exists`);
-        }
+      if (existingGuild) {
+        throw new GuildAlreadyExistsException(createGuildDto.id);
+      }
 
-        // Create guild
-        const guild = await tx.guild.create({
-          data: createGuildDto,
-        });
+      // Create guild with settings in transaction (handled by repository)
+      const guild = await this.guildRepository.createWithSettings(
+        createGuildDto,
+        this.settingsDefaults.getDefaults(),
+      );
 
-        // Initialize default settings atomically
-        await tx.guildSettings.create({
-          data: {
-            guildId: guild.id,
-            settings: JSON.parse(JSON.stringify(this.settingsDefaults.getDefaults())) as any,
-          },
-        });
-
-        this.logger.log(`Created guild ${guild.id} with default settings`);
-        return guild;
-      });
+      this.logger.log(`Created guild ${guild.id} with default settings`);
+      return guild;
     } catch (error) {
-      if (error instanceof ConflictException) {
+      if (error instanceof ConflictException || error instanceof GuildAlreadyExistsException) {
         throw error;
       }
       this.logger.error(`Failed to create guild ${createGuildDto.id}:`, error);
@@ -59,35 +69,16 @@ export class GuildsService {
    * Single Responsibility: Guild retrieval with performance optimization
    */
   async findAll(page: number = 1, limit: number = 50) {
-    const skip = (page - 1) * limit;
-    const maxLimit = Math.min(limit, 100); // Cap at 100 per page
-
     try {
-      const [guilds, total] = await Promise.all([
-        this.prisma.guild.findMany({
-          where: { isActive: true },
-          include: {
-            settings: true,
-            _count: {
-              select: { members: true },
-            },
-          },
-          orderBy: { joinedAt: 'desc' },
-          skip,
-          take: maxLimit,
-        }),
-        this.prisma.guild.count({
-          where: { isActive: true },
-        }),
-      ]);
+      const result = await this.guildRepository.findAll({ page, limit });
 
       return {
-        guilds,
+        guilds: result.data,
         pagination: {
-          page,
-          limit: maxLimit,
-          total,
-          pages: Math.ceil(total / maxLimit),
+          page: result.page,
+          limit: result.limit,
+          total: result.total,
+          pages: Math.ceil(result.total / result.limit),
         },
       };
     } catch (error) {
@@ -97,43 +88,23 @@ export class GuildsService {
   }
 
   /**
-   * Find guild by ID with related data and caching
-   * Single Responsibility: Single guild retrieval with error handling
+   * Find guild by ID with optional related data
+   * Single Responsibility: Single guild retrieval with flexible query options
+   * 
+   * @param id - Guild ID
+   * @param options - Optional query options to control what relations to include
    */
-  async findOne(id: string) {
+  async findOne(id: string, options?: GuildQueryOptions): Promise<Guild> {
     try {
-      const guild = await this.prisma.guild.findUnique({
-        where: { id },
-        include: {
-          settings: true,
-          members: {
-            include: { 
-              user: {
-                select: {
-                  id: true,
-                  username: true,
-                  globalName: true,
-                  avatar: true,
-                  lastLoginAt: true,
-                },
-              },
-            },
-            take: 10, // Limit members for performance
-            orderBy: { joinedAt: 'desc' },
-          },
-          _count: {
-            select: { members: true },
-          },
-        },
-      });
+      const guild = await this.guildRepository.findOne(id, options);
 
       if (!guild) {
-        throw new NotFoundException(`Guild ${id} not found`);
+        throw new GuildNotFoundException(id);
       }
 
       return guild;
     } catch (error) {
-      if (error instanceof NotFoundException) {
+      if (error instanceof GuildNotFoundException) {
         throw error;
       }
       this.logger.error(`Failed to fetch guild ${id}:`, error);
@@ -145,23 +116,18 @@ export class GuildsService {
    * Update guild information with validation
    * Single Responsibility: Guild data updates with error handling
    */
-  async update(id: string, updateGuildDto: UpdateGuildDto) {
+  async update(id: string, updateGuildDto: UpdateGuildDto): Promise<Guild> {
     try {
       // Check if guild exists
-      const existingGuild = await this.prisma.guild.findUnique({
-        where: { id },
-      });
+      const exists = await this.guildRepository.exists(id);
 
-      if (!existingGuild) {
-        throw new NotFoundException(`Guild ${id} not found`);
+      if (!exists) {
+        throw new GuildNotFoundException(id);
       }
 
-      return await this.prisma.guild.update({
-        where: { id },
-        data: updateGuildDto,
-      });
+      return await this.guildRepository.update(id, updateGuildDto);
     } catch (error) {
-      if (error instanceof NotFoundException) {
+      if (error instanceof GuildNotFoundException) {
         throw error;
       }
       this.logger.error(`Failed to update guild ${id}:`, error);
@@ -173,38 +139,22 @@ export class GuildsService {
    * Soft delete guild (mark as inactive) with cascade handling
    * Single Responsibility: Guild deactivation with proper cleanup
    */
-  async remove(id: string) {
+  async remove(id: string): Promise<Guild> {
     try {
-      return await this.prisma.$transaction(async (tx) => {
-        // Check if guild exists
-        const existingGuild = await tx.guild.findUnique({
-          where: { id },
-        });
+      // Check if guild exists
+      const exists = await this.guildRepository.exists(id);
 
-        if (!existingGuild) {
-          throw new NotFoundException(`Guild ${id} not found`);
-        }
+      if (!exists) {
+        throw new GuildNotFoundException(id);
+      }
 
-        // Soft delete guild
-        const updatedGuild = await tx.guild.update({
-          where: { id },
-          data: { 
-            isActive: false,
-            leftAt: new Date(),
-          },
-        });
+      // Soft delete guild with cleanup (transaction handled by repository)
+      const updatedGuild = await this.guildRepository.removeWithCleanup(id);
 
-        // Optionally deactivate all members (soft delete)
-        await tx.guildMember.updateMany({
-          where: { guildId: id },
-          data: { updatedAt: new Date() },
-        });
-
-        this.logger.log(`Soft deleted guild ${id}`);
-        return updatedGuild;
-      });
+      this.logger.log(`Soft deleted guild ${id}`);
+      return updatedGuild;
     } catch (error) {
-      if (error instanceof NotFoundException) {
+      if (error instanceof GuildNotFoundException) {
         throw error;
       }
       this.logger.error(`Failed to remove guild ${id}:`, error);
@@ -212,4 +162,26 @@ export class GuildsService {
     }
   }
 
+  /**
+   * Get list of active guild IDs
+   * Single Responsibility: Retrieval of active guild IDs for filtering
+   */
+  async findActiveGuildIds(): Promise<string[]> {
+    try {
+      return await this.guildRepository.findActiveGuildIds();
+    } catch (error) {
+      this.logger.error('Failed to fetch active guild IDs:', error);
+      throw new InternalServerErrorException(
+        'Failed to fetch active guild IDs',
+      );
+    }
+  }
+
+  /**
+   * Check if guild exists
+   * Single Responsibility: Guild existence validation
+   */
+  async exists(guildId: string): Promise<boolean> {
+    return this.guildRepository.exists(guildId);
+  }
 }
