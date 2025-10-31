@@ -19,7 +19,7 @@ describe('Auth API (e2e)', () => {
     app = moduleFixture.createNestApplication();
     prisma = moduleFixture.get<PrismaService>(PrismaService);
     jwtService = moduleFixture.get<JwtService>(JwtService);
-    
+
     await bootstrapTestApp(app);
   });
 
@@ -38,7 +38,9 @@ describe('Auth API (e2e)', () => {
         .get('/auth/discord')
         .expect(302);
 
-      expect(response.headers.location).toContain('discord.com/api/oauth2/authorize');
+      expect(response.headers.location).toContain(
+        'discord.com/api/oauth2/authorize',
+      );
     });
   });
 
@@ -75,9 +77,7 @@ describe('Auth API (e2e)', () => {
     });
 
     it('should return 401 without JWT', async () => {
-      await request(app.getHttpServer())
-        .get('/auth/me')
-        .expect(401);
+      await request(app.getHttpServer()).get('/auth/me').expect(401);
     });
   });
 });
