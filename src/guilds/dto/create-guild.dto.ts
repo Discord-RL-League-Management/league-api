@@ -1,4 +1,13 @@
-import { IsString, IsOptional, IsNumber, IsBoolean, Matches, Length, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsBoolean,
+  Matches,
+  Length,
+  Min,
+  Max,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 
@@ -10,11 +19,11 @@ export class CreateGuildDto {
     maxLength: 20,
   })
   @IsString()
-  @Matches(/^\d{17,20}$/, { 
-    message: 'Guild ID must be a valid Discord snowflake ID (17-20 digits)' 
+  @Matches(/^\d{17,20}$/, {
+    message: 'Guild ID must be a valid Discord snowflake ID (17-20 digits)',
   })
   @Length(17, 20)
-  id: string;
+  id!: string;
 
   @ApiProperty({
     description: 'Guild name',
@@ -23,8 +32,10 @@ export class CreateGuildDto {
     maxLength: 100,
   })
   @IsString()
-  @Length(1, 100, { message: 'Guild name must be between 1 and 100 characters' })
-  name: string;
+  @Length(1, 100, {
+    message: 'Guild name must be between 1 and 100 characters',
+  })
+  name!: string;
 
   @ApiPropertyOptional({
     description: 'Guild icon hash',
@@ -43,11 +54,11 @@ export class CreateGuildDto {
     maxLength: 20,
   })
   @IsString()
-  @Matches(/^\d{17,20}$/, { 
-    message: 'Owner ID must be a valid Discord snowflake ID (17-20 digits)' 
+  @Matches(/^\d{17,20}$/, {
+    message: 'Owner ID must be a valid Discord snowflake ID (17-20 digits)',
   })
   @Length(17, 20)
-  ownerId: string;
+  ownerId!: string;
 
   @ApiPropertyOptional({
     description: 'Member count',

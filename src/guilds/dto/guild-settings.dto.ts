@@ -1,4 +1,13 @@
-import { IsOptional, IsString, IsBoolean, IsArray, IsEnum, ValidateNested, Matches, Length } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsBoolean,
+  IsArray,
+  IsEnum,
+  ValidateNested,
+  Matches,
+  Length,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -11,8 +20,10 @@ export class RoleConfigDto {
     example: '123456789012345678',
   })
   @IsString()
-  @Matches(/^\d{17,20}$/, { message: 'Role ID must be a valid Discord snowflake (17-20 digits)' })
-  id: string;
+  @Matches(/^\d{17,20}$/, {
+    message: 'Role ID must be a valid Discord snowflake (17-20 digits)',
+  })
+  id!: string;
 
   @ApiPropertyOptional({
     description: 'Role name',
@@ -20,7 +31,7 @@ export class RoleConfigDto {
   })
   @IsString()
   @Length(1, 100, { message: 'Role name must be between 1 and 100 characters' })
-  name: string;
+  name!: string;
 }
 
 /**
@@ -32,16 +43,20 @@ export class ChannelConfigDto {
     example: '123456789012345678',
   })
   @IsString()
-  @Matches(/^\d{17,20}$/, { message: 'Channel ID must be a valid Discord snowflake (17-20 digits)' })
-  id: string;
+  @Matches(/^\d{17,20}$/, {
+    message: 'Channel ID must be a valid Discord snowflake (17-20 digits)',
+  })
+  id!: string;
 
   @ApiPropertyOptional({
     description: 'Channel name',
     example: 'general',
   })
   @IsString()
-  @Length(1, 100, { message: 'Channel name must be between 1 and 100 characters' })
-  name: string;
+  @Length(1, 100, {
+    message: 'Channel name must be between 1 and 100 characters',
+  })
+  name!: string;
 }
 
 /**
@@ -49,7 +64,7 @@ export class ChannelConfigDto {
  * This is the best practice approach: supports multiple admin roles and includes metadata
  */
 export class RolesConfigDto {
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     type: [RoleConfigDto],
     description: 'Admin roles - array of role objects',
   })
@@ -300,4 +315,3 @@ export class GuildSettingsDto {
   @Type(() => DisplayConfigDto)
   display?: DisplayConfigDto;
 }
-

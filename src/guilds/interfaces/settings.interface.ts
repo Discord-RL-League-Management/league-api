@@ -1,3 +1,11 @@
+import { JsonValue } from '@prisma/client/runtime/library';
+
+/**
+ * Type helper for Prisma JSON fields
+ * Prisma stores JSON as Prisma.JsonValue, but we know it conforms to GuildSettings
+ */
+export type GuildSettingsJson = GuildSettings | JsonValue;
+
 /**
  * Role configuration with Discord ID and name
  */
