@@ -1,5 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { GuildSettings, ChannelsConfig, RolesConfig, FeaturesConfig, PermissionsConfig, DisplayConfig } from '../interfaces/settings.interface';
+import {
+  GuildSettings,
+  ChannelsConfig,
+  RolesConfig,
+  FeaturesConfig,
+  PermissionsConfig,
+  DisplayConfig,
+} from '../interfaces/settings.interface';
 
 @Injectable()
 export class SettingsDefaultsService {
@@ -30,7 +37,10 @@ export class SettingsDefaultsService {
    * Merge new settings with current settings
    * Single Responsibility: Settings update merging
    */
-  mergeSettings(current: GuildSettings, newSettings: Partial<GuildSettings>): GuildSettings {
+  mergeSettings(
+    current: GuildSettings,
+    newSettings: Partial<GuildSettings>,
+  ): GuildSettings {
     return this.deepMerge(current, newSettings);
   }
 
@@ -38,31 +48,46 @@ export class SettingsDefaultsService {
    * Deep merge two objects with proper array handling
    * Single Responsibility: Object merging utility
    */
-  private deepMerge(target: GuildSettings, source: Partial<GuildSettings>): GuildSettings {
+  private deepMerge(
+    target: GuildSettings,
+    source: Partial<GuildSettings>,
+  ): GuildSettings {
     const result = { ...target };
 
     for (const key in source) {
-      if (source[key] === undefined || source[key] === null) {
+      if (
+        !(key in source) ||
+        source[key as keyof Partial<GuildSettings>] === undefined ||
+        source[key as keyof Partial<GuildSettings>] === null
+      ) {
         continue;
       }
 
-      const sourceValue = source[key];
-      const targetValue = result[key];
+      const keyTyped = key as keyof GuildSettings;
+      const sourceValue = source[keyTyped];
+      const targetValue = result[keyTyped];
 
       // Handle arrays - replace completely (no merging of role arrays)
       if (sourceValue && Array.isArray(sourceValue)) {
-        result[key] = sourceValue as any;
+        (result[keyTyped] as unknown) = sourceValue;
         continue;
       }
 
       // Handle nested objects - recursive merge
-      if (sourceValue && typeof sourceValue === 'object' && !Array.isArray(sourceValue)) {
-        result[key] = this.deepMergeNested(targetValue as any, sourceValue as any);
+      if (
+        sourceValue &&
+        typeof sourceValue === 'object' &&
+        !Array.isArray(sourceValue)
+      ) {
+        (result[keyTyped] as unknown) = this.deepMergeNested(
+          targetValue as any,
+          sourceValue as any,
+        );
         continue;
       }
 
       // Handle primitives
-      result[key] = sourceValue as any;
+      (result[keyTyped] as unknown) = sourceValue;
     }
 
     return result;
@@ -88,7 +113,11 @@ export class SettingsDefaultsService {
       }
 
       // Handle nested objects - recursive merge
-      if (sourceValue && typeof sourceValue === 'object' && !Array.isArray(sourceValue)) {
+      if (
+        sourceValue &&
+        typeof sourceValue === 'object' &&
+        !Array.isArray(sourceValue)
+      ) {
         result[key] = this.deepMergeNested(result[key] || {}, sourceValue);
         continue;
       }

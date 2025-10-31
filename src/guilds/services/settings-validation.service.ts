@@ -1,5 +1,5 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { GuildMembersService } from '../../guild-members/guild-members.service';
 import { DiscordValidationService } from '../../discord/discord-validation.service';
 import { GuildSettingsDto } from '../dto/guild-settings.dto';
 import {
@@ -16,7 +16,7 @@ import {
 @Injectable()
 export class SettingsValidationService {
   constructor(
-    private prisma: PrismaService,
+    private guildMembersService: GuildMembersService,
     private discordValidation: DiscordValidationService,
   ) {}
 
@@ -53,7 +53,10 @@ export class SettingsValidationService {
    * Validate channels with Discord API verification
    * Single Responsibility: Channel validation with Discord API
    */
-  private async validateChannels(channels: any, guildId: string): Promise<void> {
+  private async validateChannels(
+    channels: any,
+    guildId: string,
+  ): Promise<void> {
     for (const [key, value] of Object.entries(channels)) {
       if (!VALID_CHANNEL_TYPES.includes(key)) {
         throw new BadRequestException(`Invalid channel type: ${key}`);
@@ -61,27 +64,41 @@ export class SettingsValidationService {
 
       if (value && typeof value === 'object') {
         const channelValue = value as any;
-        
+
         if (channelValue.id) {
           if (typeof channelValue.id !== 'string') {
-            throw new BadRequestException(`Channel ID must be a string: ${key}`);
+            throw new BadRequestException(
+              `Channel ID must be a string: ${key}`,
+            );
           }
 
           if (!/^\d{17,20}$/.test(channelValue.id)) {
-            throw new BadRequestException(`Invalid Discord channel ID format: ${key}`);
+            throw new BadRequestException(
+              `Invalid Discord channel ID format: ${key}`,
+            );
           }
 
-          const isValidChannel = await this.discordValidation.validateChannelId(guildId, channelValue.id);
+          const isValidChannel = await this.discordValidation.validateChannelId(
+            guildId,
+            channelValue.id,
+          );
           if (!isValidChannel) {
-            throw new BadRequestException(`Channel ${channelValue.id} does not exist in Discord guild`);
+            throw new BadRequestException(
+              `Channel ${channelValue.id} does not exist in Discord guild`,
+            );
           }
         }
 
         if (channelValue.name && typeof channelValue.name !== 'string') {
-          throw new BadRequestException(`Channel name must be a string: ${key}`);
+          throw new BadRequestException(
+            `Channel name must be a string: ${key}`,
+          );
         }
 
-        if (channelValue.name && channelValue.name.length > MAX_CHANNEL_NAME_LENGTH) {
+        if (
+          channelValue.name &&
+          channelValue.name.length > MAX_CHANNEL_NAME_LENGTH
+        ) {
           throw new BadRequestException(`Channel name too long: ${key}`);
         }
       }
@@ -100,24 +117,35 @@ export class SettingsValidationService {
 
       if (value && Array.isArray(value)) {
         for (const role of value) {
-          if (typeof role !== 'object' || !(role as any).id) {
-            throw new BadRequestException(`Invalid role object format in ${key}`);
+          if (typeof role !== 'object' || !role.id) {
+            throw new BadRequestException(
+              `Invalid role object format in ${key}`,
+            );
           }
 
-          if (!/^\d{17,20}$/.test((role as any).id)) {
-            throw new BadRequestException(`Invalid Discord role ID format in ${key}`);
+          if (!/^\d{17,20}$/.test(role.id)) {
+            throw new BadRequestException(
+              `Invalid Discord role ID format in ${key}`,
+            );
           }
 
-          const isValidRole = await this.discordValidation.validateRoleId(guildId, (role as any).id);
+          const isValidRole = await this.discordValidation.validateRoleId(
+            guildId,
+            role.id,
+          );
           if (!isValidRole) {
-            throw new BadRequestException(`Role ${(role as any).id} does not exist in Discord guild`);
+            throw new BadRequestException(
+              `Role ${role.id} does not exist in Discord guild`,
+            );
           }
 
-          if ((role as any).name && typeof (role as any).name !== 'string') {
-            throw new BadRequestException(`Role name must be a string in ${key}`);
+          if (role.name && typeof role.name !== 'string') {
+            throw new BadRequestException(
+              `Role name must be a string in ${key}`,
+            );
           }
 
-          if ((role as any).name && (role as any).name.length > MAX_ROLE_NAME_LENGTH) {
+          if (role.name && role.name.length > MAX_ROLE_NAME_LENGTH) {
             throw new BadRequestException(`Role name too long in ${key}`);
           }
         }
@@ -157,7 +185,9 @@ export class SettingsValidationService {
 
       for (const role of value) {
         if (typeof role !== 'string') {
-          throw new BadRequestException(`Permission role must be a string: ${key}`);
+          throw new BadRequestException(
+            `Permission role must be a string: ${key}`,
+          );
         }
       }
     }
@@ -168,15 +198,22 @@ export class SettingsValidationService {
    */
   private validateDisplay(display: any): void {
     if (display.theme && !VALID_THEMES.includes(display.theme)) {
-      throw new BadRequestException(`Invalid theme. Must be one of: ${VALID_THEMES.join(', ')}`);
+      throw new BadRequestException(
+        `Invalid theme. Must be one of: ${VALID_THEMES.join(', ')}`,
+      );
     }
 
     if (display.command_prefix && typeof display.command_prefix !== 'string') {
       throw new BadRequestException('Command prefix must be a string');
     }
 
-    if (display.command_prefix && display.command_prefix.length > MAX_COMMAND_PREFIX_LENGTH) {
-      throw new BadRequestException(`Command prefix must be ${MAX_COMMAND_PREFIX_LENGTH} characters or less`);
+    if (
+      display.command_prefix &&
+      display.command_prefix.length > MAX_COMMAND_PREFIX_LENGTH
+    ) {
+      throw new BadRequestException(
+        `Command prefix must be ${MAX_COMMAND_PREFIX_LENGTH} characters or less`,
+      );
     }
   }
 
@@ -184,25 +221,26 @@ export class SettingsValidationService {
    * Validate business logic rules
    * Single Responsibility: Business logic validation
    */
-  private async validateBusinessRules(settings: GuildSettingsDto, guildId: string): Promise<void> {
+  private async validateBusinessRules(
+    settings: GuildSettingsDto,
+    guildId: string,
+  ): Promise<void> {
     // Prevent removing admin role from all users
     if (settings.roles?.admin) {
       const adminRoleIds = settings.roles.admin
-        .filter(role => role.id)
-        .map(role => role.id);
+        .filter((role) => role.id)
+        .map((role) => role.id);
 
       if (adminRoleIds.length > 0) {
-        const adminUsersCount = await this.prisma.guildMember.count({
-          where: {
-            guildId,
-            roles: {
-              hasSome: adminRoleIds,
-            },
-          },
-        });
+        const adminUsersCount = await this.guildMembersService.countMembersWithRoles(
+          guildId,
+          adminRoleIds,
+        );
 
         if (adminUsersCount === 0) {
-          throw new BadRequestException('Cannot remove admin role from all users');
+          throw new BadRequestException(
+            'Cannot remove admin role from all users',
+          );
         }
       }
     }
@@ -218,11 +256,22 @@ export class SettingsValidationService {
    * Ensures admin role has all critical permissions
    */
   private validatePermissionDependencies(permissions: any): void {
-    const adminPermissions = ['create_leagues', 'manage_teams', 'manage_tournaments', 'manage_roles', 'view_logs'];
+    const adminPermissions = [
+      'create_leagues',
+      'manage_teams',
+      'manage_tournaments',
+      'manage_roles',
+      'view_logs',
+    ];
 
     for (const permission of adminPermissions) {
-      if (permissions[permission] && !permissions[permission].includes('admin')) {
-        throw new BadRequestException(`Admin role must have ${permission} permission`);
+      if (
+        permissions[permission] &&
+        !permissions[permission].includes('admin')
+      ) {
+        throw new BadRequestException(
+          `Admin role must have ${permission} permission`,
+        );
       }
     }
   }

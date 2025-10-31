@@ -3,7 +3,7 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { PrismaService } from '../../prisma/prisma.service';
 import { DiscordApiService } from '../../discord/discord-api.service';
 import { TokenManagementService } from '../../auth/services/token-management.service';
-import { PermissionService } from '../../permissions/permission.service';
+import { PermissionCheckService } from '../../permissions/modules/permission-check/permission-check.service';
 import { GuildFilteringService } from './guild-filtering.service';
 import type { Cache } from 'cache-manager';
 import { DiscordFactory } from '../../../test/factories/discord.factory';
@@ -52,8 +52,11 @@ describe('GuildFilteringService', () => {
         { provide: CACHE_MANAGER, useValue: mockCacheManager },
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: DiscordApiService, useValue: mockDiscordApiService },
-        { provide: TokenManagementService, useValue: mockTokenManagementService },
-        { provide: PermissionService, useValue: mockGuildPermissionService },
+        {
+          provide: TokenManagementService,
+          useValue: mockTokenManagementService,
+        },
+        { provide: PermissionCheckService, useValue: mockGuildPermissionService },
       ],
     }).compile();
 
@@ -61,20 +64,25 @@ describe('GuildFilteringService', () => {
     cacheManager = module.get<Cache>(CACHE_MANAGER);
     prismaService = module.get<PrismaService>(PrismaService);
     discordApiService = module.get<DiscordApiService>(DiscordApiService);
-    tokenManagementService = module.get<TokenManagementService>(TokenManagementService);
+    tokenManagementService = module.get<TokenManagementService>(
+      TokenManagementService,
+    );
   });
 
   afterEach(() => {
     jest.clearAllMocks();
     // Set default mock implementation
-    (mockGuildPermissionService.checkAdminRoles as jest.Mock).mockResolvedValue(false);
+    mockGuildPermissionService.checkAdminRoles.mockResolvedValue(false);
   });
 
   describe('filterUserGuilds', () => {
     it('should return cached data if available', async () => {
       // Arrange
       const userId = 'user123';
-      const cachedGuilds = DiscordFactory.createMockGuilds(3).map(g => ({ ...g, icon: g.icon || undefined }));
+      const cachedGuilds = DiscordFactory.createMockGuilds(3).map((g) => ({
+        ...g,
+        icon: g.icon || undefined,
+      }));
       mockCacheManager.get.mockResolvedValue(cachedGuilds as any);
 
       // Act
@@ -91,7 +99,9 @@ describe('GuildFilteringService', () => {
       mockCacheManager.get.mockResolvedValue(null);
 
       const accessToken = 'valid_token';
-      mockTokenManagementService.getValidAccessToken.mockResolvedValue(accessToken);
+      mockTokenManagementService.getValidAccessToken.mockResolvedValue(
+        accessToken,
+      );
 
       const userGuilds = DiscordFactory.createMockGuilds(10);
       mockDiscordApiService.getUserGuilds.mockResolvedValue(userGuilds);
@@ -113,9 +123,14 @@ describe('GuildFilteringService', () => {
       mockCacheManager.get.mockResolvedValue(null);
 
       const accessToken = 'valid_token';
-      mockTokenManagementService.getValidAccessToken.mockResolvedValue(accessToken);
+      mockTokenManagementService.getValidAccessToken.mockResolvedValue(
+        accessToken,
+      );
 
-      const userGuilds = DiscordFactory.createMockGuilds(10).map(guild => ({ ...guild, icon: guild.icon || undefined }));
+      const userGuilds = DiscordFactory.createMockGuilds(10).map((guild) => ({
+        ...guild,
+        icon: guild.icon || undefined,
+      }));
       userGuilds[0].id = 'mutual1';
       userGuilds[1].id = 'mutual2';
       mockDiscordApiService.getUserGuilds.mockResolvedValue(userGuilds as any);
@@ -154,7 +169,9 @@ describe('GuildFilteringService', () => {
       // Arrange
       const userId = 'user123';
       mockCacheManager.get.mockResolvedValue(null);
-      mockTokenManagementService.getValidAccessToken.mockRejectedValue(new Error('Network error'));
+      mockTokenManagementService.getValidAccessToken.mockRejectedValue(
+        new Error('Network error'),
+      );
 
       // Act
       const result = await service.filterUserGuilds(userId);
@@ -168,7 +185,10 @@ describe('GuildFilteringService', () => {
     it('should create new memberships for new guilds', async () => {
       // Arrange
       const userId = 'user123';
-      const userGuilds = DiscordFactory.createMockGuilds(3).map(g => ({ ...g, icon: g.icon || undefined }));
+      const userGuilds = DiscordFactory.createMockGuilds(3).map((g) => ({
+        ...g,
+        icon: g.icon || undefined,
+      }));
 
       mockPrismaService.guildMember.findMany.mockResolvedValue([]);
       mockPrismaService.guildMember.createMany.mockResolvedValue({ count: 3 });
@@ -185,15 +205,24 @@ describe('GuildFilteringService', () => {
     it('should not create duplicate memberships', async () => {
       // Arrange
       const userId = 'user123';
-      const existingGuild = { ...DiscordFactory.createMockGuild({ id: 'existing-guild' }), icon: undefined };
-      const newGuild = { ...DiscordFactory.createMockGuild({ id: 'new-guild' }), icon: undefined };
+      const existingGuild = {
+        ...DiscordFactory.createMockGuild({ id: 'existing-guild' }),
+        icon: undefined,
+      };
+      const newGuild = {
+        ...DiscordFactory.createMockGuild({ id: 'new-guild' }),
+        icon: undefined,
+      };
 
       mockPrismaService.guildMember.findMany.mockResolvedValue([
         { userId, guildId: 'existing-guild' },
       ]);
 
       // Act
-      await service.syncUserGuildMemberships(userId, [existingGuild, newGuild] as any);
+      await service.syncUserGuildMemberships(userId, [
+        existingGuild,
+        newGuild,
+      ] as any);
 
       // Assert
       expect(mockPrismaService.guildMember.createMany).toHaveBeenCalled();
@@ -215,12 +244,14 @@ describe('GuildFilteringService', () => {
     it('should handle transaction errors', async () => {
       // Arrange
       const userId = 'user123';
-      mockPrismaService.$transaction.mockRejectedValue(new Error('Transaction failed'));
+      mockPrismaService.$transaction.mockRejectedValue(
+        new Error('Transaction failed'),
+      );
 
       // Act & Assert
-      await expect(service.syncUserGuildMemberships(userId, []))
-        .rejects
-        .toThrow('Transaction failed');
+      await expect(
+        service.syncUserGuildMemberships(userId, []),
+      ).rejects.toThrow('Transaction failed');
     });
   });
 
@@ -228,7 +259,10 @@ describe('GuildFilteringService', () => {
     it('should return enriched guild data with permissions', async () => {
       // Arrange
       const userId = 'user123';
-      const guilds = DiscordFactory.createMockGuilds(3).map(g => ({ ...g, icon: g.icon || undefined }));
+      const guilds = DiscordFactory.createMockGuilds(3).map((g) => ({
+        ...g,
+        icon: g.icon || undefined,
+      }));
       // Create memberships matching the guild IDs
       const memberships = guilds.map((guild, index) => ({
         userId,
@@ -245,10 +279,13 @@ describe('GuildFilteringService', () => {
 
       // Mock filterUserGuilds
       jest.spyOn(service, 'filterUserGuilds').mockResolvedValue(guilds as any);
-      mockPrismaService.guildMember.findMany.mockResolvedValue(memberships as any);
+      mockPrismaService.guildMember.findMany.mockResolvedValue(
+        memberships as any,
+      );
 
       // Act
-      const result = await service.getUserAvailableGuildsWithPermissions(userId);
+      const result =
+        await service.getUserAvailableGuildsWithPermissions(userId);
 
       // Assert
       expect(result).toHaveLength(3);
@@ -260,10 +297,13 @@ describe('GuildFilteringService', () => {
     it('should return empty array on error', async () => {
       // Arrange
       const userId = 'user123';
-      jest.spyOn(service, 'filterUserGuilds').mockRejectedValue(new Error('Network error'));
+      jest
+        .spyOn(service, 'filterUserGuilds')
+        .mockRejectedValue(new Error('Network error'));
 
       // Act
-      const result = await service.getUserAvailableGuildsWithPermissions(userId);
+      const result =
+        await service.getUserAvailableGuildsWithPermissions(userId);
 
       // Assert
       expect(result).toEqual([]);
@@ -272,10 +312,12 @@ describe('GuildFilteringService', () => {
     it('should enrich with admin status from roles', async () => {
       // Arrange
       const userId = 'user123';
-      const guilds = [DiscordFactory.createMockGuild({ id: 'guild1' })].map(guild => ({ ...guild, icon: guild.icon || undefined }));
-      
+      const guilds = [DiscordFactory.createMockGuild({ id: 'guild1' })].map(
+        (guild) => ({ ...guild, icon: guild.icon || undefined }),
+      );
+
       jest.spyOn(service, 'filterUserGuilds').mockResolvedValue(guilds);
-      
+
       mockPrismaService.guildMember.findMany.mockResolvedValue([
         {
           userId,
@@ -292,14 +334,14 @@ describe('GuildFilteringService', () => {
       ]);
 
       // Mock permission check to return true for this test
-      (mockGuildPermissionService.checkAdminRoles as jest.Mock).mockResolvedValue(true);
+      mockGuildPermissionService.checkAdminRoles.mockResolvedValue(true);
 
       // Act
-      const result = await service.getUserAvailableGuildsWithPermissions(userId);
+      const result =
+        await service.getUserAvailableGuildsWithPermissions(userId);
 
       // Assert
       expect(result[0].isAdmin).toBe(true);
     });
   });
 });
-
