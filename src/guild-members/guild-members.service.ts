@@ -1,13 +1,36 @@
-import { Injectable, NotFoundException, ConflictException, InternalServerErrorException, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import {
+  Injectable,
+  NotFoundException,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { UsersService } from '../users/users.service';
 import { CreateGuildMemberDto } from './dto/create-guild-member.dto';
 import { UpdateGuildMemberDto } from './dto/update-guild-member.dto';
+import { GuildMemberRepository } from './repositories/guild-member.repository';
+import { GuildMemberQueryService } from './services/guild-member-query.service';
+import { GuildMemberStatisticsService } from './services/guild-member-statistics.service';
+import { GuildMemberSyncService } from './services/guild-member-sync.service';
 
+/**
+ * GuildMembersService - Business logic layer for GuildMember CRUD operations
+ * Single Responsibility: Orchestrates guild member entity lifecycle management
+ * 
+ * Uses GuildMemberRepository for data access, keeping concerns separated.
+ * Delegates to specialized services for queries, statistics, and sync operations.
+ */
 @Injectable()
 export class GuildMembersService {
   private readonly logger = new Logger(GuildMembersService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private guildMemberRepository: GuildMemberRepository,
+    private usersService: UsersService,
+    private guildMemberQueryService: GuildMemberQueryService,
+    private guildMemberStatisticsService: GuildMemberStatisticsService,
+    private guildMemberSyncService: GuildMemberSyncService,
+  ) {}
 
   /**
    * Create or update guild member with validation
@@ -15,95 +38,42 @@ export class GuildMembersService {
    */
   async create(createGuildMemberDto: CreateGuildMemberDto) {
     try {
-      // Validate guild exists
-      const guild = await this.prisma.guild.findUnique({
-        where: { id: createGuildMemberDto.guildId },
-      });
-
-      if (!guild) {
-        throw new NotFoundException(`Guild ${createGuildMemberDto.guildId} not found`);
-      }
-
       // Validate user exists
-      const user = await this.prisma.user.findUnique({
-        where: { id: createGuildMemberDto.userId },
-      });
-
-      if (!user) {
-        throw new NotFoundException(`User ${createGuildMemberDto.userId} not found`);
+      const userExists = await this.usersService.exists(createGuildMemberDto.userId);
+      if (!userExists) {
+        throw new NotFoundException(
+          `User ${createGuildMemberDto.userId} not found`,
+        );
       }
 
-      return await this.prisma.guildMember.upsert({
-        where: {
-          userId_guildId: {
-            userId: createGuildMemberDto.userId,
-            guildId: createGuildMemberDto.guildId,
-          },
-        },
-        update: {
-          username: createGuildMemberDto.username,
-          roles: createGuildMemberDto.roles || [],
-          updatedAt: new Date(),
-        },
-        create: {
-          ...createGuildMemberDto,
-          roles: createGuildMemberDto.roles || [],
-        },
-      });
+      return await this.guildMemberRepository.upsert(createGuildMemberDto);
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(`Failed to create guild member ${createGuildMemberDto.userId}:`, error);
+      // Handle Prisma foreign key constraint errors
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2003'
+      ) {
+        throw new NotFoundException(
+          `Guild ${createGuildMemberDto.guildId} not found`,
+        );
+      }
+      this.logger.error(
+        `Failed to create guild member ${createGuildMemberDto.userId}:`,
+        error,
+      );
       throw new InternalServerErrorException('Failed to create guild member');
     }
   }
 
   /**
    * Find all members in a guild with pagination
-   * Single Responsibility: Member list retrieval with performance optimization
+   * Single Responsibility: Delegate to query service
    */
   async findAll(guildId: string, page: number = 1, limit: number = 50) {
-    const skip = (page - 1) * limit;
-    const maxLimit = Math.min(limit, 100); // Cap at 100 per page
-
-    try {
-      const [members, total] = await Promise.all([
-        this.prisma.guildMember.findMany({
-          where: { guildId },
-          include: { 
-            user: {
-              select: {
-                id: true,
-                username: true,
-                globalName: true,
-                avatar: true,
-                lastLoginAt: true,
-              },
-            },
-          },
-          orderBy: { joinedAt: 'desc' },
-          skip,
-          take: maxLimit,
-        }),
-        this.prisma.guildMember.count({
-          where: { guildId },
-        }),
-      ]);
-
-      return {
-        members,
-        pagination: {
-          page,
-          limit: maxLimit,
-          total,
-          pages: Math.ceil(total / maxLimit),
-        },
-      };
-    } catch (error) {
-      this.logger.error(`Failed to fetch members for guild ${guildId}:`, error);
-      throw new InternalServerErrorException('Failed to fetch guild members');
-    }
+    return this.guildMemberQueryService.findAll(guildId, page, limit);
   }
 
   /**
@@ -112,29 +82,18 @@ export class GuildMembersService {
    */
   async findOne(userId: string, guildId: string) {
     try {
-      const member = await this.prisma.guildMember.findUnique({
-        where: {
-          userId_guildId: {
-            userId,
-            guildId,
-          },
+      const member = await this.guildMemberRepository.findByCompositeKey(
+        userId,
+        guildId,
+        {
+          user: true,
         },
-        include: { 
-          user: {
-            select: {
-              id: true,
-              username: true,
-              globalName: true,
-              avatar: true,
-              email: true,
-              lastLoginAt: true,
-            },
-          },
-        },
-      });
+      );
 
       if (!member) {
-        throw new NotFoundException(`Member ${userId} not found in guild ${guildId}`);
+        throw new NotFoundException(
+          `Member ${userId} not found in guild ${guildId}`,
+        );
       }
 
       return member;
@@ -142,7 +101,10 @@ export class GuildMembersService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(`Failed to fetch member ${userId} in guild ${guildId}:`, error);
+      this.logger.error(
+        `Failed to fetch member ${userId} in guild ${guildId}:`,
+        error,
+      );
       throw new InternalServerErrorException('Failed to fetch guild member');
     }
   }
@@ -151,40 +113,34 @@ export class GuildMembersService {
    * Update guild member with validation
    * Single Responsibility: Member data updates with error handling
    */
-  async update(userId: string, guildId: string, updateGuildMemberDto: UpdateGuildMemberDto) {
+  async update(
+    userId: string,
+    guildId: string,
+    updateGuildMemberDto: UpdateGuildMemberDto,
+  ) {
     try {
       // Check if member exists
-      const existingMember = await this.prisma.guildMember.findUnique({
-        where: {
-          userId_guildId: {
-            userId,
-            guildId,
-          },
-        },
-      });
+      const exists = await this.guildMemberRepository.existsByCompositeKey(userId, guildId);
 
-      if (!existingMember) {
-        throw new NotFoundException(`Member ${userId} not found in guild ${guildId}`);
+      if (!exists) {
+        throw new NotFoundException(
+          `Member ${userId} not found in guild ${guildId}`,
+        );
       }
 
-      return await this.prisma.guildMember.update({
-        where: {
-          userId_guildId: {
-            userId,
-            guildId,
-          },
-        },
-        data: {
-          ...updateGuildMemberDto,
-          updatedAt: new Date(),
-        },
-        include: { user: true },
-      });
+      return await this.guildMemberRepository.updateByCompositeKey(
+        userId,
+        guildId,
+        updateGuildMemberDto,
+      );
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(`Failed to update member ${userId} in guild ${guildId}:`, error);
+      this.logger.error(
+        `Failed to update member ${userId} in guild ${guildId}:`,
+        error,
+      );
       throw new InternalServerErrorException('Failed to update guild member');
     }
   }
@@ -196,105 +152,103 @@ export class GuildMembersService {
   async remove(userId: string, guildId: string) {
     try {
       // Check if member exists
-      const existingMember = await this.prisma.guildMember.findUnique({
-        where: {
-          userId_guildId: {
-            userId,
-            guildId,
-          },
-        },
-      });
+      const exists = await this.guildMemberRepository.existsByCompositeKey(userId, guildId);
 
-      if (!existingMember) {
-        throw new NotFoundException(`Member ${userId} not found in guild ${guildId}`);
+      if (!exists) {
+        throw new NotFoundException(
+          `Member ${userId} not found in guild ${guildId}`,
+        );
       }
 
-      await this.prisma.guildMember.delete({
-        where: {
-          userId_guildId: {
-            userId,
-            guildId,
-          },
-        },
-      });
+      await this.guildMemberRepository.deleteByCompositeKey(userId, guildId);
 
       this.logger.log(`Removed member ${userId} from guild ${guildId}`);
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(`Failed to remove member ${userId} from guild ${guildId}:`, error);
+      this.logger.error(
+        `Failed to remove member ${userId} from guild ${guildId}:`,
+        error,
+      );
       throw new InternalServerErrorException('Failed to remove guild member');
     }
   }
 
   /**
    * Get user's guild memberships with validation
-   * Single Responsibility: User-guild relationship retrieval with error handling
+   * Single Responsibility: Delegate to query service
    */
   async getUserGuilds(userId: string) {
-    try {
-      return await this.prisma.guildMember.findMany({
-        where: { userId },
-        include: { 
-          guild: {
-            include: { settings: true },
-          },
-        },
-        orderBy: { joinedAt: 'desc' },
-      });
-    } catch (error) {
-      this.logger.error(`Failed to get guilds for user ${userId}:`, error);
-      throw new InternalServerErrorException('Failed to get user guilds');
-    }
+    return this.guildMemberQueryService.getUserGuilds(userId);
   }
 
   /**
    * Sync all guild members (bulk operation)
-   * Single Responsibility: Bulk member synchronization with transaction
+   * Single Responsibility: Delegate to sync service
    */
-  async syncGuildMembers(guildId: string, members: Array<{
-    userId: string;
-    username: string;
-    roles: string[];
-  }>) {
-    try {
-      return await this.prisma.$transaction(async (tx) => {
-        // Validate guild exists
-        const guild = await tx.guild.findUnique({
-          where: { id: guildId },
-        });
+  async syncGuildMembers(
+    guildId: string,
+    members: Array<{
+      userId: string;
+      username: string;
+      roles: string[];
+    }>,
+  ) {
+    return this.guildMemberSyncService.syncGuildMembers(guildId, members);
+  }
 
-        if (!guild) {
-          throw new NotFoundException(`Guild ${guildId} not found`);
-        }
+  /**
+   * Find member with guild settings included
+   * Single Responsibility: Delegate to query service
+   */
+  async findMemberWithGuildSettings(userId: string, guildId: string) {
+    return this.guildMemberQueryService.findMemberWithGuildSettings(
+      userId,
+      guildId,
+    );
+  }
 
-        // Delete existing members
-        await tx.guildMember.deleteMany({
-          where: { guildId },
-        });
+  /**
+   * Find all memberships for a user with guild data
+   * Single Responsibility: Delegate to query service
+   */
+  async findMembersByUser(userId: string) {
+    return this.guildMemberQueryService.findMembersByUser(userId);
+  }
 
-        // Create new members
-        const memberData = members.map(member => ({
-          userId: member.userId,
-          guildId,
-          username: member.username,
-          roles: member.roles,
-        }));
+  /**
+   * Update member roles only
+   * Single Responsibility: Delegate to sync service
+   */
+  async updateMemberRoles(userId: string, guildId: string, roles: string[]) {
+    return this.guildMemberSyncService.updateMemberRoles(userId, guildId, roles);
+  }
 
-        await tx.guildMember.createMany({
-          data: memberData,
-        });
+  /**
+   * Count members with specific roles
+   * Single Responsibility: Delegate to statistics service
+   */
+  async countMembersWithRoles(guildId: string, roleIds: string[]): Promise<number> {
+    return this.guildMemberStatisticsService.countMembersWithRoles(
+      guildId,
+      roleIds,
+    );
+  }
 
-        this.logger.log(`Synced ${members.length} members for guild ${guildId}`);
-        return { synced: members.length };
-      });
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      this.logger.error(`Failed to sync members for guild ${guildId}:`, error);
-      throw new InternalServerErrorException('Failed to sync guild members');
-    }
+  /**
+   * Search guild members by username
+   * Single Responsibility: Delegate to query service
+   */
+  async searchMembers(guildId: string, query: string, page: number = 1, limit: number = 20) {
+    return this.guildMemberQueryService.searchMembers(guildId, query, page, limit);
+  }
+
+  /**
+   * Get guild member statistics
+   * Single Responsibility: Delegate to statistics service
+   */
+  async getMemberStats(guildId: string) {
+    return this.guildMemberStatisticsService.getMemberStats(guildId);
   }
 }
