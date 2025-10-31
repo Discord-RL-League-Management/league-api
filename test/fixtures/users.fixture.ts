@@ -1,8 +1,13 @@
-import { User, UserCreateDto, UserProfile, UserStats } from '../../src/common/interfaces/user.interface';
+import {
+  User,
+  UserCreateDto,
+  UserProfile,
+  UserStats,
+} from '../../src/common/interfaces/user.interface';
 
 /**
  * User Fixtures - Predefined test user data for common scenarios
- * 
+ *
  * Reusable across unit and e2e tests for consistent test data
  */
 
@@ -109,8 +114,10 @@ export const invalidEmails = [
   '',
 ];
 
-export const validApiKey = '2b2b3d4b5ca4d61eb461886d4cd65d1a9b6000fd2c23bacf727056d38ecb6e32';
+export const validApiKey =
+  '2b2b3d4b5ca4d61eb461886d4cd65d1a9b6000fd2c23bacf727056d38ecb6e32';
 export const invalidApiKey = 'invalid-api-key';
 
-export const validJwtToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwMTIzNDU2Nzg5IiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
+export const validJwtToken =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwMTIzNDU2Nzg5IiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
 export const invalidJwtToken = 'invalid.jwt.token';

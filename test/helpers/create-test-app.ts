@@ -4,16 +4,18 @@ import { PrismaExceptionFilter } from '../../src/common/filters/prisma-exception
 
 /**
  * Bootstrap a test application with production-like configuration
- * 
+ *
  * Single Responsibility: Configure NestJS app for testing
  * - Applies global pipes (validation)
  * - Applies global filters (error handling)
  * - Initializes the application
- * 
+ *
  * @param app - The NestJS application instance
  * @returns The configured and initialized application
  */
-export async function bootstrapTestApp(app: INestApplication): Promise<INestApplication> {
+export async function bootstrapTestApp(
+  app: INestApplication,
+): Promise<INestApplication> {
   // Apply same global pipes as main.ts
   app.useGlobalPipes(
     new ValidationPipe({

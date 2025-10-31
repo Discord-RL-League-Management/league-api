@@ -7,14 +7,14 @@ import { JwtService } from '@nestjs/jwt';
 
 /**
  * Test Helpers - Reusable test utilities to reduce boilerplate
- * 
+ *
  * Provides common test operations and reduces duplication across test files
  */
 export class TestHelpers {
   constructor(
     private app: INestApplication,
     private prisma: PrismaService,
-    private jwtService?: JwtService
+    private jwtService?: JwtService,
   ) {}
 
   /**
@@ -61,7 +61,7 @@ export class TestHelpers {
   async makeBotRequest(method: string, url: string, data?: any) {
     const headers = this.getBotAuthHeaders();
     const req = request(this.app.getHttpServer());
-    
+
     switch (method.toLowerCase()) {
       case 'get':
         return req.get(url).set(headers).send(data);
@@ -81,10 +81,15 @@ export class TestHelpers {
   /**
    * Make an authenticated user request
    */
-  async makeUserRequest(method: string, url: string, jwtToken: string, data?: any) {
+  async makeUserRequest(
+    method: string,
+    url: string,
+    jwtToken: string,
+    data?: any,
+  ) {
     const headers = this.getUserAuthHeaders(jwtToken);
     const req = request(this.app.getHttpServer());
-    
+
     switch (method.toLowerCase()) {
       case 'get':
         return req.get(url).set(headers).send(data);
@@ -106,7 +111,7 @@ export class TestHelpers {
    */
   async makeUnauthenticatedRequest(method: string, url: string, data?: any) {
     const req = request(this.app.getHttpServer());
-    
+
     switch (method.toLowerCase()) {
       case 'get':
         return req.get(url).send(data);
@@ -201,14 +206,16 @@ export class TestHelpers {
    * Wait for a specified amount of time (useful for testing timeouts)
    */
   static async wait(ms: number) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
    * Generate a random Discord snowflake ID
    */
   static generateDiscordId(): string {
-    return Math.floor(Math.random() * 900000000000000000 + 100000000000000000).toString();
+    return Math.floor(
+      Math.random() * 900000000000000000 + 100000000000000000,
+    ).toString();
   }
 
   /**

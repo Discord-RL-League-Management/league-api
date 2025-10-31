@@ -1,6 +1,6 @@
 /**
  * Discord Factory - Creates test data for Discord API responses
- * 
+ *
  * Single Responsibility: Generate mock Discord API response data
  * DRY: Reusable across all Phase 9 tests
  */
@@ -9,13 +9,15 @@ export class DiscordFactory {
   /**
    * Create a mock Discord guild object
    */
-  static createMockGuild(overrides: Partial<{
-    id: string;
-    name: string;
-    icon: string | null;
-    owner: boolean;
-    permissions: string;
-  }> = {}) {
+  static createMockGuild(
+    overrides: Partial<{
+      id: string;
+      name: string;
+      icon: string | null;
+      owner: boolean;
+      permissions: string;
+    }> = {},
+  ) {
     return {
       id: '123456789012345678',
       name: 'Test Guild',
@@ -29,36 +31,41 @@ export class DiscordFactory {
   /**
    * Create multiple mock Discord guilds
    */
-  static createMockGuilds(count: number, baseOverrides: Partial<{
-    id: string;
-    name: string;
-    owner: boolean;
-    permissions: string;
-  }> = {}): Array<{
+  static createMockGuilds(
+    count: number,
+    baseOverrides: Partial<{
+      id: string;
+      name: string;
+      owner: boolean;
+      permissions: string;
+    }> = {},
+  ): Array<{
     id: string;
     name: string;
     icon: string | null;
     owner: boolean;
     permissions: string;
   }> {
-    return Array.from({ length: count }, (_, i) => 
+    return Array.from({ length: count }, (_, i) =>
       this.createMockGuild({
         id: `guild_${i + 1}`,
         name: `Test Guild ${i + 1}`,
         ...baseOverrides,
-      })
+      }),
     );
   }
 
   /**
    * Create a mock Discord OAuth token response
    */
-  static createMockTokenResponse(overrides: Partial<{
-    access_token: string;
-    refresh_token: string;
-    expires_in: number;
-    scope: string;
-  }> = {}) {
+  static createMockTokenResponse(
+    overrides: Partial<{
+      access_token: string;
+      refresh_token: string;
+      expires_in: number;
+      scope: string;
+    }> = {},
+  ) {
     return {
       access_token: 'mock_access_token_123456789',
       token_type: 'Bearer',
@@ -72,14 +79,16 @@ export class DiscordFactory {
   /**
    * Create a mock Discord user profile
    */
-  static createMockUser(overrides: Partial<{
-    id: string;
-    username: string;
-    discriminator: string;
-    global_name: string | null;
-    avatar: string | null;
-    email: string | null;
-  }> = {}) {
+  static createMockUser(
+    overrides: Partial<{
+      id: string;
+      username: string;
+      discriminator: string;
+      global_name: string | null;
+      avatar: string | null;
+      email: string | null;
+    }> = {},
+  ) {
     return {
       id: '123456789012345678',
       username: 'testuser',
@@ -111,4 +120,3 @@ export class DiscordFactory {
     };
   }
 }
-
