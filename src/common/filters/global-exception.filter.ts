@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
 
 interface ErrorResponse {
@@ -22,6 +23,13 @@ interface ErrorResponse {
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(GlobalExceptionFilter.name);
+  private readonly isDevelopment: boolean;
+
+  constructor(private configService: ConfigService) {
+    this.isDevelopment =
+      this.configService.get<string>('app.nodeEnv', 'development') ===
+      'development';
+  }
 
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
@@ -29,14 +37,17 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const request = ctx.getRequest<Request>();
 
     const errorResponse = this.buildErrorResponse(exception, request);
-    
+
     // Log error
     this.logError(exception, request, errorResponse);
 
     response.status(errorResponse.statusCode).json(errorResponse);
   }
 
-  private buildErrorResponse(exception: unknown, request: Request): ErrorResponse {
+  private buildErrorResponse(
+    exception: unknown,
+    request: Request,
+  ): ErrorResponse {
     const timestamp = new Date().toISOString();
     const path = request.url;
     const method = request.method;
@@ -44,18 +55,19 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
-      
+
       return {
         statusCode: status,
         timestamp,
         path,
         method,
-        message: typeof exceptionResponse === 'string' 
-          ? exceptionResponse 
-          : (exceptionResponse as any).message || 'Unknown error',
+        message:
+          typeof exceptionResponse === 'string'
+            ? exceptionResponse
+            : (exceptionResponse as any).message || 'Unknown error',
         code: (exceptionResponse as any).code,
         details: (exceptionResponse as any).details,
-        stack: process.env.NODE_ENV === 'development' ? exception.stack : undefined,
+        stack: this.isDevelopment ? exception.stack : undefined,
       };
     }
 
@@ -65,11 +77,15 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       path,
       method,
       message: 'Internal server error',
-      stack: process.env.NODE_ENV === 'development' ? (exception as Error).stack : undefined,
+      stack: this.isDevelopment ? (exception as Error).stack : undefined,
     };
   }
 
-  private logError(exception: unknown, request: Request, errorResponse: ErrorResponse): void {
+  private logError(
+    exception: unknown,
+    request: Request,
+    errorResponse: ErrorResponse,
+  ): void {
     const { method, url, ip, headers } = request;
     const userAgent = headers['user-agent'] || 'Unknown';
 
@@ -80,12 +96,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           exception: exception instanceof Error ? exception.stack : exception,
           request: { method, url, ip, userAgent },
           error: errorResponse,
-        }
+        },
       );
     } else {
       this.logger.warn(
         `${method} ${url} - ${errorResponse.statusCode} - ${errorResponse.message}`,
-        { request: { method, url, ip, userAgent }, error: errorResponse }
+        { request: { method, url, ip, userAgent }, error: errorResponse },
       );
     }
   }
