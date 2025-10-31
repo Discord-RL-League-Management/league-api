@@ -21,10 +21,9 @@ describe('Rate Limiting (e2e)', () => {
   describe('User endpoints rate limiting', () => {
     it('should apply rate limiting to user endpoints', async () => {
       // Make multiple requests to a user endpoint
-      const promises = Array.from({ length: 5 }, () =>
-        request(app.getHttpServer())
-          .get('/api/users/me')
-          .expect(401) // Unauthorized because no JWT token
+      const promises = Array.from(
+        { length: 5 },
+        () => request(app.getHttpServer()).get('/api/users/me').expect(401), // Unauthorized because no JWT token
       );
 
       await Promise.all(promises);
@@ -53,10 +52,9 @@ describe('Rate Limiting (e2e)', () => {
   describe('Bot endpoints rate limiting exemption', () => {
     it('should not apply rate limiting to internal bot endpoints', async () => {
       // Make multiple requests to internal endpoint
-      const promises = Array.from({ length: 10 }, () =>
-        request(app.getHttpServer())
-          .get('/internal/health')
-          .expect(401) // Unauthorized because no API key
+      const promises = Array.from(
+        { length: 10 },
+        () => request(app.getHttpServer()).get('/internal/health').expect(401), // Unauthorized because no API key
       );
 
       await Promise.all(promises);
@@ -86,9 +84,7 @@ describe('Rate Limiting (e2e)', () => {
     it('should not apply rate limiting to public health endpoints', async () => {
       // Make multiple requests to health endpoint
       const promises = Array.from({ length: 10 }, () =>
-        request(app.getHttpServer())
-          .get('/health')
-          .expect(200)
+        request(app.getHttpServer()).get('/health').expect(200),
       );
 
       await Promise.all(promises);
@@ -116,20 +112,10 @@ describe('Rate Limiting (e2e)', () => {
 
       // Verify header values are numbers
       expect(Number(response.headers['x-ratelimit-limit'])).toBeGreaterThan(0);
-      expect(Number(response.headers['x-ratelimit-remaining'])).toBeGreaterThanOrEqual(0);
+      expect(
+        Number(response.headers['x-ratelimit-remaining']),
+      ).toBeGreaterThanOrEqual(0);
       expect(Number(response.headers['x-ratelimit-reset'])).toBeGreaterThan(0);
     });
   });
 });
-
-
-
-
-
-
-
-
-
-
-
-
