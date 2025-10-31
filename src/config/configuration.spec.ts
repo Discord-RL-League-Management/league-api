@@ -49,19 +49,24 @@ describe('Configuration', () => {
       process.env.JWT_SECRET = 'test-jwt-secret';
       process.env.DISCORD_CLIENT_ID = 'test-client-id';
       process.env.DISCORD_CLIENT_SECRET = 'test-client-secret';
-      process.env.DISCORD_CALLBACK_URL = 'http://localhost:3000/auth/discord/callback';
+      process.env.DISCORD_CALLBACK_URL =
+        'http://localhost:3000/auth/discord/callback';
       process.env.FRONTEND_URL = 'http://localhost:5173';
 
       config = configuration();
 
       expect(config.app.nodeEnv).toBe('production');
-      expect(config.database.url).toBe('postgresql://test:test@localhost:5432/test');
+      expect(config.database.url).toBe(
+        'postgresql://test:test@localhost:5432/test',
+      );
       expect(config.auth.botApiKey).toBe('test-api-key');
       expect(config.auth.apiKeySalt).toBe('test-salt');
       expect(config.auth.jwtSecret).toBe('test-jwt-secret');
       expect(config.discord.clientId).toBe('test-client-id');
       expect(config.discord.clientSecret).toBe('test-client-secret');
-      expect(config.discord.callbackUrl).toBe('http://localhost:3000/auth/discord/callback');
+      expect(config.discord.callbackUrl).toBe(
+        'http://localhost:3000/auth/discord/callback',
+      );
       expect(config.frontend.url).toBe('http://localhost:5173');
     });
 

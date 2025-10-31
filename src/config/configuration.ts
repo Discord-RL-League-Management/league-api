@@ -12,7 +12,8 @@ export default () => ({
     jwtSecret: process.env.JWT_SECRET || '',
     jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
     cookieSecure: process.env.NODE_ENV === 'production',
-    cookieSameSite: (process.env.COOKIE_SAME_SITE as 'lax' | 'strict' | 'none') || 'lax',
+    cookieSameSite:
+      (process.env.COOKIE_SAME_SITE as 'lax' | 'strict' | 'none') || 'lax',
     cookieMaxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   },
   encryption: {
