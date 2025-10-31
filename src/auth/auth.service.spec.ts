@@ -90,7 +90,9 @@ describe('AuthService', () => {
 
     it('should create new user when user does not exist', async () => {
       // Arrange
-      usersService.findOne.mockRejectedValue(new NotFoundException('User not found'));
+      usersService.findOne.mockRejectedValue(
+        new NotFoundException('User not found'),
+      );
       usersService.create.mockResolvedValue(mockUser);
 
       // Act
@@ -107,18 +109,26 @@ describe('AuthService', () => {
       usersService.findOne.mockRejectedValue(databaseError);
 
       // Act & Assert
-      await expect(service.validateDiscordUser(mockDiscordData)).rejects.toThrow('Database connection failed');
+      await expect(
+        service.validateDiscordUser(mockDiscordData),
+      ).rejects.toThrow('Database connection failed');
       expect(usersService.create).not.toHaveBeenCalled();
       expect(usersService.update).not.toHaveBeenCalled();
     });
 
     it('should handle user creation failure', async () => {
       // Arrange
-      usersService.findOne.mockRejectedValue(new NotFoundException('User not found'));
-      usersService.create.mockRejectedValue(new Error('Database constraint violation'));
+      usersService.findOne.mockRejectedValue(
+        new NotFoundException('User not found'),
+      );
+      usersService.create.mockRejectedValue(
+        new Error('Database constraint violation'),
+      );
 
       // Act & Assert
-      await expect(service.validateDiscordUser(mockDiscordData)).rejects.toThrow('Database constraint violation');
+      await expect(
+        service.validateDiscordUser(mockDiscordData),
+      ).rejects.toThrow('Database constraint violation');
     });
   });
 

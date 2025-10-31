@@ -1,80 +1,59 @@
-import { Injectable, Logger, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { UsersService } from '../users/users.service';
-import { NotFoundException } from '@nestjs/common';
 import { DiscordProfileDto } from './dto/discord-profile.dto';
 import { UserGuildsService } from '../user-guilds/user-guilds.service';
+import { UserOrchestratorService } from '../users/services/user-orchestrator.service';
+import { User } from '@prisma/client';
 
+/**
+ * AuthService - Orchestrates authentication flows
+ * Single Responsibility: Coordinates authentication processes
+ * 
+ * Delegates user operations to UserOrchestratorService,
+ * keeping authentication logic separate from user management.
+ */
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
-    private usersService: UsersService,
+    private userOrchestrator: UserOrchestratorService,
     private jwtService: JwtService,
     private userGuildsService: UserGuildsService,
   ) {}
 
-  async validateDiscordUser(discordData: DiscordProfileDto) {
-    // Try to find existing user
-    let user;
-    try {
-      user = await this.usersService.findOne(discordData.discordId);
-      
-      // Update existing user
-      user = await this.usersService.update(discordData.discordId, {
-        username: discordData.username,
-        discriminator: discordData.discriminator,
-        globalName: discordData.globalName,
-        avatar: discordData.avatar,
-        email: discordData.email,
-        accessToken: discordData.accessToken,
-        refreshToken: discordData.refreshToken,
-        lastLoginAt: new Date(),
-      });
-      
-      this.logger.log(`User ${discordData.discordId} logged in successfully`);
-    } catch (error) {
-      // Only create user if error is NotFoundException
-      if (error instanceof NotFoundException) {
-        try {
-          user = await this.usersService.create({
-            id: discordData.discordId,
-            username: discordData.username,
-            discriminator: discordData.discriminator,
-            globalName: discordData.globalName,
-            avatar: discordData.avatar,
-            email: discordData.email,
-            accessToken: discordData.accessToken,
-            refreshToken: discordData.refreshToken,
-          });
-          
-          this.logger.log(`New user ${discordData.discordId} created successfully`);
-        } catch (createError) {
-          this.logger.error(`Failed to create user ${discordData.discordId}:`, createError);
-          throw createError;
-        }
-      } else {
-        // Re-throw other errors (database connection, validation, etc.)
-        this.logger.error(`Failed to find user ${discordData.discordId}:`, error);
-        throw error;
-      }
-    }
-
+  /**
+   * Validate and sync Discord user during OAuth flow
+   * Single Responsibility: OAuth user validation and synchronization
+   */
+  async validateDiscordUser(discordData: DiscordProfileDto): Promise<User> {
+    const user = await this.userOrchestrator.upsertUserFromOAuth(discordData);
+    this.logger.log(`User ${discordData.discordId} authenticated successfully`);
     return user;
   }
 
-  async generateJwt(user: { id: string; username: string; globalName?: string; avatar?: string; email?: string; guilds?: any[] }) {
+  async generateJwt(user: {
+    id: string;
+    username: string;
+    globalName?: string;
+    avatar?: string;
+    email?: string;
+    guilds?: any[];
+  }) {
     const payload = {
       sub: user.id,
       username: user.username,
       globalName: user.globalName,
       avatar: user.avatar,
       email: user.email,
-      guilds: user.guilds?.map(g => g.id) || [], // Only guild IDs
+      guilds: user.guilds?.map((g) => g.id) || [], // Only guild IDs
       // SECURITY: Never include OAuth tokens in JWT
     };
-    
+
     return {
       access_token: this.jwtService.sign(payload),
       user: {
@@ -93,9 +72,14 @@ export class AuthService {
    */
   async getUserAvailableGuilds(userId: string): Promise<any[]> {
     try {
-      return await this.userGuildsService.getUserAvailableGuildsWithPermissions(userId);
+      return await this.userGuildsService.getUserAvailableGuildsWithPermissions(
+        userId,
+      );
     } catch (error) {
-      this.logger.error(`Error getting user available guilds for user ${userId}:`, error);
+      this.logger.error(
+        `Error getting user available guilds for user ${userId}:`,
+        error,
+      );
       return [];
     }
   }
@@ -108,7 +92,10 @@ export class AuthService {
     try {
       return await this.userGuildsService.completeOAuthFlow(userId, userGuilds);
     } catch (error) {
-      this.logger.error(`Error completing OAuth flow for user ${userId}:`, error);
+      this.logger.error(
+        `Error completing OAuth flow for user ${userId}:`,
+        error,
+      );
       throw new InternalServerErrorException('Failed to complete OAuth flow');
     }
   }
