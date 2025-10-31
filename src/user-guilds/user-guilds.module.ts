@@ -2,17 +2,19 @@ import { Module } from '@nestjs/common';
 import { CacheModule } from '@nestjs/cache-manager';
 import { HttpModule } from '@nestjs/axios';
 import { UserGuildsService } from './user-guilds.service';
-import { PrismaModule } from '../prisma/prisma.module';
+import { GuildMembersModule } from '../guild-members/guild-members.module';
+import { GuildsModule } from '../guilds/guilds.module';
 import { DiscordModule } from '../discord/discord.module';
 import { TokenManagementModule } from '../auth/services/token-management.module';
-import { PermissionsModule } from '../permissions/permissions.module';
+import { PermissionCheckModule } from '../permissions/modules/permission-check/permission-check.module';
 
 @Module({
   imports: [
-    PrismaModule,
+    GuildMembersModule,
+    GuildsModule,
     DiscordModule,
     TokenManagementModule,
-    PermissionsModule,
+    PermissionCheckModule,
     HttpModule.register({
       timeout: 10000,
       maxRedirects: 5,
@@ -26,4 +28,3 @@ import { PermissionsModule } from '../permissions/permissions.module';
   exports: [UserGuildsService],
 })
 export class UserGuildsModule {}
-

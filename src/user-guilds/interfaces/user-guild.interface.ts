@@ -6,4 +6,3 @@ export interface UserGuild {
   isAdmin: boolean;
   roles: string[];
 }
-
