@@ -66,7 +66,9 @@ describe('UsersService', () => {
       const result = await service.findOne(userId);
 
       expect(result.refreshToken).toBe('refresh_token'); // Decrypted
-      expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { id: userId } });
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({
+        where: { id: userId },
+      });
     });
 
     it('should throw NotFoundException when user not found', async () => {
@@ -74,7 +76,9 @@ describe('UsersService', () => {
       mockPrismaService.user.findUnique.mockResolvedValue(null);
 
       await expect(service.findOne(userId)).rejects.toThrow(NotFoundException);
-      await expect(service.findOne(userId)).rejects.toThrow(`User ${userId} not found`);
+      await expect(service.findOne(userId)).rejects.toThrow(
+        `User ${userId} not found`,
+      );
     });
   });
 
@@ -186,7 +190,9 @@ describe('UsersService', () => {
       const result = await service.delete(userId);
 
       expect(result).toEqual(mockDeletedUser);
-      expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id: userId } });
+      expect(prisma.user.delete).toHaveBeenCalledWith({
+        where: { id: userId },
+      });
     });
   });
 });

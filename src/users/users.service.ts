@@ -1,76 +1,98 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { EncryptionService } from '../common/encryption.service';
+import { Injectable, Logger } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UserNotFoundException } from './exceptions/user.exceptions';
+import { UserRepository } from './repositories/user.repository';
+import { User } from '@prisma/client';
 
+/**
+ * UsersService - Business logic layer for User operations
+ * Single Responsibility: Orchestrates user-related business logic
+ * 
+ * Uses UserRepository for data access, keeping concerns separated.
+ * This service handles business rules and validation logic.
+ */
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
 
-  constructor(
-    private prisma: PrismaService,
-    private encryptionService: EncryptionService,
-  ) {}
+  constructor(private userRepository: UserRepository) {}
 
-  async findOne(id: string) {
-    const user = await this.prisma.user.findUnique({ where: { id } });
+  async findOne(id: string): Promise<User> {
+    const user = await this.userRepository.findById(id);
     if (!user) {
-      throw new NotFoundException(`User ${id} not found`);
+      throw new UserNotFoundException(id);
     }
-
-    // Decrypt refresh token if present
-    if (user.refreshToken) {
-      user.refreshToken = this.encryptionService.decrypt(user.refreshToken);
-    }
-
     return user;
   }
 
-  async findAll() {
-    const users = await this.prisma.user.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
-
-    // Decrypt refresh tokens for all users
-    return users.map((user) => ({
-      ...user,
-      refreshToken: user.refreshToken
-        ? this.encryptionService.decrypt(user.refreshToken)
-        : null,
-    }));
+  /**
+   * Find all users with optional pagination
+   * Single Responsibility: User retrieval with performance optimization
+   */
+  async findAll(options?: {
+    page?: number;
+    limit?: number;
+  }): Promise<User[]> {
+    const result = await this.userRepository.findAll(options);
+    return result.data;
   }
 
-  async create(createUserDto: CreateUserDto) {
-    // Encrypt refresh token if present
-    const data = { ...createUserDto };
-    if (data.refreshToken) {
-      data.refreshToken = this.encryptionService.encrypt(data.refreshToken);
-      this.logger.debug('Encrypted refresh token on user creation');
-    }
-
-    return this.prisma.user.create({ data });
+  async create(createUserDto: CreateUserDto): Promise<User> {
+    return this.userRepository.create(createUserDto);
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto) {
-    // Encrypt refresh token if being updated
-    const data = { ...updateUserDto };
-    if (data.refreshToken) {
-      data.refreshToken = this.encryptionService.encrypt(data.refreshToken);
-      this.logger.debug('Encrypted refresh token on user update');
+  async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
+    const existing = await this.userRepository.findById(id);
+    if (!existing) {
+      throw new UserNotFoundException(id);
     }
-
-    const user = await this.prisma.user.update({ where: { id }, data });
-
-    // Decrypt refresh token for response
-    if (user.refreshToken) {
-      user.refreshToken = this.encryptionService.decrypt(user.refreshToken);
-    }
-
-    return user;
+    return this.userRepository.update(id, updateUserDto);
   }
 
-  async delete(id: string) {
-    return this.prisma.user.delete({ where: { id } });
+  async delete(id: string): Promise<User> {
+    const existing = await this.userRepository.findById(id);
+    if (!existing) {
+      throw new UserNotFoundException(id);
+    }
+    return this.userRepository.delete(id);
+  }
+
+  async getUserTokens(userId: string): Promise<{
+    accessToken: string | null;
+    refreshToken: string | null;
+  }> {
+    const tokens = await this.userRepository.getUserTokens(userId);
+    if (!tokens || (!tokens.accessToken && !tokens.refreshToken)) {
+      // Check if user exists
+      const exists = await this.userRepository.exists(userId);
+      if (!exists) {
+        throw new UserNotFoundException(userId);
+      }
+    }
+    return tokens;
+  }
+
+  async updateUserTokens(
+    userId: string,
+    tokens: { accessToken?: string; refreshToken?: string },
+  ): Promise<User> {
+    const exists = await this.userRepository.exists(userId);
+    if (!exists) {
+      throw new UserNotFoundException(userId);
+    }
+    return this.userRepository.updateUserTokens(userId, tokens);
+  }
+
+  async getProfile(userId: string): Promise<Partial<User>> {
+    const profile = await this.userRepository.getProfile(userId);
+    if (!profile) {
+      throw new UserNotFoundException(userId);
+    }
+    return profile;
+  }
+
+  async exists(userId: string): Promise<boolean> {
+    return this.userRepository.exists(userId);
   }
 }
