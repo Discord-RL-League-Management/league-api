@@ -1,7 +1,11 @@
-import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
-import { firstValueFrom, timeout, retry, catchError } from 'rxjs';
+import { firstValueFrom, timeout, retry, catchError, throwError } from 'rxjs';
 import { AxiosError } from 'axios';
 import { Inject } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
@@ -22,9 +26,13 @@ export class DiscordValidationService {
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {
     this.botToken = this.configService.get<string>('discord.botToken') || '';
-    this.apiUrl = this.configService.get<string>('discord.apiUrl') || 'https://discord.com/api/v10';
-    this.requestTimeout = this.configService.get<number>('discord.timeout') || 10000;
-    this.retryAttempts = this.configService.get<number>('discord.retryAttempts') || 3;
+    this.apiUrl =
+      this.configService.get<string>('discord.apiUrl') ||
+      'https://discord.com/api/v10';
+    this.requestTimeout =
+      this.configService.get<number>('discord.timeout') || 10000;
+    this.retryAttempts =
+      this.configService.get<number>('discord.retryAttempts') || 3;
 
     // Validation disabled for now - no bot token required
   }
@@ -34,7 +42,10 @@ export class DiscordValidationService {
    * Reduces N API calls to 1 API call with caching
    * Returns Map of roleId -> isValid
    */
-  async validateRoleIds(guildId: string, roleIds: string[]): Promise<Map<string, boolean>> {
+  async validateRoleIds(
+    guildId: string,
+    roleIds: string[],
+  ): Promise<Map<string, boolean>> {
     const result = new Map<string, boolean>();
 
     if (roleIds.length === 0) {
@@ -51,10 +62,15 @@ export class DiscordValidationService {
         result.set(roleId, exists);
       }
 
-      this.logger.log(`Batch validated ${roleIds.length} roles for guild ${guildId}: ${Array.from(result.values()).filter(Boolean).length} valid`);
+      this.logger.log(
+        `Batch validated ${roleIds.length} roles for guild ${guildId}: ${Array.from(result.values()).filter(Boolean).length} valid`,
+      );
       return result;
     } catch (error) {
-      this.logger.error(`Failed to batch validate roles for guild ${guildId}:`, error);
+      this.logger.error(
+        `Failed to batch validate roles for guild ${guildId}:`,
+        error,
+      );
       // Return all false on error
       for (const roleId of roleIds) {
         result.set(roleId, false);
@@ -68,7 +84,10 @@ export class DiscordValidationService {
    * Reduces N API calls to 1 API call with caching
    * Returns Map of channelId -> isValid
    */
-  async validateChannelIds(guildId: string, channelIds: string[]): Promise<Map<string, boolean>> {
+  async validateChannelIds(
+    guildId: string,
+    channelIds: string[],
+  ): Promise<Map<string, boolean>> {
     const result = new Map<string, boolean>();
 
     if (channelIds.length === 0) {
@@ -81,14 +100,21 @@ export class DiscordValidationService {
 
       // Validate each channel ID
       for (const channelId of channelIds) {
-        const exists = channels.some((channel: any) => channel.id === channelId);
+        const exists = channels.some(
+          (channel: any) => channel.id === channelId,
+        );
         result.set(channelId, exists);
       }
 
-      this.logger.log(`Batch validated ${channelIds.length} channels for guild ${guildId}: ${Array.from(result.values()).filter(Boolean).length} valid`);
+      this.logger.log(
+        `Batch validated ${channelIds.length} channels for guild ${guildId}: ${Array.from(result.values()).filter(Boolean).length} valid`,
+      );
       return result;
     } catch (error) {
-      this.logger.error(`Failed to batch validate channels for guild ${guildId}:`, error);
+      this.logger.error(
+        `Failed to batch validate channels for guild ${guildId}:`,
+        error,
+      );
       // Return all false on error
       for (const channelId of channelIds) {
         result.set(channelId, false);
@@ -100,28 +126,35 @@ export class DiscordValidationService {
   /**
    * Validate that a role exists in the Discord guild
    * Single Responsibility: Role validation against Discord API
-   * 
+   *
    * Fail-safe: Returns false on any error to avoid blocking operations
    */
   async validateRoleId(guildId: string, roleId: string): Promise<boolean> {
     try {
       const response = await firstValueFrom(
-        this.httpService.get(`${this.apiUrl}/guilds/${guildId}/roles`, {
-          headers: { Authorization: `Bot ${this.botToken}` },
-        }).pipe(
-          timeout(this.requestTimeout),
-          retry({ count: this.retryAttempts }),
-          catchError(this.handleDiscordApiError.bind(this))
-        )
+        this.httpService
+          .get(`${this.apiUrl}/guilds/${guildId}/roles`, {
+            headers: { Authorization: `Bot ${this.botToken}` },
+          })
+          .pipe(
+            timeout(this.requestTimeout),
+            retry({ count: this.retryAttempts }),
+            catchError(this.handleDiscordApiError.bind(this)),
+          ),
       );
 
       const roles = response.data;
       const roleExists = roles.some((role: any) => role.id === roleId);
-      
-      this.logger.log(`Role validation for ${roleId} in guild ${guildId}: ${roleExists ? 'valid' : 'invalid'}`);
+
+      this.logger.log(
+        `Role validation for ${roleId} in guild ${guildId}: ${roleExists ? 'valid' : 'invalid'}`,
+      );
       return roleExists;
     } catch (error) {
-      this.logger.error(`Failed to validate role ${roleId} in guild ${guildId}:`, error);
+      this.logger.error(
+        `Failed to validate role ${roleId} in guild ${guildId}:`,
+        error,
+      );
       return false; // Fail-safe - don't block on Discord API issues
     }
   }
@@ -129,28 +162,40 @@ export class DiscordValidationService {
   /**
    * Validate that a channel exists in the Discord guild
    * Single Responsibility: Channel validation against Discord API
-   * 
+   *
    * Fail-safe: Returns false on any error to avoid blocking operations
    */
-  async validateChannelId(guildId: string, channelId: string): Promise<boolean> {
+  async validateChannelId(
+    guildId: string,
+    channelId: string,
+  ): Promise<boolean> {
     try {
       const response = await firstValueFrom(
-        this.httpService.get(`${this.apiUrl}/guilds/${guildId}/channels`, {
-          headers: { Authorization: `Bot ${this.botToken}` },
-        }).pipe(
-          timeout(this.requestTimeout),
-          retry({ count: this.retryAttempts }),
-          catchError(this.handleDiscordApiError.bind(this))
-        )
+        this.httpService
+          .get(`${this.apiUrl}/guilds/${guildId}/channels`, {
+            headers: { Authorization: `Bot ${this.botToken}` },
+          })
+          .pipe(
+            timeout(this.requestTimeout),
+            retry({ count: this.retryAttempts }),
+            catchError(this.handleDiscordApiError.bind(this)),
+          ),
       );
 
       const channels = response.data;
-      const channelExists = channels.some((channel: any) => channel.id === channelId);
-      
-      this.logger.log(`Channel validation for ${channelId} in guild ${guildId}: ${channelExists ? 'valid' : 'invalid'}`);
+      const channelExists = channels.some(
+        (channel: any) => channel.id === channelId,
+      );
+
+      this.logger.log(
+        `Channel validation for ${channelId} in guild ${guildId}: ${channelExists ? 'valid' : 'invalid'}`,
+      );
       return channelExists;
     } catch (error) {
-      this.logger.error(`Failed to validate channel ${channelId} in guild ${guildId}:`, error);
+      this.logger.error(
+        `Failed to validate channel ${channelId} in guild ${guildId}:`,
+        error,
+      );
       return false; // Fail-safe - don't block on Discord API issues
     }
   }
@@ -163,20 +208,22 @@ export class DiscordValidationService {
     try {
       const cacheKey = `discord:roles:${guildId}`;
       const cached = await this.cacheManager.get<any[]>(cacheKey);
-      
+
       if (cached) {
         this.logger.debug(`Roles cache hit for guild ${guildId}`);
         return cached;
       }
 
       const response = await firstValueFrom(
-        this.httpService.get(`${this.apiUrl}/guilds/${guildId}/roles`, {
-          headers: { Authorization: `Bot ${this.botToken}` },
-        }).pipe(
-          timeout(this.requestTimeout),
-          retry({ count: this.retryAttempts }),
-          catchError(this.handleDiscordApiError.bind(this))
-        )
+        this.httpService
+          .get(`${this.apiUrl}/guilds/${guildId}/roles`, {
+            headers: { Authorization: `Bot ${this.botToken}` },
+          })
+          .pipe(
+            timeout(this.requestTimeout),
+            retry({ count: this.retryAttempts }),
+            catchError(this.handleDiscordApiError.bind(this)),
+          ),
       );
 
       await this.cacheManager.set(cacheKey, response.data, this.cacheTtl);
@@ -195,26 +242,31 @@ export class DiscordValidationService {
     try {
       const cacheKey = `discord:channels:${guildId}`;
       const cached = await this.cacheManager.get<any[]>(cacheKey);
-      
+
       if (cached) {
         this.logger.debug(`Channels cache hit for guild ${guildId}`);
         return cached;
       }
 
       const response = await firstValueFrom(
-        this.httpService.get(`${this.apiUrl}/guilds/${guildId}/channels`, {
-          headers: { Authorization: `Bot ${this.botToken}` },
-        }).pipe(
-          timeout(this.requestTimeout),
-          retry({ count: this.retryAttempts }),
-          catchError(this.handleDiscordApiError.bind(this))
-        )
+        this.httpService
+          .get(`${this.apiUrl}/guilds/${guildId}/channels`, {
+            headers: { Authorization: `Bot ${this.botToken}` },
+          })
+          .pipe(
+            timeout(this.requestTimeout),
+            retry({ count: this.retryAttempts }),
+            catchError(this.handleDiscordApiError.bind(this)),
+          ),
       );
 
       await this.cacheManager.set(cacheKey, response.data, this.cacheTtl);
       return response.data;
     } catch (error) {
-      this.logger.error(`Failed to fetch channels for guild ${guildId}:`, error);
+      this.logger.error(
+        `Failed to fetch channels for guild ${guildId}:`,
+        error,
+      );
       throw new ServiceUnavailableException('Discord API unavailable');
     }
   }
@@ -227,25 +279,36 @@ export class DiscordValidationService {
     if (error.response) {
       const status = error.response.status;
       const message = error.response.data;
-      
+
       this.logger.error(`Discord API error ${status}:`, message);
-      
+
       if (status === 401) {
-        throw new ServiceUnavailableException('Discord API authentication failed');
+        return throwError(
+          () => new ServiceUnavailableException('Discord API authentication failed'),
+        );
       } else if (status === 403) {
-        throw new ServiceUnavailableException('Discord API access forbidden');
+        return throwError(
+          () => new ServiceUnavailableException('Discord API access forbidden'),
+        );
       } else if (status === 429) {
-        throw new ServiceUnavailableException('Discord API rate limited');
+        return throwError(
+          () => new ServiceUnavailableException('Discord API rate limited'),
+        );
       } else if (status >= 500) {
-        throw new ServiceUnavailableException('Discord API server error');
+        return throwError(
+          () => new ServiceUnavailableException('Discord API server error'),
+        );
       }
     } else if (error.request) {
       this.logger.error('Discord API request timeout:', error.message);
-      throw new ServiceUnavailableException('Discord API request timeout');
+      return throwError(
+        () => new ServiceUnavailableException('Discord API request timeout'),
+      );
     }
-    
+
     this.logger.error('Discord API unknown error:', error.message);
-    throw new ServiceUnavailableException('Discord API unavailable');
+    return throwError(
+      () => new ServiceUnavailableException('Discord API unavailable'),
+    );
   }
 }
-
