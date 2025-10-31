@@ -28,7 +28,7 @@ describe('AuthLoggerMiddleware', () => {
     }).compile();
 
     middleware = module.get<AuthLoggerMiddleware>(AuthLoggerMiddleware);
-    
+
     // Mock the logger
     loggerSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
   });
@@ -52,7 +52,9 @@ describe('AuthLoggerMiddleware', () => {
       middleware.use(mockRequest, mockResponse, mockNext);
 
       // Assert
-      expect(loggerSpy).toHaveBeenCalledWith('Bot request: POST /internal/users');
+      expect(loggerSpy).toHaveBeenCalledWith(
+        'Bot request: POST /internal/users',
+      );
       expect(mockNext).toHaveBeenCalled();
     });
 
@@ -88,7 +90,9 @@ describe('AuthLoggerMiddleware', () => {
       middleware.use(mockRequest, mockResponse, mockNext);
 
       // Assert
-      expect(loggerSpy).toHaveBeenCalledWith('Unauthenticated request: GET /health');
+      expect(loggerSpy).toHaveBeenCalledWith(
+        'Unauthenticated request: GET /health',
+      );
       expect(mockNext).toHaveBeenCalled();
     });
 
@@ -106,7 +110,9 @@ describe('AuthLoggerMiddleware', () => {
       middleware.use(mockRequest, mockResponse, mockNext);
 
       // Assert
-      expect(loggerSpy).toHaveBeenCalledWith('Unauthenticated request: GET /health');
+      expect(loggerSpy).toHaveBeenCalledWith(
+        'Unauthenticated request: GET /health',
+      );
       expect(mockNext).toHaveBeenCalled();
     });
 
@@ -116,7 +122,7 @@ describe('AuthLoggerMiddleware', () => {
       const mockResponse = TestHelpers.createMockResponse();
       const mockNext = TestHelpers.createMockNextFunction();
 
-      methods.forEach(method => {
+      methods.forEach((method) => {
         const mockRequest = TestHelpers.createMockRequest({
           headers: { authorization: 'Bearer jwt-token' },
           method,
@@ -127,7 +133,9 @@ describe('AuthLoggerMiddleware', () => {
         middleware.use(mockRequest, mockResponse, mockNext);
 
         // Assert
-        expect(loggerSpy).toHaveBeenCalledWith(`User request: ${method} /api/test`);
+        expect(loggerSpy).toHaveBeenCalledWith(
+          `User request: ${method} /api/test`,
+        );
       });
 
       expect(mockNext).toHaveBeenCalledTimes(methods.length);
@@ -135,11 +143,16 @@ describe('AuthLoggerMiddleware', () => {
 
     it('should handle different paths correctly', () => {
       // Arrange
-      const paths = ['/api/profile', '/internal/users', '/auth/discord', '/health'];
+      const paths = [
+        '/api/profile',
+        '/internal/users',
+        '/auth/discord',
+        '/health',
+      ];
       const mockResponse = TestHelpers.createMockResponse();
       const mockNext = TestHelpers.createMockNextFunction();
 
-      paths.forEach(path => {
+      paths.forEach((path) => {
         const mockRequest = TestHelpers.createMockRequest({
           headers: { authorization: 'Bearer jwt-token' },
           method: 'GET',
