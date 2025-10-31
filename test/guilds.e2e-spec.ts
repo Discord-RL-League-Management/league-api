@@ -16,7 +16,7 @@ describe('Guilds API (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     prisma = moduleFixture.get<PrismaService>(PrismaService);
-    
+
     await bootstrapTestApp(app);
   });
 
@@ -33,7 +33,8 @@ describe('Guilds API (e2e)', () => {
     await prisma.user.deleteMany();
   });
 
-  const validApiKey = '2b2b3d4b5ca4d61eb461886d4cd65d1a9b6000fd2c23bacf727056d38ecb6e32';
+  const validApiKey =
+    '2b2b3d4b5ca4d61eb461886d4cd65d1a9b6000fd2c23bacf727056d38ecb6e32';
   const invalidApiKey = 'invalid-key';
 
   describe('POST /internal/guilds', () => {
@@ -173,9 +174,9 @@ describe('Guilds API (e2e)', () => {
     it('should return guild details when found', async () => {
       // Arrange
       const guild = await prisma.guild.create({
-        data: { 
-          id: 'guild1', 
-          name: 'Test Guild', 
+        data: {
+          id: 'guild1',
+          name: 'Test Guild',
           ownerId: 'owner1',
         },
       });

@@ -36,9 +36,7 @@ describe('Internal Health API (e2e)', () => {
     });
 
     it('should return 401 without API key', async () => {
-      await request(app.getHttpServer())
-        .get('/internal/health')
-        .expect(401);
+      await request(app.getHttpServer()).get('/internal/health').expect(401);
     });
 
     it('should return 401 with invalid API key', async () => {

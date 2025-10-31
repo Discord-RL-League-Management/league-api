@@ -28,7 +28,9 @@ describe('Health Endpoints (e2e)', () => {
 
       // Verify timestamp is valid ISO string
       expect(new Date(response.body.timestamp)).toBeInstanceOf(Date);
-      expect(response.body.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+      expect(response.body.timestamp).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+      );
 
       // Verify uptime is a number
       expect(typeof response.body.uptime).toBe('number');
@@ -36,9 +38,7 @@ describe('Health Endpoints (e2e)', () => {
     });
 
     it('should be accessible without authentication', async () => {
-      await request(app.getHttpServer())
-        .get('/health')
-        .expect(200);
+      await request(app.getHttpServer()).get('/health').expect(200);
     });
 
     it('should return consistent response structure', async () => {
@@ -70,9 +70,7 @@ describe('Health Endpoints (e2e)', () => {
     });
 
     it('should be accessible without authentication', async () => {
-      await request(app.getHttpServer())
-        .get('/health/detailed')
-        .expect(200);
+      await request(app.getHttpServer()).get('/health/detailed').expect(200);
     });
 
     it('should include health check details for each indicator', async () => {
@@ -103,9 +101,7 @@ describe('Health Endpoints (e2e)', () => {
   describe('Health endpoint performance', () => {
     it('should respond quickly to health checks', async () => {
       const start = Date.now();
-      await request(app.getHttpServer())
-        .get('/health')
-        .expect(200);
+      await request(app.getHttpServer()).get('/health').expect(200);
       const duration = Date.now() - start;
 
       // Health check should respond within 1 second
@@ -114,15 +110,13 @@ describe('Health Endpoints (e2e)', () => {
 
     it('should handle multiple concurrent health check requests', async () => {
       const promises = Array.from({ length: 10 }, () =>
-        request(app.getHttpServer())
-          .get('/health')
-          .expect(200)
+        request(app.getHttpServer()).get('/health').expect(200),
       );
 
       const responses = await Promise.all(promises);
-      
+
       // All responses should be successful
-      responses.forEach(response => {
+      responses.forEach((response) => {
         expect(response.body.status).toBe('ok');
       });
     });
