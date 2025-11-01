@@ -9,6 +9,7 @@ import { DiscordModule } from '../discord/discord.module';
 import { CommonModule } from '../common/common.module';
 import { UserGuildsModule } from '../user-guilds/user-guilds.module';
 import { PermissionCheckModule } from '../permissions/modules/permission-check/permission-check.module';
+import { AuditModule } from '../audit/audit.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { DiscordOAuthService } from './services/discord-oauth.service';
@@ -27,6 +28,7 @@ import { UserOrchestratorService } from '../users/services/user-orchestrator.ser
     CommonModule,
     UserGuildsModule,
     PermissionCheckModule,
+    AuditModule,
     TokenManagementModule,
     PassportModule,
     HttpModule.register(httpModuleOptions), // Required for Discord API calls

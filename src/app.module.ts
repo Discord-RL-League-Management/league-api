@@ -13,6 +13,8 @@ import { ProfileModule } from './profile/profile.module';
 import { HealthModule } from './health/health.module';
 import { GuildsModule } from './guilds/guilds.module';
 import { GuildMembersModule } from './guild-members/guild-members.module';
+import { PermissionsModule } from './permissions/permissions.module';
+import { AuditModule } from './audit/audit.module';
 import { AuthLoggerMiddleware } from './common/middleware/auth-logger.middleware';
 import { throttlerConfig } from './config/throttler.config';
 
@@ -33,6 +35,8 @@ import { throttlerConfig } from './config/throttler.config';
     HealthModule,
     GuildsModule,
     GuildMembersModule,
+    PermissionsModule,
+    AuditModule,
   ],
   providers: [
     {

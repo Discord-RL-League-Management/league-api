@@ -6,12 +6,17 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PermissionCheckService } from '../../permissions/modules/permission-check/permission-check.service';
+import { AuditLogService } from '../../audit/services/audit-log.service';
+import { AuditAction } from '../../audit/interfaces/audit-event.interface';
 
 @Injectable()
 export class AdminGuard implements CanActivate {
   private readonly logger = new Logger(AdminGuard.name);
 
-  constructor(private permissionCheckService: PermissionCheckService) {}
+  constructor(
+    private permissionCheckService: PermissionCheckService,
+    private auditLogService: AuditLogService
+  ) {}
 
   /**
    * Check if user has admin permissions in the specified guild
@@ -33,6 +38,21 @@ export class AdminGuard implements CanActivate {
         user.id,
         guildId,
         true, // Validate with Discord
+      );
+
+      // Log audit event
+      await this.auditLogService.logAdminAction(
+        {
+          userId: user.id,
+          guildId,
+          action: AuditAction.ADMIN_CHECK,
+          resource: request.url || request.path,
+          result: isAdmin ? 'allowed' : 'denied',
+          metadata: {
+            method: request.method,
+          },
+        },
+        request
       );
 
       if (!isAdmin) {
