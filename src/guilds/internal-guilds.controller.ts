@@ -10,7 +10,9 @@ import {
   Logger,
   HttpCode,
   HttpStatus,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { SkipThrottle } from '@nestjs/throttler';
 import { BotAuthGuard } from '../auth/guards/bot-auth.guard';
 import { GuildsService } from './guilds.service';
@@ -67,6 +69,23 @@ export class InternalGuildsController {
   async create(@Body() createGuildDto: CreateGuildDto) {
     this.logger.log(`Bot creating guild ${createGuildDto.id}`);
     return this.guildsService.create(createGuildDto);
+  }
+
+  @Post('upsert')
+  @ApiOperation({ summary: 'Upsert guild (create or update) (bot only)' })
+  @ApiResponse({ status: 200, description: 'Guild updated successfully' })
+  @ApiResponse({ status: 201, description: 'Guild created successfully' })
+  @ApiResponse({ status: 401, description: 'Invalid bot API key' })
+  async upsert(@Body() createGuildDto: CreateGuildDto, @Res() res: Response) {
+    this.logger.log(`Bot upserting guild ${createGuildDto.id}`);
+    
+    // Check if guild exists to determine response status code
+    const exists = await this.guildsService.exists(createGuildDto.id);
+    const guild = await this.guildsService.upsert(createGuildDto);
+    
+    // Return 201 if created, 200 if updated
+    const statusCode = exists ? HttpStatus.OK : HttpStatus.CREATED;
+    return res.status(statusCode).json(guild);
   }
 
   @Patch(':id')

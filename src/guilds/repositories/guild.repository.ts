@@ -185,4 +185,69 @@ export class GuildRepository implements BaseRepository<Guild, CreateGuildDto, Up
       return updatedGuild;
     });
   }
+
+  /**
+   * Upsert guild (create or update) with default settings in a transaction
+   * Single Responsibility: Atomic guild upsert with settings initialization
+   * 
+   * Creates guild if not exists, updates if exists.
+   * Ensures settings exist (creates if missing).
+   */
+  async upsertWithSettings(
+    guildData: CreateGuildDto,
+    defaultSettings: any,
+  ): Promise<Guild> {
+    return this.prisma.$transaction(async (tx) => {
+      // Check if guild exists
+      const existingGuild = await tx.guild.findUnique({
+        where: { id: guildData.id },
+        include: { settings: true },
+      });
+
+      let guild: Guild;
+      let wasCreated = false;
+
+      if (existingGuild) {
+        // Update existing guild (reactivate if needed, update basic info)
+        guild = await tx.guild.update({
+          where: { id: guildData.id },
+          data: {
+            name: guildData.name,
+            icon: guildData.icon ?? null,
+            ownerId: guildData.ownerId,
+            memberCount: guildData.memberCount ?? 0,
+            isActive: true, // Reactivate if it was soft-deleted
+            leftAt: null, // Clear leftAt if it was set
+          },
+        });
+      } else {
+        // Create new guild
+        guild = await tx.guild.create({
+          data: guildData,
+        });
+        wasCreated = true;
+      }
+
+      // Ensure settings exist (create if missing)
+      if (wasCreated) {
+        // New guild always gets settings
+        await tx.guildSettings.create({
+          data: {
+            guildId: guild.id,
+            settings: JSON.parse(JSON.stringify(defaultSettings)),
+          },
+        });
+      } else if (!existingGuild.settings) {
+        // Existing guild without settings needs them
+        await tx.guildSettings.create({
+          data: {
+            guildId: guild.id,
+            settings: JSON.parse(JSON.stringify(defaultSettings)),
+          },
+        });
+      }
+
+      return guild;
+    });
+  }
 }

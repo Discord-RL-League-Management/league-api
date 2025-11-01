@@ -11,6 +11,20 @@ describe('GuildMembersService', () => {
   let usersService: UsersService;
 
   const mockPrismaService = {
+    guild: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    },
+    user: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    },
     guildMember: {
       upsert: jest.fn(),
       findMany: jest.fn(),

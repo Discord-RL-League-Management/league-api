@@ -137,6 +137,187 @@ describe('Guilds API (e2e)', () => {
     });
   });
 
+  describe('POST /internal/guilds/upsert', () => {
+    it('should return 201 and create guild when guild does not exist', async () => {
+      // Arrange
+      const guildData = {
+        id: '123456789012345678',
+        name: 'New Guild',
+        ownerId: '987654321098765432',
+        memberCount: 100,
+      };
+
+      // Act
+      const response = await request(app.getHttpServer())
+        .post('/internal/guilds/upsert')
+        .set('Authorization', `Bearer ${validApiKey}`)
+        .send(guildData)
+        .expect(201);
+
+      // Assert
+      expect(response.body).toMatchObject({
+        id: guildData.id,
+        name: guildData.name,
+        ownerId: guildData.ownerId,
+        memberCount: guildData.memberCount,
+        isActive: true,
+        joinedAt: expect.any(String),
+        leftAt: null,
+      });
+
+      // Verify guild exists in database
+      const guild = await prisma.guild.findUnique({
+        where: { id: guildData.id },
+        include: { settings: true },
+      });
+      expect(guild).toBeTruthy();
+      expect(guild.isActive).toBe(true);
+      expect(guild.settings).toBeTruthy();
+    });
+
+    it('should return 200 and update guild when guild exists', async () => {
+      // Arrange - Create existing guild
+      const existingGuild = await prisma.guild.create({
+        data: {
+          id: '123456789012345679',
+          name: 'Old Guild',
+          ownerId: '987654321098765432',
+          memberCount: 50,
+        },
+      });
+
+      const updatedGuildData = {
+        id: existingGuild.id,
+        name: 'Updated Guild',
+        ownerId: existingGuild.ownerId,
+        memberCount: 150,
+      };
+
+      // Act
+      const response = await request(app.getHttpServer())
+        .post('/internal/guilds/upsert')
+        .set('Authorization', `Bearer ${validApiKey}`)
+        .send(updatedGuildData)
+        .expect(200);
+
+      // Assert
+      expect(response.body).toMatchObject({
+        id: existingGuild.id,
+        name: 'Updated Guild',
+        memberCount: 150,
+      });
+
+      // Verify guild was updated in database
+      const guild = await prisma.guild.findUnique({
+        where: { id: existingGuild.id },
+      });
+      expect(guild.name).toBe('Updated Guild');
+      expect(guild.memberCount).toBe(150);
+    });
+
+    it('should return 200 and reactivate soft-deleted guild', async () => {
+      // Arrange - Create soft-deleted guild
+      const deletedGuild = await prisma.guild.create({
+        data: {
+          id: '123456789012345680',
+          name: 'Deleted Guild',
+          ownerId: '987654321098765432',
+          memberCount: 50,
+          isActive: false,
+          leftAt: new Date(),
+        },
+      });
+
+      const reactivateData = {
+        id: deletedGuild.id,
+        name: 'Reactivated Guild',
+        ownerId: deletedGuild.ownerId,
+        memberCount: 100,
+      };
+
+      // Act
+      const response = await request(app.getHttpServer())
+        .post('/internal/guilds/upsert')
+        .set('Authorization', `Bearer ${validApiKey}`)
+        .send(reactivateData)
+        .expect(200);
+
+      // Assert
+      expect(response.body.isActive).toBe(true);
+      expect(response.body.leftAt).toBeNull();
+
+      // Verify guild was reactivated in database
+      const guild = await prisma.guild.findUnique({
+        where: { id: deletedGuild.id },
+      });
+      expect(guild.isActive).toBe(true);
+      expect(guild.leftAt).toBeNull();
+    });
+
+    it('should create settings when guild exists but has no settings', async () => {
+      // Arrange - Create guild without settings
+      const guild = await prisma.guild.create({
+        data: {
+          id: '123456789012345681',
+          name: 'Guild Without Settings',
+          ownerId: '987654321098765432',
+        },
+      });
+
+      const upsertData = {
+        id: guild.id,
+        name: guild.name,
+        ownerId: guild.ownerId,
+        memberCount: 100,
+      };
+
+      // Act
+      await request(app.getHttpServer())
+        .post('/internal/guilds/upsert')
+        .set('Authorization', `Bearer ${validApiKey}`)
+        .send(upsertData)
+        .expect(200);
+
+      // Assert - Verify settings were created
+      const settings = await prisma.guildSettings.findUnique({
+        where: { guildId: guild.id },
+      });
+      expect(settings).toBeTruthy();
+      expect(settings.settings).toBeTruthy();
+    });
+
+    it('should reject request without API key', async () => {
+      // Arrange
+      const guildData = {
+        id: '123456789012345682',
+        name: 'Test Guild',
+        ownerId: '987654321098765432',
+      };
+
+      // Act & Assert
+      await request(app.getHttpServer())
+        .post('/internal/guilds/upsert')
+        .send(guildData)
+        .expect(401);
+    });
+
+    it('should reject request with invalid API key', async () => {
+      // Arrange
+      const guildData = {
+        id: '123456789012345683',
+        name: 'Test Guild',
+        ownerId: '987654321098765432',
+      };
+
+      // Act & Assert
+      await request(app.getHttpServer())
+        .post('/internal/guilds/upsert')
+        .set('Authorization', `Bearer ${invalidApiKey}`)
+        .send(guildData)
+        .expect(401);
+    });
+  });
+
   describe('GET /internal/guilds', () => {
     it('should return all active guilds', async () => {
       // Arrange

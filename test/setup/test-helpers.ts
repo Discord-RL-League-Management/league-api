@@ -234,6 +234,41 @@ export const setupCommonMocks = (): void => {
 };
 
 /**
+ * Create a fresh mock GuildsService instance
+ * Factory function that returns a new mock instance for each test
+ */
+export const createMockGuildsService = (): jest.Mocked<GuildsService> => {
+  return {
+    exists: jest.fn(),
+    findOne: jest.fn(),
+    findAll: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+    findActiveGuildIds: jest.fn(),
+    upsert: jest.fn(),
+  } as jest.Mocked<GuildsService>;
+};
+
+/**
+ * Create a fresh mock GuildSettingsService instance
+ * Factory function that returns a new mock instance for each test
+ */
+export const createMockGuildSettingsService = (): jest.Mocked<GuildSettingsService> => {
+  return {
+    getSettings: jest.fn(),
+    updateSettings: jest.fn(),
+    resetSettings: jest.fn(),
+    getSettingsHistory: jest.fn(),
+    logger: {} as any,
+    prisma: {} as any,
+    settingsDefaults: {} as any,
+    settingsValidation: {} as any,
+    cacheManager: {} as any,
+  } as jest.Mocked<GuildSettingsService>;
+};
+
+/**
  * Reset all mocks
  */
 export const resetAllMocks = (): void => {

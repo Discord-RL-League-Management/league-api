@@ -184,4 +184,27 @@ export class GuildsService {
   async exists(guildId: string): Promise<boolean> {
     return this.guildRepository.exists(guildId);
   }
+
+  /**
+   * Upsert guild (create or update) with default settings
+   * Single Responsibility: Guild existence check and create/update decision
+   * 
+   * Idempotent operation: creates if not exists, updates if exists.
+   * Returns the guild regardless of whether it was created or updated.
+   */
+  async upsert(createGuildDto: CreateGuildDto): Promise<Guild> {
+    try {
+      // Upsert guild with settings in transaction (handled by repository)
+      const guild = await this.guildRepository.upsertWithSettings(
+        createGuildDto,
+        this.settingsDefaults.getDefaults(),
+      );
+
+      this.logger.log(`Upserted guild ${guild.id} (created or updated)`);
+      return guild;
+    } catch (error) {
+      this.logger.error(`Failed to upsert guild ${createGuildDto.id}:`, error);
+      throw new InternalServerErrorException('Failed to upsert guild');
+    }
+  }
 }
