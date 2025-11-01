@@ -25,6 +25,7 @@ model User {
   // Relationships
   guildMembers  GuildMember[]
   settingsHistory SettingsHistory[]
+  auditLogs     AuditLog[]
   
   @@map("users")
 }
@@ -43,6 +44,7 @@ model Guild {
   settings        GuildSettings?
   members         GuildMember[]
   settingsHistory SettingsHistory[]
+  auditLogs       AuditLog[]
   
   // Indexes for performance
   @@index([isActive])
@@ -101,4 +103,28 @@ model SettingsHistory {
   @@index([userId])
   @@index([timestamp])
   @@map("settings_history")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?  @db.VarChar(20)
+  guildId   String?  @db.VarChar(20)
+  action    String   @db.VarChar(100)
+  resource  String   @db.VarChar(200)
+  result    String   @db.VarChar(20) // 'allowed' | 'denied'
+  metadata  Json?
+  ipAddress String?  @db.VarChar(50)
+  userAgent String?  @db.Text
+  requestId String?  @db.VarChar(100)
+  createdAt DateTime @default(now())
+  
+  // Relationships
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  guild     Guild?   @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  
+  @@index([guildId, createdAt])
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+  @@index([result, createdAt])
+  @@map("audit_logs")
 }
