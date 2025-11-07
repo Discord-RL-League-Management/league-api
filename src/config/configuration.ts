@@ -40,4 +40,31 @@ export default () => ({
     fileEnabled: process.env.LOG_FILE_ENABLED === 'true',
     filePath: process.env.LOG_FILE_PATH || 'logs',
   },
+  redis: {
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379', 10),
+    password: process.env.REDIS_PASSWORD || '',
+    db: parseInt(process.env.REDIS_DB || '0', 10),
+  },
+  queue: {
+    concurrency: parseInt(process.env.QUEUE_CONCURRENCY || '5', 10),
+    defaultJobOptions: process.env.QUEUE_DEFAULT_JOB_OPTIONS
+      ? JSON.parse(process.env.QUEUE_DEFAULT_JOB_OPTIONS)
+      : {
+          removeOnComplete: 100,
+          removeOnFail: 50,
+          attempts: 3,
+          backoff: {
+            type: 'exponential',
+            delay: 2000,
+          },
+        },
+  },
+  outbox: {
+    pollIntervalMs: parseInt(process.env.OUTBOX_POLL_INTERVAL_MS || '5000', 10),
+  },
+  circuitBreaker: {
+    threshold: parseInt(process.env.CIRCUIT_BREAKER_THRESHOLD || '5', 10),
+    timeout: parseInt(process.env.CIRCUIT_BREAKER_TIMEOUT || '60000', 10),
+  },
 });

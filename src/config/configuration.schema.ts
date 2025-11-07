@@ -48,4 +48,23 @@ export const configurationSchema = Joi.object({
     .default('info'),
   LOG_FILE_ENABLED: Joi.boolean().default(true),
   LOG_FILE_PATH: Joi.string().default('logs'),
+
+  // Redis Configuration
+  REDIS_HOST: Joi.string().default('localhost'),
+  REDIS_PORT: Joi.number().default(6379),
+  REDIS_PASSWORD: Joi.string().required(),
+  REDIS_DB: Joi.number().default(0),
+
+  // BullMQ Queue Configuration
+  QUEUE_CONCURRENCY: Joi.number().default(5),
+  QUEUE_DEFAULT_JOB_OPTIONS: Joi.string().default(
+    '{"removeOnComplete": 100, "removeOnFail": 50, "attempts": 3, "backoff": {"type": "exponential", "delay": 2000}}',
+  ),
+
+  // Outbox Pattern Configuration
+  OUTBOX_POLL_INTERVAL_MS: Joi.number().default(5000),
+
+  // Circuit Breaker Configuration
+  CIRCUIT_BREAKER_THRESHOLD: Joi.number().default(5),
+  CIRCUIT_BREAKER_TIMEOUT: Joi.number().default(60000),
 });
