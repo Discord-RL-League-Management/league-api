@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Guild } from '@prisma/client';
 import { CreateGuildDto } from '../dto/create-guild.dto';
@@ -18,6 +18,8 @@ import {
  */
 @Injectable()
 export class GuildRepository implements BaseRepository<Guild, CreateGuildDto, UpdateGuildDto> {
+  private readonly logger = new Logger(GuildRepository.name);
+
   constructor(private prisma: PrismaService) {}
 
   async findById(id: string, options?: GuildQueryOptions): Promise<Guild | null> {
@@ -25,9 +27,9 @@ export class GuildRepository implements BaseRepository<Guild, CreateGuildDto, Up
 
     const include: any = {};
 
-    if (opts.includeSettings) {
-      include.settings = true;
-    }
+    // Note: Settings are NOT a Prisma relation and cannot be included in queries.
+    // Settings must be fetched separately using GuildSettingsService.getSettings(guildId).
+    // The includeSettings option is ignored for this reason.
 
     if (opts.includeMembers) {
       include.members = {
@@ -78,7 +80,6 @@ export class GuildRepository implements BaseRepository<Guild, CreateGuildDto, Up
       this.prisma.guild.findMany({
         where: { isActive: true },
         include: {
-          settings: true,
           _count: {
             select: { members: true },
           },
@@ -100,6 +101,13 @@ export class GuildRepository implements BaseRepository<Guild, CreateGuildDto, Up
     };
   }
 
+  /**
+   * Create guild
+   * Single Responsibility: Guild creation
+   * 
+   * Note: Prefer createWithSettings() or upsertWithSettings() for guild creation
+   * as they ensure settings are initialized atomically.
+   */
   async create(data: CreateGuildDto): Promise<Guild> {
     return this.prisma.guild.create({ data });
   }
@@ -150,9 +158,10 @@ export class GuildRepository implements BaseRepository<Guild, CreateGuildDto, Up
       });
 
       // Initialize default settings atomically
-      await tx.guildSettings.create({
+      await tx.settings.create({
         data: {
-          guildId: guild.id,
+          ownerType: 'guild',
+          ownerId: guild.id,
           settings: JSON.parse(JSON.stringify(defaultSettings)),
         },
       });
@@ -191,61 +200,43 @@ export class GuildRepository implements BaseRepository<Guild, CreateGuildDto, Up
    * Single Responsibility: Atomic guild upsert with settings initialization
    * 
    * Creates guild if not exists, updates if exists.
-   * Ensures settings exist (creates if missing).
+   * Always ensures settings exist using idempotent upsert pattern.
    */
   async upsertWithSettings(
     guildData: CreateGuildDto,
     defaultSettings: any,
   ): Promise<Guild> {
     return this.prisma.$transaction(async (tx) => {
-      // Check if guild exists
-      const existingGuild = await tx.guild.findUnique({
+      // Upsert guild using Prisma's built-in upsert (cleaner than manual check/update/create)
+      const guild = await tx.guild.upsert({
         where: { id: guildData.id },
-        include: { settings: true },
+        update: {
+          name: guildData.name,
+          icon: guildData.icon ?? null,
+          ownerId: guildData.ownerId,
+          memberCount: guildData.memberCount ?? 0,
+          isActive: true, // Reactivate if it was soft-deleted
+          leftAt: null, // Clear leftAt if it was set
+        },
+        create: guildData,
       });
 
-      let guild: Guild;
-      let wasCreated = false;
-
-      if (existingGuild) {
-        // Update existing guild (reactivate if needed, update basic info)
-        guild = await tx.guild.update({
-          where: { id: guildData.id },
-          data: {
-            name: guildData.name,
-            icon: guildData.icon ?? null,
-            ownerId: guildData.ownerId,
-            memberCount: guildData.memberCount ?? 0,
-            isActive: true, // Reactivate if it was soft-deleted
-            leftAt: null, // Clear leftAt if it was set
+      // Always ensure settings exist using idempotent upsert
+      // This will create if missing, or no-op if they already exist
+      await tx.settings.upsert({
+        where: {
+          ownerType_ownerId: {
+            ownerType: 'guild',
+            ownerId: guild.id,
           },
-        });
-      } else {
-        // Create new guild
-        guild = await tx.guild.create({
-          data: guildData,
-        });
-        wasCreated = true;
-      }
-
-      // Ensure settings exist (create if missing)
-      if (wasCreated) {
-        // New guild always gets settings
-        await tx.guildSettings.create({
-          data: {
-            guildId: guild.id,
-            settings: JSON.parse(JSON.stringify(defaultSettings)),
-          },
-        });
-      } else if (!existingGuild.settings) {
-        // Existing guild without settings needs them
-        await tx.guildSettings.create({
-          data: {
-            guildId: guild.id,
-            settings: JSON.parse(JSON.stringify(defaultSettings)),
-          },
-        });
-      }
+        },
+        update: {}, // No-op if settings already exist
+        create: {
+          ownerType: 'guild',
+          ownerId: guild.id,
+          settings: JSON.parse(JSON.stringify(defaultSettings)),
+        },
+      });
 
       return guild;
     });

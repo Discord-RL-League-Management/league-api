@@ -2,7 +2,6 @@ import {
   Controller,
   Get,
   Post,
-  Req,
   Res,
   UseGuards,
   Logger,
@@ -16,11 +15,14 @@ import {
   ApiExcludeEndpoint,
 } from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
-import type { Response, Request } from 'express';
+import type { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { DiscordOAuthService } from './services/discord-oauth.service';
+import { DiscordApiService } from '../discord/discord-api.service';
 import { TokenManagementService } from './services/token-management.service';
+import { UserGuildsService } from '../user-guilds/user-guilds.service';
+import { GuildsService } from '../guilds/guilds.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../common/interfaces/user.interface';
@@ -34,7 +36,10 @@ export class AuthController {
   constructor(
     private authService: AuthService,
     private discordOAuthService: DiscordOAuthService,
+    private discordApiService: DiscordApiService,
     private tokenManagementService: TokenManagementService,
+    private userGuildsService: UserGuildsService,
+    private guildsService: GuildsService,
     private configService: ConfigService,
   ) {}
 
@@ -85,8 +90,8 @@ export class AuthController {
       // Exchange code for access token
       const tokenResponse = await this.discordOAuthService.exchangeCode(code);
 
-      // Get user information from Discord
-      const discordUser = await this.discordOAuthService.getUserInfo(
+      // Get user information from Discord via DiscordApiService
+      const discordUser = await this.discordApiService.getUserProfile(
         tokenResponse.access_token,
       );
 
@@ -103,6 +108,62 @@ export class AuthController {
       });
 
       this.logger.log(`OAuth callback successful for user ${user.id}`);
+
+      // Fetch user's guilds and sync with roles
+      try {
+        // Fetch user's guilds from Discord API
+        const userGuilds = await this.discordApiService.getUserGuilds(
+          tokenResponse.access_token,
+        );
+
+        // Get bot's active guild IDs to filter mutual guilds
+        const botGuildIds = await this.guildsService.findActiveGuildIds();
+        const botGuildIdsSet = new Set(botGuildIds);
+
+        // Filter to mutual guilds and fetch roles for each
+        const mutualGuildsWithRoles = await Promise.all(
+          userGuilds
+            .filter((guild) => botGuildIdsSet.has(guild.id))
+            .map(async (guild) => {
+              try {
+                const memberData = await this.discordApiService.getGuildMember(
+                  tokenResponse.access_token,
+                  guild.id,
+                );
+                return {
+                  ...guild,
+                  roles: memberData?.roles || [],
+                };
+              } catch (error) {
+                this.logger.warn(
+                  `Failed to fetch roles for guild ${guild.id}:`,
+                  error,
+                );
+                // Continue with empty roles if fetch fails
+                return {
+                  ...guild,
+                  roles: [],
+                };
+              }
+            }),
+        );
+
+        // Sync guild memberships with roles
+        await this.userGuildsService.syncUserGuildMembershipsWithRoles(
+          user.id,
+          mutualGuildsWithRoles,
+        );
+
+        this.logger.log(
+          `Synced ${mutualGuildsWithRoles.length} guild memberships with roles for user ${user.id}`,
+        );
+      } catch (error) {
+        // Log error but don't fail OAuth callback - role sync is not critical
+        this.logger.error(
+          `Failed to sync guild memberships with roles for user ${user.id}:`,
+          error,
+        );
+      }
 
       // Generate JWT token - convert null to undefined for type compatibility
       const jwt = await this.authService.generateJwt({
@@ -167,20 +228,7 @@ export class AuthController {
   })
   @ApiBearerAuth('JWT-auth')
   async getCurrentUser(@CurrentUser() user: AuthenticatedUser) {
-    try {
-      // Get fresh guild data
-      const availableGuilds = await this.authService.getUserAvailableGuilds(
-        user.id,
-      );
-
-      return {
-        ...user,
-        guilds: availableGuilds,
-      };
-    } catch (error) {
-      this.logger.error(`Error getting current user for ${user.id}:`, error);
-      throw error;
-    }
+    return user;
   }
 
   @Get('guilds')

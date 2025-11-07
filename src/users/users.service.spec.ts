@@ -56,6 +56,8 @@ describe('UsersService', () => {
         username: 'testuser',
         globalName: 'Test User',
         refreshToken: 'encrypted_refresh_token',
+        isBanned: false,
+        isDeleted: false,
         createdAt: new Date(),
         updatedAt: new Date(),
         lastLoginAt: new Date(),
@@ -89,20 +91,23 @@ describe('UsersService', () => {
           id: 'user1',
           username: 'user1',
           globalName: 'User One',
+          refreshToken: 'encrypted_token1',
+          isBanned: false,
+          isDeleted: false,
           createdAt: new Date('2023-01-01'),
         },
         {
           id: 'user2',
           username: 'user2',
           globalName: 'User Two',
+          refreshToken: null,
+          isBanned: false,
+          isDeleted: false,
           createdAt: new Date('2023-01-02'),
         },
       ];
 
       mockPrismaService.user.findMany.mockResolvedValue(mockUsers);
-
-      mockUsers[0].refreshToken = 'encrypted_token1';
-      mockUsers[1].refreshToken = null;
 
       const result = await service.findAll();
 
@@ -129,6 +134,8 @@ describe('UsersService', () => {
         discriminator: null,
         accessToken: null,
         refreshToken: null,
+        isBanned: false,
+        isDeleted: false,
         createdAt: new Date(),
         updatedAt: new Date(),
         lastLoginAt: new Date(),
@@ -159,6 +166,8 @@ describe('UsersService', () => {
         email: null,
         accessToken: null,
         refreshToken: null,
+        isBanned: false,
+        isDeleted: false,
         createdAt: new Date(),
         updatedAt: new Date(),
         lastLoginAt: new Date(),
@@ -183,6 +192,8 @@ describe('UsersService', () => {
         id: userId,
         username: 'testuser',
         globalName: 'Test User',
+        isBanned: false,
+        isDeleted: false,
       };
 
       mockPrismaService.user.delete.mockResolvedValue(mockDeletedUser);

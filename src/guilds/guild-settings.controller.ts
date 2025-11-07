@@ -12,8 +12,9 @@ import {
   Query,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { AdminGuard } from '../auth/guards/admin.guard';
+import { AdminGuard } from '../common/guards/admin.guard';
 import { GuildSettingsService } from './guild-settings.service';
+import { GuildAccessValidationService } from './services/guild-access-validation.service';
 import { GuildSettingsDto } from './dto/guild-settings.dto';
 import {
   ApiTags,
@@ -32,7 +33,10 @@ import type { AuthenticatedUser } from '../common/interfaces/user.interface';
 export class GuildSettingsController {
   private readonly logger = new Logger(GuildSettingsController.name);
 
-  constructor(private guildSettingsService: GuildSettingsService) {}
+  constructor(
+    private guildSettingsService: GuildSettingsService,
+    private guildAccessValidationService: GuildAccessValidationService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Get guild settings (admin only)' })
@@ -43,9 +47,17 @@ export class GuildSettingsController {
   @ApiResponse({ status: 403, description: 'Admin access required' })
   @ApiResponse({ status: 404, description: 'Guild not found' })
   @ApiParam({ name: 'guildId', description: 'Discord guild ID' })
-  async getSettings(@Param('guildId') guildId: string) {
+  async getSettings(
+    @Param('guildId') guildId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     try {
       this.logger.log(`Getting settings for guild ${guildId}`);
+      // Validate user and bot have access to guild
+      await this.guildAccessValidationService.validateUserGuildAccess(
+        user.id,
+        guildId,
+      );
       return await this.guildSettingsService.getSettings(guildId);
     } catch (error) {
       this.logger.error(`Error getting settings for guild ${guildId}:`, error);
@@ -68,6 +80,11 @@ export class GuildSettingsController {
     try {
       this.logger.log(
         `Updating settings for guild ${guildId} by user ${user.id}`,
+      );
+      // Validate user and bot have access to guild
+      await this.guildAccessValidationService.validateUserGuildAccess(
+        user.id,
+        guildId,
       );
       return await this.guildSettingsService.updateSettings(
         guildId,
@@ -97,6 +114,11 @@ export class GuildSettingsController {
       this.logger.log(
         `Resetting settings for guild ${guildId} by user ${user.id}`,
       );
+      // Validate user and bot have access to guild
+      await this.guildAccessValidationService.validateUserGuildAccess(
+        user.id,
+        guildId,
+      );
       return await this.guildSettingsService.resetSettings(guildId, user.id);
     } catch (error) {
       this.logger.error(
@@ -121,11 +143,17 @@ export class GuildSettingsController {
   })
   async getSettingsHistory(
     @Param('guildId') guildId: string,
+    @CurrentUser() user: AuthenticatedUser,
     @Query('limit') limit?: string,
   ) {
     try {
       const limitNum = limit ? parseInt(limit, 10) : 50;
       this.logger.log(`Getting settings history for guild ${guildId}`);
+      // Validate user and bot have access to guild
+      await this.guildAccessValidationService.validateUserGuildAccess(
+        user.id,
+        guildId,
+      );
       return await this.guildSettingsService.getSettingsHistory(
         guildId,
         limitNum,

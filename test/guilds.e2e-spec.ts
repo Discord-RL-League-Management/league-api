@@ -463,4 +463,509 @@ describe('Guilds API (e2e)', () => {
       });
     });
   });
+
+  describe('POST /internal/guilds/:id/sync', () => {
+    it('should atomically sync guild with members', async () => {
+      // Arrange
+      const guildId = 'atomic-guild-123';
+      const syncData = {
+        guild: {
+          id: guildId,
+          name: 'Atomic Test Guild',
+          ownerId: 'owner123',
+          memberCount: 2,
+        },
+        members: [
+          {
+            userId: 'user1',
+            username: 'User1',
+            roles: ['role1', 'role2'],
+          },
+          {
+            userId: 'user2',
+            username: 'User2',
+            roles: ['role3'],
+          },
+        ],
+      };
+
+      // Act
+      const response = await request(app.getHttpServer())
+        .post(`/internal/guilds/${guildId}/sync`)
+        .set('Authorization', `Bearer ${validApiKey}`)
+        .send(syncData)
+        .expect(200);
+
+      // Assert
+      expect(response.body).toMatchObject({
+        guild: expect.objectContaining({
+          id: guildId,
+          name: 'Atomic Test Guild',
+          ownerId: 'owner123',
+        }),
+        membersSynced: 2,
+      });
+
+      // Verify guild was created in database
+      const guild = await prisma.guild.findUnique({
+        where: { id: guildId },
+        include: { members: true, settings: true },
+      });
+      expect(guild).toBeTruthy();
+      expect(guild.settings).toBeTruthy();
+      expect(guild.members).toHaveLength(2);
+      expect(guild.members[0].userId).toBe('user1');
+      expect(guild.members[1].userId).toBe('user2');
+    });
+
+    it('should verify transaction atomicity - guild and members created together', async () => {
+      // Arrange
+      const guildId = 'atomic-guild-atomicity';
+      const syncData = {
+        guild: {
+          id: guildId,
+          name: 'Atomicity Test',
+          ownerId: 'owner123',
+          memberCount: 3,
+        },
+        members: [
+          { userId: 'user1', username: 'User1', roles: [] },
+          { userId: 'user2', username: 'User2', roles: [] },
+          { userId: 'user3', username: 'User3', roles: [] },
+        ],
+      };
+
+      // Act
+      await request(app.getHttpServer())
+        .post(`/internal/guilds/${guildId}/sync`)
+        .set('Authorization', `Bearer ${validApiKey}`)
+        .send(syncData)
+        .expect(200);
+
+      // Assert - Both guild and members must exist
+      const guild = await prisma.guild.findUnique({
+        where: { id: guildId },
+        include: { members: true },
+      });
+      expect(guild).toBeTruthy();
+      expect(guild.members).toHaveLength(3);
+    });
+
+    it('should verify rollback - no guild or members created if transaction fails', async () => {
+      // Arrange - Use a scenario that will cause transaction to fail
+      // We'll use a very long string for userId to trigger database constraint
+      const guildId = 'atomic-guild-rollback';
+      const syncData = {
+        guild: {
+          id: guildId,
+          name: 'Rollback Test',
+          ownerId: 'owner123',
+          memberCount: 1,
+        },
+        members: [
+          {
+            userId: 'a'.repeat(300), // Invalid: userId too long for database constraint
+            username: 'Invalid User',
+            roles: [],
+          },
+        ],
+      };
+
+      // Act & Assert - Should fail with validation/constraint error
+      const response = await request(app.getHttpServer())
+        .post(`/internal/guilds/${guildId}/sync`)
+        .set('Authorization', `Bearer ${validApiKey}`)
+        .send(syncData);
+
+      // Should fail with 400 or 500 depending on when validation happens
+      expect([400, 500]).toContain(response.status);
+
+      // Assert - Guild should not exist (transaction rolled back)
+      // Verify atomicity: if transaction fails, nothing should be created
+      const guild = await prisma.guild.findUnique({
+        where: { id: guildId },
+        include: { members: true },
+      });
+      expect(guild).toBeNull();
+
+      const members = await prisma.guildMember.findMany({
+        where: { guildId },
+      });
+      expect(members).toHaveLength(0);
+    });
+
+    it('should delete existing members before creating new ones', async () => {
+      // Arrange
+      const guildId = 'atomic-guild-replace';
+      
+      // Create guild with initial members
+      await prisma.guild.create({
+        data: {
+          id: guildId,
+          name: 'Replace Test',
+          ownerId: 'owner123',
+          members: {
+            create: [
+              { userId: 'old-user1', username: 'OldUser1', roles: [] },
+              { userId: 'old-user2', username: 'OldUser2', roles: [] },
+            ],
+          },
+        },
+      });
+
+      const syncData = {
+        guild: {
+          id: guildId,
+          name: 'Replace Test Updated',
+          ownerId: 'owner123',
+          memberCount: 1,
+        },
+        members: [
+          {
+            userId: 'new-user1',
+            username: 'NewUser1',
+            roles: ['role1'],
+          },
+        ],
+      };
+
+      // Act
+      await request(app.getHttpServer())
+        .post(`/internal/guilds/${guildId}/sync`)
+        .set('Authorization', `Bearer ${validApiKey}`)
+        .send(syncData)
+        .expect(200);
+
+      // Assert - Old members should be deleted, new ones created
+      const members = await prisma.guildMember.findMany({
+        where: { guildId },
+      });
+      expect(members).toHaveLength(1);
+      expect(members[0].userId).toBe('new-user1');
+      expect(members[0].username).toBe('NewUser1');
+      
+      // Verify old members are gone
+      const oldMembers = await prisma.guildMember.findMany({
+        where: {
+          guildId,
+          userId: { in: ['old-user1', 'old-user2'] },
+        },
+      });
+      expect(oldMembers).toHaveLength(0);
+    });
+
+    it('should handle empty members array', async () => {
+      // Arrange
+      const guildId = 'atomic-guild-empty';
+      const syncData = {
+        guild: {
+          id: guildId,
+          name: 'Empty Members Test',
+          ownerId: 'owner123',
+          memberCount: 0,
+        },
+        members: [],
+      };
+
+      // Act
+      const response = await request(app.getHttpServer())
+        .post(`/internal/guilds/${guildId}/sync`)
+        .set('Authorization', `Bearer ${validApiKey}`)
+        .send(syncData)
+        .expect(200);
+
+      // Assert
+      expect(response.body.membersSynced).toBe(0);
+
+      const guild = await prisma.guild.findUnique({
+        where: { id: guildId },
+        include: { members: true },
+      });
+      expect(guild).toBeTruthy();
+      expect(guild.members).toHaveLength(0);
+    });
+
+    it('should reject request without API key', async () => {
+      // Arrange
+      const guildId = 'atomic-guild-auth';
+      const syncData = {
+        guild: {
+          id: guildId,
+          name: 'Auth Test',
+          ownerId: 'owner123',
+          memberCount: 1,
+        },
+        members: [{ userId: 'user1', username: 'User1', roles: [] }],
+      };
+
+      // Act & Assert
+      await request(app.getHttpServer())
+        .post(`/internal/guilds/${guildId}/sync`)
+        .send(syncData)
+        .expect(401);
+    });
+
+    it('should reject request with invalid API key', async () => {
+      // Arrange
+      const guildId = 'atomic-guild-invalid-auth';
+      const syncData = {
+        guild: {
+          id: guildId,
+          name: 'Invalid Auth Test',
+          ownerId: 'owner123',
+          memberCount: 1,
+        },
+        members: [{ userId: 'user1', username: 'User1', roles: [] }],
+      };
+
+      // Act & Assert
+      await request(app.getHttpServer())
+        .post(`/internal/guilds/${guildId}/sync`)
+        .set('Authorization', `Bearer ${invalidApiKey}`)
+        .send(syncData)
+        .expect(401);
+    });
+
+    it('should handle large member arrays', async () => {
+      // Arrange
+      const guildId = 'atomic-guild-large';
+      const largeMembers = Array.from({ length: 100 }, (_, i) => ({
+        userId: `user${i}`,
+        username: `User${i}`,
+        roles: [`role${i}`],
+      }));
+
+      const syncData = {
+        guild: {
+          id: guildId,
+          name: 'Large Members Test',
+          ownerId: 'owner123',
+          memberCount: 100,
+        },
+        members: largeMembers,
+      };
+
+      // Act
+      const response = await request(app.getHttpServer())
+        .post(`/internal/guilds/${guildId}/sync`)
+        .set('Authorization', `Bearer ${validApiKey}`)
+        .send(syncData)
+        .expect(200);
+
+      // Assert
+      expect(response.body.membersSynced).toBe(100);
+
+      const members = await prisma.guildMember.findMany({
+        where: { guildId },
+      });
+      expect(members).toHaveLength(100);
+    });
+
+    it('should update existing guild if it already exists', async () => {
+      // Arrange
+      const guildId = 'atomic-guild-update';
+      
+      // Create existing guild
+      await prisma.guild.create({
+        data: {
+          id: guildId,
+          name: 'Original Name',
+          ownerId: 'owner123',
+        },
+      });
+
+      const syncData = {
+        guild: {
+          id: guildId,
+          name: 'Updated Name',
+          ownerId: 'owner123',
+          memberCount: 2,
+        },
+        members: [
+          { userId: 'user1', username: 'User1', roles: [] },
+          { userId: 'user2', username: 'User2', roles: [] },
+        ],
+      };
+
+      // Act
+      const response = await request(app.getHttpServer())
+        .post(`/internal/guilds/${guildId}/sync`)
+        .set('Authorization', `Bearer ${validApiKey}`)
+        .send(syncData)
+        .expect(200);
+
+      // Assert
+      expect(response.body.guild.name).toBe('Updated Name');
+      
+      const guild = await prisma.guild.findUnique({
+        where: { id: guildId },
+        include: { members: true },
+      });
+      expect(guild.name).toBe('Updated Name');
+      expect(guild.members).toHaveLength(2);
+    });
+
+    it('should handle concurrent sync requests without race conditions', async () => {
+      // Arrange - Multiple concurrent sync requests for same guild
+      const guildId = 'atomic-guild-concurrent';
+      const syncData1 = {
+        guild: {
+          id: guildId,
+          name: 'Concurrent Test',
+          ownerId: 'owner123',
+          memberCount: 2,
+        },
+        members: [
+          { userId: 'user1', username: 'User1', roles: [] },
+          { userId: 'user2', username: 'User2', roles: [] },
+        ],
+      };
+      const syncData2 = {
+        guild: {
+          id: guildId,
+          name: 'Concurrent Test Updated',
+          ownerId: 'owner123',
+          memberCount: 3,
+        },
+        members: [
+          { userId: 'user1', username: 'User1', roles: [] },
+          { userId: 'user2', username: 'User2', roles: [] },
+          { userId: 'user3', username: 'User3', roles: [] },
+        ],
+      };
+
+      // Act - Make concurrent requests
+      const [response1, response2] = await Promise.all([
+        request(app.getHttpServer())
+          .post(`/internal/guilds/${guildId}/sync`)
+          .set('Authorization', `Bearer ${validApiKey}`)
+          .send(syncData1),
+        request(app.getHttpServer())
+          .post(`/internal/guilds/${guildId}/sync`)
+          .set('Authorization', `Bearer ${validApiKey}`)
+          .send(syncData2),
+      ]);
+
+      // Assert - Both should succeed (transactions should serialize)
+      expect([response1.status, response2.status]).toContain(200);
+      
+      // Verify final state - should be consistent (one of the two results)
+      const guild = await prisma.guild.findUnique({
+        where: { id: guildId },
+        include: { members: true },
+      });
+      expect(guild).toBeTruthy();
+      // Members should be consistent - either 2 or 3, not mixed
+      expect([2, 3]).toContain(guild.members.length);
+    });
+
+    it('should complete sync in acceptable time for large guilds', async () => {
+      // Arrange
+      const guildId = 'atomic-guild-performance';
+      const largeMembers = Array.from({ length: 1000 }, (_, i) => ({
+        userId: `user${i}`,
+        username: `User${i}`,
+        roles: [`role${i}`],
+      }));
+
+      const syncData = {
+        guild: {
+          id: guildId,
+          name: 'Performance Test',
+          ownerId: 'owner123',
+          memberCount: 1000,
+        },
+        members: largeMembers,
+      };
+
+      // Act - Measure time
+      const startTime = Date.now();
+      const response = await request(app.getHttpServer())
+        .post(`/internal/guilds/${guildId}/sync`)
+        .set('Authorization', `Bearer ${validApiKey}`)
+        .send(syncData)
+        .expect(200);
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+
+      // Assert
+      expect(response.body.membersSynced).toBe(1000);
+      expect(duration).toBeLessThan(5000); // Should complete in < 5 seconds for 1000 members
+
+      // Verify all members were created
+      const members = await prisma.guildMember.findMany({
+        where: { guildId },
+      });
+      expect(members).toHaveLength(1000);
+    });
+  });
+
+  describe('Regression Tests - Existing Endpoints Still Work', () => {
+    it('should still allow POST /internal/guilds/upsert for guild join events', async () => {
+      // Arrange
+      const guildData = {
+        id: 'regression-guild-upsert',
+        name: 'Regression Test Guild',
+        ownerId: 'owner123',
+        memberCount: 10,
+      };
+
+      // Act
+      const response = await request(app.getHttpServer())
+        .post('/internal/guilds/upsert')
+        .set('Authorization', `Bearer ${validApiKey}`)
+        .send(guildData)
+        .expect(200); // Or 201 if created
+
+      // Assert
+      expect(response.body).toMatchObject({
+        id: guildData.id,
+        name: guildData.name,
+        ownerId: guildData.ownerId,
+      });
+
+      // Verify guild exists in database
+      const guild = await prisma.guild.findUnique({
+        where: { id: guildData.id },
+      });
+      expect(guild).toBeTruthy();
+    });
+
+    it('should still allow POST /internal/guild-members/:guildId/sync for incremental updates', async () => {
+      // Arrange
+      const guildId = 'regression-guild-incremental';
+      await prisma.guild.create({
+        data: {
+          id: guildId,
+          name: 'Regression Test',
+          ownerId: 'owner123',
+        },
+      });
+
+      const syncData = {
+        members: [
+          { userId: 'user1', username: 'User1', roles: ['role1'] },
+          { userId: 'user2', username: 'User2', roles: ['role2'] },
+        ],
+      };
+
+      // Act
+      const response = await request(app.getHttpServer())
+        .post(`/internal/guild-members/${guildId}/sync`)
+        .set('Authorization', `Bearer ${validApiKey}`)
+        .send(syncData)
+        .expect(200);
+
+      // Assert
+      expect(response.body).toMatchObject({
+        synced: 2,
+      });
+
+      // Verify members were synced
+      const members = await prisma.guildMember.findMany({
+        where: { guildId },
+      });
+      expect(members).toHaveLength(2);
+    });
+  });
 });

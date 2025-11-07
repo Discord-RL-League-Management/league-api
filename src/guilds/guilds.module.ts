@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { CacheModule } from '@nestjs/cache-manager';
 import { HttpModule } from '@nestjs/axios';
 import { GuildsController } from './guilds.controller';
@@ -6,14 +6,17 @@ import { InternalGuildsController } from './internal-guilds.controller';
 import { GuildSettingsController } from './guild-settings.controller';
 import { GuildSettingsService } from './guild-settings.service';
 import { GuildsService } from './guilds.service';
-import { GuildFilteringService } from './services/guild-filtering.service';
+import { GuildAccessValidationService } from './services/guild-access-validation.service';
 import { SettingsDefaultsService } from './services/settings-defaults.service';
 import { SettingsValidationService } from './services/settings-validation.service';
+import { ConfigMigrationService } from './services/config-migration.service';
 import { GuildRepository } from './repositories/guild.repository';
-import { GuildSettingsRepository } from './repositories/guild-settings.repository';
 import { GuildMembersModule } from '../guild-members/guild-members.module';
+import { InfrastructureModule } from '../infrastructure/infrastructure.module';
+import { UserGuildsModule } from '../user-guilds/user-guilds.module';
 import { DiscordModule } from '../discord/discord.module';
 import { CommonModule } from '../common/common.module';
+import { AuditModule } from '../audit/audit.module';
 import { TokenManagementModule } from '../auth/services/token-management.module';
 import { PermissionCheckModule } from '../permissions/modules/permission-check/permission-check.module';
 import { httpModuleOptions } from '../common/config/http.config';
@@ -24,10 +27,13 @@ import { PrismaModule } from '../prisma/prisma.module';
   imports: [
     TokenManagementModule,
     GuildMembersModule,
+    forwardRef(() => UserGuildsModule),
     DiscordModule,
-    CommonModule,
+    forwardRef(() => CommonModule),
+    forwardRef(() => AuditModule),
     PermissionCheckModule,
     PrismaModule,
+    InfrastructureModule,
     HttpModule.register(httpModuleOptions),
     CacheModule.register(cacheModuleOptions),
   ],
@@ -38,16 +44,16 @@ import { PrismaModule } from '../prisma/prisma.module';
   ],
   providers: [
     GuildsService,
-    GuildFilteringService,
+    GuildAccessValidationService,
     GuildSettingsService,
     SettingsDefaultsService,
     SettingsValidationService,
+    ConfigMigrationService,
     GuildRepository,
-    GuildSettingsRepository,
   ],
   exports: [
     GuildsService,
-    GuildFilteringService,
+    GuildAccessValidationService,
     GuildSettingsService,
     SettingsDefaultsService,
   ],

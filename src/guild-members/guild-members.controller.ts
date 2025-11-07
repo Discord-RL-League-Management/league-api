@@ -52,8 +52,10 @@ export class GuildMembersController {
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '50',
   ) {
-    const pageNum = parseInt(page, 10) || 1;
-    const limitNum = Math.min(parseInt(limit, 10) || 50, 100); // Max 100 per page
+    const parsedPage = parseInt(page, 10);
+    const pageNum = (isNaN(parsedPage) || parsedPage < 1) ? 1 : parsedPage;
+    const parsedLimit = parseInt(limit, 10);
+    const limitNum = Math.min((isNaN(parsedLimit) || parsedLimit < 1) ? 50 : parsedLimit, 100); // Max 100 per page
 
     this.logger.log(`Getting members for guild ${guildId}, page ${pageNum}`);
     return this.guildMembersService.findAll(guildId, pageNum, limitNum);
@@ -73,8 +75,10 @@ export class GuildMembersController {
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '20',
   ) {
-    const pageNum = parseInt(page, 10) || 1;
-    const limitNum = Math.min(parseInt(limit, 10) || 20, 100);
+    const parsedPage = parseInt(page, 10);
+    const pageNum = (isNaN(parsedPage) || parsedPage < 1) ? 1 : parsedPage;
+    const parsedLimit = parseInt(limit, 10);
+    const limitNum = Math.min((isNaN(parsedLimit) || parsedLimit < 1) ? 20 : parsedLimit, 100);
     
     this.logger.log(`Searching members in guild ${guildId} for "${query}"`);
     return this.guildMembersService.searchMembers(guildId, query, pageNum, limitNum);
@@ -170,7 +174,7 @@ export class GuildMembersController {
     @Param('guildId') guildId: string,
     @Body()
     syncData: {
-      members: Array<{ userId: string; username: string; roles: string[] }>;
+      members: Array<{ userId: string; username: string; nickname?: string; roles: string[] }>;
     },
   ) {
     this.logger.log(`Syncing members for guild ${guildId}`);

@@ -15,7 +15,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { AdminGuard } from '../auth/guards/admin.guard';
+import { AdminGuard } from '../common/guards/admin.guard';
 import { AuditLogService } from './services/audit-log.service';
 import type { AuthenticatedUser } from '../common/interfaces/user.interface';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';

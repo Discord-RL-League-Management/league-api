@@ -1,5 +1,5 @@
 import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
-import { DiscordValidationService } from '../../../discord/discord-validation.service';
+import { DiscordBotService } from '../../../discord/discord-bot.service';
 import { RoleParserService } from '../role-parser/role-parser.service';
 import { AccessInfo } from '../../interfaces/permission.interface';
 import { GuildMembersService } from '../../../guild-members/guild-members.service';
@@ -10,15 +10,24 @@ export class PermissionCheckService {
 
   constructor(
     private guildMembersService: GuildMembersService,
-    private discordValidation: DiscordValidationService,
+    private discordValidation: DiscordBotService,
     private roleParser: RoleParserService,
   ) {}
 
   /**
    * Check if user has access to a specific guild
    * Single Responsibility: Guild access validation
+   * 
+   * Note: Settings are NOT a Prisma relation and cannot be accessed from membership.guild.
+   * Settings must be provided by caller via GuildSettingsService.getSettings(guildId).
+   * If settings are not provided, admin checks will fail (return false) but user will
+   * still be considered a member if membership exists.
    */
-  async checkGuildAccess(userId: string, guildId: string): Promise<AccessInfo> {
+  async checkGuildAccess(
+    userId: string,
+    guildId: string,
+    guildSettings?: any,
+  ): Promise<AccessInfo> {
     try {
       const membership =
         await this.guildMembersService.findMemberWithGuildSettings(
@@ -30,15 +39,22 @@ export class PermissionCheckService {
         return { isMember: false, isAdmin: false, permissions: [] };
       }
 
-      const settings = membership.guild.settings?.settings as any;
-      const adminRoles = this.roleParser.getAdminRolesFromSettings(settings);
+      // Settings must be provided by caller - they cannot be accessed from Prisma relations
+      if (!guildSettings) {
+        this.logger.warn(
+          `No settings provided for guild ${guildId}. Admin checks will fail. Caller should fetch settings using GuildSettingsService.getSettings(guildId).`,
+        );
+        return { isMember: true, isAdmin: false, permissions: [] };
+      }
+
+      const adminRoles = this.roleParser.getAdminRolesFromSettings(guildSettings);
       const isAdmin = adminRoles.some((adminRole) =>
         membership.roles.includes(adminRole.id),
       );
 
       const permissions = this.roleParser.calculatePermissions(
         membership.roles,
-        settings,
+        guildSettings,
       );
 
       return { isMember: true, isAdmin, permissions };
@@ -54,11 +70,16 @@ export class PermissionCheckService {
   /**
    * Check if user has admin role in guild with Discord API validation
    * Single Responsibility: Admin permission checking with Discord verification
+   * 
+   * Note: Settings are NOT a Prisma relation and cannot be accessed from membership.guild.
+   * Settings must be provided by caller via GuildSettingsService.getSettings(guildId).
+   * If settings are not provided, this method will return false.
    */
   async hasAdminRole(
     userId: string,
     guildId: string,
     validateWithDiscord: boolean = true,
+    guildSettings?: any,
   ): Promise<boolean> {
     try {
       const membership =
@@ -72,10 +93,18 @@ export class PermissionCheckService {
         return false;
       }
 
+      // Settings must be provided by caller - they cannot be accessed from Prisma relations
+      if (!guildSettings) {
+        this.logger.warn(
+          `No settings provided for guild ${guildId}. Admin check will fail. Caller should fetch settings using GuildSettingsService.getSettings(guildId).`,
+        );
+        return false;
+      }
+
       return this.checkAdminRoles(
         membership.roles,
         guildId,
-        membership.guild.settings?.settings,
+        guildSettings,
         validateWithDiscord,
       );
     } catch (error) {
@@ -90,6 +119,9 @@ export class PermissionCheckService {
   /**
    * Check if user roles include admin roles from guild settings
    * Single Responsibility: Role matching logic with optional Discord validation
+   * 
+   * Note: If guildSettings is undefined/null, this will return false
+   * (getAdminRolesFromSettings returns empty array for undefined settings).
    */
   async checkAdminRoles(
     userRoles: string[],
@@ -97,6 +129,12 @@ export class PermissionCheckService {
     guildSettings: any,
     validateWithDiscord: boolean = true,
   ): Promise<boolean> {
+    // Handle undefined/null settings gracefully
+    if (!guildSettings) {
+      this.logger.warn(`No settings provided for admin role check in guild ${guildId}`);
+      return false;
+    }
+
     const adminRoles = this.roleParser.getAdminRolesFromSettings(guildSettings);
 
     if (adminRoles.length === 0) {

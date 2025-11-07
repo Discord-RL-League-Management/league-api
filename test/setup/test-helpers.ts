@@ -20,6 +20,7 @@ export const mockPrismaService = {
     create: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
+    upsert: jest.fn(),
   },
   user: {
     findUnique: jest.fn(),
@@ -27,6 +28,11 @@ export const mockPrismaService = {
     create: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
+  },
+  guildSettings: {
+    create: jest.fn(),
+    findUnique: jest.fn(),
+    upsert: jest.fn(),
   },
   guildMember: {
     upsert: jest.fn(),
@@ -50,6 +56,8 @@ export const mockGuildsService = {
   update: jest.fn(),
   remove: jest.fn(),
   findActiveGuildIds: jest.fn(),
+  upsert: jest.fn(),
+  syncGuildWithMembers: jest.fn(),
 } as jest.Mocked<GuildsService>;
 
 export const mockUsersService = {
@@ -160,6 +168,25 @@ export const setupCommonMocks = (): void => {
   mockPrismaService.guildMember.delete.mockResolvedValue(apiFixtures.createMockGuildMember());
   mockPrismaService.guildMember.count.mockResolvedValue(100);
 
+  mockPrismaService.guild.upsert.mockResolvedValue({
+    id: '456',
+    name: 'Test Guild',
+    joinedAt: new Date(),
+    icon: 'guild_icon',
+    ownerId: '123',
+    memberCount: 100,
+    leftAt: null,
+    isActive: true,
+  });
+
+  mockPrismaService.guildSettings.upsert.mockResolvedValue({
+    id: 'settings-123',
+    guildId: '456',
+    settings: { prefix: '!' },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+
   // Setup service mocks
   mockGuildsService.exists.mockResolvedValue(true);
   mockGuildsService.findOne.mockResolvedValue({
@@ -185,6 +212,29 @@ export const setupCommonMocks = (): void => {
     memberCount: 100,
     leftAt: null,
     isActive: true,
+  });
+  mockGuildsService.upsert.mockResolvedValue({
+    id: '456',
+    name: 'Test Guild',
+    joinedAt: new Date(),
+    icon: 'guild_icon',
+    ownerId: '123',
+    memberCount: 100,
+    leftAt: null,
+    isActive: true,
+  });
+  mockGuildsService.syncGuildWithMembers.mockResolvedValue({
+    guild: {
+      id: '456',
+      name: 'Test Guild',
+      joinedAt: new Date(),
+      icon: 'guild_icon',
+      ownerId: '123',
+      memberCount: 100,
+      leftAt: null,
+      isActive: true,
+    },
+    membersSynced: 0,
   });
 
   mockUsersService.exists.mockResolvedValue(true);
@@ -247,6 +297,7 @@ export const createMockGuildsService = (): jest.Mocked<GuildsService> => {
     remove: jest.fn(),
     findActiveGuildIds: jest.fn(),
     upsert: jest.fn(),
+    syncGuildWithMembers: jest.fn(),
   } as jest.Mocked<GuildsService>;
 };
 
@@ -266,6 +317,27 @@ export const createMockGuildSettingsService = (): jest.Mocked<GuildSettingsServi
     settingsValidation: {} as any,
     cacheManager: {} as any,
   } as jest.Mocked<GuildSettingsService>;
+};
+
+/**
+ * Create a fresh mock GuildMembersService instance
+ * Factory function that returns a new mock instance for each test
+ */
+export const createMockGuildMembersService = (): jest.Mocked<GuildMembersService> => {
+  return {
+    create: jest.fn(),
+    findAll: jest.fn(),
+    findOne: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+    syncGuildMembers: jest.fn(),
+    searchMembers: jest.fn(),
+    getMemberStats: jest.fn(),
+    logger: {} as any,
+    prisma: {} as any,
+    guildsService: {} as any,
+    usersService: {} as any,
+  } as jest.Mocked<GuildMembersService>;
 };
 
 /**

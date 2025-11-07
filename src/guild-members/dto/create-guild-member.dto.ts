@@ -46,6 +46,17 @@ export class CreateGuildMemberDto {
   username!: string;
 
   @ApiPropertyOptional({
+    description: 'Discord nickname in guild',
+    example: 'CoolNickname',
+    minLength: 0,
+    maxLength: 100,
+  })
+  @IsOptional()
+  @IsString()
+  @Length(0, 100, { message: 'Nickname must be between 0 and 100 characters' })
+  nickname?: string;
+
+  @ApiPropertyOptional({
     description: 'Array of Discord role IDs',
     example: ['role1', 'role2'],
     maxItems: 250,

@@ -56,9 +56,17 @@ export class GuildMembersService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2003'
       ) {
-        throw new NotFoundException(
-          `Guild ${createGuildMemberDto.guildId} not found`,
-        );
+        const meta = error.meta as any;
+        if (meta?.field_name?.includes('userId') || meta?.field_name?.includes('user')) {
+          throw new NotFoundException(
+            `User ${createGuildMemberDto.userId} not found`,
+          );
+        } else if (meta?.field_name?.includes('guildId') || meta?.field_name?.includes('guild')) {
+          throw new NotFoundException(
+            `Guild ${createGuildMemberDto.guildId} not found`,
+          );
+        }
+        throw new NotFoundException('Required record not found');
       }
       this.logger.error(
         `Failed to create guild member ${createGuildMemberDto.userId}:`,

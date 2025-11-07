@@ -15,6 +15,7 @@ interface DiscordGuild {
   icon?: string;
   owner: boolean;
   permissions: string;
+  roles?: string[];
 }
 
 @Injectable()
@@ -50,6 +51,8 @@ export class UserGuildsService {
       const membershipMap = new Map(memberships.map((m) => [m.guildId, m]));
 
       // Enrich guilds with permission information
+      // Note: For performance, we pass undefined for settings and let the
+      // permission service fetch them only when needed for admin checks.
       const enrichedGuilds = await Promise.all(
         guilds.map(async (guild) => {
           const membership = membershipMap.get(guild.id);
@@ -57,7 +60,7 @@ export class UserGuildsService {
             ? await this.permissionCheckService.checkAdminRoles(
                 membership.roles,
                 guild.id,
-                membership.guild.settings?.settings,
+                undefined, // Settings will be fetched by permission service if needed
                 false, // Don't validate with Discord for listing (performance)
               )
             : false;
@@ -82,12 +85,12 @@ export class UserGuildsService {
   }
 
   /**
-   * Sync user guild memberships with database atomically
-   * Single Responsibility: Guild membership synchronization
+   * Sync user guild memberships with roles from OAuth
+   * Single Responsibility: Guild membership synchronization with roles
    */
-  async syncUserGuildMemberships(
+  async syncUserGuildMembershipsWithRoles(
     userId: string,
-    userGuilds: DiscordGuild[],
+    userGuilds: Array<DiscordGuild & { roles?: string[] }>,
   ): Promise<void> {
     try {
       // Get existing memberships
@@ -98,14 +101,14 @@ export class UserGuildsService {
         existingMemberships.map((m) => m.guildId),
       );
 
-      // Prepare bulk operations
+      // Prepare bulk operations with roles from OAuth
       const newMemberships = userGuilds
         .filter((guild) => !existingGuildIds.has(guild.id))
         .map((guild) => ({
           userId,
           guildId: guild.id,
           username: guild.name, // Discord guild name as username placeholder
-          roles: [], // Will be populated by bot events
+          roles: guild.roles || [], // Use roles from OAuth data
         }));
 
       // Create new memberships using the service
@@ -141,11 +144,11 @@ export class UserGuildsService {
    */
   async completeOAuthFlow(
     userId: string,
-    userGuilds: DiscordGuild[],
+    userGuilds: Array<DiscordGuild & { roles?: string[] }>,
   ): Promise<UserGuild[]> {
     try {
-      // Sync guild memberships atomically
-      await this.syncUserGuildMemberships(userId, userGuilds);
+      // Sync guild memberships atomically with roles
+      await this.syncUserGuildMembershipsWithRoles(userId, userGuilds);
 
       // Get enriched guild data
       const availableGuilds =

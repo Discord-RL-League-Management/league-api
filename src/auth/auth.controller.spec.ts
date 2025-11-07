@@ -2,6 +2,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { DiscordOAuthService } from './services/discord-oauth.service';
+import { DiscordApiService } from '../discord/discord-api.service';
+import { UserGuildsService } from '../user-guilds/user-guilds.service';
+import { GuildsService } from '../guilds/guilds.service';
+import { TokenManagementService } from './services/token-management.service';
 import { ConfigService } from '@nestjs/config';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { Response } from 'express';
@@ -43,9 +47,36 @@ describe('AuthController', () => {
       getAuthorizationUrl: jest
         .fn()
         .mockReturnValue('https://discord.com/oauth2/authorize'),
-      exchangeCode: jest.fn(),
-      getUserInfo: jest.fn(),
-      getUserGuilds: jest.fn(),
+      exchangeCode: jest.fn().mockResolvedValue({
+        access_token: 'access_token',
+        refresh_token: 'refresh_token',
+      }),
+    };
+
+    const mockDiscordApiService = {
+      getUserProfile: jest.fn().mockResolvedValue({
+        id: '123456789012345678',
+        username: 'testuser',
+        discriminator: '1234',
+        global_name: 'Test User',
+        avatar: 'avatar_hash',
+        email: 'test@example.com',
+      }),
+      getUserGuilds: jest.fn().mockResolvedValue([]),
+      getGuildMember: jest.fn().mockResolvedValue({ roles: [] }),
+    };
+
+    const mockUserGuildsService = {
+      syncUserGuildMembershipsWithRoles: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const mockGuildsService = {
+      findActiveGuildIds: jest.fn().mockResolvedValue([]),
+    };
+
+    const mockTokenManagementService = {
+      getValidAccessToken: jest.fn(),
+      revokeTokens: jest.fn(),
     };
 
     const mockConfigService = {
@@ -67,6 +98,22 @@ describe('AuthController', () => {
         {
           provide: DiscordOAuthService,
           useValue: mockDiscordOAuthService,
+        },
+        {
+          provide: DiscordApiService,
+          useValue: mockDiscordApiService,
+        },
+        {
+          provide: UserGuildsService,
+          useValue: mockUserGuildsService,
+        },
+        {
+          provide: GuildsService,
+          useValue: mockGuildsService,
+        },
+        {
+          provide: TokenManagementService,
+          useValue: mockTokenManagementService,
         },
         {
           provide: ConfigService,
@@ -143,18 +190,13 @@ describe('AuthController', () => {
   });
 
   describe('getCurrentUser', () => {
-    it('should return authenticated user', async () => {
+    it('should return authenticated user without guilds', async () => {
       // Act
       const result = await controller.getCurrentUser(mockUser);
 
       // Assert
-      expect(result).toEqual({
-        ...mockUser,
-        guilds: [],
-      });
-      expect(authService.getUserAvailableGuilds).toHaveBeenCalledWith(
-        mockUser.id,
-      );
+      expect(result).toEqual(mockUser);
+      expect(authService.getUserAvailableGuilds).not.toHaveBeenCalled();
     });
 
     it('should return user with different data', async () => {
@@ -165,10 +207,8 @@ describe('AuthController', () => {
       const result = await controller.getCurrentUser(differentUser);
 
       // Assert
-      expect(result).toEqual({
-        ...differentUser,
-        guilds: [],
-      });
+      expect(result).toEqual(differentUser);
+      expect(authService.getUserAvailableGuilds).not.toHaveBeenCalled();
     });
   });
 });

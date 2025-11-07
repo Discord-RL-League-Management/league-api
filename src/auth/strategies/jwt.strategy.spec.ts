@@ -16,6 +16,8 @@ describe('JwtStrategy', () => {
     email: 'test@example.com',
     accessToken: 'access_token',
     refreshToken: 'refresh_token',
+    isBanned: false,
+    isDeleted: false,
     createdAt: new Date(),
     updatedAt: new Date(),
     lastLoginAt: new Date(),

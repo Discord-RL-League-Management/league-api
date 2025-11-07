@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
-import { firstValueFrom, timeout, retry, catchError } from 'rxjs';
+import { firstValueFrom, timeout, retry, catchError, of } from 'rxjs';
 import { AxiosError } from 'axios';
 
 interface DiscordGuild {
@@ -29,6 +29,8 @@ interface DiscordUser {
 interface GuildPermissions {
   isMember: boolean;
   permissions: string[];
+  roles: string[];
+  hasAdministratorPermission?: boolean;
 }
 
 @Injectable()
@@ -152,7 +154,7 @@ export class DiscordApiService {
             retry(this.retryAttempts),
             catchError((error: AxiosError) => {
               if (error.response?.status === 404) {
-                return { data: null } as any; // User not in guild
+                return of({ data: null } as any); // User not in guild
               }
               this.logger.error(
                 `Guild permission check error: ${error.message}`,
@@ -163,24 +165,134 @@ export class DiscordApiService {
       )) as any;
 
       if (!response.data) {
-        return { isMember: false, permissions: [] };
+        return { isMember: false, permissions: [], roles: [] };
       }
 
       interface GuildMemberResponse {
         permissions?: string[];
+        roles?: string[];
       }
 
       const memberData = response.data as GuildMemberResponse;
+      const permissions = memberData?.permissions || [];
+      const roles = memberData?.roles || [];
+      
+      // Check for Administrator permission
+      // Discord returns permissions as strings (e.g., "ADMINISTRATOR") or integers
+      // ADMINISTRATOR permission flag is 0x8 = 8, but when all permissions are granted
+      // it's typically represented as 2147483648 (0x80000000)
+      const hasAdministratorPermission = this.checkAdministratorPermission(permissions);
+
       return {
         isMember: true,
-        permissions: memberData?.permissions || [],
+        permissions,
+        roles,
+        hasAdministratorPermission,
       };
     } catch (error) {
       this.logger.error(
         `Failed to check guild permissions for ${guildId}:`,
         error,
       );
-      return { isMember: false, permissions: [] };
+      return { isMember: false, permissions: [], roles: [], hasAdministratorPermission: false };
     }
+  }
+
+  /**
+   * Get user's guild member data with roles for a specific guild
+   * Single Responsibility: Guild member data fetching via OAuth
+   * 
+   * Following: https://discord.com/developers/docs/resources/guild#get-current-user-guild-member
+   */
+  async getGuildMember(
+    accessToken: string,
+    guildId: string,
+  ): Promise<{ roles: string[]; nick?: string } | null> {
+    try {
+      const response = await firstValueFrom(
+        this.httpService
+          .get<any>(`${this.apiUrl}/users/@me/guilds/${guildId}/member`, {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          })
+          .pipe(
+            timeout(this.requestTimeout),
+            retry(this.retryAttempts),
+            catchError((error: AxiosError) => {
+              if (error.response?.status === 404) {
+                return of({ data: null } as any); // User not in guild
+              }
+              this.logger.error(
+                `Guild member fetch error: ${error.message}`,
+              );
+              throw new ServiceUnavailableException('Discord API unavailable');
+            }),
+          ),
+      );
+
+      if (!response.data) {
+        return null;
+      }
+
+      interface GuildMemberResponse {
+        roles?: string[];
+        nick?: string;
+      }
+
+      const memberData = response.data as GuildMemberResponse;
+
+      return {
+        roles: memberData?.roles || [],
+        nick: memberData?.nick,
+      };
+    } catch (error) {
+      if (error instanceof ServiceUnavailableException) {
+        throw error;
+      }
+      this.logger.error(
+        `Failed to fetch guild member for ${guildId}:`,
+        error,
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Check if permissions array contains Administrator permission
+   * Single Responsibility: Administrator permission parsing
+   * 
+   * Checks for "ADMINISTRATOR" string or permission integer 2147483648 (0x80000000)
+   * Also checks if permission integer has bit 0x8 set (Administrator flag)
+   * 
+   * @param permissions Array of permission strings or integers
+   * @returns true if Administrator permission is present
+   */
+  private checkAdministratorPermission(permissions: string[]): boolean {
+    if (!permissions || permissions.length === 0) {
+      return false;
+    }
+
+    for (const permission of permissions) {
+      // Check for "ADMINISTRATOR" string
+      if (permission === 'ADMINISTRATOR') {
+        return true;
+      }
+
+      // Check for permission integer
+      // Try parsing as integer
+      const permissionInt = parseInt(permission, 10);
+      if (!isNaN(permissionInt)) {
+        // ADMINISTRATOR permission is 0x8 = 8
+        // If all permissions are granted, it's 2147483648 (0x80000000)
+        // Check if bit 0x8 is set
+        const ADMINISTRATOR_FLAG = 0x8; // 8 in decimal
+        const ALL_PERMISSIONS_FLAG = 0x80000000; // 2147483648 in decimal
+        
+        if (permissionInt === ALL_PERMISSIONS_FLAG || (permissionInt & ADMINISTRATOR_FLAG) !== 0) {
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 }

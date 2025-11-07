@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { CacheModule } from '@nestjs/cache-manager';
 import { DiscordApiService } from './discord-api.service';
-import { DiscordValidationService } from './discord-validation.service';
+import { DiscordBotService } from './discord-bot.service';
 
 @Module({
   imports: [
@@ -12,7 +12,7 @@ import { DiscordValidationService } from './discord-validation.service';
       max: 100,
     }),
   ],
-  providers: [DiscordApiService, DiscordValidationService],
-  exports: [DiscordApiService, DiscordValidationService],
+  providers: [DiscordApiService, DiscordBotService],
+  exports: [DiscordApiService, DiscordBotService],
 })
 export class DiscordModule {}

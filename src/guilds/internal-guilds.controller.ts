@@ -12,7 +12,7 @@ import {
   HttpStatus,
   Res,
 } from '@nestjs/common';
-import { Response } from 'express';
+import type { Response } from 'express';
 import { SkipThrottle } from '@nestjs/throttler';
 import { BotAuthGuard } from '../auth/guards/bot-auth.guard';
 import { GuildsService } from './guilds.service';
@@ -86,6 +86,31 @@ export class InternalGuildsController {
     // Return 201 if created, 200 if updated
     const statusCode = exists ? HttpStatus.OK : HttpStatus.CREATED;
     return res.status(statusCode).json(guild);
+  }
+
+  @Post(':id/sync')
+  @ApiOperation({ summary: 'Atomically sync guild with members (bot only)' })
+  @ApiResponse({ status: 200, description: 'Guild and members synced successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid request body' })
+  @ApiResponse({ status: 401, description: 'Invalid bot API key' })
+  @ApiResponse({ status: 404, description: 'Guild not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
+  @ApiParam({ name: 'id', description: 'Discord guild ID' })
+  async syncGuildWithMembers(
+    @Param('id') guildId: string,
+    @Body() syncData: {
+      guild: CreateGuildDto;
+      members: Array<{ userId: string; username: string; globalName?: string; avatar?: string; nickname?: string; roles: string[] }>;
+      roles?: { admin: Array<{ id: string; name: string }> };
+    },
+  ) {
+    this.logger.log(`Bot syncing guild ${guildId} with ${syncData.members.length} members`);
+    return this.guildsService.syncGuildWithMembers(
+      guildId,
+      syncData.guild,
+      syncData.members,
+      syncData.roles,
+    );
   }
 
   @Patch(':id')

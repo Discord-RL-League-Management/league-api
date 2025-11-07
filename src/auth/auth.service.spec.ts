@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { NotFoundException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
-import { GuildFilteringService } from '../guilds/services/guild-filtering.service';
+import { UserGuildsService } from '../user-guilds/user-guilds.service';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -19,6 +19,8 @@ describe('AuthService', () => {
     email: 'test@example.com',
     accessToken: 'access_token',
     refreshToken: 'refresh_token',
+    isBanned: false,
+    isDeleted: false,
     createdAt: new Date(),
     updatedAt: new Date(),
     lastLoginAt: new Date(),
@@ -46,8 +48,9 @@ describe('AuthService', () => {
       sign: jest.fn(),
     };
 
-    const mockGuildFilteringService = {
+    const mockUserGuildsService = {
       getUserAvailableGuildsWithPermissions: jest.fn().mockResolvedValue([]),
+      completeOAuthFlow: jest.fn().mockResolvedValue([]),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -62,8 +65,8 @@ describe('AuthService', () => {
           useValue: mockJwtService,
         },
         {
-          provide: GuildFilteringService,
-          useValue: mockGuildFilteringService,
+          provide: UserGuildsService,
+          useValue: mockUserGuildsService,
         },
       ],
     }).compile();

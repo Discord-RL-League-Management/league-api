@@ -1,16 +1,15 @@
 import { Module } from '@nestjs/common';
 import { RoleParserModule } from './modules/role-parser/role-parser.module';
-import { PermissionSyncModule } from './modules/permission-sync/permission-sync.module';
 import { PermissionCheckModule } from './modules/permission-check/permission-check.module';
 import { PermissionsController } from './permissions.controller';
 import { GuildMembersModule } from '../guild-members/guild-members.module';
+import { GuildsModule } from '../guilds/guilds.module';
 
 @Module({
-  imports: [RoleParserModule, PermissionSyncModule, PermissionCheckModule, GuildMembersModule],
+  imports: [RoleParserModule, PermissionCheckModule, GuildMembersModule, GuildsModule],
   controllers: [PermissionsController],
   exports: [
     RoleParserModule,
-    PermissionSyncModule,
     PermissionCheckModule,
   ],
 })

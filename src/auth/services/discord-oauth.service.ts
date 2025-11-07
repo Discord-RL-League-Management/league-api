@@ -11,23 +11,6 @@ interface DiscordTokenResponse {
   scope: string;
 }
 
-interface DiscordUser {
-  id: string;
-  username: string;
-  discriminator: string;
-  global_name?: string;
-  avatar?: string;
-  email?: string;
-}
-
-interface DiscordGuild {
-  id: string;
-  name: string;
-  icon?: string;
-  owner: boolean;
-  permissions: string;
-}
-
 @Injectable()
 export class DiscordOAuthService {
   private readonly logger = new Logger(DiscordOAuthService.name);
@@ -37,8 +20,6 @@ export class DiscordOAuthService {
   private readonly authorizationUrl =
     'https://discord.com/api/oauth2/authorize';
   private readonly tokenUrl = 'https://discord.com/api/oauth2/token';
-  private readonly userUrl = 'https://discord.com/api/users/@me';
-  private readonly guildsUrl = 'https://discord.com/api/users/@me/guilds';
 
   constructor(
     private configService: ConfigService,
@@ -65,7 +46,7 @@ export class DiscordOAuthService {
       client_id: this.clientId,
       redirect_uri: this.redirectUri,
       response_type: 'code',
-      scope: 'identify email guilds',
+      scope: 'identify email guilds guilds.members.read',
     });
 
     return `${this.authorizationUrl}?${params.toString()}`;
@@ -101,52 +82,6 @@ export class DiscordOAuthService {
     } catch (error: any) {
       throw new HttpException(
         'Failed to exchange authorization code',
-        HttpStatus.UNAUTHORIZED,
-      );
-    }
-  }
-
-  /**
-   * Get user information from Discord
-   * Following: https://discord.com/developers/docs/resources/user#get-current-user
-   */
-  async getUserInfo(accessToken: string): Promise<DiscordUser> {
-    try {
-      const response = await firstValueFrom(
-        this.httpService.get<DiscordUser>(this.userUrl, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }),
-      );
-
-      return response.data;
-    } catch (error: any) {
-      throw new HttpException(
-        'Failed to fetch user information',
-        HttpStatus.UNAUTHORIZED,
-      );
-    }
-  }
-
-  /**
-   * Get user's guilds from Discord
-   * Following: https://discord.com/developers/docs/resources/user#get-current-user-guilds
-   */
-  async getUserGuilds(accessToken: string): Promise<DiscordGuild[]> {
-    try {
-      const response = await firstValueFrom(
-        this.httpService.get<DiscordGuild[]>(this.guildsUrl, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }),
-      );
-
-      return response.data;
-    } catch (error: any) {
-      throw new HttpException(
-        'Failed to fetch user guilds',
         HttpStatus.UNAUTHORIZED,
       );
     }

@@ -113,8 +113,8 @@ describe('OAuth Guilds Integration (E2E)', () => {
     });
   });
 
-  describe('GET /auth/me with guild data', () => {
-    it('should return user with guild data', async () => {
+  describe('GET /auth/me', () => {
+    it('should return user without guild data', async () => {
       // Arrange
       const user = await prisma.user.create({
         data: {
@@ -151,6 +151,8 @@ describe('OAuth Guilds Integration (E2E)', () => {
       // Assert
       expect(response.body).toHaveProperty('id', user.id);
       expect(response.body).toHaveProperty('username', user.username);
+      // Verify guilds are NOT included in response
+      expect(response.body).not.toHaveProperty('guilds');
     });
 
     it('should return 401 for invalid token', async () => {

@@ -56,7 +56,7 @@ export class InternalGuildMembersController {
     @Param('guildId') guildId: string,
     @Body()
     syncData: {
-      members: Array<{ userId: string; username: string; roles: string[] }>;
+      members: Array<{ userId: string; username: string; nickname?: string; roles: string[] }>;
     },
   ) {
     this.logger.log(

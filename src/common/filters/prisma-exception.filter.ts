@@ -3,13 +3,38 @@ import {
   ExceptionFilter,
   ArgumentsHost,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { Request, Response } from 'express';
 
-@Catch(Prisma.PrismaClientKnownRequestError)
+/**
+ * PrismaExceptionFilter - Handles Prisma-specific errors
+ * Single Responsibility: Transform Prisma errors into HTTP responses with proper error codes
+ * 
+ * Handles multiple Prisma error types:
+ * - PrismaClientKnownRequestError: Known database errors
+ * - PrismaClientValidationError: Schema validation errors
+ * - PrismaClientInitializationError: Connection/initialization errors
+ * - PrismaClientRustPanicError: Unexpected Prisma errors
+ */
+@Catch(
+  Prisma.PrismaClientKnownRequestError,
+  Prisma.PrismaClientValidationError,
+  Prisma.PrismaClientInitializationError,
+  Prisma.PrismaClientRustPanicError,
+)
 export class PrismaExceptionFilter implements ExceptionFilter {
-  catch(exception: Prisma.PrismaClientKnownRequestError, host: ArgumentsHost) {
+  private readonly logger = new Logger(PrismaExceptionFilter.name);
+
+  catch(
+    exception:
+      | Prisma.PrismaClientKnownRequestError
+      | Prisma.PrismaClientValidationError
+      | Prisma.PrismaClientInitializationError
+      | Prisma.PrismaClientRustPanicError,
+    host: ArgumentsHost,
+  ) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
@@ -18,6 +43,99 @@ export class PrismaExceptionFilter implements ExceptionFilter {
     const path = request.url;
     const method = request.method;
 
+    let errorInfo: {
+      status: HttpStatus;
+      message: string;
+      code: string;
+      details?: Record<string, any>;
+    };
+
+    // Handle PrismaClientKnownRequestError (database errors)
+    if (exception instanceof Prisma.PrismaClientKnownRequestError) {
+      errorInfo = this.handleKnownRequestError(exception);
+    }
+    // Handle PrismaClientValidationError (schema validation errors)
+    else if (exception instanceof Prisma.PrismaClientValidationError) {
+      errorInfo = {
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Database validation error',
+        code: 'PRISMA_VALIDATION_ERROR',
+        details: {
+          message: exception.message,
+          cause: exception.cause,
+        },
+      };
+    }
+    // Handle PrismaClientInitializationError (connection errors)
+    else if (exception instanceof Prisma.PrismaClientInitializationError) {
+      errorInfo = {
+        status: HttpStatus.SERVICE_UNAVAILABLE,
+        message: 'Database connection error',
+        code: 'PRISMA_INITIALIZATION_ERROR',
+        details: {
+          errorCode: exception.errorCode,
+          clientVersion: exception.clientVersion,
+          message: exception.message,
+        },
+      };
+    }
+    // Handle PrismaClientRustPanicError (unexpected errors)
+    else if (exception instanceof Prisma.PrismaClientRustPanicError) {
+      errorInfo = {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: 'Unexpected database error',
+        code: 'PRISMA_RUST_PANIC_ERROR',
+        details: {
+          message: exception.message,
+          cause: exception.cause,
+        },
+      };
+    }
+    // Fallback for any unhandled Prisma error types
+    else {
+      errorInfo = {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: 'Database error',
+        code: 'DATABASE_ERROR',
+        details: {
+          message: (exception as Error).message,
+        },
+      };
+    }
+
+    // Log error for debugging
+    this.logger.error(
+      `${method} ${path} - Prisma error: ${errorInfo.code}`,
+      {
+        error: exception,
+        errorInfo,
+        request: { method, path, timestamp },
+      },
+    );
+
+    response.status(errorInfo.status).json({
+      statusCode: errorInfo.status,
+      timestamp,
+      path,
+      method,
+      message: errorInfo.message,
+      code: errorInfo.code,
+      details: errorInfo.details,
+    });
+  }
+
+  /**
+   * Handle PrismaClientKnownRequestError with error code mapping
+   * Single Responsibility: Map Prisma error codes to HTTP status and messages
+   */
+  private handleKnownRequestError(
+    exception: Prisma.PrismaClientKnownRequestError,
+  ): {
+    status: HttpStatus;
+    message: string;
+    code: string;
+    details?: Record<string, any>;
+  } {
     // Map Prisma error codes to HTTP status and messages
     const errorMap: Record<
       string,
@@ -48,6 +166,101 @@ export class PrismaExceptionFilter implements ExceptionFilter {
         message: 'Invalid field value',
         code: 'INVALID_FIELD_VALUE',
       },
+      P2006: {
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Invalid value provided',
+        code: 'INVALID_VALUE',
+      },
+      P2007: {
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Data validation error',
+        code: 'DATA_VALIDATION_ERROR',
+      },
+      P2008: {
+        status: HttpStatus.REQUEST_TIMEOUT,
+        message: 'Query execution timeout',
+        code: 'QUERY_TIMEOUT',
+      },
+      P2009: {
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Invalid query argument',
+        code: 'INVALID_QUERY_ARGUMENT',
+      },
+      P2010: {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: 'Raw query failed',
+        code: 'RAW_QUERY_FAILED',
+      },
+      P2011: {
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Null constraint violation',
+        code: 'NULL_CONSTRAINT_VIOLATION',
+      },
+      P2012: {
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Missing required value',
+        code: 'MISSING_REQUIRED_VALUE',
+      },
+      P2013: {
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Missing required argument',
+        code: 'MISSING_REQUIRED_ARGUMENT',
+      },
+      P2015: {
+        status: HttpStatus.NOT_FOUND,
+        message: 'Related record not found',
+        code: 'RELATED_RECORD_NOT_FOUND',
+      },
+      P2016: {
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Query interpretation error',
+        code: 'QUERY_INTERPRETATION_ERROR',
+      },
+      P2017: {
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Records required for operation not found',
+        code: 'RECORDS_NOT_FOUND',
+      },
+      P2018: {
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Required connected records not found',
+        code: 'CONNECTED_RECORDS_NOT_FOUND',
+      },
+      P2019: {
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Input error',
+        code: 'INPUT_ERROR',
+      },
+      P2020: {
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Value out of range',
+        code: 'VALUE_OUT_OF_RANGE',
+      },
+      P2021: {
+        status: HttpStatus.NOT_FOUND,
+        message: 'Table does not exist',
+        code: 'TABLE_NOT_FOUND',
+      },
+      P2022: {
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Column does not exist',
+        code: 'COLUMN_NOT_FOUND',
+      },
+      P2023: {
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Inconsistent column data',
+        code: 'INCONSISTENT_COLUMN_DATA',
+      },
+      P2024: {
+        status: HttpStatus.REQUEST_TIMEOUT,
+        message: 'Connection timeout',
+        code: 'CONNECTION_TIMEOUT',
+      },
+      P2027: {
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Multiple errors occurred',
+        code: 'MULTIPLE_ERRORS',
+      },
     };
 
     const errorInfo =
@@ -57,14 +270,13 @@ export class PrismaExceptionFilter implements ExceptionFilter {
         code: 'DATABASE_ERROR',
       };
 
-    response.status(errorInfo.status).json({
-      statusCode: errorInfo.status,
-      timestamp,
-      path,
-      method,
-      message: errorInfo.message,
-      code: errorInfo.code,
-      details: exception.meta,
-    });
+    return {
+      ...errorInfo,
+      details: {
+        prismaCode: exception.code,
+        meta: exception.meta,
+        cause: exception.cause,
+      },
+    };
   }
 }

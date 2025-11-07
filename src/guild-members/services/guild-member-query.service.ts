@@ -65,13 +65,14 @@ export class GuildMemberQueryService {
   /**
    * Get user's guild memberships
    * Single Responsibility: User-guild relationship retrieval
+   * 
+   * Note: Settings are NOT included. If settings are needed,
+   * fetch them separately using GuildSettingsService.
    */
   async getUserGuilds(userId: string): Promise<any[]> {
     try {
       return await this.guildMemberRepository.findByUserId(userId, {
-        guild: {
-          include: { settings: true },
-        },
+        guild: true,
       });
     } catch (error) {
       this.logger.error(`Failed to get guilds for user ${userId}:`, error);
@@ -82,13 +83,15 @@ export class GuildMemberQueryService {
   /**
    * Find all memberships for a user with guild data
    * Single Responsibility: User membership retrieval with guild information
+   * 
+   * Note: Settings are NOT included. If settings are needed for permission checks,
+   * fetch them separately using GuildSettingsService or pass undefined to
+   * permission service methods which will handle fetching.
    */
   async findMembersByUser(userId: string): Promise<any[]> {
     try {
       return await this.guildMemberRepository.findByUserId(userId, {
-        guild: {
-          include: { settings: true },
-        },
+        guild: true,
       });
     } catch (error) {
       this.logger.error(
@@ -100,8 +103,12 @@ export class GuildMemberQueryService {
   }
 
   /**
-   * Find member with guild settings included
-   * Single Responsibility: Member retrieval with guild settings for permission checks
+   * Find member with guild included
+   * Single Responsibility: Member retrieval with guild data
+   * 
+   * Note: This method does NOT include settings. Settings are NOT a Prisma relation.
+   * If settings are needed, fetch them separately using GuildSettingsService
+   * or pass undefined to permission service methods.
    */
   async findMemberWithGuildSettings(
     userId: string,
@@ -114,12 +121,22 @@ export class GuildMemberQueryService {
       );
     } catch (error) {
       this.logger.error(
-        `Failed to fetch member with guild settings for user ${userId} in guild ${guildId}:`,
+        `Failed to fetch member with guild for user ${userId} in guild ${guildId}:`,
         error,
       );
       return null;
     }
   }
 }
+
+
+
+
+
+
+
+
+
+
 
 

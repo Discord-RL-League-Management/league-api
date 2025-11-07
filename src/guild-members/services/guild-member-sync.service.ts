@@ -28,6 +28,7 @@ export class GuildMemberSyncService {
     members: Array<{
       userId: string;
       username: string;
+      nickname?: string;
       roles: string[];
     }>,
   ): Promise<{ synced: number }> {
@@ -47,7 +48,13 @@ export class GuildMemberSyncService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2003'
       ) {
-        throw new NotFoundException(`Guild ${guildId} not found`);
+        const meta = error.meta as any;
+        if (meta?.field_name?.includes('userId') || meta?.field_name?.includes('user')) {
+          throw new NotFoundException(`One or more users not found for guild ${guildId}`);
+        } else if (meta?.field_name?.includes('guildId') || meta?.field_name?.includes('guild')) {
+          throw new NotFoundException(`Guild ${guildId} not found`);
+        }
+        throw new NotFoundException('Foreign key constraint failed');
       }
       this.logger.error(`Failed to sync members for guild ${guildId}:`, error);
       throw new InternalServerErrorException('Failed to sync guild members');
@@ -102,5 +109,6 @@ export class GuildMemberSyncService {
     }
   }
 }
+
 
 

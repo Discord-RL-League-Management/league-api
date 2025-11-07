@@ -16,6 +16,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { PermissionCheckService } from './modules/permission-check/permission-check.service';
 import { GuildMembersService } from '../guild-members/guild-members.service';
+import { GuildSettingsService } from '../guilds/guild-settings.service';
 import type { AuthenticatedUser } from '../common/interfaces/user.interface';
 
 /**
@@ -32,7 +33,8 @@ export class PermissionsController {
 
   constructor(
     private permissionCheckService: PermissionCheckService,
-    private guildMembersService: GuildMembersService
+    private guildMembersService: GuildMembersService,
+    private guildSettingsService: GuildSettingsService,
   ) {}
 
   @Get('me')
@@ -46,9 +48,13 @@ export class PermissionsController {
   ) {
     this.logger.log(`User ${user.id} requested permissions for guild ${guildId}`);
 
+    // Fetch settings separately (settings are not a Prisma relation)
+    const settings = await this.guildSettingsService.getSettings(guildId);
+
     const permissionState = await this.permissionCheckService.checkGuildAccess(
       user.id,
-      guildId
+      guildId,
+      settings,
     );
 
     // Get user roles from guild membership
@@ -60,4 +66,14 @@ export class PermissionsController {
     };
   }
 }
+
+
+
+
+
+
+
+
+
+
 

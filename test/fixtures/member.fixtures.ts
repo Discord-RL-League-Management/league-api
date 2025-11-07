@@ -233,9 +233,13 @@ export const apiFixtures = {
   createMockGuildsService: (): any => ({
     exists: jest.fn(),
     findOne: jest.fn(),
+    findAll: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
+    findActiveGuildIds: jest.fn(),
+    upsert: jest.fn(),
+    syncGuildWithMembers: jest.fn(),
   }),
 
   /**

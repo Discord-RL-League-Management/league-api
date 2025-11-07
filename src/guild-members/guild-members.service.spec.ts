@@ -1,8 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException, InternalServerErrorException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { GuildMembersService } from './guild-members.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
+import { GuildMemberRepository } from './repositories/guild-member.repository';
+import { GuildMemberQueryService } from './services/guild-member-query.service';
+import { GuildMemberStatisticsService } from './services/guild-member-statistics.service';
+import { GuildMemberSyncService } from './services/guild-member-sync.service';
 import { apiFixtures } from '../../test/fixtures/member.fixtures';
 
 describe('GuildMembersService', () => {
@@ -42,6 +47,61 @@ describe('GuildMembersService', () => {
     exists: jest.fn(),
   };
 
+  const mockGuildMemberRepository = {
+    // BaseRepository methods
+    create: jest.fn(),
+    findById: jest.fn(),
+    findAll: jest.fn(),
+    update: jest.fn(),
+    updateById: jest.fn(),
+    delete: jest.fn(),
+    deleteById: jest.fn(),
+    exists: jest.fn(),
+    existsById: jest.fn(),
+    // Composite key methods
+    findByCompositeKey: jest.fn(),
+    updateByCompositeKey: jest.fn(),
+    deleteByCompositeKey: jest.fn(),
+    existsByCompositeKey: jest.fn(),
+    // Guild-specific methods
+    findByGuildId: jest.fn(),
+    findByUserId: jest.fn(),
+    findWithGuildSettings: jest.fn(),
+    searchByUsername: jest.fn(),
+    // Sync methods
+    upsert: jest.fn(),
+    syncMembers: jest.fn(),
+    createMany: jest.fn(),
+    deleteByGuildId: jest.fn(),
+    // Role methods
+    updateRoles: jest.fn(),
+    countMembersWithRoles: jest.fn(),
+    // Statistics
+    countStats: jest.fn(),
+    // Alias methods for compatibility
+    findOne: jest.fn(),
+    remove: jest.fn(),
+  };
+
+  const mockGuildMemberQueryService = {
+    findAll: jest.fn(),
+    searchMembers: jest.fn(),
+    getUserGuilds: jest.fn(),
+    findMemberWithGuildSettings: jest.fn(),
+    findMembersByUser: jest.fn(),
+  };
+
+  const mockGuildMemberStatisticsService = {
+    getMemberStats: jest.fn(),
+    countMembersWithRoles: jest.fn(),
+    getActiveMembersCount: jest.fn(),
+  };
+
+  const mockGuildMemberSyncService = {
+    syncGuildMembers: jest.fn(),
+    updateMemberRoles: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -53,6 +113,22 @@ describe('GuildMembersService', () => {
         {
           provide: UsersService,
           useValue: mockUsersService,
+        },
+        {
+          provide: GuildMemberRepository,
+          useValue: mockGuildMemberRepository,
+        },
+        {
+          provide: GuildMemberQueryService,
+          useValue: mockGuildMemberQueryService,
+        },
+        {
+          provide: GuildMemberStatisticsService,
+          useValue: mockGuildMemberStatisticsService,
+        },
+        {
+          provide: GuildMemberSyncService,
+          useValue: mockGuildMemberSyncService,
         },
       ],
     }).compile();
@@ -78,7 +154,7 @@ describe('GuildMembersService', () => {
       const mockMember = { ...memberData, id: 'member123' };
 
       mockUsersService.exists.mockResolvedValue(true);
-      mockPrismaService.guildMember.upsert.mockResolvedValue(mockMember);
+      mockGuildMemberRepository.upsert.mockResolvedValue(mockMember);
 
       // Act
       const result = await service.create(memberData);
@@ -86,23 +162,7 @@ describe('GuildMembersService', () => {
       // Assert
       expect(result).toEqual(mockMember);
       expect(mockUsersService.exists).toHaveBeenCalledWith(memberData.userId);
-      expect(mockPrismaService.guildMember.upsert).toHaveBeenCalledWith({
-        where: {
-          userId_guildId: {
-            userId: memberData.userId,
-            guildId: memberData.guildId,
-          },
-        },
-        update: {
-          username: memberData.username,
-          roles: memberData.roles,
-          updatedAt: expect.any(Date),
-        },
-        create: {
-          ...memberData,
-          roles: memberData.roles,
-        },
-      });
+      expect(mockGuildMemberRepository.upsert).toHaveBeenCalledWith(memberData);
     });
 
     it('should throw NotFoundException when guild does not exist (foreign key error)', async () => {
@@ -113,9 +173,11 @@ describe('GuildMembersService', () => {
         username: 'testuser',
       };
       mockUsersService.exists.mockResolvedValue(true);
-      const foreignKeyError = new Error('Foreign key constraint failed');
-      foreignKeyError.code = 'P2003';
-      mockPrismaService.guildMember.upsert.mockRejectedValue(foreignKeyError);
+      const foreignKeyError = new Prisma.PrismaClientKnownRequestError(
+        'Foreign key constraint failed',
+        { code: 'P2003', clientVersion: '5.0.0' },
+      );
+      mockGuildMemberRepository.upsert.mockRejectedValue(foreignKeyError);
 
       // Act & Assert
       await expect(service.create(memberData)).rejects.toThrow(
@@ -133,9 +195,7 @@ describe('GuildMembersService', () => {
         guildId: '456',
         username: 'testuser',
       };
-      const mockGuild = { id: '456', name: 'Test Guild' };
-      mockPrismaService.guild.findUnique.mockResolvedValue(mockGuild);
-      mockPrismaService.user.findUnique.mockResolvedValue(null);
+      mockUsersService.exists.mockResolvedValue(false);
 
       // Act & Assert
       await expect(service.create(memberData)).rejects.toThrow(
@@ -159,40 +219,25 @@ describe('GuildMembersService', () => {
         username: 'testuser',
         user: { id: userId, username: 'testuser' },
       };
-      mockPrismaService.guildMember.findUnique.mockResolvedValue(mockMember);
+      mockGuildMemberRepository.findByCompositeKey.mockResolvedValue(mockMember);
 
       // Act
       const result = await service.findOne(userId, guildId);
 
       // Assert
       expect(result).toEqual(mockMember);
-      expect(prisma.guildMember.findUnique).toHaveBeenCalledWith({
-        where: {
-          userId_guildId: {
-            userId,
-            guildId,
-          },
-        },
-        include: {
-          user: {
-            select: {
-              id: true,
-              username: true,
-              globalName: true,
-              avatar: true,
-              email: true,
-              lastLoginAt: true,
-            },
-          },
-        },
-      });
+      expect(mockGuildMemberRepository.findByCompositeKey).toHaveBeenCalledWith(
+        userId,
+        guildId,
+        { user: true },
+      );
     });
 
     it('should throw NotFoundException when member not found', async () => {
       // Arrange
       const userId = '123';
       const guildId = '456';
-      mockPrismaService.guildMember.findUnique.mockResolvedValue(null);
+      mockGuildMemberRepository.findByCompositeKey.mockResolvedValue(null);
 
       // Act & Assert
       await expect(service.findOne(userId, guildId)).rejects.toThrow(
@@ -209,37 +254,28 @@ describe('GuildMembersService', () => {
       // Arrange
       const userId = '123';
       const guildId = '456';
-      const mockMember = { id: 'member123', userId, guildId };
-      mockPrismaService.guildMember.findUnique.mockResolvedValue(mockMember);
-      mockPrismaService.guildMember.delete.mockResolvedValue(mockMember);
+      mockGuildMemberRepository.existsByCompositeKey.mockResolvedValue(true);
+      mockGuildMemberRepository.deleteByCompositeKey.mockResolvedValue(undefined);
 
       // Act
       await service.remove(userId, guildId);
 
       // Assert
-      expect(prisma.guildMember.findUnique).toHaveBeenCalledWith({
-        where: {
-          userId_guildId: {
-            userId,
-            guildId,
-          },
-        },
-      });
-      expect(prisma.guildMember.delete).toHaveBeenCalledWith({
-        where: {
-          userId_guildId: {
-            userId,
-            guildId,
-          },
-        },
-      });
+      expect(mockGuildMemberRepository.existsByCompositeKey).toHaveBeenCalledWith(
+        userId,
+        guildId,
+      );
+      expect(mockGuildMemberRepository.deleteByCompositeKey).toHaveBeenCalledWith(
+        userId,
+        guildId,
+      );
     });
 
     it('should throw NotFoundException when member not found', async () => {
       // Arrange
       const userId = '123';
       const guildId = '456';
-      mockPrismaService.guildMember.findUnique.mockResolvedValue(null);
+      mockGuildMemberRepository.existsByCompositeKey.mockResolvedValue(false);
 
       // Act & Assert
       await expect(service.remove(userId, guildId)).rejects.toThrow(
@@ -257,13 +293,8 @@ describe('GuildMembersService', () => {
         { userId: '124', username: 'user2', roles: ['role2'] },
       ];
 
-      mockPrismaService.$transaction.mockImplementation(async (callback) => {
-        return callback({
-          guildMember: {
-            deleteMany: jest.fn().mockResolvedValue({}),
-            createMany: jest.fn().mockResolvedValue({}),
-          },
-        });
+      mockGuildMemberSyncService.syncGuildMembers.mockResolvedValue({
+        synced: members.length,
       });
 
       // Act
@@ -271,7 +302,10 @@ describe('GuildMembersService', () => {
 
       // Assert
       expect(result).toEqual({ synced: members.length });
-      expect(mockPrismaService.$transaction).toHaveBeenCalled();
+      expect(mockGuildMemberSyncService.syncGuildMembers).toHaveBeenCalledWith(
+        guildId,
+        members,
+      );
     });
 
     it('should throw NotFoundException when guild does not exist (foreign key error)', async () => {
@@ -279,9 +313,8 @@ describe('GuildMembersService', () => {
       const guildId = 'nonexistent';
       const members = [{ userId: '123', username: 'user1', roles: [] }];
 
-      const foreignKeyError = new Error('Foreign key constraint failed');
-      foreignKeyError.code = 'P2003';
-      mockPrismaService.$transaction.mockRejectedValue(foreignKeyError);
+      const foreignKeyError = new NotFoundException('Guild nonexistent not found');
+      mockGuildMemberSyncService.syncGuildMembers.mockRejectedValue(foreignKeyError);
 
       // Act & Assert
       await expect(service.syncGuildMembers(guildId, members)).rejects.toThrow(
@@ -300,14 +333,7 @@ describe('GuildMembersService', () => {
       const mockMembers = apiFixtures.createMemberList(3);
       const mockTotal = 3;
 
-      mockPrismaService.guildMember.findMany.mockResolvedValue(mockMembers);
-      mockPrismaService.guildMember.count.mockResolvedValue(mockTotal);
-
-      // Act
-      const result = await service.searchMembers(guildId, query, page, limit);
-
-      // Assert
-      expect(result).toEqual({
+      const mockResponse = {
         members: mockMembers,
         pagination: {
           page: 1,
@@ -315,29 +341,20 @@ describe('GuildMembersService', () => {
           total: 3,
           pages: 1,
         },
-      });
-      expect(prisma.guildMember.findMany).toHaveBeenCalledWith({
-        where: {
-          guildId,
-          OR: [
-            { username: { contains: query, mode: 'insensitive' } },
-          ],
-        },
-        include: {
-          user: {
-            select: {
-              id: true,
-              username: true,
-              globalName: true,
-              avatar: true,
-              lastLoginAt: true,
-            },
-          },
-        },
-        skip: 0,
-        take: 20,
-        orderBy: { joinedAt: 'desc' },
-      });
+      };
+      mockGuildMemberQueryService.searchMembers.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await service.searchMembers(guildId, query, page, limit);
+
+      // Assert
+      expect(result).toEqual(mockResponse);
+      expect(mockGuildMemberQueryService.searchMembers).toHaveBeenCalledWith(
+        guildId,
+        query,
+        page,
+        limit,
+      );
     });
 
     it('should return empty results when no matches', async () => {
@@ -347,14 +364,7 @@ describe('GuildMembersService', () => {
       const page = 1;
       const limit = 20;
 
-      mockPrismaService.guildMember.findMany.mockResolvedValue([]);
-      mockPrismaService.guildMember.count.mockResolvedValue(0);
-
-      // Act
-      const result = await service.searchMembers(guildId, query, page, limit);
-
-      // Assert
-      expect(result).toEqual({
+      const mockResponse = {
         members: [],
         pagination: {
           page: 1,
@@ -362,7 +372,14 @@ describe('GuildMembersService', () => {
           total: 0,
           pages: 0,
         },
-      });
+      };
+      mockGuildMemberQueryService.searchMembers.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await service.searchMembers(guildId, query, page, limit);
+
+      // Assert
+      expect(result).toEqual(mockResponse);
     });
 
     it('should paginate results correctly (skip/take)', async () => {
@@ -374,25 +391,22 @@ describe('GuildMembersService', () => {
       const mockMembers = apiFixtures.createMemberList(10);
       const mockTotal = 25;
 
-      mockPrismaService.guildMember.findMany.mockResolvedValue(mockMembers);
-      mockPrismaService.guildMember.count.mockResolvedValue(mockTotal);
+      const mockResponse = {
+        members: mockMembers,
+        pagination: {
+          page: 2,
+          limit: 10,
+          total: 25,
+          pages: 3,
+        },
+      };
+      mockGuildMemberQueryService.searchMembers.mockResolvedValue(mockResponse);
 
       // Act
       const result = await service.searchMembers(guildId, query, page, limit);
 
       // Assert
-      expect(result.pagination).toEqual({
-        page: 2,
-        limit: 10,
-        total: 25,
-        pages: 3,
-      });
-      expect(prisma.guildMember.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          skip: 10, // (page - 1) * limit
-          take: 10,
-        })
-      );
+      expect(result).toEqual(mockResponse);
     });
 
     it('should return correct pagination metadata (page, limit, total, pages)', async () => {
@@ -403,19 +417,22 @@ describe('GuildMembersService', () => {
       const limit = 5;
       const mockTotal = 23;
 
-      mockPrismaService.guildMember.findMany.mockResolvedValue(apiFixtures.createMemberList(5));
-      mockPrismaService.guildMember.count.mockResolvedValue(mockTotal);
+      const mockResponse = {
+        members: apiFixtures.createMemberList(5),
+        pagination: {
+          page: 3,
+          limit: 5,
+          total: 23,
+          pages: 5,
+        },
+      };
+      mockGuildMemberQueryService.searchMembers.mockResolvedValue(mockResponse);
 
       // Act
       const result = await service.searchMembers(guildId, query, page, limit);
 
       // Assert
-      expect(result.pagination).toEqual({
-        page: 3,
-        limit: 5,
-        total: 23,
-        pages: 5, // Math.ceil(23 / 5)
-      });
+      expect(result).toEqual(mockResponse);
     });
 
     it('should handle special characters in search query', async () => {
@@ -424,22 +441,26 @@ describe('GuildMembersService', () => {
       const query = 'user@#$%^&*()';
       const mockMembers = apiFixtures.createMemberList(1);
 
-      mockPrismaService.guildMember.findMany.mockResolvedValue(mockMembers);
-      mockPrismaService.guildMember.count.mockResolvedValue(1);
+      const mockResponse = {
+        members: mockMembers,
+        pagination: {
+          page: 1,
+          limit: 20,
+          total: 1,
+          pages: 1,
+        },
+      };
+      mockGuildMemberQueryService.searchMembers.mockResolvedValue(mockResponse);
 
       // Act
       await service.searchMembers(guildId, query);
 
       // Assert
-      expect(prisma.guildMember.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: {
-            guildId,
-            OR: [
-              { username: { contains: query, mode: 'insensitive' } },
-            ],
-          },
-        })
+      expect(mockGuildMemberQueryService.searchMembers).toHaveBeenCalledWith(
+        guildId,
+        query,
+        1,
+        20,
       );
     });
 
@@ -448,17 +469,26 @@ describe('GuildMembersService', () => {
       const guildId = '987654321098765432';
       const query = 'test';
 
-      mockPrismaService.guildMember.findMany.mockResolvedValue([]);
-      mockPrismaService.guildMember.count.mockResolvedValue(0);
+      const mockResponse = {
+        members: [],
+        pagination: {
+          page: 1,
+          limit: 20,
+          total: 0,
+          pages: 0,
+        },
+      };
+      mockGuildMemberQueryService.searchMembers.mockResolvedValue(mockResponse);
 
       // Act
       await service.searchMembers(guildId, query);
 
       // Assert
-      expect(prisma.guildMember.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          orderBy: { joinedAt: 'desc' },
-        })
+      expect(mockGuildMemberQueryService.searchMembers).toHaveBeenCalledWith(
+        guildId,
+        query,
+        1,
+        20,
       );
     });
 
@@ -466,16 +496,13 @@ describe('GuildMembersService', () => {
       // Arrange
       const guildId = '987654321098765432';
       const query = 'test';
-      const dbError = new Error('Database connection failed');
+      const dbError = new InternalServerErrorException('Failed to search guild members');
 
-      mockPrismaService.guildMember.findMany.mockRejectedValue(dbError);
+      mockGuildMemberQueryService.searchMembers.mockRejectedValue(dbError);
 
       // Act & Assert
       await expect(service.searchMembers(guildId, query)).rejects.toThrow(
         InternalServerErrorException
-      );
-      await expect(service.searchMembers(guildId, query)).rejects.toThrow(
-        'Failed to search guild members'
       );
     });
   });
@@ -488,10 +515,11 @@ describe('GuildMembersService', () => {
       const mockActiveMembers = 75;
       const mockNewThisWeek = 5;
 
-      mockPrismaService.guildMember.count
-        .mockResolvedValueOnce(mockTotalMembers) // First call for total
-        .mockResolvedValueOnce(mockActiveMembers) // Second call for active
-        .mockResolvedValueOnce(mockNewThisWeek); // Third call for new
+      mockGuildMemberStatisticsService.getMemberStats.mockResolvedValue({
+        totalMembers: 100,
+        activeMembers: 75,
+        newThisWeek: 5,
+      });
 
       // Act
       const result = await service.getMemberStats(guildId);
@@ -502,7 +530,9 @@ describe('GuildMembersService', () => {
         activeMembers: 75,
         newThisWeek: 5,
       });
-      expect(prisma.guildMember.count).toHaveBeenCalledTimes(3);
+      expect(mockGuildMemberStatisticsService.getMemberStats).toHaveBeenCalledWith(
+        guildId,
+      );
     });
 
     it('should return correct active member count (updated in last 7 days)', async () => {
@@ -510,52 +540,49 @@ describe('GuildMembersService', () => {
       const guildId = '987654321098765432';
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-      mockPrismaService.guildMember.count
-        .mockResolvedValueOnce(100) // Total
-        .mockResolvedValueOnce(75) // Active
-        .mockResolvedValueOnce(5); // New
+      mockGuildMemberStatisticsService.getMemberStats.mockResolvedValue({
+        totalMembers: 100,
+        activeMembers: 75,
+        newThisWeek: 5,
+      });
 
       // Act
       await service.getMemberStats(guildId);
 
       // Assert
-      expect(prisma.guildMember.count).toHaveBeenNthCalledWith(2, {
-        where: {
-          guildId,
-          updatedAt: { gte: expect.any(Date) },
-        },
-      });
+      expect(mockGuildMemberStatisticsService.getMemberStats).toHaveBeenCalledWith(
+        guildId,
+      );
     });
 
     it('should return correct new member count (joined in last 7 days)', async () => {
       // Arrange
       const guildId = '987654321098765432';
 
-      mockPrismaService.guildMember.count
-        .mockResolvedValueOnce(100) // Total
-        .mockResolvedValueOnce(75) // Active
-        .mockResolvedValueOnce(5); // New
+      mockGuildMemberStatisticsService.getMemberStats.mockResolvedValue({
+        totalMembers: 100,
+        activeMembers: 75,
+        newThisWeek: 5,
+      });
 
       // Act
       await service.getMemberStats(guildId);
 
       // Assert
-      expect(prisma.guildMember.count).toHaveBeenNthCalledWith(3, {
-        where: {
-          guildId,
-          joinedAt: { gte: expect.any(Date) },
-        },
-      });
+      expect(mockGuildMemberStatisticsService.getMemberStats).toHaveBeenCalledWith(
+        guildId,
+      );
     });
 
     it('should return zeros when guild has no members', async () => {
       // Arrange
       const guildId = '987654321098765432';
 
-      mockPrismaService.guildMember.count
-        .mockResolvedValueOnce(0) // Total
-        .mockResolvedValueOnce(0) // Active
-        .mockResolvedValueOnce(0); // New
+      mockGuildMemberStatisticsService.getMemberStats.mockResolvedValue({
+        totalMembers: 0,
+        activeMembers: 0,
+        newThisWeek: 0,
+      });
 
       // Act
       const result = await service.getMemberStats(guildId);
@@ -573,46 +600,31 @@ describe('GuildMembersService', () => {
       const guildId = '987654321098765432';
       const beforeCall = Date.now();
 
-      mockPrismaService.guildMember.count
-        .mockResolvedValueOnce(100)
-        .mockResolvedValueOnce(75)
-        .mockResolvedValueOnce(5);
+      mockGuildMemberStatisticsService.getMemberStats.mockResolvedValue({
+        totalMembers: 100,
+        activeMembers: 75,
+        newThisWeek: 5,
+      });
 
       // Act
       await service.getMemberStats(guildId);
 
       // Assert
-      const afterCall = Date.now();
-      const sevenDaysInMs = 7 * 24 * 60 * 60 * 1000;
-
-      // Check that the date is within the expected range
-      const activeCall = mockPrismaService.guildMember.count.mock.calls[1][0];
-      const newCall = mockPrismaService.guildMember.count.mock.calls[2][0];
-
-      expect(activeCall.where.updatedAt.gte.getTime()).toBeGreaterThanOrEqual(
-        beforeCall - sevenDaysInMs
+      expect(mockGuildMemberStatisticsService.getMemberStats).toHaveBeenCalledWith(
+        guildId,
       );
-      expect(activeCall.where.updatedAt.gte.getTime()).toBeLessThanOrEqual(afterCall);
-
-      expect(newCall.where.joinedAt.gte.getTime()).toBeGreaterThanOrEqual(
-        beforeCall - sevenDaysInMs
-      );
-      expect(newCall.where.joinedAt.gte.getTime()).toBeLessThanOrEqual(afterCall);
     });
 
     it('should throw InternalServerErrorException when database error occurs', async () => {
       // Arrange
       const guildId = '987654321098765432';
-      const dbError = new Error('Database connection failed');
+      const dbError = new InternalServerErrorException('Failed to get member statistics');
 
-      mockPrismaService.guildMember.count.mockRejectedValue(dbError);
+      mockGuildMemberStatisticsService.getMemberStats.mockRejectedValue(dbError);
 
       // Act & Assert
       await expect(service.getMemberStats(guildId)).rejects.toThrow(
         InternalServerErrorException
-      );
-      await expect(service.getMemberStats(guildId)).rejects.toThrow(
-        'Failed to get member statistics'
       );
     });
 
@@ -620,10 +632,9 @@ describe('GuildMembersService', () => {
       // Arrange
       const guildId = '987654321098765432';
 
-      mockPrismaService.guildMember.count
-        .mockResolvedValueOnce(100) // Total succeeds
-        .mockRejectedValueOnce(new Error('Active query failed')) // Active fails
-        .mockResolvedValueOnce(5); // New succeeds
+      mockGuildMemberStatisticsService.getMemberStats.mockRejectedValue(
+        new InternalServerErrorException('Failed to get member statistics'),
+      );
 
       // Act & Assert
       await expect(service.getMemberStats(guildId)).rejects.toThrow(

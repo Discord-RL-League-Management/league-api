@@ -44,7 +44,8 @@ This document provides a comprehensive reference of all available API endpoints 
 |--------|----------|-------------|---------------|
 | `GET` | `/auth/discord` | Initiate Discord OAuth flow | ❌ No |
 | `GET` | `/auth/discord/callback` | OAuth callback handler | ❌ No |
-| `GET` | `/auth/me` | Get current authenticated user | ✅ JWT |
+| `GET` | `/auth/me` | Get current authenticated user (user data only, no guilds) | ✅ JWT |
+| `GET` | `/auth/guilds` | Get user's available guilds | ✅ JWT |
 
 **OAuth Flow:**
 1. User visits `/auth/discord`
@@ -52,6 +53,8 @@ This document provides a comprehensive reference of all available API endpoints 
 3. Discord redirects to `/auth/discord/callback` with code
 4. API exchanges code for JWT token
 5. User redirected to frontend with token
+
+**Note**: `/auth/me` returns user profile data only. User guilds are available via `/auth/guilds` endpoint.
 
 ---
 

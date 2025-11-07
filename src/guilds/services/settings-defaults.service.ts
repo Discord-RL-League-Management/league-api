@@ -1,27 +1,79 @@
 import { Injectable } from '@nestjs/common';
 import {
   GuildSettings,
-  ChannelsConfig,
-  RolesConfig,
-  FeaturesConfig,
-  PermissionsConfig,
-  DisplayConfig,
+  ConfigMetadata,
 } from '../interfaces/settings.interface';
+import {
+  CURRENT_SCHEMA_VERSION,
+  CURRENT_CONFIG_VERSION,
+} from '../constants/config-version.constants';
 
 @Injectable()
 export class SettingsDefaultsService {
   /**
    * Get default settings structure
    * Single Responsibility: Default settings definition
+   * 
+   * Returns the complete default configuration for a new guild.
+   * These defaults are used by:
+   * - Database trigger (auto-creates settings on guild insert)
+   * - Repository upsert operations
+   * - Service layer lazy initialization
+   * 
+   * Default structure:
+   * - _metadata: Version tracking info (schemaVersion, configVersion)
+   * - bot_command_channels: Empty array (listen on all channels)
+   * 
+   * @returns Complete default guild settings structure with metadata
    */
   getDefaults(): GuildSettings {
     return {
-      channels: this.getDefaultChannels(),
-      roles: this.getDefaultRoles(),
-      features: this.getDefaultFeatures(),
-      permissions: this.getDefaultPermissions(),
-      display: this.getDefaultDisplay(),
+      _metadata: this.getDefaultMetadata(),
+      bot_command_channels: [],  // Empty = listen on all channels
+      register_command_channels: [],  // Empty = use bot_command_channels fallback
+      roles: {
+        admin: [],
+        moderator: [],
+        member: [],
+        league_manager: [],
+        tournament_manager: [],
+      },
     };
+  }
+
+  /**
+   * Get default metadata with current version
+   * Single Responsibility: Default metadata structure
+   */
+  private getDefaultMetadata(): ConfigMetadata {
+    return {
+      version: CURRENT_CONFIG_VERSION,
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+    };
+  }
+
+  /**
+   * Normalize config to current schema structure
+   * Ensures metadata is present if missing
+   * Single Responsibility: Metadata normalization
+   */
+  normalizeToCurrentSchema(config: Partial<GuildSettings>): GuildSettings {
+    const normalized = this.mergeWithDefaults(config);
+    
+    // Ensure metadata is present
+    if (!normalized._metadata) {
+      normalized._metadata = this.getDefaultMetadata();
+    } else {
+      // Ensure metadata has current version if missing
+      normalized._metadata = {
+        ...this.getDefaultMetadata(),
+        ...normalized._metadata,
+        version: normalized._metadata.version || CURRENT_CONFIG_VERSION,
+        schemaVersion: normalized._metadata.schemaVersion || CURRENT_SCHEMA_VERSION,
+      };
+    }
+    
+    return normalized;
   }
 
   /**
@@ -129,53 +181,4 @@ export class SettingsDefaultsService {
     return result;
   }
 
-  private getDefaultChannels(): ChannelsConfig {
-    return {
-      general: null,
-      announcements: null,
-      league_chat: null,
-      tournament_chat: null,
-      logs: null,
-    };
-  }
-
-  private getDefaultRoles(): RolesConfig {
-    return {
-      admin: [],
-      moderator: [],
-      member: [],
-      league_manager: [],
-      tournament_manager: [],
-    };
-  }
-
-  private getDefaultFeatures(): FeaturesConfig {
-    return {
-      league_management: true,
-      tournament_mode: false,
-      auto_roles: false,
-      statistics: true,
-      leaderboards: true,
-    };
-  }
-
-  private getDefaultPermissions(): PermissionsConfig {
-    return {
-      create_leagues: ['admin'],
-      manage_teams: ['admin'],
-      view_stats: ['member'],
-      manage_tournaments: ['admin'],
-      manage_roles: ['admin'],
-      view_logs: ['admin', 'moderator'],
-    };
-  }
-
-  private getDefaultDisplay(): DisplayConfig {
-    return {
-      show_leaderboards: true,
-      show_member_count: false,
-      theme: 'default',
-      command_prefix: '!',
-    };
-  }
 }

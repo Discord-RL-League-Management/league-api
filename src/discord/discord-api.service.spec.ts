@@ -221,6 +221,8 @@ describe('DiscordApiService', () => {
       expect(result).toEqual({
         isMember: true,
         permissions: ['ADMINISTRATOR', 'MANAGE_GUILD'],
+        roles: [],
+        hasAdministratorPermission: true,
       });
     });
 
@@ -246,7 +248,12 @@ describe('DiscordApiService', () => {
       );
 
       // Assert
-      expect(result).toEqual({ isMember: false, permissions: [] });
+      expect(result).toEqual({ 
+        isMember: false, 
+        permissions: [],
+        roles: [],
+        hasAdministratorPermission: false,
+      });
     });
 
     it('should return not a member on other errors', async () => {
@@ -262,7 +269,12 @@ describe('DiscordApiService', () => {
       );
 
       // Assert
-      expect(result).toEqual({ isMember: false, permissions: [] });
+      expect(result).toEqual({ 
+        isMember: false, 
+        permissions: [],
+        roles: [],
+        hasAdministratorPermission: false,
+      });
     });
 
     it('should handle empty permissions', async () => {
@@ -287,7 +299,103 @@ describe('DiscordApiService', () => {
       expect(result).toEqual({
         isMember: true,
         permissions: [],
+        roles: [],
+        hasAdministratorPermission: false,
       });
+    });
+  });
+
+  describe('getGuildMember', () => {
+    it('should return guild member with roles', async () => {
+      // Arrange
+      const mockResponse = {
+        data: {
+          roles: ['role1', 'role2'],
+          nick: 'TestNick',
+        },
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: {} as any,
+      };
+
+      mockHttpService.get.mockReturnValue(of(mockResponse));
+
+      // Act
+      const result = await service.getGuildMember('valid_token', 'guild123');
+
+      // Assert
+      expect(result).toEqual({
+        roles: ['role1', 'role2'],
+        nick: 'TestNick',
+      });
+    });
+
+    it('should return null on 404 (user not in guild)', async () => {
+      // Arrange
+      const mockError: Partial<AxiosError> = {
+        response: {
+          status: 404,
+          statusText: 'Not Found',
+          data: {},
+          headers: {},
+          config: {} as any,
+        },
+        message: 'Not Found',
+      };
+
+      mockHttpService.get.mockReturnValue(throwError(() => mockError));
+
+      // Act
+      const result = await service.getGuildMember('valid_token', 'guild123');
+
+      // Assert
+      expect(result).toBeNull();
+    });
+
+    it('should return member with empty roles if roles missing', async () => {
+      // Arrange
+      const mockResponse = {
+        data: {
+          nick: 'TestNick',
+        },
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: {} as any,
+      };
+
+      mockHttpService.get.mockReturnValue(of(mockResponse));
+
+      // Act
+      const result = await service.getGuildMember('valid_token', 'guild123');
+
+      // Assert
+      expect(result).toEqual({
+        roles: [],
+        nick: 'TestNick',
+      });
+    });
+
+    it('should throw ServiceUnavailableException on non-404 errors', async () => {
+      // Arrange
+      const mockError: Partial<AxiosError> = {
+        response: {
+          status: 500,
+          statusText: 'Internal Server Error',
+          data: {},
+          headers: {},
+          config: {} as any,
+        },
+        message: 'Server error',
+      };
+
+      mockHttpService.get.mockReturnValue(throwError(() => mockError));
+
+      // Act & Assert
+      await expect(
+        service.getGuildMember('valid_token', 'guild123'),
+      ).rejects.toThrow(ServiceUnavailableException);
     });
   });
 });

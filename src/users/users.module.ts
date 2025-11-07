@@ -5,11 +5,11 @@ import { UsersService } from './users.service';
 import { UserTransformer } from './transformers/user.transformer';
 import { UserRepository } from './repositories/user.repository';
 import { UserOrchestratorService } from './services/user-orchestrator.service';
-import { CommonModule } from '../common/common.module';
+import { EncryptionModule } from '../common/encryption.module';
 import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
-  imports: [CommonModule, PrismaModule],
+  imports: [EncryptionModule, PrismaModule],
   controllers: [InternalUsersController, UsersController],
   providers: [
     UsersService,

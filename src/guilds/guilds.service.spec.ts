@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException, ConflictException } from '@nestjs/common';
+import { NotFoundException, ConflictException, InternalServerErrorException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { GuildsService } from './guilds.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsDefaultsService } from './services/settings-defaults.service';
@@ -16,6 +17,7 @@ describe('GuildsService', () => {
       findUnique: jest.fn(),
       update: jest.fn(),
       count: jest.fn(),
+      upsert: jest.fn(),
     },
     guildSettings: {
       create: jest.fn(),
@@ -24,6 +26,8 @@ describe('GuildsService', () => {
     },
     guildMember: {
       updateMany: jest.fn(),
+      deleteMany: jest.fn(),
+      createMany: jest.fn(),
     },
     $transaction: jest.fn(),
   };
@@ -268,6 +272,254 @@ describe('GuildsService', () => {
         guildData,
         expect.any(Object)
       );
+    });
+  });
+
+  describe('syncGuildWithMembers', () => {
+    it('should atomically sync guild with members in single transaction', async () => {
+      // Arrange
+      const guildId = 'guild123';
+      const guildData = {
+        id: guildId,
+        name: 'Test Guild',
+        ownerId: 'owner123',
+        memberCount: 2,
+      };
+      const members = [
+        { userId: 'user1', username: 'User1', roles: ['role1'] },
+        { userId: 'user2', username: 'User2', roles: ['role2'] },
+      ];
+
+      const mockGuild = { ...guildData, createdAt: new Date(), isActive: true };
+      
+      mockPrismaService.$transaction.mockImplementation(async (callback) => {
+        const mockTx = {
+          guild: {
+            upsert: jest.fn().mockResolvedValue(mockGuild),
+          },
+          guildSettings: {
+            upsert: jest.fn().mockResolvedValue({}),
+          },
+          guildMember: {
+            deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+            createMany: jest.fn().mockResolvedValue({ count: 2 }),
+          },
+        };
+        return await callback(mockTx);
+      });
+
+      // Act
+      const result = await service.syncGuildWithMembers(guildId, guildData, members);
+
+      // Assert
+      expect(result.guild).toEqual(mockGuild);
+      expect(result.membersSynced).toBe(2);
+      expect(mockPrismaService.$transaction).toHaveBeenCalledTimes(1);
+    });
+
+    it('should delete existing members before creating new ones', async () => {
+      // Arrange
+      const guildId = 'guild123';
+      const guildData = { id: guildId, name: 'Test', ownerId: 'owner', memberCount: 1 };
+      const members = [{ userId: 'user1', username: 'User1', roles: [] }];
+
+      let deleteManyCalled = false;
+      let deleteManyCalledBeforeCreate = false;
+      let createManyCalled = false;
+
+      mockPrismaService.$transaction.mockImplementation(async (callback) => {
+        const mockTx = {
+          guild: {
+            upsert: jest.fn().mockResolvedValue({ id: guildId }),
+          },
+          guildSettings: {
+            upsert: jest.fn().mockResolvedValue({}),
+          },
+          guildMember: {
+            deleteMany: jest.fn(async () => {
+              deleteManyCalled = true;
+              deleteManyCalledBeforeCreate = !createManyCalled;
+              return { count: 5 };
+            }),
+            createMany: jest.fn(async () => {
+              createManyCalled = true;
+              deleteManyCalledBeforeCreate = deleteManyCalled;
+              return { count: 1 };
+            }),
+          },
+        };
+        return await callback(mockTx);
+      });
+
+      // Act
+      await service.syncGuildWithMembers(guildId, guildData, members);
+
+      // Assert
+      expect(deleteManyCalled).toBe(true);
+      expect(deleteManyCalledBeforeCreate).toBe(true);
+    });
+
+    it('should handle empty members array', async () => {
+      // Arrange
+      const guildId = 'guild123';
+      const guildData = { id: guildId, name: 'Test', ownerId: 'owner', memberCount: 0 };
+      const members: Array<{ userId: string; username: string; roles: string[] }> = [];
+
+      let createManyCalled = false;
+
+      mockPrismaService.$transaction.mockImplementation(async (callback) => {
+        const mockTx = {
+          guild: {
+            upsert: jest.fn().mockResolvedValue({ id: guildId }),
+          },
+          guildSettings: {
+            upsert: jest.fn().mockResolvedValue({}),
+          },
+          guildMember: {
+            deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+            createMany: jest.fn(() => {
+              createManyCalled = true;
+              return Promise.resolve({ count: 0 });
+            }),
+          },
+        };
+        return await callback(mockTx);
+      });
+
+      // Act
+      const result = await service.syncGuildWithMembers(guildId, guildData, members);
+
+      // Assert
+      expect(result.membersSynced).toBe(0);
+      expect(createManyCalled).toBe(false); // Should not call createMany when members array is empty
+    });
+
+    it('should upsert guild with settings in transaction', async () => {
+      // Arrange
+      const guildId = 'guild123';
+      const guildData = { id: guildId, name: 'Test', ownerId: 'owner', memberCount: 1 };
+      const members = [{ userId: 'user1', username: 'User1', roles: [] }];
+
+      let guildUpsertCalled = false;
+      let settingsUpsertCalled = false;
+
+      mockPrismaService.$transaction.mockImplementation(async (callback) => {
+        const mockTx = {
+          guild: {
+            upsert: jest.fn(async () => {
+              guildUpsertCalled = true;
+              return { id: guildId };
+            }),
+          },
+          guildSettings: {
+            upsert: jest.fn(async () => {
+              settingsUpsertCalled = true;
+              return {};
+            }),
+          },
+          guildMember: {
+            deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+            createMany: jest.fn().mockResolvedValue({ count: 1 }),
+          },
+        };
+        return await callback(mockTx);
+      });
+
+      // Act
+      await service.syncGuildWithMembers(guildId, guildData, members);
+
+      // Assert
+      expect(guildUpsertCalled).toBe(true);
+      expect(settingsUpsertCalled).toBe(true);
+    });
+
+    it('should throw NotFoundException on foreign key constraint error (P2003)', async () => {
+      // Arrange
+      const guildId = 'guild123';
+      const guildData = { id: guildId, name: 'Test', ownerId: 'owner', memberCount: 1 };
+      const members = [{ userId: 'user1', username: 'User1', roles: [] }];
+
+      const prismaError = new Prisma.PrismaClientKnownRequestError(
+        'Foreign key constraint failed',
+        {
+          code: 'P2003',
+          clientVersion: '5.0.0',
+        } as any
+      );
+
+      mockPrismaService.$transaction.mockRejectedValue(prismaError);
+
+      // Act & Assert
+      await expect(
+        service.syncGuildWithMembers(guildId, guildData, members)
+      ).rejects.toThrow(NotFoundException);
+      await expect(
+        service.syncGuildWithMembers(guildId, guildData, members)
+      ).rejects.toThrow(`Guild ${guildId} not found`);
+    });
+
+    it('should throw InternalServerErrorException on other errors', async () => {
+      // Arrange
+      const guildId = 'guild123';
+      const guildData = { id: guildId, name: 'Test', ownerId: 'owner', memberCount: 1 };
+      const members = [{ userId: 'user1', username: 'User1', roles: [] }];
+
+      const genericError = new Error('Database connection failed');
+      mockPrismaService.$transaction.mockRejectedValue(genericError);
+
+      // Act & Assert
+      await expect(
+        service.syncGuildWithMembers(guildId, guildData, members)
+      ).rejects.toThrow(InternalServerErrorException);
+    });
+
+    it('should map member data correctly', async () => {
+      // Arrange
+      const guildId = 'guild123';
+      const guildData = { id: guildId, name: 'Test', ownerId: 'owner', memberCount: 2 };
+      const members = [
+        { userId: 'user1', username: 'User1', roles: ['role1', 'role2'] },
+        { userId: 'user2', username: 'User2', roles: [] },
+      ];
+
+      let createManyData: any[] = [];
+
+      mockPrismaService.$transaction.mockImplementation(async (callback) => {
+        const mockTx = {
+          guild: {
+            upsert: jest.fn().mockResolvedValue({ id: guildId }),
+          },
+          guildSettings: {
+            upsert: jest.fn().mockResolvedValue({}),
+          },
+          guildMember: {
+            deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+            createMany: jest.fn(async (args: any) => {
+              createManyData = args.data;
+              return { count: 2 };
+            }),
+          },
+        };
+        return await callback(mockTx);
+      });
+
+      // Act
+      await service.syncGuildWithMembers(guildId, guildData, members);
+
+      // Assert
+      expect(createManyData).toHaveLength(2);
+      expect(createManyData[0]).toEqual({
+        userId: 'user1',
+        guildId,
+        username: 'User1',
+        roles: ['role1', 'role2'],
+      });
+      expect(createManyData[1]).toEqual({
+        userId: 'user2',
+        guildId,
+        username: 'User2',
+        roles: [],
+      });
     });
   });
 });

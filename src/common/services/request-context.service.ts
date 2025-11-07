@@ -40,7 +40,7 @@ export class RequestContextService {
     if (!request.requestId) {
       request.requestId = uuidv4();
     }
-    return request.requestId;
+    return request.requestId!;
   }
 }
 

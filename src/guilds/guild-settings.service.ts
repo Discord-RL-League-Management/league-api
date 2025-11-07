@@ -7,27 +7,41 @@ import {
 import { GuildSettingsDto } from './dto/guild-settings.dto';
 import { SettingsDefaultsService } from './services/settings-defaults.service';
 import { SettingsValidationService } from './services/settings-validation.service';
+import { ConfigMigrationService } from './services/config-migration.service';
 import { Inject } from '@nestjs/common';
 import type { Cache } from 'cache-manager';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { SETTINGS_CACHE_TTL } from './constants/settings.constants';
 import { GuildSettings } from './interfaces/settings.interface';
-import { GuildSettingsRepository } from './repositories/guild-settings.repository';
+import { GuildRepository } from './repositories/guild.repository';
+import { SettingsService } from '../infrastructure/settings/services/settings.service';
+import { ActivityLogService } from '../infrastructure/activity-log/services/activity-log.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class GuildSettingsService {
   private readonly logger = new Logger(GuildSettingsService.name);
 
   constructor(
-    private guildSettingsRepository: GuildSettingsRepository,
+    private guildRepository: GuildRepository,
     private settingsDefaults: SettingsDefaultsService,
     private settingsValidation: SettingsValidationService,
+    private configMigration: ConfigMigrationService,
+    private settingsService: SettingsService,
+    private activityLogService: ActivityLogService,
+    private prisma: PrismaService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   /**
    * Get guild settings with caching and defaults
-   * Single Responsibility: Settings retrieval with caching and fallback defaults
+   * Single Responsibility: Settings retrieval with caching and lazy initialization
+   * 
+   * Automatically persists default settings if they don't exist (lazy initialization).
+   * Settings creation is independent of user validation - they exist regardless of who accesses them.
+   * If settings don't exist, that's a bug - auto-create them immediately.
+   * If creation fails, that's a system error - throw it.
    */
   async getSettings(guildId: string) {
     try {
@@ -38,23 +52,79 @@ export class GuildSettingsService {
         return cached;
       }
 
-      const settings = await this.guildSettingsRepository.findByGuildId(guildId);
+      let settings = await this.settingsService.getSettings('guild', guildId);
 
-      let result;
+      // If settings don't exist, ensure guild exists first, then auto-create and persist settings
       if (!settings) {
-        result = this.settingsDefaults.getDefaults();
+        // Verify guild exists (defense-in-depth)
+        const guildExists = await this.guildRepository.exists(guildId);
+        if (!guildExists) {
+          throw new NotFoundException(`Guild ${guildId} not found`);
+        }
+
+        // Auto-create and persist default settings using existing upsert method
+        const defaultSettings = this.settingsDefaults.getDefaults();
+        settings = await this.settingsService.upsertSettings(
+          'guild',
+          guildId,
+          defaultSettings as Record<string, any>,
+          this.configMigration.getSchemaVersion(defaultSettings),
+        );
+        this.logger.warn(
+          `Auto-created missing settings for guild ${guildId}. This should not happen if database trigger is working properly.`,
+        );
+      }
+
+      // Migrate config to current schema version if needed
+      let migratedConfig: GuildSettings;
+      if (this.configMigration.needsMigration(settings.settings as any)) {
+        this.logger.log(
+          `Migrating settings for guild ${guildId} from schema version ${this.configMigration.getSchemaVersion(settings.settings as any)}`,
+        );
+
+        // Run migration
+        migratedConfig = await this.configMigration.migrate(
+          settings.settings as any,
+        );
+
+        // Validate migrated config structure
+        this.settingsValidation.validateStructure(migratedConfig);
+
+        // Persist migrated config
+        settings = await this.settingsService.updateSettings(
+          'guild',
+          guildId,
+          migratedConfig as Record<string, any>,
+        );
+
+        // Invalidate cache to ensure fresh data
+        await this.cacheManager.del(cacheKey);
+
+        this.logger.log(
+          `Successfully migrated settings for guild ${guildId} to schema version ${migratedConfig._metadata?.schemaVersion || 'unknown'}`,
+        );
       } else {
-        result = this.settingsDefaults.mergeWithDefaults(
+        // No migration needed, just normalize structure
+        migratedConfig = this.settingsDefaults.mergeWithDefaults(
           settings.settings as any,
         );
       }
+
+      const result = this.settingsDefaults.mergeWithDefaults(migratedConfig);
 
       await this.cacheManager.set(cacheKey, result, SETTINGS_CACHE_TTL);
 
       return result;
     } catch (error) {
+      // If guild doesn't exist, that's a real NotFoundException
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      // If auto-creation or retrieval fails, system is broken
       this.logger.error(`Error getting settings for guild ${guildId}:`, error);
-      throw new NotFoundException(`Settings for guild ${guildId} not found`);
+      throw new InternalServerErrorException(
+        `Failed to retrieve settings for guild ${guildId}. This is a system error.`,
+      );
     }
   }
 
@@ -72,7 +142,8 @@ export class GuildSettingsService {
       await this.settingsValidation.validate(newSettings, guildId);
 
       // Get current settings for merging
-      const currentSettings = await this.guildSettingsRepository.findByGuildId(
+      const currentSettings = await this.settingsService.getSettings(
+        'guild',
         guildId,
       );
 
@@ -89,14 +160,30 @@ export class GuildSettingsService {
         );
       }
 
-      // Update with history tracking (transaction handled in repository)
-      const result = await this.guildSettingsRepository.updateWithHistory(
-        guildId,
-        mergedSettings,
-        userId,
-        'update',
-        newSettings as unknown as Record<string, any>,
-      );
+      // Update with history tracking (transaction handled in service)
+      const result = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+        const updated = await this.settingsService.updateSettings(
+          'guild',
+          guildId,
+          mergedSettings as Record<string, any>,
+          tx,
+        );
+
+        // Log activity
+        await this.activityLogService.logActivity(
+          tx,
+          'guild_settings',
+          guildId,
+          'SETTINGS_UPDATED',
+          'update',
+          userId,
+          guildId,
+          newSettings as unknown as Record<string, any>,
+          { action: 'update' },
+        );
+
+        return updated;
+      });
 
       await this.cacheManager.del(`settings:${guildId}`);
 
@@ -118,14 +205,30 @@ export class GuildSettingsService {
     try {
       const defaultSettings = this.settingsDefaults.getDefaults();
 
-      // Reset with history tracking (transaction handled in repository)
-      const result = await this.guildSettingsRepository.updateWithHistory(
-        guildId,
-        defaultSettings,
-        userId,
-        'reset',
-        { reset: true } as unknown as Record<string, any>,
-      );
+      // Reset with history tracking (transaction handled in service)
+      const result = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+        const updated = await this.settingsService.updateSettings(
+          'guild',
+          guildId,
+          defaultSettings as Record<string, any>,
+          tx,
+        );
+
+        // Log activity
+        await this.activityLogService.logActivity(
+          tx,
+          'guild_settings',
+          guildId,
+          'SETTINGS_RESET',
+          'reset',
+          userId,
+          guildId,
+          { reset: true },
+          { action: 'reset' },
+        );
+
+        return updated;
+      });
 
       await this.cacheManager.del(`settings:${guildId}`);
 
@@ -148,7 +251,14 @@ export class GuildSettingsService {
    */
   async getSettingsHistory(guildId: string, limit: number = 50) {
     try {
-      return this.guildSettingsRepository.getHistory(guildId, limit);
+      const result = await this.activityLogService.findWithFilters({
+        entityType: 'guild_settings',
+        entityId: guildId,
+        guildId,
+        eventType: 'SETTINGS_UPDATED',
+        limit,
+      });
+      return result.logs;
     } catch (error) {
       this.logger.error(
         `Error getting settings history for guild ${guildId}:`,

@@ -56,17 +56,21 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       const status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
 
+      // Handle both string and object responses from HttpException
+      // When InternalServerErrorException is thrown with an object like:
+      // new InternalServerErrorException({ message, code, details }),
+      // the exceptionResponse will be that object
+      const isObjectResponse = typeof exceptionResponse === 'object' && exceptionResponse !== null;
+      const errorData = isObjectResponse ? (exceptionResponse as any) : { message: exceptionResponse };
+
       return {
         statusCode: status,
         timestamp,
         path,
         method,
-        message:
-          typeof exceptionResponse === 'string'
-            ? exceptionResponse
-            : (exceptionResponse as any).message || 'Unknown error',
-        code: (exceptionResponse as any).code,
-        details: (exceptionResponse as any).details,
+        message: errorData.message || 'Unknown error',
+        code: errorData.code,
+        details: errorData.details,
         stack: this.isDevelopment ? exception.stack : undefined,
       };
     }

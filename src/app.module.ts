@@ -15,6 +15,8 @@ import { GuildsModule } from './guilds/guilds.module';
 import { GuildMembersModule } from './guild-members/guild-members.module';
 import { PermissionsModule } from './permissions/permissions.module';
 import { AuditModule } from './audit/audit.module';
+import { TrackersModule } from './trackers/trackers.module';
+import { InfrastructureModule } from './infrastructure/infrastructure.module';
 import { AuthLoggerMiddleware } from './common/middleware/auth-logger.middleware';
 import { throttlerConfig } from './config/throttler.config';
 
@@ -37,6 +39,8 @@ import { throttlerConfig } from './config/throttler.config';
     GuildMembersModule,
     PermissionsModule,
     AuditModule,
+    TrackersModule,
+    InfrastructureModule,
   ],
   providers: [
     {

@@ -1,8 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Request } from 'express';
-import { AuditLogRepository } from '../repositories/audit-log.repository';
 import { RequestContextService } from '../../common/services/request-context.service';
 import { AuditEvent, AuditAction } from '../interfaces/audit-event.interface';
+import { ActivityLogService } from '../../infrastructure/activity-log/services/activity-log.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
 /**
  * Audit Log Service - Single Responsibility: Business logic for audit logging
@@ -15,8 +16,9 @@ export class AuditLogService {
   private readonly logger = new Logger(AuditLogService.name);
 
   constructor(
-    private repository: AuditLogRepository,
-    private contextService: RequestContextService
+    private activityLogService: ActivityLogService,
+    private contextService: RequestContextService,
+    private prisma: PrismaService,
   ) {}
 
   /**
@@ -28,16 +30,23 @@ export class AuditLogService {
     request: Request
   ): Promise<void> {
     try {
-      await this.repository.create({
-        userId: event.userId,
-        guildId: event.guildId,
-        action: event.action,
-        resource: event.resource,
-        result: event.result,
-        metadata: event.metadata,
-        ipAddress: this.contextService.getIpAddress(request),
-        userAgent: this.contextService.getUserAgent(request),
-        requestId: this.contextService.getRequestId(request),
+      await this.prisma.$transaction(async (tx) => {
+        await this.activityLogService.logActivity(
+          tx,
+          event.resource || 'permission',
+          event.resource || 'unknown',
+          'PERMISSION_CHECK',
+          event.action,
+          event.userId,
+          event.guildId,
+          { result: event.result },
+          {
+            ...event.metadata,
+            ipAddress: this.contextService.getIpAddress(request),
+            userAgent: this.contextService.getUserAgent(request),
+            requestId: this.contextService.getRequestId(request),
+          },
+        );
       });
     } catch (error) {
       this.logger.error('Failed to log audit event:', error);
@@ -54,16 +63,24 @@ export class AuditLogService {
     request: Request
   ): Promise<void> {
     try {
-      await this.repository.create({
-        userId: event.userId,
-        guildId: event.guildId,
-        action: event.action,
-        resource: event.resource,
-        result: event.result,
-        metadata: { ...event.metadata, adminAction: true },
-        ipAddress: this.contextService.getIpAddress(request),
-        userAgent: this.contextService.getUserAgent(request),
-        requestId: this.contextService.getRequestId(request),
+      await this.prisma.$transaction(async (tx) => {
+        await this.activityLogService.logActivity(
+          tx,
+          event.resource || 'admin',
+          event.resource || 'unknown',
+          'ADMIN_ACTION',
+          event.action,
+          event.userId,
+          event.guildId,
+          { result: event.result },
+          {
+            ...event.metadata,
+            adminAction: true,
+            ipAddress: this.contextService.getIpAddress(request),
+            userAgent: this.contextService.getUserAgent(request),
+            requestId: this.contextService.getRequestId(request),
+          },
+        );
       });
     } catch (error) {
       this.logger.error('Failed to log admin action:', error);
@@ -91,14 +108,28 @@ export class AuditLogService {
     limit: number;
     offset: number;
   }> {
-    const logs = await this.repository.findByGuild(guildId, filters);
-    // Note: For production, implement proper count query for total
+    const result = await this.activityLogService.findWithFilters({
+      guildId,
+      userId: filters.userId,
+      eventType: filters.action,
+      limit: filters.limit,
+      offset: filters.offset,
+    });
     return {
-      logs,
-      total: logs.length,
+      logs: result.logs,
+      total: result.total,
       limit: filters.limit || 50,
       offset: filters.offset || 0,
     };
   }
 }
+
+
+
+
+
+
+
+
+
 

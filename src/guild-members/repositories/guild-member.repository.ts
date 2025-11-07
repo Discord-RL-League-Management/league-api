@@ -27,7 +27,7 @@ export class GuildMemberRepository
     guildId: string,
     include?: {
       user?: boolean;
-      guild?: boolean | { include: { settings?: boolean } };
+      guild?: boolean;
     },
   ): Promise<GuildMember | null> {
     const member = await this.prisma.guildMember.findUnique({
@@ -140,11 +140,14 @@ export class GuildMemberRepository
 
   /**
    * Find all guild memberships for a user
+   * 
+   * Note: Settings are NOT a Prisma relation and cannot be included.
+   * Settings must be fetched separately using GuildSettingsService.getSettings(guildId).
    */
   async findByUserId(
     userId: string,
     include?: {
-      guild?: boolean | { include: { settings?: boolean } };
+      guild?: boolean;
     },
   ): Promise<GuildMember[]> {
     return this.prisma.guildMember.findMany({
@@ -182,6 +185,7 @@ export class GuildMemberRepository
       },
       update: {
         username: data.username,
+        nickname: data.nickname ?? null,
         roles: data.roles || [],
         updatedAt: new Date(),
         ...updateData,
@@ -313,7 +317,11 @@ export class GuildMemberRepository
   }
 
   /**
-   * Find member with guild settings included
+   * Find member with guild included
+   * 
+   * Note: This method name is misleading - it does NOT include settings.
+   * Settings are NOT a Prisma relation and must be fetched separately
+   * using GuildSettingsService.getSettings(guildId).
    */
   async findWithGuildSettings(
     userId: string,
@@ -324,9 +332,7 @@ export class GuildMemberRepository
         userId_guildId: { userId, guildId },
       },
       include: {
-        guild: {
-          include: { settings: true },
-        },
+        guild: true,
       },
     });
   }
@@ -441,6 +447,7 @@ export class GuildMemberRepository
       userId: string;
       guildId: string;
       username: string;
+      nickname?: string;
       roles: string[];
     }>,
   ): Promise<{ count: number }> {
@@ -457,6 +464,7 @@ export class GuildMemberRepository
     members: Array<{
       userId: string;
       username: string;
+      nickname?: string;
       roles: string[];
     }>,
   ): Promise<{ synced: number }> {
@@ -471,6 +479,7 @@ export class GuildMemberRepository
         userId: member.userId,
         guildId,
         username: member.username,
+        nickname: member.nickname || null,
         roles: member.roles,
       }));
 
