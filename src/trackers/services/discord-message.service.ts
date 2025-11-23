@@ -31,6 +31,62 @@ export class DiscordMessageService {
   }
 
   /**
+   * Send a direct message to a Discord user
+   * @param userId The Discord user ID
+   * @param payload The message payload (e.g., embeds, content)
+   * @throws Error if bot token is not configured or circuit breaker is open
+   */
+  async sendDirectMessage(userId: string, payload: any): Promise<void> {
+    if (!this.botToken) {
+      this.logger.error('Discord bot token not configured');
+      throw new Error('Discord bot token not configured');
+    }
+
+    // Check circuit breaker
+    if (this.isCircuitOpen()) {
+      this.logger.warn(
+        'Circuit breaker is open, refusing to send Discord DM',
+      );
+      throw new Error('Circuit breaker is open');
+    }
+
+    try {
+      // First, create or get the DM channel
+      // Discord API expects the recipient_id in the request body
+      const dmChannelResponse = await firstValueFrom(
+        this.httpService.post(
+          `${this.apiUrl}/users/@me/channels`,
+          { recipient_id: userId },
+          {
+            headers: {
+              Authorization: `Bot ${this.botToken}`,
+              'Content-Type': 'application/json',
+            },
+          },
+        ),
+      ).catch((error: any) => {
+        this.recordFailure();
+        const errorMessage = error.response?.data?.message || error.message || 'Unknown error';
+        this.logger.error(`Failed to create DM channel for user ${userId}: ${errorMessage}`, error);
+        throw error;
+      });
+
+      const channelId = dmChannelResponse.data.id;
+
+      // Then send the message to the DM channel
+      await this.sendMessage(channelId, payload);
+
+      this.logger.debug(`Sent DM to user ${userId}`);
+      this.recordSuccess();
+    } catch (error: any) {
+      this.recordFailure();
+      const errorMessage = error.response?.data?.message || error.message || 'Unknown error';
+      this.logger.error(`Failed to send DM to user ${userId}: ${errorMessage}`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Send a message to a Discord channel
    * @param channelId The Discord channel ID
    * @param payload The message payload (e.g., embeds, content)

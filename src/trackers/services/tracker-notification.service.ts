@@ -22,7 +22,8 @@ export class TrackerNotificationService {
   }
 
   /**
-   * Send a notification to the staff channel about a new tracker registration
+   * DEPRECATED: Send a notification to the staff channel about a new tracker registration
+   * This method is kept for backward compatibility during migration period
    */
   async sendRegistrationNotification(
     registrationId: string,
@@ -103,6 +104,152 @@ export class TrackerNotificationService {
 
     // TODO: Add a specific staff_channel or admin_channel field to settings
     return null;
+  }
+
+  /**
+   * Send a DM to the user when scraping completes successfully
+   * @param trackerId - Tracker ID
+   * @param userId - User ID
+   * @param seasonsScraped - Number of seasons successfully scraped
+   * @param seasonsFailed - Number of seasons that failed to scrape
+   */
+  async sendScrapingCompleteNotification(
+    trackerId: string,
+    userId: string,
+    seasonsScraped?: number,
+    seasonsFailed?: number,
+  ): Promise<void> {
+    try {
+      // Get user info
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!user) {
+        this.logger.warn(`User ${userId} not found, cannot send notification`);
+        return;
+      }
+
+      // Get tracker info
+      const tracker = await this.prisma.tracker.findUnique({
+        where: { id: trackerId },
+        include: {
+          seasons: {
+            orderBy: { seasonNumber: 'desc' },
+            take: 1, // Get latest season for info
+          },
+        },
+      });
+
+      if (!tracker) {
+        this.logger.warn(`Tracker ${trackerId} not found, cannot send notification`);
+        return;
+      }
+
+      // Build success embed
+      const embed = this.notificationBuilderService.buildScrapingCompleteEmbed(
+        tracker,
+        user,
+        this.frontendUrl,
+        seasonsScraped || 0,
+        seasonsFailed || 0,
+      );
+
+      // Send DM to user via Discord API
+      await this.discordMessageService.sendDirectMessage(userId, {
+        embeds: [embed],
+      });
+
+      this.logger.log(
+        `Sent scraping complete notification to user ${userId} for tracker ${trackerId}`,
+      );
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Failed to send scraping complete notification: ${errorMessage}`,
+        error,
+      );
+      // Don't throw - notification failures shouldn't break the scraping process
+    }
+  }
+
+  /**
+   * Send a DM to the user when scraping fails
+   */
+  async sendScrapingFailedNotification(
+    trackerId: string,
+    userId: string,
+    error: string,
+  ): Promise<void> {
+    try {
+      // Get user info
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!user) {
+        this.logger.warn(`User ${userId} not found, cannot send notification`);
+        return;
+      }
+
+      // Get tracker info
+      const tracker = await this.prisma.tracker.findUnique({
+        where: { id: trackerId },
+      });
+
+      if (!tracker) {
+        this.logger.warn(`Tracker ${trackerId} not found, cannot send notification`);
+        return;
+      }
+
+      // Build error embed
+      const embed = this.notificationBuilderService.buildScrapingFailedEmbed(
+        tracker,
+        user,
+        error,
+        this.frontendUrl,
+      );
+
+      // Send DM to user via Discord API
+      await this.discordMessageService.sendDirectMessage(userId, {
+        embeds: [embed],
+      });
+
+      this.logger.log(
+        `Sent scraping failed notification to user ${userId} for tracker ${trackerId}`,
+      );
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Failed to send scraping failed notification: ${errorMessage}`,
+        error,
+      );
+      // Don't throw - notification failures shouldn't break the scraping process
+    }
+  }
+
+  /**
+   * Send a progress notification during multi-season scraping
+   */
+  async sendScrapingProgressNotification(
+    trackerId: string,
+    userId: string,
+    progress: { current: number; total: number },
+  ): Promise<void> {
+    try {
+      // For now, we'll just log progress
+      // In a full implementation, you could send periodic updates
+      this.logger.debug(
+        `Scraping progress for tracker ${trackerId}: ${progress.current}/${progress.total} seasons`,
+      );
+      // TODO: Implement progress notifications if needed
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Failed to send scraping progress notification: ${errorMessage}`,
+        error,
+      );
+    }
   }
 }
 
