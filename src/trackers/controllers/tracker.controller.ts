@@ -26,7 +26,8 @@ import { TrackerSnapshotService } from '../services/tracker-snapshot.service';
 import {
   CreateTrackerDto,
   UpdateTrackerDto,
-  RegisterTrackerDto,
+  RegisterTrackersDto,
+  AddTrackerDto,
 } from '../dto/tracker.dto';
 import { CreateTrackerSnapshotDto } from '../dto/tracker-snapshot.dto';
 import type { AuthenticatedUser } from '../../common/interfaces/user.interface';
@@ -44,26 +45,23 @@ export class TrackerController {
   ) {}
 
   @Post('register')
-  @ApiOperation({ summary: 'Register a new tracker URL' })
-  @ApiResponse({ status: 201, description: 'Tracker registered successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid URL or user already has tracker' })
-  async registerTracker(
-    @Body() dto: RegisterTrackerDto,
+  @ApiOperation({ summary: 'Register 1-4 tracker URLs (for new users)' })
+  @ApiResponse({ status: 201, description: 'Trackers registered successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid URLs or user already has trackers' })
+  async registerTrackers(
+    @Body() dto: RegisterTrackersDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.trackerService.registerTracker(user.id, dto.url);
+    return this.trackerService.registerTrackers(user.id, dto.urls);
   }
 
   @Get('me')
-  @ApiOperation({ summary: 'Get current user\'s tracker' })
-  @ApiResponse({ status: 200, description: 'User\'s tracker' })
-  @ApiResponse({ status: 404, description: 'No tracker found for user' })
-  async getMyTracker(@CurrentUser() user: AuthenticatedUser) {
+  @ApiOperation({ summary: 'Get current user\'s trackers' })
+  @ApiResponse({ status: 200, description: 'User\'s trackers (array)' })
+  @ApiResponse({ status: 404, description: 'No trackers found for user' })
+  async getMyTrackers(@CurrentUser() user: AuthenticatedUser) {
     const trackers = await this.trackerService.getTrackersByUserId(user.id);
-    if (trackers.length === 0) {
-      return null;
-    }
-    return trackers[0]; // Return first tracker (one-to-one relationship)
+    return trackers; // Return array of trackers
   }
 
   @Get()
@@ -205,6 +203,17 @@ export class TrackerController {
   @ApiResponse({ status: 404, description: 'Tracker not found' })
   async deleteTracker(@Param('id') id: string) {
     return this.trackerService.deleteTracker(id);
+  }
+
+  @Post('add')
+  @ApiOperation({ summary: 'Add an additional tracker (up to 4 total)' })
+  @ApiResponse({ status: 201, description: 'Tracker added successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid URL or maximum trackers reached' })
+  async addTracker(
+    @Body() dto: AddTrackerDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.trackerService.addTracker(user.id, dto.url);
   }
 }
 

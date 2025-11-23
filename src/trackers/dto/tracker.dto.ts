@@ -4,6 +4,9 @@ import {
   IsOptional,
   IsBoolean,
   IsNotEmpty,
+  IsArray,
+  ArrayMinSize,
+  ArrayMaxSize,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { GamePlatform, Game } from '@prisma/client';
@@ -68,7 +71,25 @@ export class UpdateTrackerDto {
   isActive?: boolean;
 }
 
-export class RegisterTrackerDto {
+export class RegisterTrackersDto {
+  @ApiProperty({
+    description: 'Array of tracker URLs (1-4)',
+    example: [
+      'https://rocketleague.tracker.network/rocket-league/profile/steam/76561198051701160/overview',
+      'https://rocketleague.tracker.network/rocket-league/profile/epic/username/overview',
+    ],
+    minItems: 1,
+    maxItems: 4,
+  })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(4)
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  urls!: string[];
+}
+
+export class AddTrackerDto {
   @ApiProperty({
     description: 'Tracker URL (TRN format)',
     example: 'https://rocketleague.tracker.network/rocket-league/profile/steam/76561198051701160/overview',

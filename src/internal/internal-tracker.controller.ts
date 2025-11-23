@@ -15,14 +15,22 @@ export class InternalTrackerController {
     private readonly trackerService: TrackerService,
   ) {}
 
-  @Post('register')
-  @ApiOperation({ summary: 'Register a tracker URL (Bot only)' })
-  @ApiResponse({ status: 201, description: 'Tracker registered successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid URL or user already has tracker' })
-  async registerTracker(
-    @Body() body: { url: string; userId: string },
+  @Post('register-multiple')
+  @ApiOperation({ summary: 'Register multiple trackers (Bot only)' })
+  @ApiResponse({ status: 201, description: 'Trackers registered successfully' })
+  async registerTrackers(
+    @Body() body: { userId: string; urls: string[] },
   ) {
-    return this.trackerService.registerTracker(body.userId, body.url);
+    return this.trackerService.registerTrackers(body.userId, body.urls);
+  }
+
+  @Post('add')
+  @ApiOperation({ summary: 'Add an additional tracker (Bot only)' })
+  @ApiResponse({ status: 201, description: 'Tracker added successfully' })
+  async addTracker(
+    @Body() body: { userId: string; url: string },
+  ) {
+    return this.trackerService.addTracker(body.userId, body.url);
   }
 }
 

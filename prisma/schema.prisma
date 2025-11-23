@@ -115,7 +115,7 @@ model Tracker {
   game             Game                  @default(ROCKET_LEAGUE)
   platform         GamePlatform
   username         String
-  userId           String                @unique // The player this tracker belongs to (one-to-one relationship)
+  userId           String                // The player this tracker belongs to (allows multiple trackers per user)
   displayName      String?
   isActive         Boolean               @default(true)
   isDeleted        Boolean               @default(false)

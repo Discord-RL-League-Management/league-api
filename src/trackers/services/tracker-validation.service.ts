@@ -67,12 +67,7 @@ export class TrackerValidationService {
       throw new BadRequestException('Invalid username format in tracker URL');
     }
 
-    // 6. Check user uniqueness (one-to-one relationship) - skip if replacing
-    if (!excludeTrackerId) {
-      await this.validateUserUniqueness(userId);
-    }
-
-    // 7. Check URL uniqueness in database (excluding current tracker if replacing)
+    // 6. Check URL uniqueness in database (excluding current tracker if replacing)
     const isUnique = await this.checkUrlUniqueness(url, excludeTrackerId);
     if (!isUnique) {
       throw new BadRequestException(
@@ -86,23 +81,6 @@ export class TrackerValidationService {
       game: Game.ROCKET_LEAGUE,
       isValid: true,
     };
-  }
-
-  /**
-   * Validate that user doesn't already have a tracker (one-to-one relationship)
-   * @param userId - User ID to check
-   * @throws BadRequestException if user already has a tracker
-   */
-  async validateUserUniqueness(userId: string): Promise<void> {
-    const existingTracker = await this.prisma.tracker.findUnique({
-      where: { userId },
-    });
-
-    if (existingTracker) {
-      throw new BadRequestException(
-        'You already have a tracker registered. Each user can only have one tracker.',
-      );
-    }
   }
 
   /**
