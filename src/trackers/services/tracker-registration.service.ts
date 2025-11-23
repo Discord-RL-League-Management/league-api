@@ -33,8 +33,8 @@ export class TrackerRegistrationService {
     guildId: string,
     url: string,
   ): Promise<{ registrationId: string; status: string; message: string }> {
-    // Validate and parse URL
-    const validated = await this.validationService.validateTrackerUrl(url);
+    // Validate and parse URL (deprecated service - keeping for backward compatibility)
+    const validated = await this.validationService.validateTrackerUrl(url, userId);
 
     try {
       return await this.prisma.$transaction(
