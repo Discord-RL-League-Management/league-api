@@ -68,6 +68,26 @@ export class UpdateTrackerDto {
   isActive?: boolean;
 }
 
+export class RegisterTrackerDto {
+  @ApiProperty({
+    description: 'Tracker URL (TRN format)',
+    example: 'https://rocketleague.tracker.network/rocket-league/profile/steam/76561198051701160/overview',
+  })
+  @IsString()
+  @IsNotEmpty()
+  url!: string;
+}
+
+export class RefreshTrackerDto {
+  @ApiPropertyOptional({
+    description: 'Force refresh even if recently scraped',
+    example: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  force?: boolean;
+}
+
 
 
 

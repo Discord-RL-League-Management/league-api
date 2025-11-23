@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
   Logger,
+  ForbiddenException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -25,6 +26,7 @@ import { TrackerSnapshotService } from '../services/tracker-snapshot.service';
 import {
   CreateTrackerDto,
   UpdateTrackerDto,
+  RegisterTrackerDto,
 } from '../dto/tracker.dto';
 import { CreateTrackerSnapshotDto } from '../dto/tracker-snapshot.dto';
 import type { AuthenticatedUser } from '../../common/interfaces/user.interface';
@@ -40,6 +42,29 @@ export class TrackerController {
     private readonly trackerService: TrackerService,
     private readonly snapshotService: TrackerSnapshotService,
   ) {}
+
+  @Post('register')
+  @ApiOperation({ summary: 'Register a new tracker URL' })
+  @ApiResponse({ status: 201, description: 'Tracker registered successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid URL or user already has tracker' })
+  async registerTracker(
+    @Body() dto: RegisterTrackerDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.trackerService.registerTracker(user.id, dto.url);
+  }
+
+  @Get('me')
+  @ApiOperation({ summary: 'Get current user\'s tracker' })
+  @ApiResponse({ status: 200, description: 'User\'s tracker' })
+  @ApiResponse({ status: 404, description: 'No tracker found for user' })
+  async getMyTracker(@CurrentUser() user: AuthenticatedUser) {
+    const trackers = await this.trackerService.getTrackersByUserId(user.id);
+    if (trackers.length === 0) {
+      return null;
+    }
+    return trackers[0]; // Return first tracker (one-to-one relationship)
+  }
 
   @Get()
   @ApiOperation({ summary: 'Get trackers (filtered by guild access)' })
@@ -63,6 +88,61 @@ export class TrackerController {
   @ApiResponse({ status: 404, description: 'Tracker not found' })
   async getTracker(@Param('id') id: string) {
     return this.trackerService.getTrackerById(id);
+  }
+
+  @Get(':id/detail')
+  @ApiOperation({ summary: 'Get tracker details with all seasons' })
+  @ApiParam({ name: 'id', description: 'Tracker ID' })
+  @ApiResponse({ status: 200, description: 'Tracker details with seasons' })
+  @ApiResponse({ status: 404, description: 'Tracker not found' })
+  async getTrackerDetail(@Param('id') id: string) {
+    const tracker = await this.trackerService.getTrackerById(id);
+    // Tracker already includes seasons from getTrackerById, but we'll structure it explicitly
+    const seasons = tracker.seasons || [];
+    return {
+      tracker: {
+        ...tracker,
+        seasons: undefined, // Remove seasons from tracker object
+      },
+      seasons,
+    };
+  }
+
+  @Get(':id/status')
+  @ApiOperation({ summary: 'Get scraping status for a tracker' })
+  @ApiParam({ name: 'id', description: 'Tracker ID' })
+  @ApiResponse({ status: 200, description: 'Scraping status' })
+  @ApiResponse({ status: 404, description: 'Tracker not found' })
+  async getScrapingStatus(@Param('id') id: string) {
+    return this.trackerService.getScrapingStatus(id);
+  }
+
+  @Get(':id/seasons')
+  @ApiOperation({ summary: 'Get all seasons for a tracker' })
+  @ApiParam({ name: 'id', description: 'Tracker ID' })
+  @ApiResponse({ status: 200, description: 'List of seasons' })
+  @ApiResponse({ status: 404, description: 'Tracker not found' })
+  async getTrackerSeasons(@Param('id') id: string) {
+    return this.trackerService.getTrackerSeasons(id);
+  }
+
+  @Post(':id/refresh')
+  @ApiOperation({ summary: 'Trigger manual refresh for a tracker' })
+  @ApiParam({ name: 'id', description: 'Tracker ID' })
+  @ApiResponse({ status: 200, description: 'Refresh job enqueued' })
+  @ApiResponse({ status: 404, description: 'Tracker not found' })
+  async refreshTracker(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    // Verify ownership
+    const tracker = await this.trackerService.getTrackerById(id);
+    if (tracker.userId !== user.id) {
+      throw new ForbiddenException('You can only refresh your own tracker');
+    }
+
+    await this.trackerService.refreshTrackerData(id);
+    return { message: 'Refresh job enqueued successfully' };
   }
 
   @Get(':id/snapshots')
