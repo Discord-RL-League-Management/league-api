@@ -34,50 +34,57 @@ enum OutboxStatus {
   FAILED
 }
 
+enum TrackerScrapingStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+
 model User {
-  id            String   @id
+  id            String  @id
   username      String
   discriminator String?
   globalName    String?
   avatar        String?
   email         String?
-  
-  accessToken   String?  @db.Text
-  refreshToken  String?  @db.Text
-  
-  isBanned      Boolean  @default(false)
-  isDeleted     Boolean  @default(false)
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  lastLoginAt   DateTime @default(now())
-  
+
+  accessToken  String? @db.Text
+  refreshToken String? @db.Text
+
+  isBanned  Boolean @default(false)
+  isDeleted Boolean @default(false)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lastLoginAt DateTime @default(now())
+
   // Relationships
-  guildMembers  GuildMember[]
-  trackers      Tracker[]
-  enteredSnapshots TrackerSnapshot[]
-  trackerRegistrations TrackerRegistration[]
+  guildMembers                  GuildMember[]
+  trackers                      Tracker[]
+  enteredSnapshots              TrackerSnapshot[]
+  trackerRegistrations          TrackerRegistration[]
   processedTrackerRegistrations TrackerRegistration[] @relation("ProcessedTrackerRegistrations")
-  
+
   @@index([isBanned])
   @@index([isDeleted])
   @@map("users")
 }
 
 model Guild {
-  id          String   @id @db.VarChar(20) // Discord snowflake ID
-  name        String   @db.VarChar(100)
-  icon        String?  @db.VarChar(50)
-  ownerId     String   @db.VarChar(20) // Discord user snowflake ID
-  memberCount Int      @default(0)
-  joinedAt    DateTime @default(now())
+  id          String    @id @db.VarChar(20) // Discord snowflake ID
+  name        String    @db.VarChar(100)
+  icon        String?   @db.VarChar(50)
+  ownerId     String    @db.VarChar(20) // Discord user snowflake ID
+  memberCount Int       @default(0)
+  joinedAt    DateTime  @default(now())
   leftAt      DateTime?
-  isActive    Boolean  @default(true)
-  
+  isActive    Boolean   @default(true)
+
   // Relationships
-  members         GuildMember[]
+  members              GuildMember[]
   trackerRegistrations TrackerRegistration[]
-  
+
   // Indexes for performance
   @@index([isActive])
   @@index([joinedAt])
@@ -86,23 +93,23 @@ model Guild {
 }
 
 model GuildMember {
-  id        String   @id @default(cuid())
-  userId    String   @db.VarChar(20) // Discord user snowflake ID
-  guildId   String   @db.VarChar(20) // Discord guild snowflake ID
-  username  String   @db.VarChar(100)
-  nickname  String?  @db.VarChar(100) // Guild-specific nickname
-  roles     String[] // Array of Discord role IDs
-  
-  isBanned  Boolean  @default(false) // Guild-specific ban
-  isDeleted Boolean  @default(false)
-  
+  id       String   @id @default(cuid())
+  userId   String   @db.VarChar(20) // Discord user snowflake ID
+  guildId  String   @db.VarChar(20) // Discord guild snowflake ID
+  username String   @db.VarChar(100)
+  nickname String?  @db.VarChar(100) // Guild-specific nickname
+  roles    String[] // Array of Discord role IDs
+
+  isBanned  Boolean @default(false) // Guild-specific ban
+  isDeleted Boolean @default(false)
+
   joinedAt  DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relationships
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  guild     Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
-  
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
   // Indexes for performance
   @@unique([userId, guildId])
   @@index([guildId])
@@ -114,53 +121,61 @@ model GuildMember {
 }
 
 model Tracker {
-  id            String   @id @default(cuid())
-  url           String   @unique
-  game          Game     @default(ROCKET_LEAGUE)
-  platform      GamePlatform
-  username      String
-  userId        String   // The player this tracker belongs to
-  displayName   String?
-  isActive      Boolean  @default(true)
-  isDeleted     Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  
+  id               String                @id @default(cuid())
+  url              String                @unique
+  game             Game                  @default(ROCKET_LEAGUE)
+  platform         GamePlatform
+  username         String
+  userId           String                @unique // The player this tracker belongs to (one-to-one relationship)
+  displayName      String?
+  isActive         Boolean               @default(true)
+  isDeleted        Boolean               @default(false)
+  lastScrapedAt    DateTime?
+  scrapingStatus   TrackerScrapingStatus @default(PENDING)
+  scrapingError    String?               @db.Text
+  scrapingAttempts Int                   @default(0)
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
   // Relationships
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  snapshots     TrackerSnapshot[]
-  registration  TrackerRegistration?
-  
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  snapshots    TrackerSnapshot[]
+  registration TrackerRegistration?
+  seasons      TrackerSeason[]
+  scrapingLogs TrackerScrapingLog[]
+
   @@index([userId])
   @@index([platform])
   @@index([isActive])
   @@index([isDeleted])
+  @@index([scrapingStatus])
+  @@index([lastScrapedAt])
   @@map("trackers")
 }
 
 model TrackerSnapshot {
-  id            String   @id @default(cuid())
-  trackerId     String
-  capturedAt    DateTime @default(now())
-  seasonNumber  Int?
-  enteredBy     String   @db.VarChar(20)
-  
+  id           String   @id @default(cuid())
+  trackerId    String
+  capturedAt   DateTime @default(now())
+  seasonNumber Int?
+  enteredBy    String   @db.VarChar(20)
+
   // MMR values (integers)
-  ones          Int?
-  twos          Int?
-  threes        Int?
-  fours         Int?
-  
+  ones   Int?
+  twos   Int?
+  threes Int?
+  fours  Int?
+
   // Games played
-  onesGamesPlayed    Int?
-  twosGamesPlayed    Int?
-  threesGamesPlayed  Int?
-  foursGamesPlayed   Int?
-  
+  onesGamesPlayed   Int?
+  twosGamesPlayed   Int?
+  threesGamesPlayed Int?
+  foursGamesPlayed  Int?
+
   // Relationships
-  tracker       Tracker  @relation(fields: [trackerId], references: [id], onDelete: Cascade)
-  enteredByUser User     @relation(fields: [enteredBy], references: [id], onDelete: Restrict)
-  
+  tracker       Tracker @relation(fields: [trackerId], references: [id], onDelete: Cascade)
+  enteredByUser User    @relation(fields: [enteredBy], references: [id], onDelete: Restrict)
+
   @@index([trackerId])
   @@index([seasonNumber])
   @@index([capturedAt])
@@ -169,33 +184,35 @@ model TrackerSnapshot {
   @@map("tracker_snapshots")
 }
 
+// DEPRECATED: This model is kept for migration period but is no longer used in the new tracker system
+// The new system uses direct tracker registration with immediate scraping via Zyte API
 model TrackerRegistration {
-  id            String   @id @default(cuid())
-  userId        String   @db.VarChar(20)
-  guildId       String   @db.VarChar(20)
-  url           String
-  game          Game     @default(ROCKET_LEAGUE)
-  platform      GamePlatform?
-  username      String?
-  status        TrackerRegistrationStatus @default(PENDING)
-  jobId         String?  @unique // BullMQ job ID
-  processedBy   String?  @db.VarChar(20)
-  processedAt   DateTime?
-  rejectionReason String?
-  trackerId     String?  @unique
-  notificationSentAt DateTime?
-  notificationAttempts Int @default(0)
-  lastProcessedAt DateTime?
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  
+  id                   String                    @id @default(cuid())
+  userId               String                    @db.VarChar(20)
+  guildId              String                    @db.VarChar(20)
+  url                  String
+  game                 Game                      @default(ROCKET_LEAGUE)
+  platform             GamePlatform?
+  username             String?
+  status               TrackerRegistrationStatus @default(PENDING)
+  jobId                String?                   @unique // BullMQ job ID
+  processedBy          String?                   @db.VarChar(20)
+  processedAt          DateTime?
+  rejectionReason      String?
+  trackerId            String?                   @unique
+  notificationSentAt   DateTime?
+  notificationAttempts Int                       @default(0)
+  lastProcessedAt      DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relationships
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  guild         Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
-  processedByUser User?  @relation("ProcessedTrackerRegistrations", fields: [processedBy], references: [id], onDelete: SetNull)
-  tracker       Tracker? @relation(fields: [trackerId], references: [id], onDelete: SetNull)
-  
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guild           Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  processedByUser User?    @relation("ProcessedTrackerRegistrations", fields: [processedBy], references: [id], onDelete: SetNull)
+  tracker         Tracker? @relation(fields: [trackerId], references: [id], onDelete: SetNull)
+
   @@index([guildId])
   @@index([status])
   @@index([guildId, status])
@@ -204,18 +221,18 @@ model TrackerRegistration {
 }
 
 model Outbox {
-  id            String   @id @default(cuid())
-  sourceType    String   @db.VarChar(50)
-  sourceId      String
-  eventType     String   @db.VarChar(100)
-  payload       Json
-  status        OutboxStatus @default(PENDING)
-  processedAt   DateTime?
-  errorMessage  String?  @db.Text
-  retryCount    Int      @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  
+  id           String       @id @default(cuid())
+  sourceType   String       @db.VarChar(50)
+  sourceId     String
+  eventType    String       @db.VarChar(100)
+  payload      Json
+  status       OutboxStatus @default(PENDING)
+  processedAt  DateTime?
+  errorMessage String?      @db.Text
+  retryCount   Int          @default(0)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
   @@index([status, createdAt])
   @@index([sourceType, sourceId])
   @@index([sourceType, status])
@@ -223,30 +240,30 @@ model Outbox {
 }
 
 model ProcessedEvent {
-  id            String   @id @default(cuid())
-  eventKey      String   @unique
-  entityType    String?  @db.VarChar(50)
-  entityId      String?
-  metadata      Json?
-  processedAt   DateTime @default(now())
-  
+  id          String   @id @default(cuid())
+  eventKey    String   @unique
+  entityType  String?  @db.VarChar(50)
+  entityId    String?
+  metadata    Json?
+  processedAt DateTime @default(now())
+
   @@index([entityType, entityId])
   @@index([processedAt])
   @@map("processed_events")
 }
 
 model ActivityLog {
-  id          String   @id @default(cuid())
-  entityType  String   @db.VarChar(50)
-  entityId    String
-  eventType   String   @db.VarChar(100)
-  action      String   @db.VarChar(50)
-  userId      String?  @db.VarChar(20)
-  guildId     String?  @db.VarChar(20)
-  changes     Json?
-  metadata    Json?
-  timestamp   DateTime @default(now())
-  
+  id         String   @id @default(cuid())
+  entityType String   @db.VarChar(50)
+  entityId   String
+  eventType  String   @db.VarChar(100)
+  action     String   @db.VarChar(50)
+  userId     String?  @db.VarChar(20)
+  guildId    String?  @db.VarChar(20)
+  changes    Json?
+  metadata   Json?
+  timestamp  DateTime @default(now())
+
   @@index([entityType, entityId, timestamp])
   @@index([userId, timestamp])
   @@index([guildId, timestamp])
@@ -263,22 +280,63 @@ model Settings {
   configVersion String?  @db.VarChar(20)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  
+
   @@unique([ownerType, ownerId])
   @@index([ownerType, ownerId])
   @@map("settings")
 }
 
 model EntityVisibility {
-  id            String   @id @default(cuid())
-  entityType    String   @db.VarChar(50)
-  entityId      String
-  targetType    String   @db.VarChar(50)
-  targetId      String   @db.VarChar(20)
-  createdAt     DateTime @default(now())
-  
+  id         String   @id @default(cuid())
+  entityType String   @db.VarChar(50)
+  entityId   String
+  targetType String   @db.VarChar(50)
+  targetId   String   @db.VarChar(20)
+  createdAt  DateTime @default(now())
+
   @@unique([entityType, entityId, targetType, targetId])
   @@index([entityType, entityId])
   @@index([targetType, targetId])
   @@map("entity_visibility")
+}
+
+model TrackerSeason {
+  id           String   @id @default(cuid())
+  trackerId    String
+  seasonNumber Int
+  seasonName   String?
+  playlist1v1  Json?
+  playlist2v2  Json?
+  playlist3v3  Json?
+  playlist4v4  Json?
+  scrapedAt    DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relationships
+  tracker Tracker @relation(fields: [trackerId], references: [id], onDelete: Cascade)
+
+  @@unique([trackerId, seasonNumber])
+  @@index([trackerId])
+  @@index([seasonNumber])
+  @@map("tracker_seasons")
+}
+
+model TrackerScrapingLog {
+  id             String                @id @default(cuid())
+  trackerId      String
+  status         TrackerScrapingStatus
+  seasonsScraped Int
+  seasonsFailed  Int
+  errorMessage   String?               @db.Text
+  startedAt      DateTime
+  completedAt    DateTime?
+  metadata       Json?
+
+  // Relationships
+  tracker Tracker @relation(fields: [trackerId], references: [id], onDelete: Cascade)
+
+  @@index([trackerId, startedAt])
+  @@index([status])
+  @@map("tracker_scraping_logs")
 }
