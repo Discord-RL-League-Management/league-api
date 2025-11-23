@@ -19,11 +19,13 @@ import { TrackersModule } from './trackers/trackers.module';
 import { InfrastructureModule } from './infrastructure/infrastructure.module';
 import { AuthLoggerMiddleware } from './common/middleware/auth-logger.middleware';
 import { throttlerConfig } from './config/throttler.config';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
     AppConfigModule,
     LoggingModule,
+    ScheduleModule.forRoot(),
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: throttlerConfig,
