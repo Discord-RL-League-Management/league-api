@@ -67,4 +67,19 @@ export const configurationSchema = Joi.object({
   // Circuit Breaker Configuration
   CIRCUIT_BREAKER_THRESHOLD: Joi.number().default(5),
   CIRCUIT_BREAKER_TIMEOUT: Joi.number().default(60000),
+
+  // Zyte API Configuration
+  ZYTE_API_KEY: Joi.string().required(),
+  ZYTE_PROXY_HOST: Joi.string().default('api.zyte.com'),
+  ZYTE_PROXY_PORT: Joi.number().default(8011),
+  ZYTE_RATE_LIMIT_PER_MINUTE: Joi.number().default(60),
+  ZYTE_TIMEOUT_MS: Joi.number().default(30000),
+  ZYTE_RETRY_ATTEMPTS: Joi.number().default(3),
+  ZYTE_RETRY_DELAY_MS: Joi.number().default(1000),
+
+  // Tracker Refresh Configuration
+  TRACKER_REFRESH_INTERVAL_HOURS: Joi.number().default(24),
+  TRACKER_BATCH_SIZE: Joi.number().default(100),
+  TRACKER_REFRESH_CRON: Joi.string().default('0 2 * * *'),
+  TRACKER_MAX_SCRAPING_ATTEMPTS: Joi.number().default(3),
 });

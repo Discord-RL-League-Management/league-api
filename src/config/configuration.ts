@@ -67,4 +67,19 @@ export default () => ({
     threshold: parseInt(process.env.CIRCUIT_BREAKER_THRESHOLD || '5', 10),
     timeout: parseInt(process.env.CIRCUIT_BREAKER_TIMEOUT || '60000', 10),
   },
+  zyte: {
+    apiKey: process.env.ZYTE_API_KEY || '',
+    proxyHost: process.env.ZYTE_PROXY_HOST || 'api.zyte.com',
+    proxyPort: parseInt(process.env.ZYTE_PROXY_PORT || '8011', 10),
+    rateLimitPerMinute: parseInt(process.env.ZYTE_RATE_LIMIT_PER_MINUTE || '60', 10),
+    timeoutMs: parseInt(process.env.ZYTE_TIMEOUT_MS || '30000', 10),
+    retryAttempts: parseInt(process.env.ZYTE_RETRY_ATTEMPTS || '3', 10),
+    retryDelayMs: parseInt(process.env.ZYTE_RETRY_DELAY_MS || '1000', 10),
+  },
+  tracker: {
+    refreshIntervalHours: parseInt(process.env.TRACKER_REFRESH_INTERVAL_HOURS || '24', 10),
+    batchSize: parseInt(process.env.TRACKER_BATCH_SIZE || '100', 10),
+    refreshCron: process.env.TRACKER_REFRESH_CRON || '0 2 * * *',
+    maxScrapingAttempts: parseInt(process.env.TRACKER_MAX_SCRAPING_ATTEMPTS || '3', 10),
+  },
 });
