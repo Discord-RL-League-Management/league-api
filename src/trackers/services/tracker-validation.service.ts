@@ -30,8 +30,13 @@ export class TrackerValidationService {
    * Returns parsed information or throws BadRequestException
    * @param url - TRN profile URL
    * @param userId - User ID to check for uniqueness
+   * @param excludeTrackerId - Optional tracker ID to exclude from URL uniqueness check (for replacement)
    */
-  async validateTrackerUrl(url: string, userId: string): Promise<ParsedTrackerUrl> {
+  async validateTrackerUrl(
+    url: string,
+    userId: string,
+    excludeTrackerId?: string,
+  ): Promise<ParsedTrackerUrl> {
     // 1. Basic URL format validation
     if (!this.isValidUrlFormat(url)) {
       throw new BadRequestException(
@@ -62,11 +67,13 @@ export class TrackerValidationService {
       throw new BadRequestException('Invalid username format in tracker URL');
     }
 
-    // 6. Check user uniqueness (one-to-one relationship)
-    await this.validateUserUniqueness(userId);
+    // 6. Check user uniqueness (one-to-one relationship) - skip if replacing
+    if (!excludeTrackerId) {
+      await this.validateUserUniqueness(userId);
+    }
 
-    // 7. Check URL uniqueness in database
-    const isUnique = await this.checkUrlUniqueness(url);
+    // 7. Check URL uniqueness in database (excluding current tracker if replacing)
+    const isUnique = await this.checkUrlUniqueness(url, excludeTrackerId);
     if (!isUnique) {
       throw new BadRequestException(
         'This tracker URL has already been registered with another user.',
@@ -100,15 +107,18 @@ export class TrackerValidationService {
 
   /**
    * Validate URL format matches TRN pattern
+   * Normalizes trailing slashes to match regex behavior (allows 0-1 trailing slash)
    */
   private isValidUrlFormat(url: string): boolean {
     try {
       const urlObj = new URL(url);
+      // Normalize trailing slashes: preserve at most one to match regex behavior (\/?$ allows 0-1)
+      const normalizedPathname = urlObj.pathname.replace(/\/+$/, (match) => match.length > 1 ? '/' : match);
       return (
         urlObj.protocol === 'https:' &&
         urlObj.hostname === 'rocketleague.tracker.network' &&
-        urlObj.pathname.startsWith('/rocket-league/profile/') &&
-        urlObj.pathname.endsWith('/overview')
+        normalizedPathname.startsWith('/rocket-league/profile/') &&
+        (normalizedPathname.endsWith('/overview') || normalizedPathname.endsWith('/overview/'))
       );
     } catch {
       return false;
@@ -117,9 +127,12 @@ export class TrackerValidationService {
 
   /**
    * Parse tracker URL to extract platform and username
+   * Normalizes trailing slashes before regex matching to match regex behavior (allows 0-1 trailing slash)
    */
   private parseTrackerUrl(url: string): { platform: string; username: string } | null {
-    const match = url.match(this.TRN_PROFILE_REGEX);
+    // Normalize URL: preserve at most one trailing slash to match regex pattern (\/?$ allows 0-1)
+    const normalizedUrl = url.replace(/\/+$/, (match) => match.length > 1 ? '/' : match);
+    const match = normalizedUrl.match(this.TRN_PROFILE_REGEX);
     if (!match || match.length < 3) {
       return null;
     }
@@ -164,17 +177,27 @@ export class TrackerValidationService {
 
   /**
    * Check if URL is unique in our system
+   * @param url - URL to check
+   * @param excludeTrackerId - Optional tracker ID to exclude from check (for replacement)
    */
-  private async checkUrlUniqueness(url: string): Promise<boolean> {
+  private async checkUrlUniqueness(
+    url: string,
+    excludeTrackerId?: string,
+  ): Promise<boolean> {
     const existingTracker = await this.prisma.tracker.findUnique({
       where: { url },
     });
 
-    if (existingTracker) {
-      return false;
+    if (!existingTracker) {
+      return true;
     }
 
-    return true;
+    // If excluding a tracker ID and it matches, consider it unique (for replacement)
+    if (excludeTrackerId && existingTracker.id === excludeTrackerId) {
+      return true;
+    }
+
+    return false;
   }
 
   /**

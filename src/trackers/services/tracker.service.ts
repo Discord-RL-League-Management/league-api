@@ -129,30 +129,56 @@ export class TrackerService {
   }
 
   /**
-   * Register a new tracker for a user
+   * Register a new tracker for a user or update existing tracker URL
    * Validates uniqueness and enqueues scraping job
+   * If user already has a tracker, updates the existing tracker's URL
    */
   async registerTracker(userId: string, url: string) {
-    // Verify user doesn't already have a tracker (one-to-one)
-    await this.verifyUserTrackerUniqueness(userId);
+    // Check if user already has a tracker
+    const existingTracker = await this.prisma.tracker.findUnique({
+      where: { userId },
+    });
 
     // Validate tracker URL format and uniqueness
-    const parsed = await this.validationService.validateTrackerUrl(url, userId);
+    // If replacing, exclude current tracker from uniqueness check
+    const parsed = await this.validationService.validateTrackerUrl(
+      url,
+      userId,
+      existingTracker?.id,
+    );
 
-    // Verify URL uniqueness
-    await this.verifyUrlUniqueness(url);
+    let tracker: { id: string; url: string; userId: string };
 
-    // Create tracker record
-    const tracker = await this.prisma.tracker.create({
-      data: {
-        url,
-        game: parsed.game,
-        platform: parsed.platform,
-        username: parsed.username,
-        userId,
-        scrapingStatus: TrackerScrapingStatus.PENDING,
-      },
-    });
+    if (existingTracker) {
+      // Update existing tracker
+      this.logger.log(
+        `Updating tracker ${existingTracker.id} for user ${userId} with new URL`,
+      );
+      tracker = await this.prisma.tracker.update({
+        where: { id: existingTracker.id },
+        data: {
+          url,
+          game: parsed.game,
+          platform: parsed.platform,
+          username: parsed.username,
+          scrapingStatus: TrackerScrapingStatus.PENDING,
+          scrapingError: null,
+          scrapingAttempts: 0,
+        },
+      });
+    } else {
+      // Create new tracker record
+      tracker = await this.prisma.tracker.create({
+        data: {
+          url,
+          game: parsed.game,
+          platform: parsed.platform,
+          username: parsed.username,
+          userId,
+          scrapingStatus: TrackerScrapingStatus.PENDING,
+        },
+      });
+    }
 
     // Enqueue scraping job (async, don't await)
     this.scrapingQueueService
@@ -180,40 +206,13 @@ export class TrackerService {
           });
       });
 
-    this.logger.log(`Registered tracker ${tracker.id} for user ${userId}`);
+    this.logger.log(
+      `${existingTracker ? 'Updated' : 'Registered'} tracker ${tracker.id} for user ${userId}`,
+    );
 
     return tracker;
   }
 
-  /**
-   * Verify that user doesn't already have a tracker (one-to-one relationship)
-   */
-  async verifyUserTrackerUniqueness(userId: string): Promise<void> {
-    const existingTracker = await this.prisma.tracker.findUnique({
-      where: { userId },
-    });
-
-    if (existingTracker) {
-      throw new BadRequestException(
-        'You already have a tracker registered. Each user can only have one tracker.',
-      );
-    }
-  }
-
-  /**
-   * Verify that URL is unique in the system
-   */
-  async verifyUrlUniqueness(url: string): Promise<void> {
-    const existingTracker = await this.prisma.tracker.findUnique({
-      where: { url },
-    });
-
-    if (existingTracker) {
-      throw new BadRequestException(
-        'This tracker URL has already been registered with another user.',
-      );
-    }
-  }
 
   /**
    * Refresh tracker data by enqueueing a new scraping job
