@@ -174,17 +174,7 @@ export class TrackerValidationService {
       return false;
     }
 
-    // Also check pending registrations
-    const pendingRegistration = await this.prisma.trackerRegistration.findFirst({
-      where: {
-        url,
-        status: {
-          in: ['PENDING', 'PROCESSING'],
-        },
-      },
-    });
-
-    return !pendingRegistration;
+    return true;
   }
 
   /**

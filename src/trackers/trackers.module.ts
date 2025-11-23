@@ -3,25 +3,16 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { HttpModule } from '@nestjs/axios';
 import { BullModule } from '@nestjs/bullmq';
 import { PrismaModule } from '../prisma/prisma.module';
-import { TRACKER_REGISTRATION_QUEUE } from './queues/tracker-registration.queue';
-import { TrackerRegistrationProcessor } from './queues/tracker-registration.processor';
-import { TrackerRegistrationQueueService } from './queues/tracker-registration.queue';
 import { TRACKER_SCRAPING_QUEUE } from './queues/tracker-scraping.queue';
 import { TrackerScrapingQueueService } from './queues/tracker-scraping.queue';
 import { TrackerScrapingProcessor } from './queues/tracker-scraping.processor';
-import { TrackerRegistrationService } from './services/tracker-registration.service';
 import { TrackerService } from './services/tracker.service';
 import { TrackerSnapshotService } from './services/tracker-snapshot.service';
 import { TrackerNotificationService } from './services/tracker-notification.service';
 import { TrackerRepository } from './repositories/tracker.repository';
 import { TrackerSnapshotRepository } from './repositories/tracker-snapshot.repository';
-import { TrackerRegistrationRepository } from './repositories/tracker-registration.repository';
-import { TrackerRegistrationController } from './controllers/tracker-registration.controller';
 import { TrackerController } from './controllers/tracker.controller';
-import { TrackerQueueAdminController } from './controllers/tracker-queue-admin.controller';
-import { TrackerQueueHealthController } from './controllers/tracker-queue-health.controller';
 import { TrackerAdminController } from './controllers/tracker-admin.controller';
-import { TrackerRegistrationProcessingService } from './services/tracker-registration-processing.service';
 import { DiscordMessageService } from './services/discord-message.service';
 import { InfrastructureModule } from '../infrastructure/infrastructure.module';
 import { NotificationBuilderService } from './services/notification-builder.service';
@@ -53,25 +44,6 @@ import { TrackerBatchRefreshService } from './services/tracker-batch-refresh.ser
       inject: [ConfigService],
     }),
     BullModule.registerQueueAsync({
-      name: TRACKER_REGISTRATION_QUEUE,
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => {
-        const queueConfig = configService.get('queue');
-        return {
-          defaultJobOptions: queueConfig.defaultJobOptions || {
-            removeOnComplete: 100,
-            removeOnFail: false, // Keep failed jobs for DLQ inspection
-            attempts: 3,
-            backoff: {
-              type: 'exponential',
-              delay: 2000,
-            },
-          },
-        };
-      },
-      inject: [ConfigService],
-    }),
-    BullModule.registerQueueAsync({
       name: TRACKER_SCRAPING_QUEUE,
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
@@ -93,16 +65,10 @@ import { TrackerBatchRefreshService } from './services/tracker-batch-refresh.ser
     }),
   ],
   controllers: [
-    TrackerRegistrationController,
     TrackerController,
-    TrackerQueueAdminController,
-    TrackerQueueHealthController,
     TrackerAdminController,
   ],
   providers: [
-    TrackerRegistrationProcessor,
-    TrackerRegistrationQueueService,
-    TrackerRegistrationService,
     TrackerService,
     TrackerSnapshotService,
     TrackerNotificationService,
@@ -116,16 +82,12 @@ import { TrackerBatchRefreshService } from './services/tracker-batch-refresh.ser
     TrackerBatchRefreshService,
     TrackerRepository,
     TrackerSnapshotRepository,
-    TrackerRegistrationRepository,
-    TrackerRegistrationProcessingService,
     DiscordMessageService,
     NotificationBuilderService,
   ],
   exports: [
-    TrackerRegistrationService,
     TrackerService,
     TrackerSnapshotService,
-    TrackerRegistrationQueueService,
     TrackerScrapingQueueService,
     TrackerSeasonService,
   ],

@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
+import { SchedulerRegistry } from '@nestjs/schedule';
+import { CronJob } from 'cron';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TrackerScrapingQueueService } from '../queues/tracker-scraping.queue';
@@ -17,6 +18,7 @@ export class TrackerRefreshSchedulerService implements OnModuleInit {
     private readonly scrapingQueueService: TrackerScrapingQueueService,
     private readonly batchRefreshService: TrackerBatchRefreshService,
     private readonly configService: ConfigService,
+    private readonly schedulerRegistry: SchedulerRegistry,
   ) {
     const trackerConfig = this.configService.get('tracker');
     this.refreshIntervalHours = trackerConfig.refreshIntervalHours;
@@ -25,19 +27,39 @@ export class TrackerRefreshSchedulerService implements OnModuleInit {
   }
 
   onModuleInit() {
+    const cronExpression = this.cronExpression || '0 2 * * *';
+    
     this.logger.log(
-      `Tracker refresh scheduler initialized. Cron: ${this.cronExpression}, Batch size: ${this.batchSize}, Interval: ${this.refreshIntervalHours} hours`,
+      `Tracker refresh scheduler initialized. Cron: ${cronExpression}, Batch size: ${this.batchSize}, Interval: ${this.refreshIntervalHours} hours`,
     );
+
+    // Register cron job dynamically using configured expression
+    const job = new CronJob(
+      cronExpression,
+      () => {
+        // Handle async operation in cron callback to prevent unhandled promise rejections
+        this.scheduledRefresh().catch((error) => {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          this.logger.error(
+            `Unhandled error in scheduled tracker refresh: ${errorMessage}`,
+            error instanceof Error ? error.stack : undefined,
+          );
+        });
+      },
+    );
+    
+    this.schedulerRegistry.addCronJob('tracker-refresh', job);
+    job.start();
+    
+    this.logger.log(`Tracker refresh cron job registered and started with expression: ${cronExpression}`);
   }
 
   /**
    * Scheduled job to refresh all trackers that need updating
-   * Runs daily at 2 AM by default (configurable via TRACKER_REFRESH_CRON)
-   * Default cron: '0 2 * * *' (2 AM daily)
+   * Runs according to configured cron expression (TRACKER_REFRESH_CRON environment variable)
+   * Default cron: '0 2 * * *' (2 AM daily) if not configured
    */
-  @Cron('0 2 * * *')
   async scheduledRefresh() {
-    // Use configured cron expression - for now using default, can be made dynamic if needed
     this.logger.log('Starting scheduled tracker refresh');
     await this.triggerManualRefresh();
   }

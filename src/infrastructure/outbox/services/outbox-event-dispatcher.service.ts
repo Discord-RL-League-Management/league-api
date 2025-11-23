@@ -1,7 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../../../prisma/prisma.service';
 import { Outbox } from '@prisma/client';
-import { TrackerRegistrationQueueService } from '../../../trackers/queues/tracker-registration.queue';
 
 /**
  * OutboxEventDispatcher - Single Responsibility: Event routing
@@ -13,52 +11,52 @@ import { TrackerRegistrationQueueService } from '../../../trackers/queues/tracke
 export class OutboxEventDispatcher {
   private readonly logger = new Logger(OutboxEventDispatcher.name);
 
-  constructor(
-    private readonly queueService: TrackerRegistrationQueueService,
-    private readonly prisma: PrismaService,
-  ) {}
-
   /**
    * Dispatch an outbox event to the appropriate queue
    * @param event The outbox event to dispatch
-   * @throws Error if event type is unknown
+   * @throws Error if event type is unknown or handler is not implemented
+   * 
+   * Routes events to appropriate handlers based on event type.
+   * Unknown event types throw an error to trigger retry logic, ensuring eventual
+   * processing or manual investigation after max retries.
+   * 
+   * This maintains the outbox pattern's guarantee of eventual consistency by
+   * ensuring events are either processed successfully or explicitly marked as
+   * FAILED for investigation, preventing silent data loss.
    */
   async dispatchEvent(event: Outbox): Promise<void> {
     this.logger.debug(`Dispatching event ${event.id} of type ${event.eventType}`);
 
-    // Dispatch to queue based on event type
-    if (event.eventType === 'TRACKER_REGISTRATION_CREATED') {
-      await this.dispatchTrackerRegistrationCreated(event);
-    } else {
-      throw new Error(`Unknown event type: ${event.eventType}`);
+    // Handle known deprecated event types (from removed systems)
+    // These are explicitly handled to prevent failures for legacy events
+    const deprecatedEventTypes = [
+      'TRACKER_REGISTRATION_CREATED', // Deprecated: Removed with tracker registration queue system
+    ];
+
+    if (deprecatedEventTypes.includes(event.eventType)) {
+      this.logger.warn(
+        `Skipping deprecated event type: ${event.eventType} (event ${event.id}). ` +
+        `This event type is no longer processed as the system has been removed.`,
+      );
+      // Complete the event without processing (no-op for deprecated types)
+      return;
     }
-  }
 
-  /**
-   * Dispatch TRACKER_REGISTRATION_CREATED event to queue
-   */
-  private async dispatchTrackerRegistrationCreated(
-    event: Outbox,
-  ): Promise<void> {
-    const payload = event.payload as any;
+    // Route events to appropriate handlers based on event type
+    // Add handlers here as new event types are implemented
+    // Example:
+    // if (event.eventType === 'SOME_EVENT_TYPE') {
+    //   await this.handleSomeEvent(event);
+    //   return;
+    // }
 
-    // Create job in queue
-    const jobId = await this.queueService.addJob({
-      registrationId: payload.registrationId,
-      userId: payload.userId,
-      guildId: payload.guildId,
-      url: payload.url,
-      submittedAt: new Date(payload.submittedAt),
-    });
-
-    // Update registration with job ID
-    await this.prisma.trackerRegistration.update({
-      where: { id: payload.registrationId },
-      data: { jobId },
-    });
-
-    this.logger.debug(
-      `Dispatched TRACKER_REGISTRATION_CREATED event ${event.id} to queue with job ID ${jobId}`,
+    // Unknown event types throw an error to trigger retry logic
+    // After max retries, events are marked as FAILED and can be manually investigated
+    // This ensures the outbox pattern's guarantee of eventual consistency
+    throw new Error(
+      `No handler implemented for event type: ${event.eventType} (event ${event.id}). ` +
+      `Event will be retried and marked as FAILED after max retries. ` +
+      `Implement a handler in OutboxEventDispatcher.dispatchEvent() to process this event type.`,
     );
   }
 }

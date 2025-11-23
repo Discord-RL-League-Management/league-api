@@ -3,8 +3,8 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateOutboxEventDto {
   @ApiProperty({
-    description: 'Source type of the event (e.g., tracker_registration)',
-    example: 'tracker_registration',
+    description: 'Source type of the event (e.g., tracker, user)',
+    example: 'tracker',
   })
   @IsString()
   @IsNotEmpty()
@@ -19,8 +19,8 @@ export class CreateOutboxEventDto {
   sourceId!: string;
 
   @ApiProperty({
-    description: 'Type of event (e.g., TRACKER_REGISTRATION_CREATED)',
-    example: 'TRACKER_REGISTRATION_CREATED',
+    description: 'Type of event (e.g., CREATED, UPDATED)',
+    example: 'CREATED',
   })
   @IsString()
   @IsNotEmpty()
@@ -28,7 +28,7 @@ export class CreateOutboxEventDto {
 
   @ApiProperty({
     description: 'Event payload data',
-    example: { registrationId: 'clx1234567890', userId: '123456789', guildId: '987654321' },
+    example: { id: 'clx1234567890', userId: '123456789' },
   })
   @IsObject()
   @IsNotEmpty()

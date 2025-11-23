@@ -19,14 +19,6 @@ enum Game {
   ROCKET_LEAGUE
 }
 
-enum TrackerRegistrationStatus {
-  PENDING
-  PROCESSING
-  COMPLETED
-  REJECTED
-  FAILED
-}
-
 enum OutboxStatus {
   PENDING
   PROCESSING
@@ -60,11 +52,9 @@ model User {
   lastLoginAt DateTime @default(now())
 
   // Relationships
-  guildMembers                  GuildMember[]
-  trackers                      Tracker[]
-  enteredSnapshots              TrackerSnapshot[]
-  trackerRegistrations          TrackerRegistration[]
-  processedTrackerRegistrations TrackerRegistration[] @relation("ProcessedTrackerRegistrations")
+  guildMembers     GuildMember[]
+  trackers         Tracker[]
+  enteredSnapshots TrackerSnapshot[]
 
   @@index([isBanned])
   @@index([isDeleted])
@@ -82,8 +72,7 @@ model Guild {
   isActive    Boolean   @default(true)
 
   // Relationships
-  members              GuildMember[]
-  trackerRegistrations TrackerRegistration[]
+  members GuildMember[]
 
   // Indexes for performance
   @@index([isActive])
@@ -140,7 +129,6 @@ model Tracker {
   // Relationships
   user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   snapshots    TrackerSnapshot[]
-  registration TrackerRegistration?
   seasons      TrackerSeason[]
   scrapingLogs TrackerScrapingLog[]
 
@@ -182,42 +170,6 @@ model TrackerSnapshot {
   @@index([trackerId, capturedAt])
   @@index([trackerId, seasonNumber])
   @@map("tracker_snapshots")
-}
-
-// DEPRECATED: This model is kept for migration period but is no longer used in the new tracker system
-// The new system uses direct tracker registration with immediate scraping via Zyte API
-model TrackerRegistration {
-  id                   String                    @id @default(cuid())
-  userId               String                    @db.VarChar(20)
-  guildId              String                    @db.VarChar(20)
-  url                  String
-  game                 Game                      @default(ROCKET_LEAGUE)
-  platform             GamePlatform?
-  username             String?
-  status               TrackerRegistrationStatus @default(PENDING)
-  jobId                String?                   @unique // BullMQ job ID
-  processedBy          String?                   @db.VarChar(20)
-  processedAt          DateTime?
-  rejectionReason      String?
-  trackerId            String?                   @unique
-  notificationSentAt   DateTime?
-  notificationAttempts Int                       @default(0)
-  lastProcessedAt      DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relationships
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  guild           Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
-  processedByUser User?    @relation("ProcessedTrackerRegistrations", fields: [processedBy], references: [id], onDelete: SetNull)
-  tracker         Tracker? @relation(fields: [trackerId], references: [id], onDelete: SetNull)
-
-  @@index([guildId])
-  @@index([status])
-  @@index([guildId, status])
-  @@index([jobId])
-  @@map("tracker_registrations")
 }
 
 model Outbox {
