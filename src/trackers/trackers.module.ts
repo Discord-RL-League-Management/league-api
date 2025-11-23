@@ -6,6 +6,9 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { TRACKER_REGISTRATION_QUEUE } from './queues/tracker-registration.queue';
 import { TrackerRegistrationProcessor } from './queues/tracker-registration.processor';
 import { TrackerRegistrationQueueService } from './queues/tracker-registration.queue';
+import { TRACKER_SCRAPING_QUEUE } from './queues/tracker-scraping.queue';
+import { TrackerScrapingQueueService } from './queues/tracker-scraping.queue';
+import { TrackerScrapingProcessor } from './queues/tracker-scraping.processor';
 import { TrackerRegistrationService } from './services/tracker-registration.service';
 import { TrackerService } from './services/tracker.service';
 import { TrackerSnapshotService } from './services/tracker-snapshot.service';
@@ -17,11 +20,17 @@ import { TrackerRegistrationController } from './controllers/tracker-registratio
 import { TrackerController } from './controllers/tracker.controller';
 import { TrackerQueueAdminController } from './controllers/tracker-queue-admin.controller';
 import { TrackerQueueHealthController } from './controllers/tracker-queue-health.controller';
+import { TrackerAdminController } from './controllers/tracker-admin.controller';
 import { TrackerRegistrationProcessingService } from './services/tracker-registration-processing.service';
 import { DiscordMessageService } from './services/discord-message.service';
 import { InfrastructureModule } from '../infrastructure/infrastructure.module';
 import { NotificationBuilderService } from './services/notification-builder.service';
 import { TrackerValidationService } from './services/tracker-validation.service';
+import { TrackerUrlConverterService } from './services/tracker-url-converter.service';
+import { TrackerScraperService } from './services/tracker-scraper.service';
+import { TrackerSeasonService } from './services/tracker-season.service';
+import { TrackerRefreshSchedulerService } from './services/tracker-refresh-scheduler.service';
+import { TrackerBatchRefreshService } from './services/tracker-batch-refresh.service';
 
 @Module({
   imports: [
@@ -62,12 +71,33 @@ import { TrackerValidationService } from './services/tracker-validation.service'
       },
       inject: [ConfigService],
     }),
+    BullModule.registerQueueAsync({
+      name: TRACKER_SCRAPING_QUEUE,
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => {
+        const queueConfig = configService.get('queue');
+        return {
+          defaultJobOptions: {
+            removeOnComplete: 100,
+            removeOnFail: 50,
+            attempts: 3,
+            backoff: {
+              type: 'exponential',
+              delay: 5000,
+            },
+            timeout: 300000, // 5 minutes for scraping jobs
+          },
+        };
+      },
+      inject: [ConfigService],
+    }),
   ],
   controllers: [
     TrackerRegistrationController,
     TrackerController,
     TrackerQueueAdminController,
     TrackerQueueHealthController,
+    TrackerAdminController,
   ],
   providers: [
     TrackerRegistrationProcessor,
@@ -77,6 +107,13 @@ import { TrackerValidationService } from './services/tracker-validation.service'
     TrackerSnapshotService,
     TrackerNotificationService,
     TrackerValidationService,
+    TrackerUrlConverterService,
+    TrackerScraperService,
+    TrackerSeasonService,
+    TrackerScrapingQueueService,
+    TrackerScrapingProcessor,
+    TrackerRefreshSchedulerService,
+    TrackerBatchRefreshService,
     TrackerRepository,
     TrackerSnapshotRepository,
     TrackerRegistrationRepository,
@@ -89,6 +126,8 @@ import { TrackerValidationService } from './services/tracker-validation.service'
     TrackerService,
     TrackerSnapshotService,
     TrackerRegistrationQueueService,
+    TrackerScrapingQueueService,
+    TrackerSeasonService,
   ],
 })
 export class TrackersModule {}
