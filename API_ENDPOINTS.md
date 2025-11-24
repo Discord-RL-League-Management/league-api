@@ -82,6 +82,26 @@ curl -H "Authorization: Bearer BOT_API_KEY" \
   http://localhost:3000/internal/users
 ```
 
+### League Management (Bot)
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/internal/leagues/:id` | Get league by ID | ✅ API Key |
+| `POST` | `/internal/leagues` | Create new league | ✅ API Key |
+| `PATCH` | `/internal/leagues/:id` | Update league | ✅ API Key |
+| `DELETE` | `/internal/leagues/:id` | Delete league | ✅ API Key |
+| `GET` | `/internal/leagues/:id/settings` | Get league settings | ✅ API Key |
+| `PATCH` | `/internal/leagues/:id/settings` | Update league settings | ✅ API Key |
+
+**Example Bot Request:**
+```bash
+curl -H "Authorization: Bearer BOT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{"name":"Diamond League","guildId":"123456789012345678","game":"ROCKET_LEAGUE","createdBy":"bot"}' \
+  http://localhost:3000/internal/leagues
+```
+
 ---
 
 ## User Endpoints (JWT Required)
@@ -106,6 +126,43 @@ curl -H "Authorization: Bearer BOT_API_KEY" \
 ```bash
 curl -H "Authorization: Bearer JWT_TOKEN" \
   http://localhost:3000/api/profile
+```
+
+### League Management (User)
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/leagues/guild/:guildId` | List leagues in guild | ✅ JWT |
+| `GET` | `/api/leagues/:id` | Get league details | ✅ JWT |
+| `POST` | `/api/leagues` | Create league (requires admin) | ✅ JWT |
+| `PATCH` | `/api/leagues/:id` | Update league (requires admin/league admin) | ✅ JWT |
+| `PATCH` | `/api/leagues/:id/status` | Update league status (requires admin) | ✅ JWT |
+| `DELETE` | `/api/leagues/:id` | Delete league (requires admin) | ✅ JWT |
+| `GET` | `/api/leagues/:leagueId/settings` | Get league settings (requires admin) | ✅ JWT |
+| `PATCH` | `/api/leagues/:leagueId/settings` | Update league settings (requires admin) | ✅ JWT |
+
+**Query Parameters for `/api/leagues/guild/:guildId`:**
+- `page` (optional): Page number (default: 1)
+- `limit` (optional): Items per page (default: 50)
+- `status` (optional): Filter by status (ACTIVE, PAUSED, ARCHIVED, CANCELLED)
+- `game` (optional): Filter by game (ROCKET_LEAGUE, DOTA_2)
+
+**Example User Request:**
+```bash
+# List leagues in guild
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  "http://localhost:3000/api/leagues/guild/123456789012345678?status=ACTIVE&page=1&limit=10"
+
+# Get league details
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  http://localhost:3000/api/leagues/clxyz1234567890
+
+# Create league
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{"name":"Diamond League","guildId":"123456789012345678","game":"ROCKET_LEAGUE"}' \
+  http://localhost:3000/api/leagues
 ```
 
 ---
@@ -211,6 +268,111 @@ interface UserStats {
   wins: number;
   losses: number;
   winRate: number;
+}
+```
+
+### League Model
+
+```typescript
+interface League {
+  id: string;                    // League ID (cuid)
+  guildId: string;               // Discord guild ID
+  name: string;                  // League name (max 200 chars)
+  description?: string;          // League description
+  status: LeagueStatus;          // League status (ACTIVE, PAUSED, ARCHIVED, CANCELLED)
+  game?: Game;                   // Game type (ROCKET_LEAGUE, DOTA_2, or null for game-agnostic)
+  createdBy: string;             // Discord user ID who created the league
+  createdAt: Date;               // League creation date
+  updatedAt: Date;               // Last update date
+  guild?: Guild;                 // Related guild (if included)
+}
+
+enum LeagueStatus {
+  ACTIVE = 'ACTIVE',
+  PAUSED = 'PAUSED',
+  ARCHIVED = 'ARCHIVED',
+  CANCELLED = 'CANCELLED',
+}
+
+enum Game {
+  ROCKET_LEAGUE = 'ROCKET_LEAGUE',
+  DOTA_2 = 'DOTA_2',
+}
+```
+
+### League Configuration
+
+```typescript
+interface LeagueConfiguration {
+  _metadata?: ConfigMetadata;
+  membership: MembershipConfig;
+  game: GameConfig;
+  skill: SkillConfig;
+  visibility: VisibilityConfig;
+  administration: AdministrationConfig;
+}
+
+interface MembershipConfig {
+  joinMethod: 'OPEN' | 'INVITE_ONLY' | 'APPLICATION';
+  requiresApproval: boolean;
+  allowSelfRegistration: boolean;
+  maxPlayers?: number | null;
+  minPlayers?: number | null;
+  maxTeams?: number | null;
+  registrationOpen: boolean;
+  registrationStartDate?: Date | null;
+  registrationEndDate?: Date | null;
+  autoCloseOnFull: boolean;
+  requireGuildMembership: boolean;
+  requirePlayerStatus: boolean;
+  skillRequirements?: {
+    minSkill?: number;
+    maxSkill?: number;
+    skillMetric: 'MMR' | 'RANK' | 'ELO' | 'CUSTOM';
+  } | null;
+  allowMultipleLeagues: boolean;
+  cooldownAfterLeave?: number | null;
+}
+
+interface GameConfig {
+  gameType?: 'ROCKET_LEAGUE' | 'DOTA_2' | null;
+  platform?: Array<'STEAM' | 'EPIC' | 'XBL' | 'PSN' | 'SWITCH'> | null;
+}
+
+interface SkillConfig {
+  isSkillBased: boolean;
+  skillMetric?: 'MMR' | 'RANK' | 'ELO' | 'CUSTOM' | null;
+  minSkillLevel?: number | null;
+  maxSkillLevel?: number | null;
+  requireTracker: boolean;
+  trackerPlatforms?: Array<string> | null;
+}
+
+interface VisibilityConfig {
+  isPublic: boolean;
+  showInDirectory: boolean;
+  allowSpectators: boolean;
+}
+
+interface AdministrationConfig {
+  adminRoles?: Array<string>;
+  allowPlayerReports: boolean;
+  allowSuspensions: boolean;
+  allowBans: boolean;
+}
+```
+
+### League List Response
+
+```typescript
+interface LeagueListResponse {
+  leagues: League[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
 }
 ```
 

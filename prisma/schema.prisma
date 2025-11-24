@@ -17,6 +17,14 @@ enum GamePlatform {
 
 enum Game {
   ROCKET_LEAGUE
+  DOTA_2
+}
+
+enum LeagueStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+  CANCELLED
 }
 
 enum OutboxStatus {
@@ -72,8 +80,9 @@ model Guild {
   isActive    Boolean   @default(true)
 
   // Relationships
-  members GuildMember[]
-
+  members     GuildMember[]
+  leagues     League[]
+  
   // Indexes for performance
   @@index([isActive])
   @@index([joinedAt])
@@ -291,4 +300,30 @@ model TrackerScrapingLog {
   @@index([trackerId, startedAt])
   @@index([status])
   @@map("tracker_scraping_logs")
+}
+
+model League {
+  id          String       @id @default(cuid())
+  guildId     String       @db.VarChar(20) // Discord guild snowflake ID
+  name        String       @db.VarChar(200)
+  description String?      @db.Text
+  status      LeagueStatus @default(ACTIVE)
+  game        Game?
+  createdBy   String       @db.VarChar(20) // Discord user snowflake ID
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  // Relationships
+  guild         Guild            @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  // leagueMembers LeagueMember[]  // Will be added when LeagueMember model is created
+  // teams         Team[]          // Will be added when Team model is created
+  // tournaments   Tournament[]    // Will be added when Tournament model is created
+  // series        Series[]        // Will be added when Series model is created
+
+  @@index([guildId])
+  @@index([status])
+  @@index([game])
+  @@index([guildId, game])
+  @@index([guildId, status])
+  @@map("leagues")
 }

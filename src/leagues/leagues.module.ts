@@ -1,0 +1,56 @@
+import { Module } from '@nestjs/common';
+import { PrismaModule } from '../prisma/prisma.module';
+import { InfrastructureModule } from '../infrastructure/infrastructure.module';
+import { CommonModule } from '../common/common.module';
+import { CacheModule } from '@nestjs/cache-manager';
+import { AuthModule } from '../auth/auth.module';
+import { GuildsModule } from '../guilds/guilds.module';
+
+// Controllers
+import { LeaguesController } from './leagues.controller';
+import { InternalLeaguesController } from './internal-leagues.controller';
+import { LeagueSettingsController } from './league-settings.controller';
+
+// Services
+import { LeaguesService } from './leagues.service';
+import { LeagueSettingsService } from './league-settings.service';
+import { LeagueSettingsDefaultsService } from './services/league-settings-defaults.service';
+import { SettingsValidationService } from './services/settings-validation.service';
+import { ConfigMigrationService } from './services/config-migration.service';
+import { LeagueAccessValidationService } from './services/league-access-validation.service';
+
+// Repositories
+import { LeagueRepository } from './repositories/league.repository';
+
+@Module({
+  imports: [
+    PrismaModule,
+    InfrastructureModule,
+    CommonModule,
+    CacheModule.register(),
+    AuthModule,
+    GuildsModule, // For GuildsService dependency
+  ],
+  controllers: [
+    LeaguesController,
+    InternalLeaguesController,
+    LeagueSettingsController,
+  ],
+  providers: [
+    LeaguesService,
+    LeagueSettingsService,
+    LeagueSettingsDefaultsService,
+    SettingsValidationService,
+    ConfigMigrationService,
+    LeagueAccessValidationService,
+    LeagueRepository,
+  ],
+  exports: [
+    LeaguesService,
+    LeagueSettingsService,
+    LeagueSettingsDefaultsService,
+  ],
+})
+export class LeaguesModule {}
+
+

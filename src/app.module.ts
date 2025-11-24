@@ -13,6 +13,7 @@ import { ProfileModule } from './profile/profile.module';
 import { HealthModule } from './health/health.module';
 import { GuildsModule } from './guilds/guilds.module';
 import { GuildMembersModule } from './guild-members/guild-members.module';
+import { LeaguesModule } from './leagues/leagues.module';
 import { PermissionsModule } from './permissions/permissions.module';
 import { AuditModule } from './audit/audit.module';
 import { TrackersModule } from './trackers/trackers.module';
@@ -41,6 +42,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     HealthModule,
     GuildsModule,
     GuildMembersModule,
+    LeaguesModule,
     PermissionsModule,
     AuditModule,
     TrackersModule,
