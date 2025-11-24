@@ -2,3 +2,5 @@
 -- Drop unique index on userId
 DROP INDEX IF EXISTS "trackers_userId_key";
 
+
+

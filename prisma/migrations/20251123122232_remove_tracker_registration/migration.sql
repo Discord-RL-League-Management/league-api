@@ -18,3 +18,5 @@ DROP TABLE IF EXISTS "public"."tracker_registrations";
 -- DropEnum
 DROP TYPE IF EXISTS "public"."TrackerRegistrationStatus";
 
+
+
