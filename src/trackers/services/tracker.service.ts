@@ -133,10 +133,45 @@ export class TrackerService {
   }
 
   /**
+   * Ensure user exists in database, creating or updating as needed
+   * Single Responsibility: User upsert logic
+   */
+  private async ensureUserExists(
+    userId: string,
+    userData?: { username: string; globalName?: string; avatar?: string },
+  ): Promise<void> {
+    const username = userData?.username || userId;
+    const globalName = userData?.globalName ?? null;
+    const avatar = userData?.avatar ?? null;
+
+    await this.prisma.user.upsert({
+      where: { id: userId },
+      update: {
+        username,
+        globalName,
+        avatar,
+      },
+      create: {
+        id: userId,
+        username,
+        globalName,
+        avatar,
+      },
+    });
+  }
+
+  /**
    * Register multiple trackers for a user (1-4 trackers)
    * Validates user doesn't already have trackers
    */
-  async registerTrackers(userId: string, urls: string[]) {
+  async registerTrackers(
+    userId: string,
+    urls: string[],
+    userData?: { username: string; globalName?: string; avatar?: string },
+  ) {
+    // Ensure user exists before creating trackers
+    await this.ensureUserExists(userId, userData);
+
     if (urls.length === 0 || urls.length > 4) {
       throw new BadRequestException('You must provide between 1 and 4 tracker URLs');
     }
@@ -196,7 +231,14 @@ export class TrackerService {
    * Add an additional tracker for a user (up to 4 total)
    * Validates tracker count limit
    */
-  async addTracker(userId: string, url: string) {
+  async addTracker(
+    userId: string,
+    url: string,
+    userData?: { username: string; globalName?: string; avatar?: string },
+  ) {
+    // Ensure user exists before creating tracker
+    await this.ensureUserExists(userId, userData);
+
     // Check current tracker count
     const existingTrackers = await this.getTrackersByUserId(userId);
     const activeTrackers = existingTrackers.filter(t => !t.isDeleted);

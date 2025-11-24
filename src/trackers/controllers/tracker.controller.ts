@@ -52,7 +52,12 @@ export class TrackerController {
     @Body() dto: RegisterTrackersDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.trackerService.registerTrackers(user.id, dto.urls);
+    const userData = {
+      username: user.username,
+      globalName: user.globalName,
+      avatar: user.avatar,
+    };
+    return this.trackerService.registerTrackers(user.id, dto.urls, userData);
   }
 
   @Get('me')
@@ -213,7 +218,12 @@ export class TrackerController {
     @Body() dto: AddTrackerDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.trackerService.addTracker(user.id, dto.url);
+    const userData = {
+      username: user.username,
+      globalName: user.globalName,
+      avatar: user.avatar,
+    };
+    return this.trackerService.addTracker(user.id, dto.url, userData);
   }
 }
 

@@ -1,4 +1,5 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { GlobalExceptionFilter } from '../../src/common/filters/global-exception.filter';
 import { PrismaExceptionFilter } from '../../src/common/filters/prisma-exception.filter';
 
@@ -16,6 +17,9 @@ import { PrismaExceptionFilter } from '../../src/common/filters/prisma-exception
 export async function bootstrapTestApp(
   app: INestApplication,
 ): Promise<INestApplication> {
+  // Get ConfigService from app (must be done after app is created but before init)
+  const configService = app.get(ConfigService);
+
   // Apply same global pipes as main.ts
   app.useGlobalPipes(
     new ValidationPipe({
@@ -26,9 +30,10 @@ export async function bootstrapTestApp(
   );
 
   // Apply same global filters as main.ts
+  // Execution order: Filters are executed in reverse registration order
   app.useGlobalFilters(
-    new GlobalExceptionFilter(),
-    new PrismaExceptionFilter(),
+    new PrismaExceptionFilter(), // Handles Prisma errors first
+    new GlobalExceptionFilter(configService), // Catches all other exceptions
   );
 
   await app.init();
