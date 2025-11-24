@@ -1,16 +1,11 @@
-import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { LoggerModule as PinoLoggerModule } from 'nestjs-pino';
-import { pinoConfig } from './pino.config';
+import { Module, Global } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { NewRelicLoggerService } from './newrelic-logger.service';
 
+@Global()
 @Module({
-  imports: [
-    ConfigModule,
-    PinoLoggerModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: pinoConfig,
-    }),
-  ],
+  imports: [ConfigModule],
+  providers: [NewRelicLoggerService],
+  exports: [NewRelicLoggerService],
 })
 export class LoggingModule {}

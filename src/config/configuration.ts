@@ -35,10 +35,9 @@ export default () => ({
     ttl: parseInt(process.env.THROTTLE_TTL || '60000', 10),
     limit: parseInt(process.env.THROTTLE_LIMIT || '100', 10),
   },
-  logging: {
-    level: process.env.LOG_LEVEL || 'info',
-    fileEnabled: process.env.LOG_FILE_ENABLED === 'true',
-    filePath: process.env.LOG_FILE_PATH || 'logs',
+  newrelic: {
+    apiKey: process.env.NEW_RELIC_LICENSE_KEY || '',
+    enabled: process.env.NEW_RELIC_ENABLED !== 'false',
   },
   redis: {
     host: process.env.REDIS_HOST || 'localhost',

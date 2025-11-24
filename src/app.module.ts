@@ -17,7 +17,9 @@ import { PermissionsModule } from './permissions/permissions.module';
 import { AuditModule } from './audit/audit.module';
 import { TrackersModule } from './trackers/trackers.module';
 import { InfrastructureModule } from './infrastructure/infrastructure.module';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthLoggerMiddleware } from './common/middleware/auth-logger.middleware';
+import { RequestContextInterceptor } from './common/interceptors/request-context.interceptor';
 import { throttlerConfig } from './config/throttler.config';
 import { ScheduleModule } from '@nestjs/schedule';
 
@@ -49,10 +51,15 @@ import { ScheduleModule } from '@nestjs/schedule';
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: RequestContextInterceptor,
+    },
   ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
+    // RequestContextInterceptor handles context setup via APP_INTERCEPTOR
     consumer.apply(AuthLoggerMiddleware).forRoutes('*');
   }
 }

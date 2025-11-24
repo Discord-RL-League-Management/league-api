@@ -2,12 +2,13 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, Logger } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 import { ConfigService } from '@nestjs/config';
+import { NewRelicLoggerService } from './logging/newrelic-logger.service';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 
@@ -16,8 +17,11 @@ async function bootstrap() {
     bufferLogs: true,
   });
 
+  // Configure NestJS to use New Relic logger
+  const logger = app.get(NewRelicLoggerService);
+  app.useLogger(logger);
+
   const configService = app.get(ConfigService);
-  const logger = new Logger('Bootstrap');
 
   // Cookie parser for HttpOnly cookies
   app.use(cookieParser());
