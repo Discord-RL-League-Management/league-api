@@ -107,6 +107,18 @@ enum ParticipantStatus {
   WITHDRAWN
 }
 
+enum OrganizationMemberRole {
+  GENERAL_MANAGER
+  MEMBER
+}
+
+enum OrganizationMemberStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  REMOVED
+}
+
 model User {
   id            String  @id
   username      String
@@ -393,6 +405,7 @@ model Player {
   stats                  PlayerLeagueStats[]
   ratings                PlayerLeagueRating[]
   tournamentParticipants TournamentParticipant[]
+  organizationMembers    OrganizationMember[]
 
   @@unique([userId, guildId])
   @@index([guildId, status])
@@ -432,6 +445,7 @@ model Team {
   tag                String?  @db.VarChar(20)
   description        String?  @db.Text
   captainId          String?
+  organizationId     String?
   maxPlayers         Int      @default(5)
   minPlayers         Int      @default(2)
   allowEmergencySubs Boolean  @default(true)
@@ -441,12 +455,15 @@ model Team {
 
   // Relationships
   league                 League                  @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  organization           Organization?           @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   members                TeamMember[]
   captain                Player?                 @relation("TeamCaptain", fields: [captainId], references: [id], onDelete: SetNull)
   matchParticipants      MatchParticipant[]
   tournamentParticipants TournamentParticipant[]
 
   @@index([leagueId])
+  @@index([organizationId])
+  @@index([leagueId, organizationId])
   @@map("teams")
 }
 
@@ -496,6 +513,8 @@ model League {
   guild                 Guild                   @relation(fields: [guildId], references: [id], onDelete: Cascade)
   leagueMembers         LeagueMember[]
   teams                 Team[]
+  organizations         Organization[]
+  organizationMembers   OrganizationMember[]
   tournaments           Tournament[]
   matches               Match[]
   playerStats           PlayerLeagueStats[]
@@ -656,4 +675,50 @@ model TournamentParticipant {
   @@unique([tournamentId, playerId])
   @@unique([tournamentId, teamId])
   @@map("tournament_participants")
+}
+
+model Organization {
+  id          String   @id @default(cuid())
+  leagueId    String
+  name        String   @db.VarChar(200)
+  tag         String?  @db.VarChar(20)
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relationships
+  league  League               @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  members OrganizationMember[]
+  teams   Team[]
+
+  @@index([leagueId])
+  @@map("organizations")
+}
+
+model OrganizationMember {
+  id            String                  @id @default(cuid())
+  organizationId String
+  playerId      String
+  leagueId      String
+  status        OrganizationMemberStatus @default(ACTIVE)
+  role          OrganizationMemberRole   @default(MEMBER)
+  joinedAt      DateTime                 @default(now())
+  leftAt        DateTime?
+  approvedBy    String?                  @db.VarChar(20)
+  approvedAt    DateTime?
+  notes         String?                  @db.Text
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+
+  // Relationships
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  player       Player       @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  league       League       @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, playerId])
+  @@unique([playerId, leagueId])
+  @@index([organizationId, status])
+  @@index([leagueId, status])
+  @@index([playerId, status])
+  @@map("organization_members")
 }

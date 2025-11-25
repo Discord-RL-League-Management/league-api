@@ -1,6 +1,5 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Inject } from '@nestjs/common';
 import type { Cache } from 'cache-manager';
 import { SettingsService } from '../infrastructure/settings/services/settings.service';
 import { LeagueRepository } from './repositories/league.repository';
@@ -12,6 +11,9 @@ import {
 } from './interfaces/league-settings.interface';
 import { LeagueNotFoundException } from './exceptions/league.exceptions';
 import { LeagueSettingsDto } from './dto/league-settings.dto';
+import { PrismaService } from '../prisma/prisma.service';
+import { OrganizationService } from '../organizations/services/organization.service';
+import { TeamRepository } from '../teams/repositories/team.repository';
 
 /**
  * LeagueSettingsService - Single Responsibility: League configuration management
@@ -31,6 +33,11 @@ export class LeagueSettingsService {
     private settingsValidation: SettingsValidationService,
     private configMigration: ConfigMigrationService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => OrganizationService))
+    private organizationService: OrganizationService,
+    @Inject(forwardRef(() => TeamRepository))
+    private teamRepository: TeamRepository,
   ) {
     this.cacheTtl = 300; // 5 minutes cache TTL
   }
@@ -145,7 +152,35 @@ export class LeagueSettingsService {
       // Validate merged settings
       this.settingsValidation.validate(mergedSettings);
 
-      // Persist updated settings
+      // Handle requireOrganization change: auto-assign teams to organizations
+      const previousRequireOrg = currentSettings.membership.requireOrganization;
+      const newRequireOrg = mergedSettings.membership.requireOrganization;
+
+      // If changing to require organizations, perform auto-assignment BEFORE persisting settings
+      // This ensures settings are only persisted if auto-assignment succeeds, preventing
+      // inconsistent state where requireOrganization=true but teams remain unassigned
+      if (!previousRequireOrg && newRequireOrg) {
+        // Auto-assign teams to organizations first
+        // If this fails, the error will be thrown and settings won't be persisted
+        await this.handleRequireOrganizationChange(leagueId, mergedSettings);
+
+        // Only persist settings after successful auto-assignment
+        // This ensures requireOrganization=true is only set when all teams are assigned
+        await this.settingsService.updateSettings(
+          'league',
+          leagueId,
+          mergedSettings as Record<string, any>,
+        );
+
+        // Invalidate cache after successful update
+        const cacheKey = `league:${leagueId}:settings`;
+        await this.cacheManager.del(cacheKey);
+
+        this.logger.log(`Updated settings for league ${leagueId} and auto-assigned teams`);
+        return mergedSettings;
+      }
+
+      // For non-requireOrganization changes, just update settings normally
       await this.settingsService.updateSettings(
         'league',
         leagueId,
@@ -164,6 +199,87 @@ export class LeagueSettingsService {
       }
       this.logger.error(`Failed to update settings for league ${leagueId}:`, error);
       throw error;
+    }
+  }
+
+  /**
+   * Handle requireOrganization change: auto-assign teams to organizations
+   * Single Responsibility: Automatic team assignment when league requires organizations
+   */
+  private async handleRequireOrganizationChange(leagueId: string, mergedSettings: LeagueConfiguration): Promise<void> {
+    this.logger.log(`League ${leagueId} is changing to require organizations. Auto-assigning teams...`);
+
+    // Find all teams without organizations
+    const teamsWithoutOrg = await this.teamRepository.findTeamsWithoutOrganization(leagueId);
+
+    if (teamsWithoutOrg.length === 0) {
+      this.logger.log(`No teams need assignment in league ${leagueId}`);
+      return;
+    }
+
+    // Get or create organizations in league
+    const organizations = await this.organizationService.findByLeagueId(leagueId);
+
+    // If no organizations exist, create a default one
+    // Pass merged settings to validate against updated capacity limits
+    let defaultOrgId: string;
+    let createdDefaultOrg = false;
+    if (organizations.length === 0) {
+      const defaultOrg = await this.organizationService.create(
+        {
+          leagueId,
+          name: 'Unassigned Teams',
+          tag: 'UNASSIGNED',
+          description: 'Default organization for teams without an organization',
+        },
+        'system', // System user ID for auto-creation
+        mergedSettings, // Pass merged settings for validation
+      );
+      defaultOrgId = defaultOrg.id;
+      createdDefaultOrg = true;
+      this.logger.log(`Created default organization ${defaultOrgId} for league ${leagueId}`);
+    } else {
+      // Use first organization as default
+      defaultOrgId = organizations[0].id;
+    }
+
+    // Assign all teams to organizations (distribute evenly or assign to default)
+    // For simplicity, assign all to default organization
+    // In a more sophisticated implementation, you could distribute evenly
+    const teamIds = teamsWithoutOrg.map((team) => team.id);
+
+    // Use OrganizationService.assignTeamsToOrganization to validate capacity constraints
+    // Pass merged settings to ensure validation uses updated limits before persistence
+    // This ensures we don't violate maxTeamsPerOrganization limits with new settings
+    try {
+      await this.organizationService.assignTeamsToOrganization(leagueId, defaultOrgId, teamIds, mergedSettings);
+      this.logger.log(
+        `Auto-assigned ${teamIds.length} teams to organization ${defaultOrgId} in league ${leagueId}`,
+      );
+    } catch (error) {
+      // If assignment fails and we created a default organization, rollback by deleting it
+      // This prevents orphaned organizations with no teams and no general managers
+      if (createdDefaultOrg) {
+        this.logger.warn(
+          `Team assignment failed for default organization ${defaultOrgId}. Rolling back organization creation.`,
+        );
+        try {
+          await this.organizationService.delete(defaultOrgId, 'system');
+          this.logger.log(`Rolled back default organization ${defaultOrgId}`);
+        } catch (deleteError) {
+          this.logger.error(
+            `Failed to rollback default organization ${defaultOrgId} after assignment failure:`,
+            deleteError,
+          );
+          // Continue to throw original error
+        }
+      }
+      // If capacity is exceeded, log warning
+      this.logger.warn(
+        `Cannot assign all ${teamIds.length} teams to organization ${defaultOrgId} due to capacity limits. ` +
+          `Some teams may remain unassigned. Consider creating additional organizations or increasing capacity limits.`,
+      );
+      throw error; // Re-throw to prevent silent failures
     }
   }
 }

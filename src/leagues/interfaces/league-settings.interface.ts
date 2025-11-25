@@ -48,6 +48,11 @@ export interface MembershipConfig {
   // Restrictions
   allowMultipleLeagues: boolean;
   cooldownAfterLeave?: number | null;
+  
+  // Organization Requirements
+  requireOrganization: boolean; // Teams must belong to an organization (default: false)
+  maxOrganizations?: number | null; // Maximum organizations in league (null = unlimited)
+  maxTeamsPerOrganization?: number | null; // Maximum teams per organization (null = unlimited)
 }
 
 /**

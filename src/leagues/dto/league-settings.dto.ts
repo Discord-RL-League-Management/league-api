@@ -122,6 +122,32 @@ export class MembershipConfigDto {
   @IsNumber()
   @Min(0)
   cooldownAfterLeave?: number | null;
+
+  @ApiPropertyOptional({
+    description: 'Teams must belong to an organization',
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  requireOrganization?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Maximum organizations allowed in league (null = unlimited)',
+    minimum: 1,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  maxOrganizations?: number | null;
+
+  @ApiPropertyOptional({
+    description: 'Maximum teams per organization (null = unlimited)',
+    minimum: 1,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  maxTeamsPerOrganization?: number | null;
 }
 
 /**

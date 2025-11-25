@@ -165,6 +165,57 @@ curl -H "Authorization: Bearer JWT_TOKEN" \
   http://localhost:3000/api/leagues
 ```
 
+### Organization Management (User)
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/leagues/:leagueId/organizations` | List organizations in league | ✅ JWT |
+| `GET` | `/api/organizations/:id` | Get organization details | ✅ JWT |
+| `GET` | `/api/organizations/:id/teams` | List teams in organization | ✅ JWT |
+| `GET` | `/api/organizations/:id/stats` | Get organization statistics | ✅ JWT |
+| `POST` | `/api/leagues/:leagueId/organizations` | Create organization (creator becomes GM) | ✅ JWT |
+| `PATCH` | `/api/organizations/:id` | Update organization (GM only) | ✅ JWT |
+| `DELETE` | `/api/organizations/:id` | Delete organization (GM only, must have no teams) | ✅ JWT |
+| `POST` | `/api/organizations/:id/teams/:teamId/transfer` | Transfer team to different organization (GM of source or target org) | ✅ JWT |
+| `GET` | `/api/organizations/:id/members` | List organization members | ✅ JWT |
+| `POST` | `/api/organizations/:id/members` | Add member to organization (GM only) | ✅ JWT |
+| `PATCH` | `/api/organizations/:id/members/:memberId` | Update member role/status (GM only) | ✅ JWT |
+| `DELETE` | `/api/organizations/:id/members/:memberId` | Remove member from organization (GM only, cannot remove last GM) | ✅ JWT |
+
+**Example User Request:**
+```bash
+# List organizations in league
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  http://localhost:3000/api/leagues/clxyz1234567890/organizations
+
+# Create organization
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{"name":"Alpha Organization","tag":"ALPHA","description":"A competitive organization"}' \
+  http://localhost:3000/api/leagues/clxyz1234567890/organizations
+
+# Transfer team
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{"targetOrganizationId":"clxorg1234567890"}' \
+  http://localhost:3000/api/organizations/clxorg1234567890/teams/clxteam1234567890/transfer
+```
+
+### Organization Management (Bot)
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/internal/organizations/:id` | Get organization (Bot only) | ✅ API Key |
+| `POST` | `/internal/organizations` | Create organization (Bot only) | ✅ API Key |
+| `PATCH` | `/internal/organizations/:id` | Update organization (Bot only) | ✅ API Key |
+| `DELETE` | `/internal/organizations/:id` | Delete organization (Bot only) | ✅ API Key |
+| `GET` | `/internal/organizations/:id/members` | List organization members (Bot only) | ✅ API Key |
+| `POST` | `/internal/organizations/:id/members` | Add member to organization (Bot only) | ✅ API Key |
+| `PATCH` | `/internal/organizations/:id/members/:memberId` | Update organization member (Bot only) | ✅ API Key |
+| `DELETE` | `/internal/organizations/:id/members/:memberId` | Remove organization member (Bot only) | ✅ API Key |
+
 ---
 
 ## Error Responses
@@ -373,6 +424,70 @@ interface LeagueListResponse {
     total: number;
     pages: number;
   };
+}
+```
+
+### Organization Model
+
+```typescript
+interface Organization {
+  id: string;                    // Organization ID (cuid)
+  leagueId: string;              // League ID (cuid)
+  name: string;                  // Organization name (max 200 chars)
+  tag?: string;                  // Organization tag (max 20 chars)
+  description?: string;           // Organization description
+  createdAt: Date;               // Organization creation date
+  updatedAt: Date;               // Last update date
+  league?: League;               // Related league (if included)
+  members?: OrganizationMember[]; // Organization members (if included)
+  teams?: Team[];                // Organization teams (if included)
+}
+```
+
+### OrganizationMember Model
+
+```typescript
+interface OrganizationMember {
+  id: string;                    // Member ID (cuid)
+  organizationId: string;        // Organization ID (cuid)
+  playerId: string;             // Player ID (cuid)
+  leagueId: string;             // League ID (cuid)
+  status: OrganizationMemberStatus; // Member status
+  role: OrganizationMemberRole;   // Member role
+  joinedAt: Date;               // Join date
+  leftAt?: Date;                // Leave date (if removed)
+  approvedBy?: string;          // User ID who approved (Discord user ID)
+  approvedAt?: Date;             // Approval date
+  notes?: string;                // Notes about the member
+  createdAt: Date;               // Member creation date
+  updatedAt: Date;               // Last update date
+  organization?: Organization;   // Related organization (if included)
+  player?: Player;               // Related player (if included)
+  league?: League;               // Related league (if included)
+}
+
+enum OrganizationMemberRole {
+  GENERAL_MANAGER = 'GENERAL_MANAGER',
+  MEMBER = 'MEMBER',
+}
+
+enum OrganizationMemberStatus {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+  SUSPENDED = 'SUSPENDED',
+  REMOVED = 'REMOVED',
+}
+```
+
+### Organization Stats Response
+
+```typescript
+interface OrganizationStats {
+  organizationId: string;
+  name: string;
+  teamCount: number;
+  memberCount: number;
+  generalManagerCount: number;
 }
 ```
 

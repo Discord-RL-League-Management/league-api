@@ -26,6 +26,7 @@ import { MatchesModule } from './matches/matches.module';
 import { PlayerStatsModule } from './player-stats/player-stats.module';
 import { PlayerRatingsModule } from './player-ratings/player-ratings.module';
 import { TournamentsModule } from './tournaments/tournaments.module';
+import { OrganizationsModule } from './organizations/organizations.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthLoggerMiddleware } from './common/middleware/auth-logger.middleware';
 import { RequestContextInterceptor } from './common/interceptors/request-context.interceptor';
@@ -63,6 +64,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     PlayerStatsModule,
     PlayerRatingsModule,
     TournamentsModule,
+    OrganizationsModule,
   ],
   providers: [
     {

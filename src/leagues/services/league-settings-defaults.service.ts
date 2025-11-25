@@ -83,6 +83,11 @@ export class LeagueSettingsDefaultsService {
       // Restrictions - permissive
       allowMultipleLeagues: true,
       cooldownAfterLeave: null,
+      
+      // Organization Requirements - optional by default
+      requireOrganization: false,
+      maxOrganizations: null,
+      maxTeamsPerOrganization: null,
     };
   }
 

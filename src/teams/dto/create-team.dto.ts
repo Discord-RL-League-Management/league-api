@@ -100,5 +100,13 @@ export class CreateTeamDto {
   @Min(0)
   @Max(10)
   maxSubstitutes?: number;
+
+  @ApiPropertyOptional({
+    description: 'Organization ID (CUID) - Required if league requires organizations',
+    example: 'clxorg1234567890',
+  })
+  @IsOptional()
+  @IsString()
+  organizationId?: string;
 }
 

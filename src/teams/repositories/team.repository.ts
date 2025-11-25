@@ -17,7 +17,7 @@ export class TeamRepository implements BaseRepository<Team, CreateTeamDto, Updat
   async findById(id: string): Promise<Team | null> {
     return this.prisma.team.findUnique({
       where: { id },
-      include: { members: true, captain: true },
+      include: { members: true, captain: true, organization: true },
     });
   }
 
@@ -56,12 +56,13 @@ export class TeamRepository implements BaseRepository<Team, CreateTeamDto, Updat
         tag: data.tag,
         description: data.description,
         captainId: data.captainId,
+        organizationId: data.organizationId,
         maxPlayers: data.maxPlayers ?? 5,
         minPlayers: data.minPlayers ?? 2,
         allowEmergencySubs: data.allowEmergencySubs ?? true,
         maxSubstitutes: data.maxSubstitutes ?? 2,
       },
-      include: { members: true },
+      include: { members: true, organization: true },
     });
   }
 
@@ -73,12 +74,13 @@ export class TeamRepository implements BaseRepository<Team, CreateTeamDto, Updat
         ...(data.tag !== undefined && { tag: data.tag }),
         ...(data.description !== undefined && { description: data.description }),
         ...(data.captainId !== undefined && { captainId: data.captainId }),
+        ...(data.organizationId !== undefined && { organizationId: data.organizationId }),
         ...(data.maxPlayers !== undefined && { maxPlayers: data.maxPlayers }),
         ...(data.minPlayers !== undefined && { minPlayers: data.minPlayers }),
         ...(data.allowEmergencySubs !== undefined && { allowEmergencySubs: data.allowEmergencySubs }),
         ...(data.maxSubstitutes !== undefined && { maxSubstitutes: data.maxSubstitutes }),
       },
-      include: { members: true },
+      include: { members: true, organization: true },
     });
   }
 
@@ -89,6 +91,25 @@ export class TeamRepository implements BaseRepository<Team, CreateTeamDto, Updat
   async exists(id: string): Promise<boolean> {
     const count = await this.prisma.team.count({ where: { id } });
     return count > 0;
+  }
+
+  async findByOrganizationId(organizationId: string): Promise<Team[]> {
+    return this.prisma.team.findMany({
+      where: { organizationId },
+      include: { members: { where: { status: 'ACTIVE' } }, captain: true },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async findTeamsWithoutOrganization(leagueId: string): Promise<Team[]> {
+    return this.prisma.team.findMany({
+      where: {
+        leagueId,
+        organizationId: null,
+      },
+      include: { members: { where: { status: 'ACTIVE' } }, captain: true },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 }
 

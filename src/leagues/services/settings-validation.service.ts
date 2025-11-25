@@ -76,6 +76,19 @@ export class SettingsValidationService {
       }
     }
 
+    // Validate organization requirements
+    if (config.maxOrganizations !== undefined && config.maxOrganizations !== null) {
+      if (config.maxOrganizations < 1) {
+        errors.push('maxOrganizations must be at least 1');
+      }
+    }
+
+    if (config.maxTeamsPerOrganization !== undefined && config.maxTeamsPerOrganization !== null) {
+      if (config.maxTeamsPerOrganization < 1) {
+        errors.push('maxTeamsPerOrganization must be at least 1');
+      }
+    }
+
     // Validate skill requirements
     if (config.skillRequirements) {
       const skillErrors = this.validateSkillRequirements(config.skillRequirements);

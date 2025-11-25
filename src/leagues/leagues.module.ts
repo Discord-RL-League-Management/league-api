@@ -7,6 +7,8 @@ import { AuthModule } from '../auth/auth.module';
 import { GuildsModule } from '../guilds/guilds.module';
 import { PlayersModule } from '../players/players.module';
 import { LeagueMembersModule } from '../league-members/league-members.module';
+import { OrganizationsModule } from '../organizations/organizations.module';
+import { TeamsModule } from '../teams/teams.module';
 
 // Controllers
 import { LeaguesController } from './leagues.controller';
@@ -34,6 +36,8 @@ import { LeagueRepository } from './repositories/league.repository';
     GuildsModule, // For GuildsService dependency
     PlayersModule, // For PlayerService dependency
     forwardRef(() => LeagueMembersModule), // For LeagueMemberRepository dependency (circular dependency resolved)
+    forwardRef(() => OrganizationsModule), // For OrganizationService dependency (circular dependency resolved)
+    forwardRef(() => TeamsModule), // For TeamRepository dependency (circular dependency resolved)
   ],
   controllers: [
     LeaguesController,
@@ -53,6 +57,7 @@ import { LeagueRepository } from './repositories/league.repository';
     LeaguesService,
     LeagueSettingsService,
     LeagueSettingsDefaultsService,
+    LeagueRepository,
   ],
 })
 export class LeaguesModule {}
