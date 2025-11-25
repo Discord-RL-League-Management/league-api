@@ -71,47 +71,32 @@ export class MatchService {
         const playerId = participant.playerId;
         const leagueId = match.leagueId;
 
-        // Get current stats (within transaction)
-        const currentStats = await tx.playerLeagueStats.findUnique({
-          where: { playerId_leagueId: { playerId, leagueId } },
-        });
-        const matchesPlayed = (currentStats?.matchesPlayed || 0) + 1;
-        const wins = participant.isWinner ? (currentStats?.wins || 0) + 1 : (currentStats?.wins || 0);
-        const losses = !participant.isWinner ? (currentStats?.losses || 0) + 1 : (currentStats?.losses || 0);
-        const draws = 0; // TODO: Determine draws based on match result
-        const winRate = matchesPlayed > 0 ? wins / matchesPlayed : 0;
-
-        // Update stats (within transaction)
-        await this.statsService.updateStats(playerId, leagueId, {
-          matchesPlayed,
-          wins,
-          losses,
-          draws,
-          winRate,
-          totalGoals: (currentStats?.totalGoals || 0) + (participant.goals || 0),
-          totalAssists: (currentStats?.totalAssists || 0) + (participant.assists || 0),
-          totalSaves: (currentStats?.totalSaves || 0) + (participant.saves || 0),
-          totalShots: (currentStats?.totalShots || 0) + (participant.shots || 0),
-          avgGoals: matchesPlayed > 0 ? ((currentStats?.totalGoals || 0) + (participant.goals || 0)) / matchesPlayed : 0,
-          avgAssists: matchesPlayed > 0 ? ((currentStats?.totalAssists || 0) + (participant.assists || 0)) / matchesPlayed : 0,
-          avgSaves: matchesPlayed > 0 ? ((currentStats?.totalSaves || 0) + (participant.saves || 0)) / matchesPlayed : 0,
-          lastMatchAt: new Date(),
+        // Update stats (within transaction) using atomic increments to prevent race conditions
+        await this.statsService.incrementStats(playerId, leagueId, {
+          matchesPlayed: 1,
+          wins: participant.isWinner ? 1 : 0,
+          losses: !participant.isWinner ? 1 : 0,
+          draws: 0,
+          totalGoals: participant.goals || 0,
+          totalAssists: participant.assists || 0,
+          totalSaves: participant.saves || 0,
+          totalShots: participant.shots || 0,
         }, tx);
 
         // Update rating (rating calculation is handled by external system, just update match count)
+        // Fix: Ensure rating record is created if it doesn't exist
         const currentRating = await tx.playerLeagueRating.findUnique({
           where: { playerId_leagueId: { playerId, leagueId } },
         });
-        if (currentRating) {
-          await this.ratingService.updateRating(playerId, leagueId, {
-            matchesPlayed: (currentRating.matchesPlayed || 0) + 1,
-            wins: participant.isWinner ? (currentRating.wins || 0) + 1 : (currentRating.wins || 0),
-            losses: !participant.isWinner ? (currentRating.losses || 0) + 1 : (currentRating.losses || 0),
-            draws: 0,
-            lastMatchId: matchId,
-            // Note: currentRating and ratingData should be updated by external rating calculation service
-          }, tx);
-        }
+
+        await this.ratingService.updateRating(playerId, leagueId, {
+          matchesPlayed: (currentRating?.matchesPlayed || 0) + 1,
+          wins: participant.isWinner ? (currentRating?.wins || 0) + 1 : (currentRating?.wins || 0),
+          losses: !participant.isWinner ? (currentRating?.losses || 0) + 1 : (currentRating?.losses || 0),
+          draws: 0,
+          lastMatchId: matchId,
+          // Note: currentRating and ratingData should be updated by external rating calculation service
+        }, tx);
       }
 
       return match;
