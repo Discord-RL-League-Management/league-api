@@ -18,6 +18,14 @@ import { PermissionsModule } from './permissions/permissions.module';
 import { AuditModule } from './audit/audit.module';
 import { TrackersModule } from './trackers/trackers.module';
 import { InfrastructureModule } from './infrastructure/infrastructure.module';
+import { PlayersModule } from './players/players.module';
+import { LeagueMembersModule } from './league-members/league-members.module';
+import { TeamsModule } from './teams/teams.module';
+import { TeamMembersModule } from './team-members/team-members.module';
+import { MatchesModule } from './matches/matches.module';
+import { PlayerStatsModule } from './player-stats/player-stats.module';
+import { PlayerRatingsModule } from './player-ratings/player-ratings.module';
+import { TournamentsModule } from './tournaments/tournaments.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthLoggerMiddleware } from './common/middleware/auth-logger.middleware';
 import { RequestContextInterceptor } from './common/interceptors/request-context.interceptor';
@@ -47,6 +55,14 @@ import { ScheduleModule } from '@nestjs/schedule';
     AuditModule,
     TrackersModule,
     InfrastructureModule,
+    PlayersModule,
+    LeagueMembersModule,
+    TeamsModule,
+    TeamMembersModule,
+    MatchesModule,
+    PlayerStatsModule,
+    PlayerRatingsModule,
+    TournamentsModule,
   ],
   providers: [
     {

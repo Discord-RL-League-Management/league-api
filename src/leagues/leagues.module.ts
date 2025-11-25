@@ -1,10 +1,12 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { InfrastructureModule } from '../infrastructure/infrastructure.module';
 import { CommonModule } from '../common/common.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { AuthModule } from '../auth/auth.module';
 import { GuildsModule } from '../guilds/guilds.module';
+import { PlayersModule } from '../players/players.module';
+import { LeagueMembersModule } from '../league-members/league-members.module';
 
 // Controllers
 import { LeaguesController } from './leagues.controller';
@@ -30,6 +32,8 @@ import { LeagueRepository } from './repositories/league.repository';
     CacheModule.register(),
     AuthModule,
     GuildsModule, // For GuildsService dependency
+    PlayersModule, // For PlayerService dependency
+    forwardRef(() => LeagueMembersModule), // For LeagueMemberRepository dependency (circular dependency resolved)
   ],
   controllers: [
     LeaguesController,

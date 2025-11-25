@@ -1,0 +1,35 @@
+import { Controller, Get, Post, Param, Body, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { TournamentService } from './services/tournament.service';
+import { CreateTournamentDto } from './dto/create-tournament.dto';
+
+@ApiTags('Tournaments')
+@Controller('api/tournaments')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth('JWT-auth')
+export class TournamentsController {
+  constructor(private tournamentService: TournamentService) {}
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get tournament details' })
+  getTournament(@Param('id') id: string) {
+    return this.tournamentService.findOne(id);
+  }
+
+  @Post()
+  @ApiOperation({ summary: 'Create tournament' })
+  createTournament(@Body() createDto: CreateTournamentDto) {
+    return this.tournamentService.create(createDto);
+  }
+
+  @Post(':id/register')
+  @ApiOperation({ summary: 'Register participant' })
+  registerParticipant(
+    @Param('id') id: string,
+    @Body() body: { playerId?: string; teamId?: string; leagueId: string },
+  ) {
+    return this.tournamentService.registerParticipant(id, body.playerId || null, body.teamId || null, body.leagueId);
+  }
+}
+

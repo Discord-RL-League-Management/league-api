@@ -93,7 +93,7 @@ export class LeagueSettingsService {
         );
         this.logger.log(`Successfully migrated settings for league ${leagueId}`);
       } else {
-        migratedConfig = settings.settings as LeagueConfiguration;
+        migratedConfig = settings.settings as unknown as LeagueConfiguration;
       }
 
       // Ensure config structure is normalized (merge with defaults to ensure all fields exist)

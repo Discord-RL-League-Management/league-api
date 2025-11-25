@@ -34,16 +34,20 @@ export class LeagueRepository implements BaseRepository<League, CreateLeagueDto 
       include.guild = true;
     }
 
-    // Future includes (commented until models exist):
-    // if (opts.includeMembers) {
-    //   include.leagueMembers = true;
-    // }
-    // if (opts.includeTeams) {
-    //   include.teams = true;
-    // }
-    // if (opts.includeTournaments) {
-    //   include.tournaments = true;
-    // }
+    if (opts.includeMembers) {
+      (include as any).leagueMembers = {
+        where: { status: 'ACTIVE' },
+        include: { player: true },
+      };
+    }
+    if (opts.includeTeams) {
+      (include as any).teams = {
+        include: { members: { where: { status: 'ACTIVE' } } },
+      };
+    }
+    if (opts.includeTournaments) {
+      (include as any).tournaments = true;
+    }
     // if (opts.includeSeries) {
     //   include.series = true;
     // }
@@ -94,18 +98,20 @@ export class LeagueRepository implements BaseRepository<League, CreateLeagueDto 
       }
     }
 
+    const include: Prisma.LeagueInclude = {
+      guild: {
+        select: {
+          id: true,
+          name: true,
+          icon: true,
+        },
+      },
+    };
+
     const [leagues, total] = await Promise.all([
       this.prisma.league.findMany({
         where,
-        include: {
-          guild: {
-            select: {
-              id: true,
-              name: true,
-              icon: true,
-            },
-          },
-        },
+        include,
         orderBy: { createdAt: 'desc' },
         skip,
         take: maxLimit,

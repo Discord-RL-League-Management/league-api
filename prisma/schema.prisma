@@ -41,6 +41,72 @@ enum TrackerScrapingStatus {
   FAILED
 }
 
+enum PlayerStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  BANNED
+}
+
+enum LeagueMemberStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  BANNED
+  PENDING_APPROVAL
+}
+
+enum LeagueMemberRole {
+  MEMBER
+  ADMIN
+  MODERATOR
+}
+
+enum TeamRole {
+  CAPTAIN
+  MEMBER
+  SUBSTITUTE
+}
+
+enum TeamMembershipStatus {
+  ACTIVE
+  INACTIVE
+  REMOVED
+}
+
+enum TeamMembershipType {
+  PERMANENT
+  TEMPORARY
+}
+
+enum MatchStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  FORFEIT
+}
+
+enum MatchParticipantType {
+  TEAM_MEMBER
+  SUBSTITUTE
+  GUEST
+}
+
+enum TournamentStatus {
+  UPCOMING
+  REGISTRATION_OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ParticipantStatus {
+  ACTIVE
+  ELIMINATED
+  WITHDRAWN
+}
+
 model User {
   id            String  @id
   username      String
@@ -63,6 +129,7 @@ model User {
   guildMembers     GuildMember[]
   trackers         Tracker[]
   enteredSnapshots TrackerSnapshot[]
+  players          Player[]
 
   @@index([isBanned])
   @@index([isDeleted])
@@ -80,9 +147,10 @@ model Guild {
   isActive    Boolean   @default(true)
 
   // Relationships
-  members     GuildMember[]
-  leagues     League[]
-  
+  members GuildMember[]
+  leagues League[]
+  players Player[]
+
   // Indexes for performance
   @@index([isActive])
   @@index([joinedAt])
@@ -124,7 +192,7 @@ model Tracker {
   game             Game                  @default(ROCKET_LEAGUE)
   platform         GamePlatform
   username         String
-  userId           String                // The player this tracker belongs to (allows multiple trackers per user)
+  userId           String // The player this tracker belongs to (allows multiple trackers per user)
   displayName      String?
   isActive         Boolean               @default(true)
   isDeleted        Boolean               @default(false)
@@ -140,6 +208,7 @@ model Tracker {
   snapshots    TrackerSnapshot[]
   seasons      TrackerSeason[]
   scrapingLogs TrackerScrapingLog[]
+  primaryFor   Player[]             @relation("PlayerPrimaryTracker")
 
   @@index([userId])
   @@index([platform])
@@ -302,6 +371,116 @@ model TrackerScrapingLog {
   @@map("tracker_scraping_logs")
 }
 
+model Player {
+  id               String       @id @default(cuid())
+  userId           String       @db.VarChar(20)
+  guildId          String       @db.VarChar(20)
+  status           PlayerStatus @default(ACTIVE)
+  primaryTrackerId String?
+  lastLeftLeagueAt DateTime?
+  lastLeftLeagueId String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  // Relationships
+  user                   User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guild                  Guild                   @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  primaryTracker         Tracker?                @relation("PlayerPrimaryTracker", fields: [primaryTrackerId], references: [id], onDelete: SetNull)
+  leagueMembers          LeagueMember[]
+  teamMembers            TeamMember[]
+  captainOf              Team[]                  @relation("TeamCaptain")
+  matchParticipants      MatchParticipant[]
+  stats                  PlayerLeagueStats[]
+  ratings                PlayerLeagueRating[]
+  tournamentParticipants TournamentParticipant[]
+
+  @@unique([userId, guildId])
+  @@index([guildId, status])
+  @@index([userId])
+  @@map("players")
+}
+
+model LeagueMember {
+  id         String             @id @default(cuid())
+  playerId   String
+  leagueId   String
+  status     LeagueMemberStatus @default(ACTIVE)
+  role       LeagueMemberRole   @default(MEMBER)
+  joinedAt   DateTime           @default(now())
+  leftAt     DateTime?
+  approvedBy String?            @db.VarChar(20)
+  approvedAt DateTime?
+  notes      String?            @db.Text
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+
+  // Relationships
+  player      Player       @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  league      League       @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  teamMembers TeamMember[]
+
+  @@unique([playerId, leagueId])
+  @@index([leagueId, status])
+  @@index([playerId, status])
+  @@map("league_members")
+}
+
+model Team {
+  id                 String   @id @default(cuid())
+  leagueId           String
+  name               String   @db.VarChar(200)
+  tag                String?  @db.VarChar(20)
+  description        String?  @db.Text
+  captainId          String?
+  maxPlayers         Int      @default(5)
+  minPlayers         Int      @default(2)
+  allowEmergencySubs Boolean  @default(true)
+  maxSubstitutes     Int      @default(2)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // Relationships
+  league                 League                  @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  members                TeamMember[]
+  captain                Player?                 @relation("TeamCaptain", fields: [captainId], references: [id], onDelete: SetNull)
+  matchParticipants      MatchParticipant[]
+  tournamentParticipants TournamentParticipant[]
+
+  @@index([leagueId])
+  @@map("teams")
+}
+
+model TeamMember {
+  id             String               @id @default(cuid())
+  teamId         String
+  playerId       String
+  leagueId       String
+  role           TeamRole             @default(MEMBER)
+  status         TeamMembershipStatus @default(ACTIVE)
+  membershipType TeamMembershipType   @default(PERMANENT)
+  startDate      DateTime             @default(now())
+  endDate        DateTime?
+  joinedAt       DateTime             @default(now())
+  leftAt         DateTime?
+  removedBy      String?              @db.VarChar(20)
+  notes          String?              @db.Text
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  // Relationships
+  team              Team               @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  player            Player             @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  league            League             @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  matchParticipants MatchParticipant[]
+  LeagueMember      LeagueMember?      @relation(fields: [leagueMemberId], references: [id])
+  leagueMemberId    String?
+
+  @@index([playerId, leagueId, status])
+  @@index([teamId, status])
+  @@index([playerId, leftAt])
+  @@map("team_members")
+}
+
 model League {
   id          String       @id @default(cuid())
   guildId     String       @db.VarChar(20) // Discord guild snowflake ID
@@ -314,11 +493,16 @@ model League {
   updatedAt   DateTime     @updatedAt
 
   // Relationships
-  guild         Guild            @relation(fields: [guildId], references: [id], onDelete: Cascade)
-  // leagueMembers LeagueMember[]  // Will be added when LeagueMember model is created
-  // teams         Team[]          // Will be added when Team model is created
-  // tournaments   Tournament[]    // Will be added when Tournament model is created
+  guild                 Guild                   @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  leagueMembers         LeagueMember[]
+  teams                 Team[]
+  tournaments           Tournament[]
+  matches               Match[]
+  playerStats           PlayerLeagueStats[]
+  playerRatings         PlayerLeagueRating[]
+  TournamentParticipant TournamentParticipant[]
   // series        Series[]        // Will be added when Series model is created
+  TeamMember            TeamMember[]
 
   @@index([guildId])
   @@index([status])
@@ -326,4 +510,150 @@ model League {
   @@index([guildId, game])
   @@index([guildId, status])
   @@map("leagues")
+}
+
+model Match {
+  id           String      @id @default(cuid())
+  tournamentId String?
+  leagueId     String
+  round        Int?
+  status       MatchStatus @default(SCHEDULED)
+  scheduledAt  DateTime?
+  playedAt     DateTime?
+  winnerId     String?
+  createdAt    DateTime    @default(now())
+
+  // Relationships
+  tournament   Tournament?        @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
+  league       League             @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  participants MatchParticipant[]
+
+  @@index([tournamentId])
+  @@index([leagueId])
+  @@map("matches")
+}
+
+model MatchParticipant {
+  id               String               @id @default(cuid())
+  matchId          String
+  playerId         String
+  teamId           String?
+  participantType  MatchParticipantType @default(TEAM_MEMBER)
+  teamMemberId     String?
+  isWinner         Boolean
+  score            Int?
+  goals            Int?
+  assists          Int?
+  saves            Int?
+  shots            Int?
+  wasSubstitute    Boolean              @default(false)
+  substituteReason String?              @db.Text
+  playedAt         DateTime             @default(now())
+
+  // Relationships
+  match      Match       @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  player     Player      @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  team       Team?       @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  teamMember TeamMember? @relation(fields: [teamMemberId], references: [id], onDelete: SetNull)
+
+  @@index([playerId, matchId])
+  @@index([teamId, matchId])
+  @@index([playerId, wasSubstitute])
+  @@map("match_participants")
+}
+
+model PlayerLeagueStats {
+  id            String    @id @default(cuid())
+  playerId      String
+  leagueId      String
+  matchesPlayed Int       @default(0)
+  wins          Int       @default(0)
+  losses        Int       @default(0)
+  draws         Int       @default(0)
+  winRate       Decimal   @db.Decimal(5, 4)
+  totalGoals    Int       @default(0)
+  totalAssists  Int       @default(0)
+  totalSaves    Int       @default(0)
+  totalShots    Int       @default(0)
+  avgGoals      Decimal?  @db.Decimal(5, 2)
+  avgAssists    Decimal?  @db.Decimal(5, 2)
+  avgSaves      Decimal?  @db.Decimal(5, 2)
+  lastMatchAt   DateTime?
+  updatedAt     DateTime  @updatedAt
+
+  // Relationships
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, leagueId])
+  @@index([leagueId, wins])
+  @@map("player_league_stats")
+}
+
+model PlayerLeagueRating {
+  id            String    @id @default(cuid())
+  playerId      String
+  leagueId      String
+  ratingSystem  String    @db.VarChar(50)
+  currentRating Decimal   @db.Decimal(10, 2)
+  ratingData    Json
+  initialRating Decimal   @db.Decimal(10, 2)
+  peakRating    Decimal?  @db.Decimal(10, 2)
+  peakRatingAt  DateTime?
+  matchesPlayed Int       @default(0)
+  wins          Int       @default(0)
+  losses        Int       @default(0)
+  draws         Int       @default(0)
+  lastMatchId   String?
+  lastUpdatedAt DateTime  @updatedAt
+
+  // Relationships
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, leagueId])
+  @@index([leagueId, currentRating])
+  @@map("player_league_ratings")
+}
+
+model Tournament {
+  id              String           @id @default(cuid())
+  leagueId        String
+  name            String           @db.VarChar(200)
+  description     String?          @db.Text
+  status          TournamentStatus @default(UPCOMING)
+  format          String?
+  startDate       DateTime?
+  endDate         DateTime?
+  maxParticipants Int?
+  createdAt       DateTime         @default(now())
+
+  // Relationships
+  league       League                  @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  participants TournamentParticipant[]
+  matches      Match[]
+
+  @@index([leagueId])
+  @@map("tournaments")
+}
+
+model TournamentParticipant {
+  id           String            @id @default(cuid())
+  tournamentId String
+  playerId     String?
+  teamId       String?
+  leagueId     String
+  seed         Int?
+  status       ParticipantStatus @default(ACTIVE)
+  joinedAt     DateTime          @default(now())
+
+  // Relationships
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  player     Player?    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  team       Team?      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  league     League     @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, playerId])
+  @@unique([tournamentId, teamId])
+  @@map("tournament_participants")
 }

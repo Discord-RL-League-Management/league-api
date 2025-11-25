@@ -1,7 +1,10 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { LeagueRepository } from '../repositories/league.repository';
 import { GuildsService } from '../../guilds/guilds.service';
+import { PlayerService } from '../../players/services/player.service';
+import { LeagueMemberRepository } from '../../league-members/repositories/league-member.repository';
 import { LeagueNotFoundException, LeagueAccessDeniedException } from '../exceptions/league.exceptions';
+import { PlayerNotFoundException } from '../../players/exceptions/player.exceptions';
 
 /**
  * LeagueAccessValidationService - Single Responsibility: League access validation
@@ -16,6 +19,9 @@ export class LeagueAccessValidationService {
   constructor(
     private leagueRepository: LeagueRepository,
     private guildsService: GuildsService,
+    private playerService: PlayerService,
+    @Inject(forwardRef(() => LeagueMemberRepository))
+    private leagueMemberRepository: LeagueMemberRepository,
   ) {}
 
   /**
@@ -59,9 +65,22 @@ export class LeagueAccessValidationService {
       // Validate user has access to the guild that owns the league
       await this.validateGuildAccess(userId, league.guildId);
 
+      // Check if user is a player in the guild
+      const player = await this.playerService.findByUserIdAndGuildId(userId, league.guildId);
+      if (!player) {
+        this.logger.debug(`User ${userId} is not a player in guild ${league.guildId}`);
+        // Not a player yet - that's okay, they can still view public leagues
+      } else {
+        // Check if player is a league member (optional - depends on league visibility settings)
+        const member = await this.leagueMemberRepository.findByPlayerAndLeague(player.id, leagueId);
+        if (member && member.status === 'BANNED') {
+          throw new LeagueAccessDeniedException(leagueId, userId);
+        }
+      }
+
       this.logger.debug(`User ${userId} has access to league ${leagueId}`);
     } catch (error) {
-      if (error instanceof LeagueNotFoundException || error instanceof NotFoundException) {
+      if (error instanceof LeagueNotFoundException || error instanceof NotFoundException || error instanceof LeagueAccessDeniedException || error instanceof PlayerNotFoundException) {
         throw error;
       }
       this.logger.error(`Failed to validate league access for user ${userId}, league ${leagueId}:`, error);
