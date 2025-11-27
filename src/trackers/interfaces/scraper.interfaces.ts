@@ -1,18 +1,18 @@
 /**
- * Playlist data extracted from tracker.gg API segments
+ * Normalized ranked playlist performance data extracted from tracker.gg API segments
  */
 export interface PlaylistData {
   rank: string | null;
   rankValue: number | null;
   division: string | null;
   divisionValue: number | null;
-  rating: number | null; // MMR
+  rating: number | null; // Matchmaking Rating (MMR)
   matchesPlayed: number | null;
   winStreak: number | null;
 }
 
 /**
- * Season data containing all playlists for a specific season
+ * Aggregates all ranked playlist data for a specific competitive season
  */
 export interface SeasonData {
   seasonNumber: number;
@@ -24,7 +24,7 @@ export interface SeasonData {
 }
 
 /**
- * Scraped tracker data from tracker.gg API
+ * Raw response structure from tracker.gg API scraping operations
  */
 export interface ScrapedTrackerData {
   platformInfo: {
@@ -54,7 +54,7 @@ export interface ScrapedTrackerData {
 }
 
 /**
- * Tracker segment from tracker.gg API
+ * Individual data segment from tracker.gg API response (allows null stat fields for missing data)
  */
 export interface TrackerSegment {
   type: string;
@@ -78,7 +78,7 @@ export interface TrackerSegment {
         [key: string]: any;
       };
       [key: string]: any;
-    };
+    } | null;
   };
   expiryDate: string;
 }
