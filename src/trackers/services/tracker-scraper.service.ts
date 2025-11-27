@@ -8,6 +8,7 @@ import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom, timeout, retry, catchError, throwError } from 'rxjs';
 import { AxiosError, AxiosRequestConfig } from 'axios';
+import * as Joi from 'joi';
 import { TrackerUrlConverterService } from './tracker-url-converter.service';
 import {
   ScrapedTrackerData,
@@ -15,6 +16,7 @@ import {
   PlaylistData,
   TrackerSegment,
 } from '../interfaces/scraper.interfaces';
+import { trackerSegmentStatsSchema } from '../schemas/tracker-segment.schema';
 
 /**
  * Playlist ID mapping from tracker.gg API to our internal representation
@@ -251,7 +253,27 @@ export class TrackerScraperService {
     try {
       const stats = segment.stats;
 
-      // Extract rank information
+      // Prevent runtime errors if tracker.gg API response structure changes
+      const validationResult = trackerSegmentStatsSchema.validate(stats, {
+        allowUnknown: true,
+        stripUnknown: false,
+        abortEarly: false,
+      });
+
+      if (validationResult.error) {
+        const playlistId = segment.attributes?.playlistId;
+        const segmentType = segment.type || 'unknown';
+        const errorDetails = validationResult.error.details
+          .map((detail) => detail.message)
+          .join('; ');
+
+        this.logger.warn(
+          `Invalid stats structure in segment (type: ${segmentType}, playlistId: ${playlistId}): ${errorDetails}. ` +
+            `This may indicate the tracker.gg API response structure has changed.`,
+        );
+        return null;
+      }
+
       const tier = stats.tier;
       const division = stats.division;
       const rating = stats.rating;
