@@ -56,41 +56,43 @@ describe('JwtAuthGuard', () => {
       ]);
     });
 
-    it('should call super.canActivate for non-public routes', () => {
+    it('should call super.canActivate for non-public routes', async () => {
       // Arrange
       reflector.getAllAndOverride.mockReturnValue(false);
-      const parentCanActivate = jest.spyOn(AuthGuard.prototype, 'canActivate');
-      parentCanActivate.mockReturnValue(true);
+      const superCanActivate = jest
+        .spyOn(Object.getPrototypeOf(Object.getPrototypeOf(guard)), 'canActivate')
+        .mockResolvedValue(true);
 
       // Act
-      const result = guard.canActivate(mockExecutionContext);
+      const result = await guard.canActivate(mockExecutionContext);
 
       // Assert
       expect(reflector.getAllAndOverride).toHaveBeenCalledWith(IS_PUBLIC_KEY, [
         mockExecutionContext.getHandler(),
         mockExecutionContext.getClass(),
       ]);
-      expect(parentCanActivate).toHaveBeenCalledWith(mockExecutionContext);
+      expect(superCanActivate).toHaveBeenCalledWith(mockExecutionContext);
       expect(result).toBe(true);
 
-      parentCanActivate.mockRestore();
+      superCanActivate.mockRestore();
     });
 
-    it('should call super.canActivate when metadata is undefined', () => {
+    it('should call super.canActivate when metadata is undefined', async () => {
       // Arrange
       reflector.getAllAndOverride.mockReturnValue(undefined);
-      const parentCanActivate = jest.spyOn(AuthGuard.prototype, 'canActivate');
-      parentCanActivate.mockReturnValue(true);
+      const superCanActivate = jest
+        .spyOn(Object.getPrototypeOf(Object.getPrototypeOf(guard)), 'canActivate')
+        .mockResolvedValue(true);
 
       // Act
-      const result = guard.canActivate(mockExecutionContext);
+      const result = await guard.canActivate(mockExecutionContext);
 
       // Assert
       expect(reflector.getAllAndOverride).toHaveBeenCalled();
-      expect(parentCanActivate).toHaveBeenCalledWith(mockExecutionContext);
+      expect(superCanActivate).toHaveBeenCalledWith(mockExecutionContext);
       expect(result).toBe(true);
 
-      parentCanActivate.mockRestore();
+      superCanActivate.mockRestore();
     });
   });
 
