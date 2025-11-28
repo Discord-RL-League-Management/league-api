@@ -1,6 +1,6 @@
 /**
  * Audit Action - Extensible enum for all audit events
- * 
+ *
  * Interface Segregation: Clear contract for audit events
  * Open/Closed: Easily extensible for new action types
  */
@@ -15,7 +15,7 @@ export enum AuditAction {
 
 /**
  * Audit Event - Single Responsibility: Define audit event structure
- * 
+ *
  * Represents a single audit event with all relevant metadata.
  * Extensible through optional metadata field.
  */
@@ -27,14 +27,3 @@ export interface AuditEvent {
   guildId?: string;
   metadata?: Record<string, any>;
 }
-
-
-
-
-
-
-
-
-
-
-

@@ -23,7 +23,10 @@ import { trackerSegmentStatsSchema } from '../schemas/tracker-segment.schema';
  * Based on user clarification: ranked 1v1 is 1, ranked 2v2 is 2, ranked 3v3 is 3, ranked 4v4 is 8
  * Also supporting alternative IDs that may appear in API responses: 10, 11, 13, 61
  */
-const PLAYLIST_ID_MAP: Record<number, 'playlist1v1' | 'playlist2v2' | 'playlist3v3' | 'playlist4v4'> = {
+const PLAYLIST_ID_MAP: Record<
+  number,
+  'playlist1v1' | 'playlist2v2' | 'playlist3v3' | 'playlist4v4'
+> = {
   1: 'playlist1v1', // Ranked Duel 1v1 (primary ID)
   2: 'playlist2v2', // Ranked Doubles 2v2 (primary ID)
   3: 'playlist3v3', // Ranked Standard 3v3 (primary ID)
@@ -96,9 +99,16 @@ export class TrackerScraperService {
 
       return data;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Failed to scrape tracker data: ${errorMessage}`, error);
-      if (error instanceof BadRequestException || error instanceof ServiceUnavailableException) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Failed to scrape tracker data: ${errorMessage}`,
+        error,
+      );
+      if (
+        error instanceof BadRequestException ||
+        error instanceof ServiceUnavailableException
+      ) {
         throw error;
       }
       throw new ServiceUnavailableException(
@@ -158,9 +168,14 @@ export class TrackerScraperService {
         try {
           await this.enforceRateLimit();
           const seasonData = await this.scrapeTrackerData(trnUrl, seasonNum);
-          return this.parseSegments(seasonData.segments, seasonNum, baseData.availableSegments);
+          return this.parseSegments(
+            seasonData.segments,
+            seasonNum,
+            baseData.availableSegments,
+          );
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : String(error);
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
           this.logger.error(
             `Failed to scrape season ${seasonNum}: ${errorMessage}`,
           );
@@ -190,11 +205,9 @@ export class TrackerScraperService {
 
       return validSeasons;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error(
-        `Failed to scrape all seasons: ${errorMessage}`,
-        error,
-      );
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to scrape all seasons: ${errorMessage}`, error);
       throw error;
     }
   }
@@ -206,17 +219,25 @@ export class TrackerScraperService {
   parseSegments(
     segments: TrackerSegment[],
     seasonNumber: number,
-    availableSegments?: Array<{ attributes: { season: number }; metadata: { name: string } }>,
+    availableSegments?: Array<{
+      attributes: { season: number };
+      metadata: { name: string };
+    }>,
   ): SeasonData {
     // Filter for playlist segments only (not overview, playlistAverage, peak-rating)
     const playlistSegments = segments.filter(
-      (seg) => seg.type === 'playlist' && seg.attributes.season === seasonNumber,
+      (seg) =>
+        seg.type === 'playlist' && seg.attributes.season === seasonNumber,
     );
 
     // Initialize season data
     const seasonData: SeasonData = {
       seasonNumber,
-      seasonName: this.extractSeasonName(segments, seasonNumber, availableSegments),
+      seasonName: this.extractSeasonName(
+        segments,
+        seasonNumber,
+        availableSegments,
+      ),
       playlist1v1: null,
       playlist2v2: null,
       playlist3v3: null,
@@ -284,13 +305,17 @@ export class TrackerScraperService {
         rank: tier?.metadata?.name || null,
         rankValue: typeof tier?.value === 'number' ? tier.value : null,
         division: division?.metadata?.name || null,
-        divisionValue: typeof division?.value === 'number' ? division.value : null,
+        divisionValue:
+          typeof division?.value === 'number' ? division.value : null,
         rating: typeof rating?.value === 'number' ? rating.value : null,
-        matchesPlayed: typeof matchesPlayed?.value === 'number' ? matchesPlayed.value : null,
-        winStreak: typeof winStreak?.value === 'number' ? winStreak.value : null,
+        matchesPlayed:
+          typeof matchesPlayed?.value === 'number' ? matchesPlayed.value : null,
+        winStreak:
+          typeof winStreak?.value === 'number' ? winStreak.value : null,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       this.logger.warn(`Failed to extract playlist data: ${errorMessage}`);
       return null;
     }
@@ -305,7 +330,10 @@ export class TrackerScraperService {
   private extractSeasonName(
     segments: TrackerSegment[],
     seasonNumber: number,
-    availableSegments?: Array<{ attributes: { season: number }; metadata: { name: string } }>,
+    availableSegments?: Array<{
+      attributes: { season: number };
+      metadata: { name: string };
+    }>,
   ): string | null {
     // First, try to find season name in availableSegments
     if (availableSegments) {
@@ -362,9 +390,12 @@ export class TrackerScraperService {
           catchError((error: AxiosError) => {
             // Check for Zyte-specific error headers (case-insensitive)
             const headers = error.response?.headers || {};
-            const zyteErrorTitle = headers['zyte-error-title'] || headers['Zyte-Error-Title'];
-            const zyteErrorType = headers['zyte-error-type'] || headers['Zyte-Error-Type'];
-            const zyteRequestId = headers['zyte-request-id'] || headers['Zyte-Request-ID'];
+            const zyteErrorTitle =
+              headers['zyte-error-title'] || headers['Zyte-Error-Title'];
+            const zyteErrorType =
+              headers['zyte-error-type'] || headers['Zyte-Error-Type'];
+            const zyteRequestId =
+              headers['zyte-request-id'] || headers['Zyte-Request-ID'];
 
             if (zyteErrorTitle || zyteErrorType) {
               this.logger.error(
@@ -420,10 +451,16 @@ export class TrackerScraperService {
 
       // Check for Zyte error headers in successful responses (case-insensitive)
       const responseHeaders = response.headers || {};
-      const zyteErrorTitle = responseHeaders['zyte-error-title'] || responseHeaders['Zyte-Error-Title'];
-      const zyteErrorType = responseHeaders['zyte-error-type'] || responseHeaders['Zyte-Error-Type'];
+      const zyteErrorTitle =
+        responseHeaders['zyte-error-title'] ||
+        responseHeaders['Zyte-Error-Title'];
+      const zyteErrorType =
+        responseHeaders['zyte-error-type'] ||
+        responseHeaders['Zyte-Error-Type'];
       if (zyteErrorTitle || zyteErrorType) {
-        const zyteRequestId = responseHeaders['zyte-request-id'] || responseHeaders['Zyte-Request-ID'];
+        const zyteRequestId =
+          responseHeaders['zyte-request-id'] ||
+          responseHeaders['Zyte-Request-ID'];
         this.logger.error(
           `Zyte proxy error in response: ${zyteErrorTitle || zyteErrorType} (Request ID: ${zyteRequestId})`,
         );
@@ -433,7 +470,9 @@ export class TrackerScraperService {
       }
 
       // Log Zyte request ID for debugging (case-insensitive)
-      const zyteRequestId = responseHeaders['zyte-request-id'] || responseHeaders['Zyte-Request-ID'];
+      const zyteRequestId =
+        responseHeaders['zyte-request-id'] ||
+        responseHeaders['Zyte-Request-ID'];
       if (zyteRequestId) {
         this.logger.debug(`Zyte Request ID: ${zyteRequestId}`);
       }
@@ -446,7 +485,8 @@ export class TrackerScraperService {
       ) {
         throw error;
       }
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       this.logger.error(`Proxy request failed: ${errorMessage}`, error);
       throw new ServiceUnavailableException(
         `Failed to make request through Zyte proxy: ${errorMessage}`,
@@ -527,4 +567,3 @@ export class TrackerScraperService {
     this.requestCount++;
   }
 }
-

@@ -31,9 +31,7 @@ export const configurationSchema = Joi.object({
   DISCORD_API_URL: Joi.string().default('https://discord.com/api/v10'),
 
   // Cookie settings
-  COOKIE_SAME_SITE: Joi.string()
-    .valid('strict', 'lax', 'none')
-    .default('lax'),
+  COOKIE_SAME_SITE: Joi.string().valid('strict', 'lax', 'none').default('lax'),
 
   // Frontend
   FRONTEND_URL: Joi.string().required(),

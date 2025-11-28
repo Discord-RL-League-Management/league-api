@@ -4,7 +4,11 @@ import { TeamMemberRepository } from '../repositories/team-member.repository';
 import { TeamService } from '../../teams/services/team.service';
 import { CreateTeamMemberDto } from '../dto/create-team-member.dto';
 import { UpdateTeamMemberDto } from '../dto/update-team-member.dto';
-import { TeamMemberNotFoundException, TeamCapacityException, TeamMemberAlreadyExistsException } from '../../teams/exceptions/team.exceptions';
+import {
+  TeamMemberNotFoundException,
+  TeamCapacityException,
+  TeamMemberAlreadyExistsException,
+} from '../../teams/exceptions/team.exceptions';
 
 @Injectable()
 export class TeamMemberService {
@@ -28,11 +32,15 @@ export class TeamMemberService {
 
   async addMember(createDto: CreateTeamMemberDto) {
     const team = await this.teamService.findOne(createDto.teamId);
-    
+
     // Check capacity
-    const activeCount = await this.teamMemberRepository.countActiveMembers(createDto.teamId);
+    const activeCount = await this.teamMemberRepository.countActiveMembers(
+      createDto.teamId,
+    );
     if (activeCount >= team.maxPlayers) {
-      throw new TeamCapacityException(`Team is full (${activeCount}/${team.maxPlayers})`);
+      throw new TeamCapacityException(
+        `Team is full (${activeCount}/${team.maxPlayers})`,
+      );
     }
 
     // Check if already a member
@@ -40,8 +48,15 @@ export class TeamMemberService {
       createDto.playerId,
       createDto.leagueId,
     );
-    if (existing && existing.teamId === createDto.teamId && existing.status === 'ACTIVE') {
-      throw new TeamMemberAlreadyExistsException(createDto.playerId, createDto.teamId);
+    if (
+      existing &&
+      existing.teamId === createDto.teamId &&
+      existing.status === 'ACTIVE'
+    ) {
+      throw new TeamMemberAlreadyExistsException(
+        createDto.playerId,
+        createDto.teamId,
+      );
     }
 
     // If existing but inactive, reactivate
@@ -67,4 +82,3 @@ export class TeamMemberService {
     return this.teamMemberRepository.update(id, updateDto);
   }
 }
-

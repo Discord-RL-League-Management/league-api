@@ -5,18 +5,27 @@ import { CreateMatchDto } from '../dto/create-match.dto';
 import { BaseRepository } from '../../common/repositories/base.repository.interface';
 
 @Injectable()
-export class MatchRepository implements BaseRepository<Match, CreateMatchDto, any> {
+export class MatchRepository
+  implements BaseRepository<Match, CreateMatchDto, any>
+{
   constructor(private prisma: PrismaService) {}
 
   async findById(id: string) {
-    return this.prisma.match.findUnique({ where: { id }, include: { participants: true } });
+    return this.prisma.match.findUnique({
+      where: { id },
+      include: { participants: true },
+    });
   }
 
   async findAll(options?: { page?: number; limit?: number }) {
     const page = options?.page ?? 1;
     const limit = Math.min(options?.limit ?? 50, 100);
     const [data, total] = await Promise.all([
-      this.prisma.match.findMany({ skip: (page - 1) * limit, take: limit, orderBy: { createdAt: 'desc' } }),
+      this.prisma.match.findMany({
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
       this.prisma.match.count(),
     ]);
     return { data, total, page, limit };
@@ -45,4 +54,3 @@ export class MatchRepository implements BaseRepository<Match, CreateMatchDto, an
     return (await this.prisma.match.count({ where: { id } })) > 0;
   }
 }
-

@@ -36,7 +36,10 @@ export class OrganizationGmGuard implements CanActivate {
 
     try {
       // Check if user is General Manager
-      const isGM = await this.organizationMemberService.isGeneralManager(user.id, organizationId);
+      const isGM = await this.organizationMemberService.isGeneralManager(
+        user.id,
+        organizationId,
+      );
 
       if (!isGM) {
         // Special case: If organization has no General Managers, allow bot users
@@ -44,8 +47,11 @@ export class OrganizationGmGuard implements CanActivate {
         // Note: JWT users (user.id) will never be 'system' as they are Discord user IDs.
         // System-created organizations (created with userId='system') are managed via
         // bot endpoints which use BotAuthGuard and have user.type === 'bot'
-        const hasGMs = await this.organizationMemberService.hasGeneralManagers(organizationId);
-        if (!hasGMs && (user as any).type === 'bot') {
+        const hasGMs =
+          await this.organizationMemberService.hasGeneralManagers(
+            organizationId,
+          );
+        if (!hasGMs && user.type === 'bot') {
           this.logger.log(
             `OrganizationGmGuard: Allowing bot user for organization ${organizationId} with no GMs`,
           );
@@ -57,7 +63,9 @@ export class OrganizationGmGuard implements CanActivate {
         this.logger.warn(
           `OrganizationGmGuard: User ${user.id} is not a General Manager of organization ${organizationId}`,
         );
-        throw new ForbiddenException('You must be a General Manager of this organization');
+        throw new ForbiddenException(
+          'You must be a General Manager of this organization',
+        );
       }
 
       return true;
@@ -65,9 +73,11 @@ export class OrganizationGmGuard implements CanActivate {
       if (error instanceof ForbiddenException) {
         throw error;
       }
-      this.logger.error(`OrganizationGmGuard: Error checking permissions:`, error);
+      this.logger.error(
+        `OrganizationGmGuard: Error checking permissions:`,
+        error,
+      );
       throw new ForbiddenException('Failed to verify organization permissions');
     }
   }
 }
-

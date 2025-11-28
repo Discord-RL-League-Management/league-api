@@ -4,7 +4,7 @@ import { Prisma, Outbox, OutboxStatus } from '@prisma/client';
 
 /**
  * OutboxService - Single Responsibility: Business logic for outbox operations
- * 
+ *
  * Handles outbox event creation, retrieval, and status updates.
  * Coordinates between repository and transaction context.
  */
@@ -35,20 +35,14 @@ export class OutboxService {
   /**
    * Find pending events for processing
    */
-  async findPendingEvents(
-    sourceType?: string,
-    limit = 10,
-  ): Promise<Outbox[]> {
+  async findPendingEvents(sourceType?: string, limit = 10): Promise<Outbox[]> {
     return this.repository.findPendingEvents(sourceType, limit);
   }
 
   /**
    * Find events by source entity
    */
-  async findBySource(
-    sourceType: string,
-    sourceId: string,
-  ): Promise<Outbox[]> {
+  async findBySource(sourceType: string, sourceId: string): Promise<Outbox[]> {
     return this.repository.findBySource(sourceType, sourceId);
   }
 
@@ -63,4 +57,3 @@ export class OutboxService {
     return this.repository.updateStatus(id, status, errorMessage);
   }
 }
-

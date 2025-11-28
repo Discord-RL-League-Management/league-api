@@ -7,7 +7,10 @@ import {
   CannotRemoveLastGeneralManagerException,
   OrganizationNotFoundException,
 } from '../exceptions/organization.exceptions';
-import { OrganizationMemberRole, OrganizationMemberStatus } from '@prisma/client';
+import {
+  OrganizationMemberRole,
+  OrganizationMemberStatus,
+} from '@prisma/client';
 
 describe('OrganizationMemberService', () => {
   let service: OrganizationMemberService;
@@ -47,8 +50,12 @@ describe('OrganizationMemberService', () => {
     }).compile();
 
     service = module.get<OrganizationMemberService>(OrganizationMemberService);
-    organizationRepository = module.get<OrganizationRepository>(OrganizationRepository);
-    validationService = module.get<OrganizationValidationService>(OrganizationValidationService);
+    organizationRepository = module.get<OrganizationRepository>(
+      OrganizationRepository,
+    );
+    validationService = module.get<OrganizationValidationService>(
+      OrganizationValidationService,
+    );
   });
 
   afterEach(() => {
@@ -61,18 +68,26 @@ describe('OrganizationMemberService', () => {
         { id: 'm1', role: OrganizationMemberRole.GENERAL_MANAGER },
         { id: 'm2', role: OrganizationMemberRole.MEMBER },
       ];
-      mockOrganizationRepository.findMembersByOrganization.mockResolvedValue(mockMembers);
+      mockOrganizationRepository.findMembersByOrganization.mockResolvedValue(
+        mockMembers,
+      );
 
       const result = await service.findMembers('org1');
 
       expect(result).toEqual(mockMembers);
-      expect(mockOrganizationRepository.findMembersByOrganization).toHaveBeenCalledWith('org1');
+      expect(
+        mockOrganizationRepository.findMembersByOrganization,
+      ).toHaveBeenCalledWith('org1');
     });
   });
 
   describe('findMemberById', () => {
     it('should return member when found', async () => {
-      const mockMember = { id: 'm1', organizationId: 'org1', playerId: 'player1' };
+      const mockMember = {
+        id: 'm1',
+        organizationId: 'org1',
+        playerId: 'player1',
+      };
       mockOrganizationRepository.findMemberById.mockResolvedValue(mockMember);
 
       const result = await service.findMemberById('m1');
@@ -83,7 +98,9 @@ describe('OrganizationMemberService', () => {
     it('should throw OrganizationMemberNotFoundException when not found', async () => {
       mockOrganizationRepository.findMemberById.mockResolvedValue(null);
 
-      await expect(service.findMemberById('m1')).rejects.toThrow(OrganizationMemberNotFoundException);
+      await expect(service.findMemberById('m1')).rejects.toThrow(
+        OrganizationMemberNotFoundException,
+      );
     });
   });
 
@@ -101,9 +118,18 @@ describe('OrganizationMemberService', () => {
       mockValidationService.validateMemberAdd.mockResolvedValue(undefined);
       mockOrganizationRepository.addMember.mockResolvedValue(mockMember);
 
-      const result = await service.addMember('org1', 'player1', OrganizationMemberRole.MEMBER, 'user1');
+      const result = await service.addMember(
+        'org1',
+        'player1',
+        OrganizationMemberRole.MEMBER,
+        'user1',
+      );
 
-      expect(mockValidationService.validateMemberAdd).toHaveBeenCalledWith('org1', 'player1', 'league1');
+      expect(mockValidationService.validateMemberAdd).toHaveBeenCalledWith(
+        'org1',
+        'player1',
+        'league1',
+      );
       expect(mockOrganizationRepository.addMember).toHaveBeenCalledWith({
         organizationId: 'org1',
         playerId: 'player1',
@@ -117,9 +143,14 @@ describe('OrganizationMemberService', () => {
     it('should throw OrganizationNotFoundException when organization not found', async () => {
       mockOrganizationRepository.findById.mockResolvedValue(null);
 
-      await expect(service.addMember('org1', 'player1', OrganizationMemberRole.MEMBER, 'user1')).rejects.toThrow(
-        OrganizationNotFoundException,
-      );
+      await expect(
+        service.addMember(
+          'org1',
+          'player1',
+          OrganizationMemberRole.MEMBER,
+          'user1',
+        ),
+      ).rejects.toThrow(OrganizationNotFoundException);
     });
   });
 
@@ -130,17 +161,29 @@ describe('OrganizationMemberService', () => {
         organizationId: 'org1',
         role: OrganizationMemberRole.MEMBER,
       };
-      const updatedMember = { ...mockMember, role: OrganizationMemberRole.GENERAL_MANAGER };
+      const updatedMember = {
+        ...mockMember,
+        role: OrganizationMemberRole.GENERAL_MANAGER,
+      };
 
       mockOrganizationRepository.findMemberById.mockResolvedValue(mockMember);
-      mockValidationService.validateCanRemoveGeneralManager.mockResolvedValue(undefined);
+      mockValidationService.validateCanRemoveGeneralManager.mockResolvedValue(
+        undefined,
+      );
       mockOrganizationRepository.updateMember.mockResolvedValue(updatedMember);
 
-      const result = await service.updateMemberRole('m1', OrganizationMemberRole.GENERAL_MANAGER, 'user1');
+      const result = await service.updateMemberRole(
+        'm1',
+        OrganizationMemberRole.GENERAL_MANAGER,
+        'user1',
+      );
 
-      expect(mockOrganizationRepository.updateMember).toHaveBeenCalledWith('m1', {
-        role: OrganizationMemberRole.GENERAL_MANAGER,
-      });
+      expect(mockOrganizationRepository.updateMember).toHaveBeenCalledWith(
+        'm1',
+        {
+          role: OrganizationMemberRole.GENERAL_MANAGER,
+        },
+      );
       expect(result.role).toBe(OrganizationMemberRole.GENERAL_MANAGER);
     });
 
@@ -152,12 +195,23 @@ describe('OrganizationMemberService', () => {
       };
 
       mockOrganizationRepository.findMemberById.mockResolvedValue(mockMember);
-      mockValidationService.validateCanRemoveGeneralManager.mockResolvedValue(undefined);
-      mockOrganizationRepository.updateMember.mockResolvedValue({ ...mockMember, role: OrganizationMemberRole.MEMBER });
+      mockValidationService.validateCanRemoveGeneralManager.mockResolvedValue(
+        undefined,
+      );
+      mockOrganizationRepository.updateMember.mockResolvedValue({
+        ...mockMember,
+        role: OrganizationMemberRole.MEMBER,
+      });
 
-      await service.updateMemberRole('m1', OrganizationMemberRole.MEMBER, 'user1');
+      await service.updateMemberRole(
+        'm1',
+        OrganizationMemberRole.MEMBER,
+        'user1',
+      );
 
-      expect(mockValidationService.validateCanRemoveGeneralManager).toHaveBeenCalledWith('org1', 'm1');
+      expect(
+        mockValidationService.validateCanRemoveGeneralManager,
+      ).toHaveBeenCalledWith('org1', 'm1');
     });
   });
 
@@ -170,12 +224,19 @@ describe('OrganizationMemberService', () => {
       };
 
       mockOrganizationRepository.findMemberById.mockResolvedValue(mockMember);
-      mockValidationService.validateCanRemoveGeneralManager.mockResolvedValue(undefined);
-      mockOrganizationRepository.removeMember.mockResolvedValue({ ...mockMember, status: OrganizationMemberStatus.REMOVED });
+      mockValidationService.validateCanRemoveGeneralManager.mockResolvedValue(
+        undefined,
+      );
+      mockOrganizationRepository.removeMember.mockResolvedValue({
+        ...mockMember,
+        status: OrganizationMemberStatus.REMOVED,
+      });
 
       const result = await service.removeMember('m1', 'user1');
 
-      expect(mockOrganizationRepository.removeMember).toHaveBeenCalledWith('m1');
+      expect(mockOrganizationRepository.removeMember).toHaveBeenCalledWith(
+        'm1',
+      );
       expect(result.status).toBe(OrganizationMemberStatus.REMOVED);
     });
 
@@ -187,12 +248,19 @@ describe('OrganizationMemberService', () => {
       };
 
       mockOrganizationRepository.findMemberById.mockResolvedValue(mockMember);
-      mockValidationService.validateCanRemoveGeneralManager.mockResolvedValue(undefined);
-      mockOrganizationRepository.removeMember.mockResolvedValue({ ...mockMember, status: OrganizationMemberStatus.REMOVED });
+      mockValidationService.validateCanRemoveGeneralManager.mockResolvedValue(
+        undefined,
+      );
+      mockOrganizationRepository.removeMember.mockResolvedValue({
+        ...mockMember,
+        status: OrganizationMemberStatus.REMOVED,
+      });
 
       await service.removeMember('m1', 'user1');
 
-      expect(mockValidationService.validateCanRemoveGeneralManager).toHaveBeenCalledWith('org1', 'm1');
+      expect(
+        mockValidationService.validateCanRemoveGeneralManager,
+      ).toHaveBeenCalledWith('org1', 'm1');
     });
 
     it('should throw CannotRemoveLastGeneralManagerException when removing last GM', async () => {
@@ -207,7 +275,9 @@ describe('OrganizationMemberService', () => {
         new CannotRemoveLastGeneralManagerException('org1'),
       );
 
-      await expect(service.removeMember('m1', 'user1')).rejects.toThrow(CannotRemoveLastGeneralManagerException);
+      await expect(service.removeMember('m1', 'user1')).rejects.toThrow(
+        CannotRemoveLastGeneralManagerException,
+      );
     });
   });
 
@@ -267,19 +337,31 @@ describe('OrganizationMemberService', () => {
         role: OrganizationMemberRole.MEMBER,
         status: OrganizationMemberStatus.ACTIVE,
       };
-      const updatedMember = { ...mockMember, status: OrganizationMemberStatus.SUSPENDED };
+      const updatedMember = {
+        ...mockMember,
+        status: OrganizationMemberStatus.SUSPENDED,
+      };
 
       mockOrganizationRepository.findMemberById.mockResolvedValue(mockMember);
       mockOrganizationRepository.updateMember.mockResolvedValue(updatedMember);
 
-      const result = await service.updateMember('m1', { status: OrganizationMemberStatus.SUSPENDED }, 'user1');
+      const result = await service.updateMember(
+        'm1',
+        { status: OrganizationMemberStatus.SUSPENDED },
+        'user1',
+      );
 
-      expect(mockOrganizationRepository.updateMember).toHaveBeenCalledWith('m1', {
-        status: OrganizationMemberStatus.SUSPENDED,
-      });
+      expect(mockOrganizationRepository.updateMember).toHaveBeenCalledWith(
+        'm1',
+        {
+          status: OrganizationMemberStatus.SUSPENDED,
+        },
+      );
       expect(result.status).toBe(OrganizationMemberStatus.SUSPENDED);
       // Should not validate GM removal for non-role updates
-      expect(mockValidationService.validateCanRemoveGeneralManager).not.toHaveBeenCalled();
+      expect(
+        mockValidationService.validateCanRemoveGeneralManager,
+      ).not.toHaveBeenCalled();
     });
 
     it('should update member notes', async () => {
@@ -294,9 +376,16 @@ describe('OrganizationMemberService', () => {
       mockOrganizationRepository.findMemberById.mockResolvedValue(mockMember);
       mockOrganizationRepository.updateMember.mockResolvedValue(updatedMember);
 
-      const result = await service.updateMember('m1', { notes: 'New notes' }, 'user1');
+      const result = await service.updateMember(
+        'm1',
+        { notes: 'New notes' },
+        'user1',
+      );
 
-      expect(mockOrganizationRepository.updateMember).toHaveBeenCalledWith('m1', { notes: 'New notes' });
+      expect(mockOrganizationRepository.updateMember).toHaveBeenCalledWith(
+        'm1',
+        { notes: 'New notes' },
+      );
       expect(result.notes).toBe('New notes');
     });
 
@@ -323,10 +412,13 @@ describe('OrganizationMemberService', () => {
         'user1',
       );
 
-      expect(mockOrganizationRepository.updateMember).toHaveBeenCalledWith('m1', {
-        status: OrganizationMemberStatus.INACTIVE,
-        notes: 'Updated notes',
-      });
+      expect(mockOrganizationRepository.updateMember).toHaveBeenCalledWith(
+        'm1',
+        {
+          status: OrganizationMemberStatus.INACTIVE,
+          notes: 'Updated notes',
+        },
+      );
       expect(result.status).toBe(OrganizationMemberStatus.INACTIVE);
       expect(result.notes).toBe('Updated notes');
     });
@@ -337,15 +429,26 @@ describe('OrganizationMemberService', () => {
         organizationId: 'org1',
         role: OrganizationMemberRole.GENERAL_MANAGER,
       };
-      const updatedMember = { ...mockMember, role: OrganizationMemberRole.MEMBER };
+      const updatedMember = {
+        ...mockMember,
+        role: OrganizationMemberRole.MEMBER,
+      };
 
       mockOrganizationRepository.findMemberById.mockResolvedValue(mockMember);
-      mockValidationService.validateCanRemoveGeneralManager.mockResolvedValue(undefined);
+      mockValidationService.validateCanRemoveGeneralManager.mockResolvedValue(
+        undefined,
+      );
       mockOrganizationRepository.updateMember.mockResolvedValue(updatedMember);
 
-      const result = await service.updateMember('m1', { role: OrganizationMemberRole.MEMBER }, 'user1');
+      const result = await service.updateMember(
+        'm1',
+        { role: OrganizationMemberRole.MEMBER },
+        'user1',
+      );
 
-      expect(mockValidationService.validateCanRemoveGeneralManager).toHaveBeenCalledWith('org1', 'm1');
+      expect(
+        mockValidationService.validateCanRemoveGeneralManager,
+      ).toHaveBeenCalledWith('org1', 'm1');
       expect(result.role).toBe(OrganizationMemberRole.MEMBER);
     });
 
@@ -355,16 +458,24 @@ describe('OrganizationMemberService', () => {
         organizationId: 'org1',
         role: OrganizationMemberRole.MEMBER,
       };
-      const updatedMember = { ...mockMember, role: OrganizationMemberRole.GENERAL_MANAGER };
+      const updatedMember = {
+        ...mockMember,
+        role: OrganizationMemberRole.GENERAL_MANAGER,
+      };
 
       mockOrganizationRepository.findMemberById.mockResolvedValue(mockMember);
       mockOrganizationRepository.updateMember.mockResolvedValue(updatedMember);
 
-      const result = await service.updateMember('m1', { role: OrganizationMemberRole.GENERAL_MANAGER }, 'user1');
+      const result = await service.updateMember(
+        'm1',
+        { role: OrganizationMemberRole.GENERAL_MANAGER },
+        'user1',
+      );
 
-      expect(mockValidationService.validateCanRemoveGeneralManager).not.toHaveBeenCalled();
+      expect(
+        mockValidationService.validateCanRemoveGeneralManager,
+      ).not.toHaveBeenCalled();
       expect(result.role).toBe(OrganizationMemberRole.GENERAL_MANAGER);
     });
   });
 });
-

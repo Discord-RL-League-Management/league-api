@@ -48,11 +48,17 @@ export class GuildsController {
   @ApiResponse({ status: 404, description: 'Guild not found' })
   @ApiResponse({ status: 401, description: 'Invalid JWT token' })
   @ApiParam({ name: 'id', description: 'Discord guild ID' })
-  async getGuild(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+  async getGuild(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     this.logger.log(`User ${user.id} requested guild ${id}`);
 
     // Validate user and bot have access to guild
-    await this.guildAccessValidationService.validateUserGuildAccess(user.id, id);
+    await this.guildAccessValidationService.validateUserGuildAccess(
+      user.id,
+      id,
+    );
 
     return this.guildsService.findOne(id, {
       includeSettings: false,
@@ -68,11 +74,17 @@ export class GuildsController {
   @ApiResponse({ status: 404, description: 'Guild not found' })
   @ApiResponse({ status: 401, description: 'Invalid JWT token' })
   @ApiParam({ name: 'id', description: 'Discord guild ID' })
-  async getGuildSettings(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+  async getGuildSettings(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     this.logger.log(`User ${user.id} requested settings for guild ${id}`);
 
     // Validate user and bot have access to guild (security first)
-    await this.guildAccessValidationService.validateUserGuildAccess(user.id, id);
+    await this.guildAccessValidationService.validateUserGuildAccess(
+      user.id,
+      id,
+    );
 
     // Additional admin check for settings access
     const membership = await this.guildMembersService.findOne(user.id, id);
@@ -110,11 +122,17 @@ export class GuildsController {
   @ApiResponse({ status: 404, description: 'Guild not found' })
   @ApiResponse({ status: 401, description: 'Invalid JWT token' })
   @ApiParam({ name: 'id', description: 'Discord guild ID' })
-  async getGuildChannels(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+  async getGuildChannels(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     this.logger.log(`User ${user.id} requested channels for guild ${id}`);
 
     // Validate user and bot have access to guild
-    await this.guildAccessValidationService.validateUserGuildAccess(user.id, id);
+    await this.guildAccessValidationService.validateUserGuildAccess(
+      user.id,
+      id,
+    );
 
     // Additional admin check
     const membership = await this.guildMembersService.findOne(user.id, id);
@@ -143,11 +161,17 @@ export class GuildsController {
   @ApiResponse({ status: 404, description: 'Guild not found' })
   @ApiResponse({ status: 401, description: 'Invalid JWT token' })
   @ApiParam({ name: 'id', description: 'Discord guild ID' })
-  async getGuildRoles(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+  async getGuildRoles(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     this.logger.log(`User ${user.id} requested roles for guild ${id}`);
 
     // Validate user and bot have access to guild
-    await this.guildAccessValidationService.validateUserGuildAccess(user.id, id);
+    await this.guildAccessValidationService.validateUserGuildAccess(
+      user.id,
+      id,
+    );
 
     // Additional admin check
     const membership = await this.guildMembersService.findOne(user.id, id);

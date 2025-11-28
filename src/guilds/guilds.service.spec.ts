@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException, ConflictException, InternalServerErrorException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ConflictException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { GuildsService } from './guilds.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -96,7 +100,7 @@ describe('GuildsService', () => {
       expect(mockGuildRepository.exists).toHaveBeenCalledWith('123');
       expect(mockGuildRepository.createWithSettings).toHaveBeenCalledWith(
         guildData,
-        expect.any(Object)
+        expect.any(Object),
       );
     });
 
@@ -106,7 +110,9 @@ describe('GuildsService', () => {
       mockGuildRepository.exists.mockResolvedValue(true);
 
       // Act & Assert
-      await expect(service.create(guildData)).rejects.toThrow('Guild with ID \'123\' already exists');
+      await expect(service.create(guildData)).rejects.toThrow(
+        "Guild with ID '123' already exists",
+      );
     });
   });
 
@@ -128,7 +134,10 @@ describe('GuildsService', () => {
 
       // Assert
       expect(result).toEqual(mockGuild);
-      expect(mockGuildRepository.findOne).toHaveBeenCalledWith(guildId, undefined);
+      expect(mockGuildRepository.findOne).toHaveBeenCalledWith(
+        guildId,
+        undefined,
+      );
     });
 
     it('should throw NotFoundException when guild not found', async () => {
@@ -137,7 +146,9 @@ describe('GuildsService', () => {
       mockGuildRepository.findOne.mockResolvedValue(null);
 
       // Act & Assert
-      await expect(service.findOne(guildId)).rejects.toThrow(`Guild with identifier '${guildId}' not found`);
+      await expect(service.findOne(guildId)).rejects.toThrow(
+        `Guild with identifier '${guildId}' not found`,
+      );
     });
   });
 
@@ -160,7 +171,9 @@ describe('GuildsService', () => {
       // Assert
       expect(result).toEqual(updatedGuild);
       expect(mockGuildRepository.exists).toHaveBeenCalledWith(guildId);
-      expect(mockGuildRepository.removeWithCleanup).toHaveBeenCalledWith(guildId);
+      expect(mockGuildRepository.removeWithCleanup).toHaveBeenCalledWith(
+        guildId,
+      );
     });
 
     it('should throw NotFoundException when guild not found', async () => {
@@ -173,13 +186,21 @@ describe('GuildsService', () => {
     });
   });
 
-
   describe('upsert', () => {
     it('should create new guild with settings when guild does not exist', async () => {
       // Arrange
-      const guildData = { id: '123', name: 'Test Guild', ownerId: '456', memberCount: 10 };
-      const createdGuild = { ...guildData, createdAt: new Date(), isActive: true };
-      
+      const guildData = {
+        id: '123',
+        name: 'Test Guild',
+        ownerId: '456',
+        memberCount: 10,
+      };
+      const createdGuild = {
+        ...guildData,
+        createdAt: new Date(),
+        isActive: true,
+      };
+
       mockGuildRepository.upsertWithSettings.mockResolvedValue(createdGuild);
 
       // Act
@@ -189,15 +210,26 @@ describe('GuildsService', () => {
       expect(result).toEqual(createdGuild);
       expect(mockGuildRepository.upsertWithSettings).toHaveBeenCalledWith(
         guildData,
-        expect.any(Object)
+        expect.any(Object),
       );
     });
 
     it('should update existing guild when guild exists', async () => {
       // Arrange
-      const guildData = { id: '123', name: 'Updated Guild', ownerId: '456', memberCount: 20 };
-      const updatedGuild = { id: '123', name: 'Updated Guild', ownerId: '456', memberCount: 20, isActive: true };
-      
+      const guildData = {
+        id: '123',
+        name: 'Updated Guild',
+        ownerId: '456',
+        memberCount: 20,
+      };
+      const updatedGuild = {
+        id: '123',
+        name: 'Updated Guild',
+        ownerId: '456',
+        memberCount: 20,
+        isActive: true,
+      };
+
       mockGuildRepository.upsertWithSettings.mockResolvedValue(updatedGuild);
 
       // Act
@@ -208,23 +240,30 @@ describe('GuildsService', () => {
       expect(result.memberCount).toBe(20);
       expect(mockGuildRepository.upsertWithSettings).toHaveBeenCalledWith(
         guildData,
-        expect.any(Object)
+        expect.any(Object),
       );
     });
 
     it('should reactivate soft-deleted guild when guild exists but is inactive', async () => {
       // Arrange
-      const guildData = { id: '123', name: 'Reactivated Guild', ownerId: '456', memberCount: 10 };
-      const reactivatedGuild = { 
-        id: '123', 
-        name: 'Reactivated Guild', 
-        ownerId: '456', 
+      const guildData = {
+        id: '123',
+        name: 'Reactivated Guild',
+        ownerId: '456',
+        memberCount: 10,
+      };
+      const reactivatedGuild = {
+        id: '123',
+        name: 'Reactivated Guild',
+        ownerId: '456',
         memberCount: 10,
         isActive: true,
         leftAt: null,
       };
-      
-      mockGuildRepository.upsertWithSettings.mockResolvedValue(reactivatedGuild);
+
+      mockGuildRepository.upsertWithSettings.mockResolvedValue(
+        reactivatedGuild,
+      );
 
       // Act
       const result = await service.upsert(guildData);
@@ -234,15 +273,26 @@ describe('GuildsService', () => {
       expect(result.leftAt).toBeNull();
       expect(mockGuildRepository.upsertWithSettings).toHaveBeenCalledWith(
         guildData,
-        expect.any(Object)
+        expect.any(Object),
       );
     });
 
     it('should create settings when guild exists but has no settings', async () => {
       // Arrange
-      const guildData = { id: '123', name: 'Test Guild', ownerId: '456', memberCount: 10 };
-      const existingGuild = { id: '123', name: 'Test Guild', ownerId: '456', memberCount: 10, isActive: true };
-      
+      const guildData = {
+        id: '123',
+        name: 'Test Guild',
+        ownerId: '456',
+        memberCount: 10,
+      };
+      const existingGuild = {
+        id: '123',
+        name: 'Test Guild',
+        ownerId: '456',
+        memberCount: 10,
+        isActive: true,
+      };
+
       mockGuildRepository.upsertWithSettings.mockResolvedValue(existingGuild);
 
       // Act
@@ -252,15 +302,26 @@ describe('GuildsService', () => {
       expect(result).toEqual(existingGuild);
       expect(mockGuildRepository.upsertWithSettings).toHaveBeenCalledWith(
         guildData,
-        expect.any(Object)
+        expect.any(Object),
       );
     });
 
     it('should not overwrite existing settings when upserting', async () => {
       // Arrange
-      const guildData = { id: '123', name: 'Test Guild', ownerId: '456', memberCount: 10 };
-      const existingGuild = { id: '123', name: 'Test Guild', ownerId: '456', memberCount: 10, isActive: true };
-      
+      const guildData = {
+        id: '123',
+        name: 'Test Guild',
+        ownerId: '456',
+        memberCount: 10,
+      };
+      const existingGuild = {
+        id: '123',
+        name: 'Test Guild',
+        ownerId: '456',
+        memberCount: 10,
+        isActive: true,
+      };
+
       mockGuildRepository.upsertWithSettings.mockResolvedValue(existingGuild);
 
       // Act
@@ -270,7 +331,7 @@ describe('GuildsService', () => {
       expect(result).toEqual(existingGuild);
       expect(mockGuildRepository.upsertWithSettings).toHaveBeenCalledWith(
         guildData,
-        expect.any(Object)
+        expect.any(Object),
       );
     });
   });
@@ -291,7 +352,7 @@ describe('GuildsService', () => {
       ];
 
       const mockGuild = { ...guildData, createdAt: new Date(), isActive: true };
-      
+
       mockPrismaService.$transaction.mockImplementation(async (callback) => {
         const mockTx = {
           guild: {
@@ -309,7 +370,11 @@ describe('GuildsService', () => {
       });
 
       // Act
-      const result = await service.syncGuildWithMembers(guildId, guildData, members);
+      const result = await service.syncGuildWithMembers(
+        guildId,
+        guildData,
+        members,
+      );
 
       // Assert
       expect(result.guild).toEqual(mockGuild);
@@ -320,7 +385,12 @@ describe('GuildsService', () => {
     it('should delete existing members before creating new ones', async () => {
       // Arrange
       const guildId = 'guild123';
-      const guildData = { id: guildId, name: 'Test', ownerId: 'owner', memberCount: 1 };
+      const guildData = {
+        id: guildId,
+        name: 'Test',
+        ownerId: 'owner',
+        memberCount: 1,
+      };
       const members = [{ userId: 'user1', username: 'User1', roles: [] }];
 
       let deleteManyCalled = false;
@@ -362,8 +432,17 @@ describe('GuildsService', () => {
     it('should handle empty members array', async () => {
       // Arrange
       const guildId = 'guild123';
-      const guildData = { id: guildId, name: 'Test', ownerId: 'owner', memberCount: 0 };
-      const members: Array<{ userId: string; username: string; roles: string[] }> = [];
+      const guildData = {
+        id: guildId,
+        name: 'Test',
+        ownerId: 'owner',
+        memberCount: 0,
+      };
+      const members: Array<{
+        userId: string;
+        username: string;
+        roles: string[];
+      }> = [];
 
       let createManyCalled = false;
 
@@ -387,7 +466,11 @@ describe('GuildsService', () => {
       });
 
       // Act
-      const result = await service.syncGuildWithMembers(guildId, guildData, members);
+      const result = await service.syncGuildWithMembers(
+        guildId,
+        guildData,
+        members,
+      );
 
       // Assert
       expect(result.membersSynced).toBe(0);
@@ -397,7 +480,12 @@ describe('GuildsService', () => {
     it('should upsert guild with settings in transaction', async () => {
       // Arrange
       const guildId = 'guild123';
-      const guildData = { id: guildId, name: 'Test', ownerId: 'owner', memberCount: 1 };
+      const guildData = {
+        id: guildId,
+        name: 'Test',
+        ownerId: 'owner',
+        memberCount: 1,
+      };
       const members = [{ userId: 'user1', username: 'User1', roles: [] }];
 
       let guildUpsertCalled = false;
@@ -436,7 +524,12 @@ describe('GuildsService', () => {
     it('should throw NotFoundException on foreign key constraint error (P2003)', async () => {
       // Arrange
       const guildId = 'guild123';
-      const guildData = { id: guildId, name: 'Test', ownerId: 'owner', memberCount: 1 };
+      const guildData = {
+        id: guildId,
+        name: 'Test',
+        ownerId: 'owner',
+        memberCount: 1,
+      };
       const members = [{ userId: 'user1', username: 'User1', roles: [] }];
 
       const prismaError = new Prisma.PrismaClientKnownRequestError(
@@ -444,24 +537,29 @@ describe('GuildsService', () => {
         {
           code: 'P2003',
           clientVersion: '5.0.0',
-        } as any
+        } as any,
       );
 
       mockPrismaService.$transaction.mockRejectedValue(prismaError);
 
       // Act & Assert
       await expect(
-        service.syncGuildWithMembers(guildId, guildData, members)
+        service.syncGuildWithMembers(guildId, guildData, members),
       ).rejects.toThrow(NotFoundException);
       await expect(
-        service.syncGuildWithMembers(guildId, guildData, members)
+        service.syncGuildWithMembers(guildId, guildData, members),
       ).rejects.toThrow(`Guild ${guildId} not found`);
     });
 
     it('should throw InternalServerErrorException on other errors', async () => {
       // Arrange
       const guildId = 'guild123';
-      const guildData = { id: guildId, name: 'Test', ownerId: 'owner', memberCount: 1 };
+      const guildData = {
+        id: guildId,
+        name: 'Test',
+        ownerId: 'owner',
+        memberCount: 1,
+      };
       const members = [{ userId: 'user1', username: 'User1', roles: [] }];
 
       const genericError = new Error('Database connection failed');
@@ -469,14 +567,19 @@ describe('GuildsService', () => {
 
       // Act & Assert
       await expect(
-        service.syncGuildWithMembers(guildId, guildData, members)
+        service.syncGuildWithMembers(guildId, guildData, members),
       ).rejects.toThrow(InternalServerErrorException);
     });
 
     it('should map member data correctly', async () => {
       // Arrange
       const guildId = 'guild123';
-      const guildData = { id: guildId, name: 'Test', ownerId: 'owner', memberCount: 2 };
+      const guildData = {
+        id: guildId,
+        name: 'Test',
+        ownerId: 'owner',
+        memberCount: 2,
+      };
       const members = [
         { userId: 'user1', username: 'User1', roles: ['role1', 'role2'] },
         { userId: 'user2', username: 'User2', roles: [] },

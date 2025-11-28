@@ -6,13 +6,19 @@ import { UpdateOrganizationDto } from '../dto/update-organization.dto';
 import { AddOrganizationMemberDto } from '../dto/add-organization-member.dto';
 import { UpdateOrganizationMemberDto } from '../dto/update-organization-member.dto';
 import { BaseRepository } from '../../common/repositories/base.repository.interface';
-import { OrganizationMemberRole, OrganizationMemberStatus } from '@prisma/client';
+import {
+  OrganizationMemberRole,
+  OrganizationMemberStatus,
+} from '@prisma/client';
 
 /**
  * OrganizationRepository - Handles all database operations for Organization entity
  */
 @Injectable()
-export class OrganizationRepository implements BaseRepository<Organization, CreateOrganizationDto, UpdateOrganizationDto> {
+export class OrganizationRepository
+  implements
+    BaseRepository<Organization, CreateOrganizationDto, UpdateOrganizationDto>
+{
   private readonly logger = new Logger(OrganizationRepository.name);
 
   constructor(private prisma: PrismaService) {}
@@ -30,7 +36,10 @@ export class OrganizationRepository implements BaseRepository<Organization, Crea
     });
   }
 
-  async findByIdAndLeague(id: string, leagueId: string): Promise<Organization | null> {
+  async findByIdAndLeague(
+    id: string,
+    leagueId: string,
+  ): Promise<Organization | null> {
     return this.prisma.organization.findFirst({
       where: { id, leagueId },
       include: {
@@ -56,7 +65,12 @@ export class OrganizationRepository implements BaseRepository<Organization, Crea
     });
   }
 
-  async findAll(options?: { page?: number; limit?: number }): Promise<{ data: Organization[]; total: number; page: number; limit: number }> {
+  async findAll(options?: { page?: number; limit?: number }): Promise<{
+    data: Organization[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
     const page = options?.page ?? 1;
     const limit = options?.limit ?? 50;
     const skip = (page - 1) * limit;
@@ -93,7 +107,9 @@ export class OrganizationRepository implements BaseRepository<Organization, Crea
       data: {
         ...(data.name !== undefined && { name: data.name }),
         ...(data.tag !== undefined && { tag: data.tag }),
-        ...(data.description !== undefined && { description: data.description }),
+        ...(data.description !== undefined && {
+          description: data.description,
+        }),
       },
       include: { members: true, teams: true },
     });
@@ -133,7 +149,9 @@ export class OrganizationRepository implements BaseRepository<Organization, Crea
     });
   }
 
-  async findMembersByOrganization(organizationId: string): Promise<OrganizationMember[]> {
+  async findMembersByOrganization(
+    organizationId: string,
+  ): Promise<OrganizationMember[]> {
     return this.prisma.organizationMember.findMany({
       where: {
         organizationId,
@@ -146,7 +164,10 @@ export class OrganizationRepository implements BaseRepository<Organization, Crea
     });
   }
 
-  async findMembersByPlayer(playerId: string, leagueId: string): Promise<OrganizationMember | null> {
+  async findMembersByPlayer(
+    playerId: string,
+    leagueId: string,
+  ): Promise<OrganizationMember | null> {
     // Find active membership only (REMOVED members should not block re-joins)
     const membership = await this.prisma.organizationMember.findUnique({
       where: {
@@ -169,7 +190,9 @@ export class OrganizationRepository implements BaseRepository<Organization, Crea
     return membership;
   }
 
-  async findGeneralManagers(organizationId: string): Promise<OrganizationMember[]> {
+  async findGeneralManagers(
+    organizationId: string,
+  ): Promise<OrganizationMember[]> {
     return this.prisma.organizationMember.findMany({
       where: {
         organizationId,
@@ -192,7 +215,13 @@ export class OrganizationRepository implements BaseRepository<Organization, Crea
     });
   }
 
-  async addMember(data: AddOrganizationMemberDto & { organizationId: string; leagueId: string; approvedBy?: string }): Promise<OrganizationMember> {
+  async addMember(
+    data: AddOrganizationMemberDto & {
+      organizationId: string;
+      leagueId: string;
+      approvedBy?: string;
+    },
+  ): Promise<OrganizationMember> {
     // Delete any existing REMOVED member and create new membership atomically
     // This prevents race conditions where concurrent requests could both pass validation
     // (filtering out REMOVED members) and then both attempt to create memberships,
@@ -216,7 +245,10 @@ export class OrganizationRepository implements BaseRepository<Organization, Crea
           role: data.role ?? OrganizationMemberRole.MEMBER,
           notes: data.notes,
           approvedBy: data.approvedBy,
-          approvedAt: data.approvedBy !== undefined && data.approvedBy !== null ? new Date() : undefined,
+          approvedAt:
+            data.approvedBy !== undefined && data.approvedBy !== null
+              ? new Date()
+              : undefined,
         },
         include: {
           organization: true,
@@ -226,7 +258,10 @@ export class OrganizationRepository implements BaseRepository<Organization, Crea
     });
   }
 
-  async updateMember(memberId: string, data: UpdateOrganizationMemberDto): Promise<OrganizationMember> {
+  async updateMember(
+    memberId: string,
+    data: UpdateOrganizationMemberDto,
+  ): Promise<OrganizationMember> {
     return this.prisma.organizationMember.update({
       where: { id: memberId },
       data: {
@@ -255,4 +290,3 @@ export class OrganizationRepository implements BaseRepository<Organization, Crea
     });
   }
 }
-

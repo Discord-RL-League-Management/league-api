@@ -10,4 +10,3 @@ export class ApproveLeagueMemberDto {
   @IsNotEmpty()
   approvedBy!: string;
 }
-

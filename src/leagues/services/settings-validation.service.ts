@@ -1,10 +1,14 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { LeagueConfiguration, MembershipConfig, SkillConfig } from '../interfaces/league-settings.interface';
+import {
+  LeagueConfiguration,
+  MembershipConfig,
+  SkillConfig,
+} from '../interfaces/league-settings.interface';
 import { LeagueValidationException } from '../exceptions/league.exceptions';
 
 /**
  * SettingsValidationService - Single Responsibility: League configuration validation
- * 
+ *
  * Validates league configuration values and structure.
  * Ensures configuration values are valid and consistent.
  */
@@ -13,7 +17,7 @@ export class SettingsValidationService {
   /**
    * Validate league configuration
    * Single Responsibility: Complete configuration validation
-   * 
+   *
    * @param config - Configuration to validate
    * @throws LeagueValidationException if validation fails
    */
@@ -40,7 +44,9 @@ export class SettingsValidationService {
    * Validate membership configuration
    * Single Responsibility: Membership config validation
    */
-  private validateMembershipConfig(config: Partial<MembershipConfig>): string[] {
+  private validateMembershipConfig(
+    config: Partial<MembershipConfig>,
+  ): string[] {
     const errors: string[] = [];
 
     // Validate capacity limits
@@ -64,26 +70,38 @@ export class SettingsValidationService {
 
     // Validate registration dates
     if (config.registrationStartDate && config.registrationEndDate) {
-      if (new Date(config.registrationStartDate) >= new Date(config.registrationEndDate)) {
+      if (
+        new Date(config.registrationStartDate) >=
+        new Date(config.registrationEndDate)
+      ) {
         errors.push('registrationStartDate must be before registrationEndDate');
       }
     }
 
     // Validate cooldown
-    if (config.cooldownAfterLeave !== undefined && config.cooldownAfterLeave !== null) {
+    if (
+      config.cooldownAfterLeave !== undefined &&
+      config.cooldownAfterLeave !== null
+    ) {
       if (config.cooldownAfterLeave < 0) {
         errors.push('cooldownAfterLeave cannot be negative');
       }
     }
 
     // Validate organization requirements
-    if (config.maxOrganizations !== undefined && config.maxOrganizations !== null) {
+    if (
+      config.maxOrganizations !== undefined &&
+      config.maxOrganizations !== null
+    ) {
       if (config.maxOrganizations < 1) {
         errors.push('maxOrganizations must be at least 1');
       }
     }
 
-    if (config.maxTeamsPerOrganization !== undefined && config.maxTeamsPerOrganization !== null) {
+    if (
+      config.maxTeamsPerOrganization !== undefined &&
+      config.maxTeamsPerOrganization !== null
+    ) {
       if (config.maxTeamsPerOrganization < 1) {
         errors.push('maxTeamsPerOrganization must be at least 1');
       }
@@ -91,7 +109,9 @@ export class SettingsValidationService {
 
     // Validate skill requirements
     if (config.skillRequirements) {
-      const skillErrors = this.validateSkillRequirements(config.skillRequirements);
+      const skillErrors = this.validateSkillRequirements(
+        config.skillRequirements,
+      );
       errors.push(...skillErrors);
     }
 
@@ -112,9 +132,14 @@ export class SettingsValidationService {
           errors.push('minSkillLevel cannot be negative');
         }
 
-        if (config.maxSkillLevel !== undefined && config.maxSkillLevel !== null) {
+        if (
+          config.maxSkillLevel !== undefined &&
+          config.maxSkillLevel !== null
+        ) {
           if (config.maxSkillLevel < config.minSkillLevel) {
-            errors.push('maxSkillLevel must be greater than or equal to minSkillLevel');
+            errors.push(
+              'maxSkillLevel must be greater than or equal to minSkillLevel',
+            );
           }
         }
       }
@@ -150,9 +175,14 @@ export class SettingsValidationService {
         errors.push('skillRequirements.minSkill cannot be negative');
       }
 
-      if (requirements.maxSkill !== undefined && requirements.maxSkill !== null) {
+      if (
+        requirements.maxSkill !== undefined &&
+        requirements.maxSkill !== null
+      ) {
         if (requirements.maxSkill < requirements.minSkill) {
-          errors.push('skillRequirements.maxSkill must be greater than or equal to minSkill');
+          errors.push(
+            'skillRequirements.maxSkill must be greater than or equal to minSkill',
+          );
         }
       }
     }
@@ -166,11 +196,11 @@ export class SettingsValidationService {
     // Validate skill metric
     const validMetrics = ['MMR', 'RANK', 'ELO', 'CUSTOM'];
     if (!validMetrics.includes(requirements.skillMetric)) {
-      errors.push(`skillRequirements.skillMetric must be one of: ${validMetrics.join(', ')}`);
+      errors.push(
+        `skillRequirements.skillMetric must be one of: ${validMetrics.join(', ')}`,
+      );
     }
 
     return errors;
   }
 }
-
-

@@ -1,4 +1,10 @@
-import { Injectable, Logger, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { OrganizationRepository } from '../repositories/organization.repository';
 import { OrganizationMemberService } from './organization-member.service';
 import { OrganizationValidationService } from './organization-validation.service';
@@ -58,12 +64,19 @@ export class OrganizationService {
   /**
    * Create organization and add creator as General Manager
    */
-  async create(createDto: CreateOrganizationDto, userId: string, settings?: any) {
+  async create(
+    createDto: CreateOrganizationDto,
+    userId: string,
+    settings?: any,
+  ) {
     // Validate organization creation
     await this.validationService.validateCreate(createDto);
 
     // Validate league organization capacity (use provided settings if available)
-    await this.validationService.validateLeagueOrganizationCapacity(createDto.leagueId, settings);
+    await this.validationService.validateLeagueOrganizationCapacity(
+      createDto.leagueId,
+      settings,
+    );
 
     // Get league to get guildId
     const league = await this.leagueRepository.findById(createDto.leagueId);
@@ -76,7 +89,10 @@ export class OrganizationService {
     let player = null;
     if (userId !== 'system') {
       // Ensure player exists (validates guild membership for real users)
-      player = await this.playerService.ensurePlayerExists(userId, league.guildId);
+      player = await this.playerService.ensurePlayerExists(
+        userId,
+        league.guildId,
+      );
     }
 
     // Create organization
@@ -104,12 +120,18 @@ export class OrganizationService {
     await this.findOne(id);
 
     // Verify user is General Manager
-    const isGM = await this.organizationMemberService.isGeneralManager(userId, id);
+    const isGM = await this.organizationMemberService.isGeneralManager(
+      userId,
+      id,
+    );
     if (!isGM) {
       // Allow bot users to update organizations with no GMs (for managing orphaned orgs)
-      const hasGMs = await this.organizationMemberService.hasGeneralManagers(id);
+      const hasGMs =
+        await this.organizationMemberService.hasGeneralManagers(id);
       if (!hasGMs && (userId === 'system' || userId === 'bot')) {
-        this.logger.log(`Allowing ${userId} user to update organization ${id} with no GMs`);
+        this.logger.log(
+          `Allowing ${userId} user to update organization ${id} with no GMs`,
+        );
       } else {
         throw new NotGeneralManagerException(id);
       }
@@ -126,12 +148,18 @@ export class OrganizationService {
     const organization = await this.findOne(id);
 
     // Verify user is General Manager (or bot/system user for organizations with no GMs)
-    const isGM = await this.organizationMemberService.isGeneralManager(userId, id);
+    const isGM = await this.organizationMemberService.isGeneralManager(
+      userId,
+      id,
+    );
     if (!isGM) {
       // Allow bot/system users to delete organizations with no GMs (for rollback scenarios and orphaned orgs)
-      const hasGMs = await this.organizationMemberService.hasGeneralManagers(id);
+      const hasGMs =
+        await this.organizationMemberService.hasGeneralManagers(id);
       if (!hasGMs && (userId === 'system' || userId === 'bot')) {
-        this.logger.log(`Allowing ${userId} user to delete organization ${id} with no GMs`);
+        this.logger.log(
+          `Allowing ${userId} user to delete organization ${id} with no GMs`,
+        );
       } else {
         throw new NotGeneralManagerException(id);
       }
@@ -154,7 +182,11 @@ export class OrganizationService {
   /**
    * Transfer team to different organization
    */
-  async transferTeam(teamId: string, targetOrganizationId: string, userId: string) {
+  async transferTeam(
+    teamId: string,
+    targetOrganizationId: string,
+    userId: string,
+  ) {
     // Get team to find source organization
     const team = await this.teamRepository.findById(teamId);
     if (!team) {
@@ -162,25 +194,42 @@ export class OrganizationService {
     }
 
     if (!team.organizationId) {
-      throw new BadRequestException(`Team ${teamId} is not assigned to an organization`);
+      throw new BadRequestException(
+        `Team ${teamId} is not assigned to an organization`,
+      );
     }
 
     const sourceOrgId = team.organizationId;
     const leagueId = team.leagueId;
 
     // Verify user is GM of source or target organization
-    const isSourceGM = await this.organizationMemberService.isGeneralManager(userId, sourceOrgId);
-    const isTargetGM = await this.organizationMemberService.isGeneralManager(userId, targetOrganizationId);
+    const isSourceGM = await this.organizationMemberService.isGeneralManager(
+      userId,
+      sourceOrgId,
+    );
+    const isTargetGM = await this.organizationMemberService.isGeneralManager(
+      userId,
+      targetOrganizationId,
+    );
 
     if (!isSourceGM && !isTargetGM) {
-      throw new ForbiddenException('User must be a General Manager of either the source or target organization');
+      throw new ForbiddenException(
+        'User must be a General Manager of either the source or target organization',
+      );
     }
 
     // Validate transfer
-    await this.validationService.validateTeamTransfer(teamId, sourceOrgId, targetOrganizationId, leagueId);
+    await this.validationService.validateTeamTransfer(
+      teamId,
+      sourceOrgId,
+      targetOrganizationId,
+      leagueId,
+    );
 
     // Update team organization
-    return this.teamRepository.update(teamId, { organizationId: targetOrganizationId });
+    return this.teamRepository.update(teamId, {
+      organizationId: targetOrganizationId,
+    });
   }
 
   /**
@@ -191,7 +240,9 @@ export class OrganizationService {
 
     const [teamCount, memberCount, gmCount] = await Promise.all([
       this.organizationRepository.countTeamsByOrganization(organizationId),
-      this.organizationRepository.findMembersByOrganization(organizationId).then((members) => members.length),
+      this.organizationRepository
+        .findMembersByOrganization(organizationId)
+        .then((members) => members.length),
       this.organizationRepository.countGeneralManagers(organizationId),
     ]);
 
@@ -214,7 +265,10 @@ export class OrganizationService {
     settings?: LeagueConfiguration,
   ) {
     // Verify organization exists in league
-    const organization = await this.organizationRepository.findByIdAndLeague(organizationId, leagueId);
+    const organization = await this.organizationRepository.findByIdAndLeague(
+      organizationId,
+      leagueId,
+    );
     if (!organization) {
       throw new OrganizationNotFoundException(organizationId);
     }
@@ -222,7 +276,8 @@ export class OrganizationService {
     // Get settings for capacity validation
     // Use provided settings if available (for validation during settings updates before persistence),
     // otherwise fall back to getSettings() which may return cached data
-    const leagueSettings = settings || await this.leagueSettingsService.getSettings(leagueId);
+    const leagueSettings =
+      settings || (await this.leagueSettingsService.getSettings(leagueId));
     const maxTeamsPerOrg = leagueSettings.membership.maxTeamsPerOrganization;
 
     // Update all teams atomically in a database transaction
@@ -236,9 +291,12 @@ export class OrganizationService {
           where: { organizationId },
         });
         const totalTeamsAfterAssignment = currentTeamCount + teamIds.length;
-        
+
         if (totalTeamsAfterAssignment > maxTeamsPerOrg) {
-          throw new OrganizationCapacityExceededException(organizationId, maxTeamsPerOrg);
+          throw new OrganizationCapacityExceededException(
+            organizationId,
+            maxTeamsPerOrg,
+          );
         }
       }
 
@@ -257,4 +315,3 @@ export class OrganizationService {
     });
   }
 }
-

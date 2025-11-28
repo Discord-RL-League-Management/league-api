@@ -9,12 +9,14 @@ import { UserTransformer } from '../transformers/user.transformer';
 /**
  * UserRepository - Handles all database operations for User entity
  * Single Responsibility: Data access layer for User entity
- * 
+ *
  * Separates data access concerns from business logic,
  * making services more focused and testable.
  */
 @Injectable()
-export class UserRepository implements BaseRepository<User, CreateUserDto, UpdateUserDto> {
+export class UserRepository
+  implements BaseRepository<User, CreateUserDto, UpdateUserDto>
+{
   constructor(
     private prisma: PrismaService,
     private userTransformer: UserTransformer,

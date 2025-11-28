@@ -25,7 +25,7 @@ export interface UserSettings {
 /**
  * UserSettingsService - Manages user preferences and settings
  * Single Responsibility: User preferences management
- * 
+ *
  * Separates settings management from entity management.
  */
 @Injectable()
@@ -72,10 +72,7 @@ export class UserSettingsService {
       this.logger.log(`Updated settings for user ${userId}`);
       return mergedSettings;
     } catch (error) {
-      this.logger.error(
-        `Failed to update settings for user ${userId}:`,
-        error,
-      );
+      this.logger.error(`Failed to update settings for user ${userId}:`, error);
       throw error;
     }
   }
@@ -152,15 +149,3 @@ export class UserSettingsService {
     }
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-

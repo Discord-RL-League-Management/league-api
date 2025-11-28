@@ -83,7 +83,8 @@ describe('TrackerService', () => {
 
   describe('registerTrackers', () => {
     const userId = '123456789012345678';
-    const validUrl = 'https://rocketleague.tracker.network/rocket-league/profile/steam/testuser/overview';
+    const validUrl =
+      'https://rocketleague.tracker.network/rocket-league/profile/steam/testuser/overview';
     const urls = [validUrl];
 
     const mockTracker = {
@@ -184,7 +185,10 @@ describe('TrackerService', () => {
 
       // Assert
       expect(mockPrismaService.user.upsert).toHaveBeenCalled();
-      expect(mockValidationService.validateTrackerUrl).toHaveBeenCalledWith(validUrl, userId);
+      expect(mockValidationService.validateTrackerUrl).toHaveBeenCalledWith(
+        validUrl,
+        userId,
+      );
       expect(mockTrackerRepository.create).toHaveBeenCalled();
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual(mockTracker);
@@ -220,9 +224,9 @@ describe('TrackerService', () => {
       const userData = { username: 'testuser' };
 
       // Act & Assert
-      await expect(service.registerTrackers(userId, urls, userData)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.registerTrackers(userId, urls, userData),
+      ).rejects.toThrow(BadRequestException);
       expect(mockPrismaService.user.upsert).toHaveBeenCalled();
       expect(mockTrackerRepository.create).not.toHaveBeenCalled();
     });
@@ -233,16 +237,17 @@ describe('TrackerService', () => {
       const userData = { username: 'testuser' };
 
       // Act & Assert
-      await expect(service.registerTrackers(userId, duplicateUrls, userData)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.registerTrackers(userId, duplicateUrls, userData),
+      ).rejects.toThrow(BadRequestException);
       expect(mockPrismaService.user.upsert).toHaveBeenCalled();
     });
   });
 
   describe('addTracker', () => {
     const userId = '123456789012345678';
-    const validUrl = 'https://rocketleague.tracker.network/rocket-league/profile/steam/testuser/overview';
+    const validUrl =
+      'https://rocketleague.tracker.network/rocket-league/profile/steam/testuser/overview';
 
     const mockTracker = {
       id: 'tracker1',
@@ -342,7 +347,10 @@ describe('TrackerService', () => {
 
       // Assert
       expect(mockPrismaService.user.upsert).toHaveBeenCalled();
-      expect(mockValidationService.validateTrackerUrl).toHaveBeenCalledWith(validUrl, userId);
+      expect(mockValidationService.validateTrackerUrl).toHaveBeenCalledWith(
+        validUrl,
+        userId,
+      );
       expect(mockTrackerRepository.create).toHaveBeenCalled();
       expect(result).toEqual(mockTracker);
     });
@@ -378,12 +386,11 @@ describe('TrackerService', () => {
       const userData = { username: 'testuser' };
 
       // Act & Assert
-      await expect(service.addTracker(userId, validUrl, userData)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.addTracker(userId, validUrl, userData),
+      ).rejects.toThrow(BadRequestException);
       expect(mockPrismaService.user.upsert).toHaveBeenCalled();
       expect(mockTrackerRepository.create).not.toHaveBeenCalled();
     });
   });
 });
-

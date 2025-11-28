@@ -19,14 +19,14 @@ export class AdminGuard implements CanActivate {
 
   /**
    * AdminGuard Constructor - Dependencies
-   * 
+   *
    * Required services and their source modules:
    * - PermissionCheckService: From PermissionCheckModule (imported via CommonModule)
    * - AuditLogService: From AuditModule (imported via CommonModule)
    * - DiscordApiService: From DiscordModule (imported in CommonModule and AuditModule)
    * - TokenManagementService: From TokenManagementModule (imported in CommonModule and AuditModule)
    * - GuildSettingsService: From GuildsModule (imported via CommonModule)
-   * 
+   *
    * Note: All required modules must be imported in both CommonModule (where AdminGuard is provided)
    * and any module that uses AdminGuard (like AuditModule) due to circular dependencies.
    */
@@ -43,7 +43,7 @@ export class AdminGuard implements CanActivate {
    * Check if user has admin permissions in the specified guild
    * Single Responsibility: Admin permission checking with Discord validation
    * Separation of Concerns: Handles only permission logic, no HTTP concerns
-   * 
+   *
    * Ensures settings exist before checking permissions (auto-creates if missing).
    * Settings are independent of user validation - they exist regardless of who accesses them.
    */
@@ -59,17 +59,22 @@ export class AdminGuard implements CanActivate {
 
     try {
       // Get user's access token for Discord API calls
-      const accessToken = await this.tokenManagementService.getValidAccessToken(user.id);
+      const accessToken = await this.tokenManagementService.getValidAccessToken(
+        user.id,
+      );
       if (!accessToken) {
-        this.logger.warn(`AdminGuard: No access token available for user ${user.id}`);
+        this.logger.warn(
+          `AdminGuard: No access token available for user ${user.id}`,
+        );
         throw new ForbiddenException('Access token not available');
       }
 
       // Check Discord permissions first (primary check for Discord admins)
-      const guildPermissions = await this.discordApiService.checkGuildPermissions(
-        accessToken,
-        guildId,
-      );
+      const guildPermissions =
+        await this.discordApiService.checkGuildPermissions(
+          accessToken,
+          guildId,
+        );
 
       if (!guildPermissions.isMember) {
         throw new ForbiddenException('You are not a member of this guild');
@@ -133,7 +138,10 @@ export class AdminGuard implements CanActivate {
       }
 
       // Get membership from DB for stored roles (single source of truth for roles)
-      const membership = await this.guildMembersService.findOne(user.id, guildId);
+      const membership = await this.guildMembersService.findOne(
+        user.id,
+        guildId,
+      );
       if (!membership) {
         this.logger.warn(
           `User ${user.id} is not a member of guild ${guildId} in database`,

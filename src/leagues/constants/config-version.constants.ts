@@ -1,7 +1,7 @@
 /**
  * Configuration version constants for League settings
  * Single Responsibility: Define version constants for league configuration
- * 
+ *
  * Used for:
  * - Configuration migration tracking
  * - Schema version validation
@@ -19,5 +19,3 @@ export const CURRENT_SCHEMA_VERSION = 1;
  * Increment when making configuration changes that require migration
  */
 export const CURRENT_CONFIG_VERSION = '1.0.0';
-
-

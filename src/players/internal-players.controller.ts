@@ -80,7 +80,10 @@ export class InternalPlayersController {
   @ApiResponse({ status: 200, description: 'Player updated' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Player not found' })
-  update(@Param('id', ParseCUIDPipe) id: string, @Body() updatePlayerDto: UpdatePlayerDto) {
+  update(
+    @Param('id', ParseCUIDPipe) id: string,
+    @Body() updatePlayerDto: UpdatePlayerDto,
+  ) {
     return this.playerService.update(id, updatePlayerDto);
   }
 
@@ -133,4 +136,3 @@ export class InternalPlayersController {
     });
   }
 }
-

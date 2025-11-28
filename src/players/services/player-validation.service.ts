@@ -1,13 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PlayerStatus } from '@prisma/client';
-import { PlayerValidationException, InvalidPlayerStatusException } from '../exceptions/player.exceptions';
+import {
+  PlayerValidationException,
+  InvalidPlayerStatusException,
+} from '../exceptions/player.exceptions';
 import { TrackerService } from '../../trackers/services/tracker.service';
 import { GuildMembersService } from '../../guild-members/guild-members.service';
 
 /**
  * PlayerValidationService - Single Responsibility: Player validation logic
- * 
+ *
  * Validates player status, tracker links, and guild membership prerequisites.
  */
 @Injectable()
@@ -25,7 +28,10 @@ export class PlayerValidationService {
    * Single Responsibility: Status validation
    */
   validatePlayerStatus(playerStatus: PlayerStatus): void {
-    if (playerStatus === PlayerStatus.BANNED || playerStatus === PlayerStatus.SUSPENDED) {
+    if (
+      playerStatus === PlayerStatus.BANNED ||
+      playerStatus === PlayerStatus.SUSPENDED
+    ) {
       throw new InvalidPlayerStatusException(
         `Player status '${playerStatus}' does not allow league operations`,
       );
@@ -36,14 +42,17 @@ export class PlayerValidationService {
    * Validate tracker link
    * Single Responsibility: Tracker validation
    */
-  async validateTrackerLink(trackerId: string | null | undefined, userId: string): Promise<void> {
+  async validateTrackerLink(
+    trackerId: string | null | undefined,
+    userId: string,
+  ): Promise<void> {
     if (!trackerId) {
       return; // Optional field
     }
 
     try {
       const tracker = await this.trackerService.getTrackerById(trackerId);
-      
+
       if (tracker.userId !== userId) {
         throw new PlayerValidationException(
           `Tracker ${trackerId} does not belong to user ${userId}`,
@@ -67,7 +76,10 @@ export class PlayerValidationService {
    * Validate guild membership prerequisite
    * Single Responsibility: Guild membership validation
    */
-  async validateGuildMembership(userId: string, guildId: string): Promise<void> {
+  async validateGuildMembership(
+    userId: string,
+    guildId: string,
+  ): Promise<void> {
     try {
       await this.guildMembersService.findOne(userId, guildId);
     } catch (error) {
@@ -94,7 +106,9 @@ export class PlayerValidationService {
     cooldownEnd.setDate(cooldownEnd.getDate() + cooldownDays);
 
     if (now < cooldownEnd) {
-      const daysRemaining = Math.ceil((cooldownEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      const daysRemaining = Math.ceil(
+        (cooldownEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+      );
       throw new PlayerValidationException(
         `Player is in cooldown period. ${daysRemaining} day(s) remaining.`,
       );
@@ -133,4 +147,3 @@ export class PlayerValidationService {
     }
   }
 }
-

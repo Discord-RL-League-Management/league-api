@@ -1,7 +1,7 @@
 /**
  * Base repository interface for CRUD operations
  * Single Responsibility: Define standard repository contract
- * 
+ *
  * This interface provides a consistent contract for all repositories,
  * making the codebase more maintainable and testable.
  */

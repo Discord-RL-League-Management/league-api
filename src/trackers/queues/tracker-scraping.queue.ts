@@ -20,10 +20,7 @@ export class TrackerScrapingQueueService {
    * @param priority - Optional job priority (higher = more priority)
    * @returns Job ID
    */
-  async addScrapingJob(
-    trackerId: string,
-    priority?: number,
-  ): Promise<string> {
+  async addScrapingJob(trackerId: string, priority?: number): Promise<string> {
     const job = await this.queue.add(
       'scrape-tracker',
       { trackerId },
@@ -61,4 +58,3 @@ export class TrackerScrapingQueueService {
     return this.queue;
   }
 }
-

@@ -1,4 +1,8 @@
-import { NotFoundException, ConflictException, ValidationException } from '../../common/exceptions/base.exception';
+import {
+  NotFoundException,
+  ConflictException,
+  ValidationException,
+} from '../../common/exceptions/base.exception';
 
 /**
  * LeagueMemberNotFoundException - Domain-specific exception for league member not found
@@ -14,7 +18,10 @@ export class LeagueMemberNotFoundException extends NotFoundException {
  */
 export class LeagueMemberAlreadyExistsException extends ConflictException {
   constructor(playerId: string, leagueId: string) {
-    super(`Player ${playerId} is already a member of league ${leagueId}`, { playerId, leagueId });
+    super(`Player ${playerId} is already a member of league ${leagueId}`, {
+      playerId,
+      leagueId,
+    });
   }
 }
 
@@ -32,7 +39,8 @@ export class LeagueJoinValidationException extends ValidationException {
  */
 export class LeagueCooldownException extends ValidationException {
   constructor(daysRemaining: number) {
-    super(`Player is in cooldown period. ${daysRemaining} day(s) remaining.`, { daysRemaining });
+    super(`Player is in cooldown period. ${daysRemaining} day(s) remaining.`, {
+      daysRemaining,
+    });
   }
 }
-

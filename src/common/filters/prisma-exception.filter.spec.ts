@@ -381,13 +381,10 @@ describe('PrismaExceptionFilter', () => {
   describe('Error logging', () => {
     it('should log errors with correct format including method, path, and error code', () => {
       // ARRANGE
-      const exception = new Prisma.PrismaClientKnownRequestError(
-        'Test error',
-        {
-          code: 'P2002',
-          clientVersion: '5.0.0',
-        } as any,
-      );
+      const exception = new Prisma.PrismaClientKnownRequestError('Test error', {
+        code: 'P2002',
+        clientVersion: '5.0.0',
+      } as any);
 
       // ACT
       filter.catch(exception, mockArgumentsHost);
@@ -421,13 +418,10 @@ describe('PrismaExceptionFilter', () => {
         }),
       } as any;
 
-      const exception = new Prisma.PrismaClientKnownRequestError(
-        'Test error',
-        {
-          code: 'P2025',
-          clientVersion: '5.0.0',
-        } as any,
-      );
+      const exception = new Prisma.PrismaClientKnownRequestError('Test error', {
+        code: 'P2025',
+        clientVersion: '5.0.0',
+      } as any);
 
       // ACT
       filter.catch(exception, customHost);
@@ -445,30 +439,122 @@ describe('PrismaExceptionFilter', () => {
 
   describe('All Prisma error code mappings', () => {
     const errorCodeTestCases = [
-      { code: 'P2002', status: HttpStatus.CONFLICT, message: 'Unique constraint violation' },
-      { code: 'P2025', status: HttpStatus.NOT_FOUND, message: 'Record not found' },
-      { code: 'P2003', status: HttpStatus.BAD_REQUEST, message: 'Foreign key constraint violation' },
-      { code: 'P2014', status: HttpStatus.BAD_REQUEST, message: 'Invalid ID provided' },
-      { code: 'P2005', status: HttpStatus.BAD_REQUEST, message: 'Invalid field value' },
-      { code: 'P2006', status: HttpStatus.BAD_REQUEST, message: 'Invalid value provided' },
-      { code: 'P2007', status: HttpStatus.BAD_REQUEST, message: 'Data validation error' },
-      { code: 'P2008', status: HttpStatus.REQUEST_TIMEOUT, message: 'Query execution timeout' },
-      { code: 'P2009', status: HttpStatus.BAD_REQUEST, message: 'Invalid query argument' },
-      { code: 'P2010', status: HttpStatus.INTERNAL_SERVER_ERROR, message: 'Raw query failed' },
-      { code: 'P2011', status: HttpStatus.BAD_REQUEST, message: 'Null constraint violation' },
-      { code: 'P2012', status: HttpStatus.BAD_REQUEST, message: 'Missing required value' },
-      { code: 'P2013', status: HttpStatus.BAD_REQUEST, message: 'Missing required argument' },
-      { code: 'P2015', status: HttpStatus.NOT_FOUND, message: 'Related record not found' },
-      { code: 'P2016', status: HttpStatus.BAD_REQUEST, message: 'Query interpretation error' },
-      { code: 'P2017', status: HttpStatus.BAD_REQUEST, message: 'Records required for operation not found' },
-      { code: 'P2018', status: HttpStatus.BAD_REQUEST, message: 'Required connected records not found' },
+      {
+        code: 'P2002',
+        status: HttpStatus.CONFLICT,
+        message: 'Unique constraint violation',
+      },
+      {
+        code: 'P2025',
+        status: HttpStatus.NOT_FOUND,
+        message: 'Record not found',
+      },
+      {
+        code: 'P2003',
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Foreign key constraint violation',
+      },
+      {
+        code: 'P2014',
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Invalid ID provided',
+      },
+      {
+        code: 'P2005',
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Invalid field value',
+      },
+      {
+        code: 'P2006',
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Invalid value provided',
+      },
+      {
+        code: 'P2007',
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Data validation error',
+      },
+      {
+        code: 'P2008',
+        status: HttpStatus.REQUEST_TIMEOUT,
+        message: 'Query execution timeout',
+      },
+      {
+        code: 'P2009',
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Invalid query argument',
+      },
+      {
+        code: 'P2010',
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: 'Raw query failed',
+      },
+      {
+        code: 'P2011',
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Null constraint violation',
+      },
+      {
+        code: 'P2012',
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Missing required value',
+      },
+      {
+        code: 'P2013',
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Missing required argument',
+      },
+      {
+        code: 'P2015',
+        status: HttpStatus.NOT_FOUND,
+        message: 'Related record not found',
+      },
+      {
+        code: 'P2016',
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Query interpretation error',
+      },
+      {
+        code: 'P2017',
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Records required for operation not found',
+      },
+      {
+        code: 'P2018',
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Required connected records not found',
+      },
       { code: 'P2019', status: HttpStatus.BAD_REQUEST, message: 'Input error' },
-      { code: 'P2020', status: HttpStatus.BAD_REQUEST, message: 'Value out of range' },
-      { code: 'P2021', status: HttpStatus.NOT_FOUND, message: 'Table does not exist' },
-      { code: 'P2022', status: HttpStatus.BAD_REQUEST, message: 'Column does not exist' },
-      { code: 'P2023', status: HttpStatus.BAD_REQUEST, message: 'Inconsistent column data' },
-      { code: 'P2024', status: HttpStatus.REQUEST_TIMEOUT, message: 'Connection timeout' },
-      { code: 'P2027', status: HttpStatus.BAD_REQUEST, message: 'Multiple errors occurred' },
+      {
+        code: 'P2020',
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Value out of range',
+      },
+      {
+        code: 'P2021',
+        status: HttpStatus.NOT_FOUND,
+        message: 'Table does not exist',
+      },
+      {
+        code: 'P2022',
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Column does not exist',
+      },
+      {
+        code: 'P2023',
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Inconsistent column data',
+      },
+      {
+        code: 'P2024',
+        status: HttpStatus.REQUEST_TIMEOUT,
+        message: 'Connection timeout',
+      },
+      {
+        code: 'P2027',
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Multiple errors occurred',
+      },
     ];
 
     errorCodeTestCases.forEach(({ code, status, message }) => {
@@ -497,4 +583,3 @@ describe('PrismaExceptionFilter', () => {
     });
   });
 });
-

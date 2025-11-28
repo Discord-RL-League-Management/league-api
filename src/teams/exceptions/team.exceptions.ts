@@ -1,4 +1,8 @@
-import { NotFoundException, ConflictException, ValidationException } from '../../common/exceptions/base.exception';
+import {
+  NotFoundException,
+  ConflictException,
+  ValidationException,
+} from '../../common/exceptions/base.exception';
 
 /**
  * TeamNotFoundException - Domain-specific exception for team not found
@@ -32,7 +36,9 @@ export class TeamCapacityException extends ValidationException {
  */
 export class TeamMemberAlreadyExistsException extends ConflictException {
   constructor(playerId: string, teamId: string) {
-    super(`Player ${playerId} is already a member of team ${teamId}`, { playerId, teamId });
+    super(`Player ${playerId} is already a member of team ${teamId}`, {
+      playerId,
+      teamId,
+    });
   }
 }
-

@@ -24,7 +24,7 @@ import { Guild } from '@prisma/client';
 /**
  * GuildsService - Business logic layer for Guild operations
  * Single Responsibility: Orchestrates guild-related business logic
- * 
+ *
  * Uses GuildRepository for data access, keeping concerns separated.
  * This service handles business rules and validation logic.
  */
@@ -45,7 +45,9 @@ export class GuildsService {
   async create(createGuildDto: CreateGuildDto): Promise<Guild> {
     try {
       // Check if guild already exists
-      const existingGuild = await this.guildRepository.exists(createGuildDto.id);
+      const existingGuild = await this.guildRepository.exists(
+        createGuildDto.id,
+      );
 
       if (existingGuild) {
         throw new GuildAlreadyExistsException(createGuildDto.id);
@@ -60,7 +62,10 @@ export class GuildsService {
       this.logger.log(`Created guild ${guild.id} with default settings`);
       return guild;
     } catch (error) {
-      if (error instanceof ConflictException || error instanceof GuildAlreadyExistsException) {
+      if (
+        error instanceof ConflictException ||
+        error instanceof GuildAlreadyExistsException
+      ) {
         throw error;
       }
       this.logger.error(`Failed to create guild ${createGuildDto.id}:`, error);
@@ -94,7 +99,7 @@ export class GuildsService {
   /**
    * Find guild by ID with optional related data
    * Single Responsibility: Single guild retrieval with flexible query options
-   * 
+   *
    * @param id - Guild ID
    * @param options - Optional query options to control what relations to include
    */
@@ -192,7 +197,7 @@ export class GuildsService {
   /**
    * Upsert guild (create or update) with default settings
    * Single Responsibility: Guild existence check and create/update decision
-   * 
+   *
    * Idempotent operation: creates if not exists, updates if exists.
    * Returns the guild regardless of whether it was created or updated.
    */
@@ -239,17 +244,17 @@ export class GuildsService {
   /**
    * Atomically sync guild with members in a single transaction
    * Single Responsibility: Atomic guild and member synchronization
-   * 
+   *
    * Eliminates race conditions by combining guild upsert and member sync
    * in a single database transaction. Used during bot startup sync.
-   * 
+   *
    * Architectural Note: This method uses direct Prisma transaction access
    * instead of repositories because:
    * 1. It requires atomic operations across multiple entities (guild, settings, members)
    * 2. Injecting GuildMemberRepository would create circular dependencies
    * 3. The transaction scope requires tight coordination between entities
    * 4. This is an exception to the repository pattern, justified by atomicity requirements
-   * 
+   *
    * @param guildId - Discord guild ID
    * @param guildData - Guild data to upsert
    * @param members - Array of member data to sync
@@ -258,7 +263,14 @@ export class GuildsService {
   async syncGuildWithMembers(
     guildId: string,
     guildData: CreateGuildDto,
-    members: Array<{ userId: string; username: string; globalName?: string; avatar?: string; nickname?: string; roles: string[] }>,
+    members: Array<{
+      userId: string;
+      username: string;
+      globalName?: string;
+      avatar?: string;
+      nickname?: string;
+      roles: string[];
+    }>,
     rolesData?: { admin: Array<{ id: string; name: string }> },
   ): Promise<{ guild: Guild; membersSynced: number }> {
     try {
@@ -282,7 +294,7 @@ export class GuildsService {
 
         // 2. Ensure settings exist and update with roles if provided
         const existingSettings = await tx.settings.findUnique({
-          where: { 
+          where: {
             ownerType_ownerId: {
               ownerType: 'guild',
               ownerId: guild.id,
@@ -290,15 +302,16 @@ export class GuildsService {
           },
         });
 
-        const settingsToSave = rolesData?.admin && rolesData.admin.length > 0
-          ? {
-              ...defaultSettings,
-              roles: {
-                ...defaultSettings.roles,
-                admin: rolesData.admin,
-              },
-            }
-          : defaultSettings;
+        const settingsToSave =
+          rolesData?.admin && rolesData.admin.length > 0
+            ? {
+                ...defaultSettings,
+                roles: {
+                  ...defaultSettings.roles,
+                  admin: rolesData.admin,
+                },
+              }
+            : defaultSettings;
 
         await tx.settings.upsert({
           where: {
@@ -307,17 +320,18 @@ export class GuildsService {
               ownerId: guild.id,
             },
           },
-          update: rolesData?.admin && rolesData.admin.length > 0
-            ? {
-                settings: {
-                  ...(existingSettings?.settings as any || defaultSettings),
-                  roles: {
-                    ...((existingSettings?.settings as any)?.roles || {}),
-                    admin: rolesData.admin,
+          update:
+            rolesData?.admin && rolesData.admin.length > 0
+              ? {
+                  settings: {
+                    ...((existingSettings?.settings as any) || defaultSettings),
+                    roles: {
+                      ...((existingSettings?.settings as any)?.roles || {}),
+                      admin: rolesData.admin,
+                    },
                   },
-                },
-              }
-            : {},
+                }
+              : {},
           create: {
             ownerType: 'guild',
             ownerId: guild.id,
@@ -328,9 +342,9 @@ export class GuildsService {
         // 3. Upsert all users first to ensure they exist
         if (members.length > 0) {
           const uniqueUsers = Array.from(
-            new Map(members.map(m => [m.userId, m])).values()
+            new Map(members.map((m) => [m.userId, m])).values(),
           );
-          
+
           for (const member of uniqueUsers) {
             await tx.user.upsert({
               where: { id: member.userId },
@@ -395,41 +409,48 @@ export class GuildsService {
             guildId,
           },
         );
-        
+
         // Check metadata to determine which FK failed
         const meta = error.meta as any;
         if (meta?.field_name) {
-          if (meta.field_name.includes('userId') || meta.field_name.includes('user')) {
-            throw new NotFoundException(`User not found for one or more members`);
-          } else if (meta.field_name.includes('guildId') || meta.field_name.includes('guild')) {
+          if (
+            meta.field_name.includes('userId') ||
+            meta.field_name.includes('user')
+          ) {
+            throw new NotFoundException(
+              `User not found for one or more members`,
+            );
+          } else if (
+            meta.field_name.includes('guildId') ||
+            meta.field_name.includes('guild')
+          ) {
             throw new NotFoundException(`Guild ${guildId} not found`);
           }
         }
-        
+
         // Fallback if metadata unavailable
-        throw new NotFoundException(`Foreign key constraint failed: required record not found`);
+        throw new NotFoundException(
+          `Foreign key constraint failed: required record not found`,
+        );
       }
 
       // Extract error information for better debugging
       const errorInfo = this.extractErrorInfo(error, guildId);
 
       // Enhanced error logging with context
-      this.logger.error(
-        `Failed to sync guild ${guildId} with members:`,
-        {
-          error: errorInfo.message,
-          code: errorInfo.code,
-          details: errorInfo.details,
-          stack: error instanceof Error ? error.stack : undefined,
-          guildData: {
-            id: guildData.id,
-            name: guildData.name,
-            ownerId: guildData.ownerId,
-            memberCount: guildData.memberCount,
-          },
-          memberCount: members.length,
+      this.logger.error(`Failed to sync guild ${guildId} with members:`, {
+        error: errorInfo.message,
+        code: errorInfo.code,
+        details: errorInfo.details,
+        stack: error instanceof Error ? error.stack : undefined,
+        guildData: {
+          id: guildData.id,
+          name: guildData.name,
+          ownerId: guildData.ownerId,
+          memberCount: guildData.memberCount,
         },
-      );
+        memberCount: members.length,
+      });
 
       // Throw structured error with preserved details
       throw new InternalServerErrorException({
@@ -443,7 +464,7 @@ export class GuildsService {
   /**
    * Extract error information from various error types
    * Single Responsibility: Error information extraction and normalization
-   * 
+   *
    * Handles Prisma errors and other error types to provide consistent error structure.
    */
   private extractErrorInfo(

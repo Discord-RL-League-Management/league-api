@@ -6,11 +6,13 @@ import { GuildMembersModule } from '../guild-members/guild-members.module';
 import { GuildsModule } from '../guilds/guilds.module';
 
 @Module({
-  imports: [RoleParserModule, PermissionCheckModule, GuildMembersModule, GuildsModule],
-  controllers: [PermissionsController],
-  exports: [
+  imports: [
     RoleParserModule,
     PermissionCheckModule,
+    GuildMembersModule,
+    GuildsModule,
   ],
+  controllers: [PermissionsController],
+  exports: [RoleParserModule, PermissionCheckModule],
 })
 export class PermissionsModule {}

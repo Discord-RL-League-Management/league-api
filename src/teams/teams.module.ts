@@ -19,4 +19,3 @@ import { OrganizationsModule } from '../organizations/organizations.module';
   exports: [TeamService, TeamRepository],
 })
 export class TeamsModule {}
-

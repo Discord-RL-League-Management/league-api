@@ -12,7 +12,7 @@ import { User } from '@prisma/client';
 /**
  * AuthService - Orchestrates authentication flows
  * Single Responsibility: Coordinates authentication processes
- * 
+ *
  * Delegates user operations to UserOrchestratorService,
  * keeping authentication logic separate from user management.
  */

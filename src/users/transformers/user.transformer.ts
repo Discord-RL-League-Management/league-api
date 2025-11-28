@@ -5,7 +5,7 @@ import { User } from '@prisma/client';
 /**
  * UserTransformer - Handles encryption/decryption of user data
  * Single Responsibility: Transform user entities for storage and retrieval
- * 
+ *
  * This transformer separates encryption concerns from business logic,
  * preparing for repository pattern implementation
  */

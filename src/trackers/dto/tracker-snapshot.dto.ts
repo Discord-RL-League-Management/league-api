@@ -122,10 +122,3 @@ export class CreateTrackerSnapshotDto {
   @IsString({ each: true })
   guildIds?: string[];
 }
-
-
-
-
-
-
-

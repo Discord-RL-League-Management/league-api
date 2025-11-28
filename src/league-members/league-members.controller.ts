@@ -98,7 +98,10 @@ export class LeagueMembersController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     // Prevents users from leaving leagues on behalf of other users' players
-    await this.playerOwnershipService.validatePlayerOwnership(user.id, playerId);
+    await this.playerOwnershipService.validatePlayerOwnership(
+      user.id,
+      playerId,
+    );
     return this.leagueMemberService.leaveLeague(playerId, leagueId);
   }
 
@@ -126,7 +129,10 @@ export class LeagueMembersController {
 
     // Allow updates if user owns the player, otherwise require admin/moderator privileges
     try {
-      await this.playerOwnershipService.validatePlayerOwnership(user.id, playerId);
+      await this.playerOwnershipService.validatePlayerOwnership(
+        user.id,
+        playerId,
+      );
     } catch (error) {
       if (error instanceof ForbiddenException) {
         await this.leaguePermissionService.checkLeagueAdminOrModeratorAccess(
@@ -141,4 +147,3 @@ export class LeagueMembersController {
     return this.leagueMemberService.update(member.id, updateDto);
   }
 }
-

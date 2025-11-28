@@ -95,7 +95,8 @@ export class RegisterTrackersDto {
 export class AddTrackerDto {
   @ApiProperty({
     description: 'Tracker URL (TRN format)',
-    example: 'https://rocketleague.tracker.network/rocket-league/profile/steam/76561198051701160/overview',
+    example:
+      'https://rocketleague.tracker.network/rocket-league/profile/steam/76561198051701160/overview',
   })
   @IsString()
   @IsNotEmpty()
@@ -112,9 +113,3 @@ export class RefreshTrackerDto {
   @IsBoolean()
   force?: boolean;
 }
-
-
-
-
-
-

@@ -79,10 +79,10 @@ export class InternalGuildsController {
   @ApiResponse({ status: 401, description: 'Invalid bot API key' })
   async upsert(@Body() createGuildDto: CreateGuildDto, @Res() res: Response) {
     this.logger.log(`Bot upserting guild ${createGuildDto.id}`);
-    
+
     const exists = await this.guildsService.exists(createGuildDto.id);
     const guild = await this.guildsService.upsert(createGuildDto);
-    
+
     // Return appropriate HTTP status to distinguish create vs update operations
     const statusCode = exists ? HttpStatus.OK : HttpStatus.CREATED;
     return res.status(statusCode).json(guild);
@@ -90,7 +90,10 @@ export class InternalGuildsController {
 
   @Post(':id/sync')
   @ApiOperation({ summary: 'Atomically sync guild with members (bot only)' })
-  @ApiResponse({ status: 200, description: 'Guild and members synced successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Guild and members synced successfully',
+  })
   @ApiResponse({ status: 400, description: 'Invalid request body' })
   @ApiResponse({ status: 401, description: 'Invalid bot API key' })
   @ApiResponse({ status: 404, description: 'Guild not found' })
@@ -98,13 +101,23 @@ export class InternalGuildsController {
   @ApiParam({ name: 'id', description: 'Discord guild ID' })
   async syncGuildWithMembers(
     @Param('id') guildId: string,
-    @Body() syncData: {
+    @Body()
+    syncData: {
       guild: CreateGuildDto;
-      members: Array<{ userId: string; username: string; globalName?: string; avatar?: string; nickname?: string; roles: string[] }>;
+      members: Array<{
+        userId: string;
+        username: string;
+        globalName?: string;
+        avatar?: string;
+        nickname?: string;
+        roles: string[];
+      }>;
       roles?: { admin: Array<{ id: string; name: string }> };
     },
   ) {
-    this.logger.log(`Bot syncing guild ${guildId} with ${syncData.members.length} members`);
+    this.logger.log(
+      `Bot syncing guild ${guildId} with ${syncData.members.length} members`,
+    );
     return this.guildsService.syncGuildWithMembers(
       guildId,
       syncData.guild,
@@ -155,7 +168,10 @@ export class InternalGuildsController {
   @ApiResponse({ status: 404, description: 'Guild not found' })
   @ApiResponse({ status: 401, description: 'Invalid bot API key' })
   @ApiParam({ name: 'id', description: 'Discord guild ID' })
-  async updateSettings(@Param('id') id: string, @Body() settings: GuildSettingsDto) {
+  async updateSettings(
+    @Param('id') id: string,
+    @Body() settings: GuildSettingsDto,
+  ) {
     this.logger.log(`Bot updating settings for guild ${id}`);
     // Use placeholder userId for audit trail since bot endpoints lack user context
     return this.guildSettingsService.updateSettings(id, settings, 'bot');

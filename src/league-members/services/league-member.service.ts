@@ -26,7 +26,7 @@ import { LeagueMemberQueryOptions } from '../interfaces/league-member.interface'
 /**
  * LeagueMemberService - Business logic layer for LeagueMember operations
  * Single Responsibility: Orchestrates league member-related business logic
- * 
+ *
  * Uses LeagueMemberRepository for data access, keeping concerns separated.
  * This service handles business rules and validation logic.
  */
@@ -64,7 +64,11 @@ export class LeagueMemberService {
     leagueId: string,
     options?: LeagueMemberQueryOptions,
   ): Promise<any | null> {
-    return this.leagueMemberRepository.findByPlayerAndLeague(playerId, leagueId, options);
+    return this.leagueMemberRepository.findByPlayerAndLeague(
+      playerId,
+      leagueId,
+      options,
+    );
   }
 
   /**
@@ -138,7 +142,10 @@ export class LeagueMemberService {
 
       if (existing) {
         if (existing.status === 'ACTIVE') {
-          throw new LeagueMemberAlreadyExistsException(guildPlayer.id, leagueId);
+          throw new LeagueMemberAlreadyExistsException(
+            guildPlayer.id,
+            leagueId,
+          );
         }
         // If inactive, validate join eligibility (including cooldown) before reactivating
         await this.joinValidationService.validateJoin(guildPlayer.id, leagueId);
@@ -173,7 +180,10 @@ export class LeagueMemberService {
 
         if (existingInTx) {
           if (existingInTx.status === 'ACTIVE') {
-            throw new LeagueMemberAlreadyExistsException(guildPlayer.id, leagueId);
+            throw new LeagueMemberAlreadyExistsException(
+              guildPlayer.id,
+              leagueId,
+            );
           }
           return tx.leagueMember.update({
             where: { id: existingInTx.id },
@@ -200,7 +210,9 @@ export class LeagueMemberService {
           tx,
           'league_member',
           member.id,
-          initialStatus === 'PENDING_APPROVAL' ? 'LEAGUE_MEMBER_PENDING' : 'LEAGUE_MEMBER_JOINED',
+          initialStatus === 'PENDING_APPROVAL'
+            ? 'LEAGUE_MEMBER_PENDING'
+            : 'LEAGUE_MEMBER_JOINED',
           'create',
           guildPlayer.userId,
           league.guildId,
@@ -227,7 +239,10 @@ export class LeagueMemberService {
             );
           } catch (error) {
             // Rating initialization failure shouldn't block join
-            this.logger.warn(`Failed to initialize rating for player ${guildPlayer.id} in league ${leagueId}:`, error);
+            this.logger.warn(
+              `Failed to initialize rating for player ${guildPlayer.id} in league ${leagueId}:`,
+              error,
+            );
           }
         }
 
@@ -343,11 +358,11 @@ export class LeagueMemberService {
   /**
    * Approve pending member
    */
-  async approveMember(
-    id: string,
-    approvedBy: string,
-  ): Promise<any> {
-    const member = await this.leagueMemberRepository.findById(id, { includePlayer: true, includeLeague: true });
+  async approveMember(id: string, approvedBy: string): Promise<any> {
+    const member = await this.leagueMemberRepository.findById(id, {
+      includePlayer: true,
+      includeLeague: true,
+    });
     if (!member) {
       throw new LeagueMemberNotFoundException(id);
     }
@@ -367,23 +382,27 @@ export class LeagueMemberService {
         },
       });
 
-        // Get player and league for activity logging
-        const player = await tx.player.findUnique({ where: { id: member.playerId } });
-        const league = await tx.league.findUnique({ where: { id: member.leagueId } });
+      // Get player and league for activity logging
+      const player = await tx.player.findUnique({
+        where: { id: member.playerId },
+      });
+      const league = await tx.league.findUnique({
+        where: { id: member.leagueId },
+      });
 
-        // Log activity
-        if (player && league) {
-          await this.activityLogService.logActivity(
-            tx,
-            'league_member',
-            id,
-            'LEAGUE_MEMBER_APPROVED',
-            'update',
-            player.userId,
-            league.guildId,
-            { approvedBy },
-          );
-        }
+      // Log activity
+      if (player && league) {
+        await this.activityLogService.logActivity(
+          tx,
+          'league_member',
+          id,
+          'LEAGUE_MEMBER_APPROVED',
+          'update',
+          player.userId,
+          league.guildId,
+          { approvedBy },
+        );
+      }
 
       // Initialize rating
       try {
@@ -403,7 +422,10 @@ export class LeagueMemberService {
           tx, // Pass transaction client for atomicity
         );
       } catch (error) {
-        this.logger.warn(`Failed to initialize rating for player ${member.playerId} in league ${member.leagueId}:`, error);
+        this.logger.warn(
+          `Failed to initialize rating for player ${member.playerId} in league ${member.leagueId}:`,
+          error,
+        );
       }
 
       return updated;
@@ -445,4 +467,3 @@ export class LeagueMemberService {
     return this.leagueMemberRepository.exists(id);
   }
 }
-

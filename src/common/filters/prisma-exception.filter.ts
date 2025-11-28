@@ -11,7 +11,7 @@ import { Request, Response } from 'express';
 /**
  * PrismaExceptionFilter - Handles Prisma-specific errors
  * Single Responsibility: Transform Prisma errors into HTTP responses with proper error codes
- * 
+ *
  * Handles multiple Prisma error types:
  * - PrismaClientKnownRequestError: Known database errors
  * - PrismaClientValidationError: Schema validation errors
@@ -104,14 +104,11 @@ export class PrismaExceptionFilter implements ExceptionFilter {
     }
 
     // Log error for debugging
-    this.logger.error(
-      `${method} ${path} - Prisma error: ${errorInfo.code}`,
-      {
-        error: exception,
-        errorInfo,
-        request: { method, path, timestamp },
-      },
-    );
+    this.logger.error(`${method} ${path} - Prisma error: ${errorInfo.code}`, {
+      error: exception,
+      errorInfo,
+      request: { method, path, timestamp },
+    });
 
     response.status(errorInfo.status).json({
       statusCode: errorInfo.status,
@@ -263,12 +260,11 @@ export class PrismaExceptionFilter implements ExceptionFilter {
       },
     };
 
-    const errorInfo =
-      errorMap[exception.code] || {
-        status: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: 'Database error',
-        code: 'DATABASE_ERROR',
-      };
+    const errorInfo = errorMap[exception.code] || {
+      status: HttpStatus.INTERNAL_SERVER_ERROR,
+      message: 'Database error',
+      code: 'DATABASE_ERROR',
+    };
 
     return {
       ...errorInfo,

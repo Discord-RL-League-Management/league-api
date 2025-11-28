@@ -12,17 +12,22 @@ import {
 /**
  * GuildRepository - Handles all database operations for Guild entity
  * Single Responsibility: Data access layer for Guild entity
- * 
+ *
  * Separates data access concerns from business logic,
  * making services more focused and testable.
  */
 @Injectable()
-export class GuildRepository implements BaseRepository<Guild, CreateGuildDto, UpdateGuildDto> {
+export class GuildRepository
+  implements BaseRepository<Guild, CreateGuildDto, UpdateGuildDto>
+{
   private readonly logger = new Logger(GuildRepository.name);
 
   constructor(private prisma: PrismaService) {}
 
-  async findById(id: string, options?: GuildQueryOptions): Promise<Guild | null> {
+  async findById(
+    id: string,
+    options?: GuildQueryOptions,
+  ): Promise<Guild | null> {
     const opts = { ...defaultGuildQueryOptions, ...options };
 
     const include: any = {};
@@ -63,7 +68,10 @@ export class GuildRepository implements BaseRepository<Guild, CreateGuildDto, Up
     return guild;
   }
 
-  async findOne(id: string, options?: GuildQueryOptions): Promise<Guild | null> {
+  async findOne(
+    id: string,
+    options?: GuildQueryOptions,
+  ): Promise<Guild | null> {
     return this.findById(id, options);
   }
 
@@ -104,7 +112,7 @@ export class GuildRepository implements BaseRepository<Guild, CreateGuildDto, Up
   /**
    * Create guild
    * Single Responsibility: Guild creation
-   * 
+   *
    * Note: Prefer createWithSettings() or upsertWithSettings() for guild creation
    * as they ensure settings are initialized atomically.
    */
@@ -198,7 +206,7 @@ export class GuildRepository implements BaseRepository<Guild, CreateGuildDto, Up
   /**
    * Upsert guild (create or update) with default settings in a transaction
    * Single Responsibility: Atomic guild upsert with settings initialization
-   * 
+   *
    * Creates guild if not exists, updates if exists.
    * Always ensures settings exist using idempotent upsert pattern.
    */

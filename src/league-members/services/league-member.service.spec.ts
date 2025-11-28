@@ -8,7 +8,10 @@ import { PlayerService } from '../../players/services/player.service';
 import { LeagueSettingsService } from '../../leagues/league-settings.service';
 import { ActivityLogService } from '../../infrastructure/activity-log/services/activity-log.service';
 import { PlayerLeagueRatingService } from '../../player-ratings/services/player-league-rating.service';
-import { LeagueMemberNotFoundException, LeagueMemberAlreadyExistsException } from '../exceptions/league-member.exceptions';
+import {
+  LeagueMemberNotFoundException,
+  LeagueMemberAlreadyExistsException,
+} from '../exceptions/league-member.exceptions';
 
 describe('LeagueMemberService', () => {
   let service: LeagueMemberService;
@@ -102,9 +105,13 @@ describe('LeagueMemberService', () => {
 
     service = module.get<LeagueMemberService>(LeagueMemberService);
     repository = module.get<LeagueMemberRepository>(LeagueMemberRepository);
-    joinValidationService = module.get<LeagueJoinValidationService>(LeagueJoinValidationService);
+    joinValidationService = module.get<LeagueJoinValidationService>(
+      LeagueJoinValidationService,
+    );
     playerService = module.get<PlayerService>(PlayerService);
-    leagueSettingsService = module.get<LeagueSettingsService>(LeagueSettingsService);
+    leagueSettingsService = module.get<LeagueSettingsService>(
+      LeagueSettingsService,
+    );
     prisma = module.get<PrismaService>(PrismaService);
   });
 
@@ -146,14 +153,19 @@ describe('LeagueMemberService', () => {
 
       const result = await service.joinLeague(leagueId, joinDto);
 
-      expect(mockJoinValidationService.validateJoin).toHaveBeenCalledWith('player1', leagueId);
+      expect(mockJoinValidationService.validateJoin).toHaveBeenCalledWith(
+        'player1',
+        leagueId,
+      );
       expect(result).toHaveProperty('id');
     });
 
     it('should throw error if league not found', async () => {
       mockPrismaService.league.findUnique.mockResolvedValue(null);
 
-      await expect(service.joinLeague(leagueId, joinDto)).rejects.toThrow(NotFoundException);
+      await expect(service.joinLeague(leagueId, joinDto)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -161,7 +173,12 @@ describe('LeagueMemberService', () => {
     it('should leave league successfully', async () => {
       const playerId = 'player1';
       const leagueId = 'league1';
-      const mockMember = { id: 'member1', playerId, leagueId, status: 'ACTIVE' };
+      const mockMember = {
+        id: 'member1',
+        playerId,
+        leagueId,
+        status: 'ACTIVE',
+      };
       const mockLeague = { id: leagueId, guildId: 'guild1' };
       const mockPlayer = { id: playerId, userId: 'user1', guildId: 'guild1' };
       const mockSettings = { membership: { cooldownAfterLeave: 7 } };
@@ -173,7 +190,9 @@ describe('LeagueMemberService', () => {
       mockPrismaService.$transaction.mockImplementation(async (callback) => {
         const tx = {
           leagueMember: {
-            update: jest.fn().mockResolvedValue({ ...mockMember, status: 'INACTIVE' }),
+            update: jest
+              .fn()
+              .mockResolvedValue({ ...mockMember, status: 'INACTIVE' }),
           },
           player: {
             update: jest.fn().mockResolvedValue(mockPlayer),
@@ -190,4 +209,3 @@ describe('LeagueMemberService', () => {
     });
   });
 });
-

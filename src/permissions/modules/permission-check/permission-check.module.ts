@@ -5,11 +5,7 @@ import { DiscordModule } from '../../../discord/discord.module';
 import { RoleParserModule } from '../role-parser/role-parser.module';
 
 @Module({
-  imports: [
-    GuildMembersModule,
-    DiscordModule,
-    RoleParserModule,
-  ],
+  imports: [GuildMembersModule, DiscordModule, RoleParserModule],
   providers: [PermissionCheckService],
   exports: [PermissionCheckService],
 })

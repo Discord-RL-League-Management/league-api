@@ -10,11 +10,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 @Module({
   imports: [UsersModule, GuildMembersModule, PrismaModule],
   controllers: [ProfileController],
-  providers: [
-    ProfileService,
-    UserStatisticsService,
-    UserSettingsService,
-  ],
+  providers: [ProfileService, UserStatisticsService, UserSettingsService],
   exports: [ProfileService],
 })
 export class ProfileModule {}

@@ -104,14 +104,14 @@ export class InternalLeagueMembersController {
     @Param('playerId') playerId: string,
     @Body() updateDto: UpdateLeagueMemberDto,
   ) {
-    return this.leagueMemberService.findByPlayerAndLeague(playerId, leagueId).then(
-      (member) => {
+    return this.leagueMemberService
+      .findByPlayerAndLeague(playerId, leagueId)
+      .then((member) => {
         if (!member) {
           throw new LeagueMemberNotFoundException(`${playerId}-${leagueId}`);
         }
         return this.leagueMemberService.update(member.id, updateDto);
-      }
-    );
+      });
   }
 
   @Delete(':playerId')
@@ -140,14 +140,17 @@ export class InternalLeagueMembersController {
     @Param('playerId') playerId: string,
     @Body() body: ApproveLeagueMemberDto,
   ) {
-    return this.leagueMemberService.findByPlayerAndLeague(playerId, leagueId).then(
-      (member) => {
+    return this.leagueMemberService
+      .findByPlayerAndLeague(playerId, leagueId)
+      .then((member) => {
         if (!member) {
           throw new LeagueMemberNotFoundException(`${playerId}-${leagueId}`);
         }
-        return this.leagueMemberService.approveMember(member.id, body.approvedBy);
-      }
-    );
+        return this.leagueMemberService.approveMember(
+          member.id,
+          body.approvedBy,
+        );
+      });
   }
 
   @Post(':playerId/reject')
@@ -161,14 +164,13 @@ export class InternalLeagueMembersController {
     @Param('leagueId') leagueId: string,
     @Param('playerId') playerId: string,
   ) {
-    return this.leagueMemberService.findByPlayerAndLeague(playerId, leagueId).then(
-      (member) => {
+    return this.leagueMemberService
+      .findByPlayerAndLeague(playerId, leagueId)
+      .then((member) => {
         if (!member) {
           throw new LeagueMemberNotFoundException(`${playerId}-${leagueId}`);
         }
         return this.leagueMemberService.rejectMember(member.id);
-      }
-    );
+      });
   }
 }
-

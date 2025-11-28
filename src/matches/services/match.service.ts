@@ -27,7 +27,10 @@ export class MatchService {
     return this.matchRepository.create(createDto);
   }
 
-  async addParticipant(matchId: string, participantDto: CreateMatchParticipantDto) {
+  async addParticipant(
+    matchId: string,
+    participantDto: CreateMatchParticipantDto,
+  ) {
     return this.participantRepository.create({ ...participantDto, matchId });
   }
 
@@ -66,29 +69,43 @@ export class MatchService {
         const leagueId = match.leagueId;
 
         // Use atomic increments within transaction to prevent race conditions when multiple matches complete simultaneously.
-        await this.statsService.incrementStats(playerId, leagueId, {
-          matchesPlayed: 1,
-          wins: participant.isWinner ? 1 : 0,
-          losses: !participant.isWinner ? 1 : 0,
-          draws: 0,
-          totalGoals: participant.goals || 0,
-          totalAssists: participant.assists || 0,
-          totalSaves: participant.saves || 0,
-          totalShots: participant.shots || 0,
-        }, tx);
+        await this.statsService.incrementStats(
+          playerId,
+          leagueId,
+          {
+            matchesPlayed: 1,
+            wins: participant.isWinner ? 1 : 0,
+            losses: !participant.isWinner ? 1 : 0,
+            draws: 0,
+            totalGoals: participant.goals || 0,
+            totalAssists: participant.assists || 0,
+            totalSaves: participant.saves || 0,
+            totalShots: participant.shots || 0,
+          },
+          tx,
+        );
 
         // Rating calculation is handled by external service; only update match count to track participation.
         const currentRating = await tx.playerLeagueRating.findUnique({
           where: { playerId_leagueId: { playerId, leagueId } },
         });
 
-        await this.ratingService.updateRating(playerId, leagueId, {
-          matchesPlayed: (currentRating?.matchesPlayed || 0) + 1,
-          wins: participant.isWinner ? (currentRating?.wins || 0) + 1 : (currentRating?.wins || 0),
-          losses: !participant.isWinner ? (currentRating?.losses || 0) + 1 : (currentRating?.losses || 0),
-          draws: 0,
-          lastMatchId: matchId,
-        }, tx);
+        await this.ratingService.updateRating(
+          playerId,
+          leagueId,
+          {
+            matchesPlayed: (currentRating?.matchesPlayed || 0) + 1,
+            wins: participant.isWinner
+              ? (currentRating?.wins || 0) + 1
+              : currentRating?.wins || 0,
+            losses: !participant.isWinner
+              ? (currentRating?.losses || 0) + 1
+              : currentRating?.losses || 0,
+            draws: 0,
+            lastMatchId: matchId,
+          },
+          tx,
+        );
       }
 
       return match;
@@ -97,4 +114,3 @@ export class MatchService {
     return updatedMatch;
   }
 }
-

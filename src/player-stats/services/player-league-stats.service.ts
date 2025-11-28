@@ -14,21 +14,30 @@ export class PlayerLeagueStatsService {
     return this.repository.getLeaderboard(leagueId, limit);
   }
 
-  async updateStats(playerId: string, leagueId: string, stats: any, tx?: Prisma.TransactionClient) {
+  async updateStats(
+    playerId: string,
+    leagueId: string,
+    stats: any,
+    tx?: Prisma.TransactionClient,
+  ) {
     return this.repository.upsert(playerId, leagueId, stats, tx);
   }
 
-  async incrementStats(playerId: string, leagueId: string, stats: {
-    matchesPlayed?: number;
-    wins?: number;
-    losses?: number;
-    draws?: number;
-    totalGoals?: number;
-    totalAssists?: number;
-    totalSaves?: number;
-    totalShots?: number;
-  }, tx?: Prisma.TransactionClient) {
+  async incrementStats(
+    playerId: string,
+    leagueId: string,
+    stats: {
+      matchesPlayed?: number;
+      wins?: number;
+      losses?: number;
+      draws?: number;
+      totalGoals?: number;
+      totalAssists?: number;
+      totalSaves?: number;
+      totalShots?: number;
+    },
+    tx?: Prisma.TransactionClient,
+  ) {
     return this.repository.incrementStats(playerId, leagueId, stats, tx);
   }
 }
-

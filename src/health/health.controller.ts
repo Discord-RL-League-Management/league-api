@@ -10,14 +10,9 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { DiscordApiHealthIndicator } from './indicators/discord-api.health';
+import { Public } from '../common/decorators';
 
-/**
- * HealthController - Public health check endpoint
- *
- * Single Responsibility: Only handles health checks, nothing else
- * Separation of Concerns: Public health separate from authenticated /internal/health
- * Modularity: Self-contained health check functionality
- */
+// Public health check endpoint that bypasses authentication to allow monitoring tools and load balancers to check service availability
 @ApiTags('Health')
 @Controller('health')
 export class HealthController {
@@ -32,6 +27,7 @@ export class HealthController {
   ) {}
 
   @Get()
+  @Public()
   @ApiOperation({ summary: 'Basic health check' })
   @ApiResponse({
     status: 200,
@@ -53,12 +49,13 @@ export class HealthController {
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       environment: this.configService.get<string>('app.nodeEnv', 'development'),
-      // npm_package_version is a build-time value set by npm, not in runtime config
+      // Use build-time npm env var since version isn't available in runtime configuration
       version: process.env.npm_package_version || '1.0.0',
     };
   }
 
   @Get('detailed')
+  @Public()
   @HealthCheck()
   @ApiOperation({ summary: 'Detailed health check with system indicators' })
   @ApiResponse({

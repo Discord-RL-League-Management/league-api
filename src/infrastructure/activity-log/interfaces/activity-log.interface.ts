@@ -15,4 +15,3 @@ export interface ActivityLog {
   metadata?: Record<string, any>;
   timestamp: Date;
 }
-

@@ -4,7 +4,7 @@ import { Prisma, ActivityLog } from '@prisma/client';
 
 /**
  * ActivityLogService - Single Responsibility: Activity logging
- * 
+ *
  * Handles all activity logging operations.
  * Replaces both AuditLog and SettingsHistory with unified activity logging.
  */
@@ -79,4 +79,3 @@ export class ActivityLogService {
     return this.repository.findWithFilters(filters);
   }
 }
-

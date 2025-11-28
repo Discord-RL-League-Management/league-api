@@ -63,8 +63,6 @@ export class BotApiKeyStrategy extends PassportStrategy(
     if (!salt) {
       throw new Error('API_KEY_SALT environment variable is required');
     }
-    return createHmac('sha256', salt)
-      .update(key)
-      .digest('hex');
+    return createHmac('sha256', salt).update(key).digest('hex');
   }
 }

@@ -35,7 +35,7 @@ export class ResourceOwnershipGuard implements CanActivate {
           resourceUserId,
         },
       },
-      request
+      request,
     );
 
     // If authenticated via JWT, check ownership

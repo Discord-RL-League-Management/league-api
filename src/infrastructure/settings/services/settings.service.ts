@@ -4,7 +4,7 @@ import { Settings, Prisma } from '@prisma/client';
 
 /**
  * SettingsService - Single Responsibility: Settings management
- * 
+ *
  * Handles settings operations for any entity type.
  * Replaces domain-specific GuildSettings with generic settings pattern.
  */
@@ -67,4 +67,3 @@ export class SettingsService {
     );
   }
 }
-

@@ -10,7 +10,12 @@ import { TrackerRepository } from '../repositories/tracker.repository';
 import { TrackerValidationService } from './tracker-validation.service';
 import { TrackerScrapingQueueService } from '../queues/tracker-scraping.queue';
 import { TrackerSeasonService } from './tracker-season.service';
-import { GamePlatform, Game, TrackerScrapingStatus, TrackerSeason } from '@prisma/client';
+import {
+  GamePlatform,
+  Game,
+  TrackerScrapingStatus,
+  TrackerSeason,
+} from '@prisma/client';
 
 @Injectable()
 export class TrackerService {
@@ -68,7 +73,7 @@ export class TrackerService {
    */
   async getTrackersByUserId(userId: string) {
     return this.prisma.tracker.findMany({
-      where: { 
+      where: {
         userId,
         isDeleted: false,
       },
@@ -99,11 +104,7 @@ export class TrackerService {
   /**
    * Update tracker metadata
    */
-  async updateTracker(
-    id: string,
-    displayName?: string,
-    isActive?: boolean,
-  ) {
+  async updateTracker(id: string, displayName?: string, isActive?: boolean) {
     const tracker = await this.getTrackerById(id);
 
     const updateData: any = {};
@@ -173,12 +174,14 @@ export class TrackerService {
     await this.ensureUserExists(userId, userData);
 
     if (urls.length === 0 || urls.length > 4) {
-      throw new BadRequestException('You must provide between 1 and 4 tracker URLs');
+      throw new BadRequestException(
+        'You must provide between 1 and 4 tracker URLs',
+      );
     }
 
     // Check if user already has trackers
     const existingTrackers = await this.getTrackersByUserId(userId);
-    const activeTrackers = existingTrackers.filter(t => !t.isDeleted);
+    const activeTrackers = existingTrackers.filter((t) => !t.isDeleted);
 
     if (activeTrackers.length > 0) {
       throw new BadRequestException(
@@ -194,7 +197,10 @@ export class TrackerService {
 
     const trackers = [];
     for (const url of uniqueUrls) {
-      const parsed = await this.validationService.validateTrackerUrl(url, userId);
+      const parsed = await this.validationService.validateTrackerUrl(
+        url,
+        userId,
+      );
       const tracker = await this.createTracker(
         url,
         parsed.game,
@@ -206,7 +212,8 @@ export class TrackerService {
 
       // Enqueue scraping job (async)
       this.scrapingQueueService.addScrapingJob(tracker.id).catch((error) => {
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         this.logger.error(
           `Failed to enqueue scraping job for tracker ${tracker.id}: ${errorMessage}`,
         );
@@ -223,7 +230,9 @@ export class TrackerService {
       });
     }
 
-    this.logger.log(`Registered ${trackers.length} tracker(s) for user ${userId}`);
+    this.logger.log(
+      `Registered ${trackers.length} tracker(s) for user ${userId}`,
+    );
     return trackers;
   }
 
@@ -241,7 +250,7 @@ export class TrackerService {
 
     // Check current tracker count
     const existingTrackers = await this.getTrackersByUserId(userId);
-    const activeTrackers = existingTrackers.filter(t => !t.isDeleted);
+    const activeTrackers = existingTrackers.filter((t) => !t.isDeleted);
 
     if (activeTrackers.length >= 4) {
       throw new BadRequestException(
@@ -263,7 +272,8 @@ export class TrackerService {
 
     // Enqueue scraping job (async)
     this.scrapingQueueService.addScrapingJob(tracker.id).catch((error) => {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       this.logger.error(
         `Failed to enqueue scraping job for tracker ${tracker.id}: ${errorMessage}`,
       );
@@ -284,7 +294,6 @@ export class TrackerService {
     );
     return tracker;
   }
-
 
   /**
    * Refresh tracker data by enqueueing a new scraping job
@@ -347,9 +356,3 @@ export class TrackerService {
     return this.seasonService.getSeasonsByTracker(trackerId);
   }
 }
-
-
-
-
-
-

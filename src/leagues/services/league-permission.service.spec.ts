@@ -85,9 +85,8 @@ describe('LeaguePermissionService', () => {
     permissionCheckService = module.get<PermissionCheckService>(
       PermissionCheckService,
     );
-    guildSettingsService = module.get<GuildSettingsService>(
-      GuildSettingsService,
-    );
+    guildSettingsService =
+      module.get<GuildSettingsService>(GuildSettingsService);
   });
 
   afterEach(() => {
@@ -116,7 +115,9 @@ describe('LeaguePermissionService', () => {
 
       // ASSERT
       expect(mockLeagueRepository.findOne).toHaveBeenCalledWith(leagueId);
-      expect(mockGuildSettingsService.getSettings).toHaveBeenCalledWith(guildId);
+      expect(mockGuildSettingsService.getSettings).toHaveBeenCalledWith(
+        guildId,
+      );
       expect(mockPermissionCheckService.hasAdminRole).toHaveBeenCalledWith(
         userId,
         guildId,
@@ -155,10 +156,9 @@ describe('LeaguePermissionService', () => {
         userId,
         guildId,
       );
-      expect(mockLeagueMemberRepository.findByPlayerAndLeague).toHaveBeenCalledWith(
-        player.id,
-        leagueId,
-      );
+      expect(
+        mockLeagueMemberRepository.findByPlayerAndLeague,
+      ).toHaveBeenCalledWith(player.id, leagueId);
     });
 
     it('should throw ForbiddenException when user has no admin access', async () => {
@@ -264,7 +264,9 @@ describe('LeaguePermissionService', () => {
 
     it('should handle errors and throw ForbiddenException with generic message', async () => {
       // ARRANGE
-      mockLeagueRepository.findOne.mockRejectedValue(new Error('Database error'));
+      mockLeagueRepository.findOne.mockRejectedValue(
+        new Error('Database error'),
+      );
 
       // ACT & ASSERT
       await expect(
@@ -320,10 +322,9 @@ describe('LeaguePermissionService', () => {
       await service.checkLeagueAdminOrModeratorAccess(userId, leagueId);
 
       // ASSERT
-      expect(mockLeagueMemberRepository.findByPlayerAndLeague).toHaveBeenCalledWith(
-        player.id,
-        leagueId,
-      );
+      expect(
+        mockLeagueMemberRepository.findByPlayerAndLeague,
+      ).toHaveBeenCalledWith(player.id, leagueId);
     });
 
     it('should grant access when user is league moderator', async () => {
@@ -350,10 +351,9 @@ describe('LeaguePermissionService', () => {
       await service.checkLeagueAdminOrModeratorAccess(userId, leagueId);
 
       // ASSERT
-      expect(mockLeagueMemberRepository.findByPlayerAndLeague).toHaveBeenCalledWith(
-        player.id,
-        leagueId,
-      );
+      expect(
+        mockLeagueMemberRepository.findByPlayerAndLeague,
+      ).toHaveBeenCalledWith(player.id, leagueId);
     });
 
     it('should throw ForbiddenException when user is only a regular member', async () => {
@@ -399,7 +399,9 @@ describe('LeaguePermissionService', () => {
 
     it('should handle errors and throw ForbiddenException with generic message', async () => {
       // ARRANGE
-      mockLeagueRepository.findOne.mockRejectedValue(new Error('Database error'));
+      mockLeagueRepository.findOne.mockRejectedValue(
+        new Error('Database error'),
+      );
 
       // ACT & ASSERT
       await expect(
@@ -424,7 +426,9 @@ describe('LeaguePermissionService', () => {
       await service.checkGuildAdminAccessForGuild(userId, guildId);
 
       // ASSERT
-      expect(mockGuildSettingsService.getSettings).toHaveBeenCalledWith(guildId);
+      expect(mockGuildSettingsService.getSettings).toHaveBeenCalledWith(
+        guildId,
+      );
       expect(mockPermissionCheckService.hasAdminRole).toHaveBeenCalledWith(
         userId,
         guildId,
@@ -460,4 +464,3 @@ describe('LeaguePermissionService', () => {
     });
   });
 });
-

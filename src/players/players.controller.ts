@@ -58,15 +58,21 @@ export class PlayersController {
   @ApiQuery({ name: 'status', required: false, type: String })
   @ApiResponse({ status: 200, description: 'List of players in guild' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - not a member of guild' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - not a member of guild',
+  })
   async getPlayersByGuild(
     @Param('guildId') guildId: string,
     @CurrentUser() user: AuthenticatedUser,
     @Query() query: PlayerQueryOptions,
   ) {
     // Restrict player listings to guild members to protect user privacy
-    await this.guildAccessValidationService.validateUserGuildAccess(user.id, guildId);
-    
+    await this.guildAccessValidationService.validateUserGuildAccess(
+      user.id,
+      guildId,
+    );
+
     return this.playerService.findByGuildId(guildId, {
       ...query,
       includeUser: true,
@@ -121,4 +127,3 @@ export class PlayersController {
     return this.playerService.update(id, updatePlayerDto);
   }
 }
-

@@ -69,5 +69,3 @@ export class CreateLeagueDto {
   })
   status?: LeagueStatus;
 }
-
-

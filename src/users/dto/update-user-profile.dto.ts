@@ -20,9 +20,11 @@ export class UpdateUserProfileDto {
     example: 'user@example.com',
   })
   @IsOptional()
-  @IsEmail({}, {
-    message: 'Email must be a valid email address',
-  })
+  @IsEmail(
+    {},
+    {
+      message: 'Email must be a valid email address',
+    },
+  )
   email?: string;
 }
-

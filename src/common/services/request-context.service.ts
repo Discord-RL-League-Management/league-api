@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 /**
  * RequestContextService - Single Responsibility: Extract request metadata
- * 
+ *
  * Separates request metadata extraction from business logic.
  * Provides consistent way to get IP, User-Agent, and request ID.
  */
@@ -40,7 +40,6 @@ export class RequestContextService {
     if (!request.requestId) {
       request.requestId = uuidv4();
     }
-    return request.requestId!;
+    return request.requestId;
   }
 }
-

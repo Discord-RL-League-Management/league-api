@@ -262,7 +262,10 @@ export class AdministrationConfigDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  @Matches(/^\d{17,20}$/, { each: true, message: 'Each role ID must be a valid Discord snowflake' })
+  @Matches(/^\d{17,20}$/, {
+    each: true,
+    message: 'Each role ID must be a valid Discord snowflake',
+  })
   adminRoles?: Array<string>;
 
   @ApiPropertyOptional({
@@ -336,5 +339,3 @@ export class LeagueSettingsDto {
   @Type(() => AdministrationConfigDto)
   administration?: Partial<AdministrationConfigDto>;
 }
-
-

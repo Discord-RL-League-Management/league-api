@@ -34,4 +34,3 @@ export class CreateOutboxEventDto {
   @IsNotEmpty()
   payload!: Record<string, any>;
 }
-

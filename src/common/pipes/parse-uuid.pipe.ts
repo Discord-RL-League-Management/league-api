@@ -11,4 +11,3 @@ export class ParseUUIDPipe implements PipeTransform<string, string> {
     return value;
   }
 }
-

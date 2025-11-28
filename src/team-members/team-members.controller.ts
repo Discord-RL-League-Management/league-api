@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TeamMemberService } from './services/team-member.service';
@@ -21,13 +30,19 @@ export class TeamMembersController {
 
   @Post()
   @ApiOperation({ summary: 'Add team member' })
-  addMember(@Param('teamId', ParseCUIDPipe) teamId: string, @Body() createDto: CreateTeamMemberDto) {
+  addMember(
+    @Param('teamId', ParseCUIDPipe) teamId: string,
+    @Body() createDto: CreateTeamMemberDto,
+  ) {
     return this.teamMemberService.addMember({ ...createDto, teamId });
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update team member' })
-  updateMember(@Param('id', ParseCUIDPipe) id: string, @Body() updateDto: UpdateTeamMemberDto) {
+  updateMember(
+    @Param('id', ParseCUIDPipe) id: string,
+    @Body() updateDto: UpdateTeamMemberDto,
+  ) {
     return this.teamMemberService.update(id, updateDto);
   }
 
@@ -37,4 +52,3 @@ export class TeamMembersController {
     return this.teamMemberService.removeMember(id);
   }
 }
-

@@ -16,5 +16,3 @@ export class UpdateLeagueDto extends PartialType(CreateLeagueDto) {
   })
   status?: LeagueStatus;
 }
-
-

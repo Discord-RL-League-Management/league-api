@@ -10,4 +10,3 @@ export class CompleteMatchDto {
   @IsString()
   winnerId?: string;
 }
-

@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  UseGuards,
+} from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { BotAuthGuard } from '../auth/guards/bot-auth.guard';
@@ -28,13 +37,18 @@ export class InternalOrganizationsController {
 
   @Post()
   @ApiOperation({ summary: 'Create organization (Bot only)' })
-  createOrganization(@Body() createDto: CreateOrganizationDto & { userId: string }) {
+  createOrganization(
+    @Body() createDto: CreateOrganizationDto & { userId: string },
+  ) {
     return this.organizationService.create(createDto, createDto.userId);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update organization (Bot only)' })
-  updateOrganization(@Param('id') id: string, @Body() updateDto: UpdateOrganizationDto) {
+  updateOrganization(
+    @Param('id') id: string,
+    @Body() updateDto: UpdateOrganizationDto,
+  ) {
     return this.organizationService.update(id, updateDto, 'bot');
   }
 
@@ -71,13 +85,19 @@ export class InternalOrganizationsController {
     @Param('memberId') memberId: string,
     @Body() updateDto: UpdateOrganizationMemberDto,
   ) {
-    return this.organizationMemberService.updateMember(memberId, updateDto, 'bot');
+    return this.organizationMemberService.updateMember(
+      memberId,
+      updateDto,
+      'bot',
+    );
   }
 
   @Delete(':id/members/:memberId')
   @ApiOperation({ summary: 'Remove organization member (Bot only)' })
-  removeOrganizationMember(@Param('id') id: string, @Param('memberId') memberId: string) {
+  removeOrganizationMember(
+    @Param('id') id: string,
+    @Param('memberId') memberId: string,
+  ) {
     return this.organizationMemberService.removeMember(memberId, 'bot');
   }
 }
-

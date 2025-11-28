@@ -4,7 +4,7 @@ import { Prisma, ActivityLog } from '@prisma/client';
 
 /**
  * ActivityLogRepository - Single Responsibility: Data access layer for ActivityLog entity
- * 
+ *
  * Pure data access layer with no business logic.
  * Handles all database operations for ActivityLog model.
  */
@@ -87,4 +87,3 @@ export class ActivityLogRepository {
     return { logs, total };
   }
 }
-

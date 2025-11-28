@@ -4,7 +4,7 @@ import { Prisma, ProcessedEvent } from '@prisma/client';
 
 /**
  * IdempotencyRepository - Single Responsibility: Data access layer for ProcessedEvent entity
- * 
+ *
  * Pure data access layer with no business logic.
  * Handles all database operations for ProcessedEvent model.
  */
@@ -24,7 +24,9 @@ export class IdempotencyRepository {
   /**
    * Create a processed event
    */
-  async create(data: Prisma.ProcessedEventCreateInput): Promise<ProcessedEvent> {
+  async create(
+    data: Prisma.ProcessedEventCreateInput,
+  ): Promise<ProcessedEvent> {
     return this.prisma.processedEvent.create({ data });
   }
 
@@ -44,4 +46,3 @@ export class IdempotencyRepository {
     });
   }
 }
-

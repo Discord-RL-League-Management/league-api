@@ -1,7 +1,7 @@
 /**
  * Options for querying guilds with optional relations
  * Single Responsibility: Type definition for flexible guild queries
- * 
+ *
  * Note: includeSettings is deprecated and ignored. Settings are NOT a Prisma relation
  * and cannot be included in queries. Settings must be fetched separately using
  * GuildSettingsService.getSettings(guildId).
@@ -19,7 +19,7 @@ export interface GuildQueryOptions {
 
 /**
  * Default query options for guild queries
- * 
+ *
  * Note: includeSettings is set to true for backward compatibility but is ignored.
  */
 export const defaultGuildQueryOptions: GuildQueryOptions = {

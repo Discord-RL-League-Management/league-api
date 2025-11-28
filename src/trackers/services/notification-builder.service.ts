@@ -28,9 +28,8 @@ export class NotificationBuilderService {
     seasonsScraped?: number,
     seasonsFailed?: number,
   ): DiscordEmbed {
-    const latestSeason = tracker.seasons && tracker.seasons.length > 0
-      ? tracker.seasons[0]
-      : null;
+    const latestSeason =
+      tracker.seasons && tracker.seasons.length > 0 ? tracker.seasons[0] : null;
 
     const embed: DiscordEmbed = {
       title: 'Tracker Data Scraped Successfully',
@@ -144,9 +143,3 @@ export class NotificationBuilderService {
     return embed;
   }
 }
-
-
-
-
-
-

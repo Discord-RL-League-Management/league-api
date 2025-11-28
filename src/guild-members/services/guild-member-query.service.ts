@@ -1,10 +1,14 @@
-import { Injectable, Logger, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { GuildMemberRepository } from '../repositories/guild-member.repository';
 
 /**
  * GuildMemberQueryService - Handles complex queries and search operations
  * Single Responsibility: Complex queries, search, and pagination
- * 
+ *
  * Separates query operations from CRUD operations.
  */
 @Injectable()
@@ -57,7 +61,10 @@ export class GuildMemberQueryService {
         includeUser: true,
       });
     } catch (error) {
-      this.logger.error(`Failed to search members for guild ${guildId}:`, error);
+      this.logger.error(
+        `Failed to search members for guild ${guildId}:`,
+        error,
+      );
       throw new InternalServerErrorException('Failed to search guild members');
     }
   }
@@ -65,7 +72,7 @@ export class GuildMemberQueryService {
   /**
    * Get user's guild memberships
    * Single Responsibility: User-guild relationship retrieval
-   * 
+   *
    * Note: Settings are NOT included. If settings are needed,
    * fetch them separately using GuildSettingsService.
    */
@@ -83,7 +90,7 @@ export class GuildMemberQueryService {
   /**
    * Find all memberships for a user with guild data
    * Single Responsibility: User membership retrieval with guild information
-   * 
+   *
    * Note: Settings are NOT included. If settings are needed for permission checks,
    * fetch them separately using GuildSettingsService or pass undefined to
    * permission service methods which will handle fetching.
@@ -105,7 +112,7 @@ export class GuildMemberQueryService {
   /**
    * Find member with guild included
    * Single Responsibility: Member retrieval with guild data
-   * 
+   *
    * Note: This method does NOT include settings. Settings are NOT a Prisma relation.
    * If settings are needed, fetch them separately using GuildSettingsService
    * or pass undefined to permission service methods.
@@ -128,15 +135,3 @@ export class GuildMemberQueryService {
     }
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1,4 +1,8 @@
-import { Injectable, Logger, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { UsersService } from '../users.service';
 import { DiscordProfileDto } from '../../auth/dto/discord-profile.dto';
 import { UserNotFoundException } from '../exceptions/user.exceptions';
@@ -7,7 +11,7 @@ import { User } from '@prisma/client';
 /**
  * UserOrchestratorService - Orchestrates user operations
  * Single Responsibility: Coordinates user creation and updates during OAuth flow
- * 
+ *
  * Separates OAuth-specific user logic from general user service logic
  */
 @Injectable()

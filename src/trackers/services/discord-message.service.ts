@@ -44,9 +44,7 @@ export class DiscordMessageService {
 
     // Check circuit breaker
     if (this.isCircuitOpen()) {
-      this.logger.warn(
-        'Circuit breaker is open, refusing to send Discord DM',
-      );
+      this.logger.warn('Circuit breaker is open, refusing to send Discord DM');
       throw new Error('Circuit breaker is open');
     }
 
@@ -66,8 +64,12 @@ export class DiscordMessageService {
         ),
       ).catch((error: any) => {
         this.recordFailure();
-        const errorMessage = error.response?.data?.message || error.message || 'Unknown error';
-        this.logger.error(`Failed to create DM channel for user ${userId}: ${errorMessage}`, error);
+        const errorMessage =
+          error.response?.data?.message || error.message || 'Unknown error';
+        this.logger.error(
+          `Failed to create DM channel for user ${userId}: ${errorMessage}`,
+          error,
+        );
         throw error;
       });
 
@@ -80,8 +82,12 @@ export class DiscordMessageService {
       this.recordSuccess();
     } catch (error: any) {
       this.recordFailure();
-      const errorMessage = error.response?.data?.message || error.message || 'Unknown error';
-      this.logger.error(`Failed to send DM to user ${userId}: ${errorMessage}`, error);
+      const errorMessage =
+        error.response?.data?.message || error.message || 'Unknown error';
+      this.logger.error(
+        `Failed to send DM to user ${userId}: ${errorMessage}`,
+        error,
+      );
       throw error;
     }
   }
@@ -187,9 +193,3 @@ export class DiscordMessageService {
     this.lastFailureTime = null;
   }
 }
-
-
-
-
-
-

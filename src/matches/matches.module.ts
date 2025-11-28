@@ -14,4 +14,3 @@ import { PlayerRatingsModule } from '../player-ratings/player-ratings.module';
   exports: [MatchService],
 })
 export class MatchesModule {}
-

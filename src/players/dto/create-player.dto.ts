@@ -1,10 +1,4 @@
-import {
-  IsString,
-  IsOptional,
-  IsEnum,
-  Matches,
-  Length,
-} from 'class-validator';
+import { IsString, IsOptional, IsEnum, Matches, Length } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PlayerStatus } from '@prisma/client';
 
@@ -55,4 +49,3 @@ export class CreatePlayerDto {
   @IsString()
   primaryTrackerId?: string;
 }
-

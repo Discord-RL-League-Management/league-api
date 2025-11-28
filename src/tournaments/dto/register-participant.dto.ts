@@ -26,4 +26,3 @@ export class RegisterParticipantDto {
   @IsNotEmpty()
   leagueId!: string;
 }
-

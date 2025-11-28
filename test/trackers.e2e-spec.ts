@@ -11,8 +11,11 @@ describe('Trackers API (e2e)', () => {
   let prisma: PrismaService;
   let jwtService: JwtService;
 
-  const validApiKey = process.env.BOT_API_KEY || '2b2b3d4b5ca4d61eb461886d4cd65d1a9b6000fd2c23bacf727056d38ecb6e32';
-  const validTrackerUrl = 'https://rocketleague.tracker.network/rocket-league/profile/steam/testuser123/overview';
+  const validApiKey =
+    process.env.BOT_API_KEY ||
+    '2b2b3d4b5ca4d61eb461886d4cd65d1a9b6000fd2c23bacf727056d38ecb6e32';
+  const validTrackerUrl =
+    'https://rocketleague.tracker.network/rocket-league/profile/steam/testuser123/overview';
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -170,7 +173,7 @@ describe('Trackers API (e2e)', () => {
       // Arrange
       const userId = '123456789012345682';
       const username = 'jwttestuser';
-      
+
       // Create user first (simulating OAuth flow)
       await prisma.user.create({
         data: {
@@ -228,7 +231,7 @@ describe('Trackers API (e2e)', () => {
       // Arrange
       const userId = '123456789012345683';
       const username = 'addtrackeruser';
-      
+
       // Create user first
       await prisma.user.create({
         data: {
@@ -276,5 +279,3 @@ describe('Trackers API (e2e)', () => {
     });
   });
 });
-
-

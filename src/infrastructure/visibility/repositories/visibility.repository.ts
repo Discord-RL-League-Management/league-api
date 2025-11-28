@@ -4,7 +4,7 @@ import { Prisma, EntityVisibility } from '@prisma/client';
 
 /**
  * VisibilityRepository - Single Responsibility: Data access layer for EntityVisibility entity
- * 
+ *
  * Pure data access layer with no business logic.
  * Handles all database operations for EntityVisibility model.
  */
@@ -15,7 +15,9 @@ export class VisibilityRepository {
   /**
    * Create visibility relationship
    */
-  async create(data: Prisma.EntityVisibilityCreateInput): Promise<EntityVisibility> {
+  async create(
+    data: Prisma.EntityVisibilityCreateInput,
+  ): Promise<EntityVisibility> {
     return this.prisma.entityVisibility.create({ data });
   }
 
@@ -74,4 +76,3 @@ export class VisibilityRepository {
     });
   }
 }
-

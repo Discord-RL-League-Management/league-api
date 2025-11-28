@@ -2,7 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { OrganizationRepository } from '../repositories/organization.repository';
 import { OrganizationValidationService } from './organization-validation.service';
 import { UpdateOrganizationMemberDto } from '../dto/update-organization-member.dto';
-import { OrganizationMemberRole, OrganizationMemberStatus } from '@prisma/client';
+import {
+  OrganizationMemberRole,
+  OrganizationMemberStatus,
+} from '@prisma/client';
 import {
   OrganizationMemberNotFoundException,
   CannotRemoveLastGeneralManagerException,
@@ -25,7 +28,9 @@ export class OrganizationMemberService {
    * Find all members in an organization
    */
   async findMembers(organizationId: string) {
-    return this.organizationRepository.findMembersByOrganization(organizationId);
+    return this.organizationRepository.findMembersByOrganization(
+      organizationId,
+    );
   }
 
   /**
@@ -43,12 +48,16 @@ export class OrganizationMemberService {
    * Find member by player and organization
    */
   async findMemberByPlayer(organizationId: string, playerId: string) {
-    const organization = await this.organizationRepository.findById(organizationId);
+    const organization =
+      await this.organizationRepository.findById(organizationId);
     if (!organization) {
       return null;
     }
 
-    return this.organizationRepository.findMembersByPlayer(playerId, organization.leagueId);
+    return this.organizationRepository.findMembersByPlayer(
+      playerId,
+      organization.leagueId,
+    );
   }
 
   /**
@@ -60,13 +69,18 @@ export class OrganizationMemberService {
     role: OrganizationMemberRole,
     userId: string,
   ) {
-    const organization = await this.organizationRepository.findById(organizationId);
+    const organization =
+      await this.organizationRepository.findById(organizationId);
     if (!organization) {
       throw new OrganizationNotFoundException(organizationId);
     }
 
     // Validate member can join
-    await this.validationService.validateMemberAdd(organizationId, playerId, organization.leagueId);
+    await this.validationService.validateMemberAdd(
+      organizationId,
+      playerId,
+      organization.leagueId,
+    );
 
     // Add member
     return this.organizationRepository.addMember({
@@ -81,12 +95,22 @@ export class OrganizationMemberService {
   /**
    * Update member role
    */
-  async updateMemberRole(memberId: string, role: OrganizationMemberRole, userId: string) {
+  async updateMemberRole(
+    memberId: string,
+    role: OrganizationMemberRole,
+    userId: string,
+  ) {
     const member = await this.findMemberById(memberId);
 
     // If removing GM role, validate not last GM
-    if (member.role === OrganizationMemberRole.GENERAL_MANAGER && role !== OrganizationMemberRole.GENERAL_MANAGER) {
-      await this.validationService.validateCanRemoveGeneralManager(member.organizationId, memberId);
+    if (
+      member.role === OrganizationMemberRole.GENERAL_MANAGER &&
+      role !== OrganizationMemberRole.GENERAL_MANAGER
+    ) {
+      await this.validationService.validateCanRemoveGeneralManager(
+        member.organizationId,
+        memberId,
+      );
     }
 
     return this.organizationRepository.updateMember(memberId, { role });
@@ -95,14 +119,24 @@ export class OrganizationMemberService {
   /**
    * Update member (role, status, notes)
    */
-  async updateMember(memberId: string, updateDto: UpdateOrganizationMemberDto, userId: string) {
+  async updateMember(
+    memberId: string,
+    updateDto: UpdateOrganizationMemberDto,
+    userId: string,
+  ) {
     const member = await this.findMemberById(memberId);
 
     // If role is being updated, validate GM removal if applicable
     if (updateDto.role !== undefined) {
       // If removing GM role, validate not last GM
-      if (member.role === OrganizationMemberRole.GENERAL_MANAGER && updateDto.role !== OrganizationMemberRole.GENERAL_MANAGER) {
-        await this.validationService.validateCanRemoveGeneralManager(member.organizationId, memberId);
+      if (
+        member.role === OrganizationMemberRole.GENERAL_MANAGER &&
+        updateDto.role !== OrganizationMemberRole.GENERAL_MANAGER
+      ) {
+        await this.validationService.validateCanRemoveGeneralManager(
+          member.organizationId,
+          memberId,
+        );
       }
     }
 
@@ -117,7 +151,10 @@ export class OrganizationMemberService {
 
     // If removing GM, validate not last GM
     if (member.role === OrganizationMemberRole.GENERAL_MANAGER) {
-      await this.validationService.validateCanRemoveGeneralManager(member.organizationId, memberId);
+      await this.validationService.validateCanRemoveGeneralManager(
+        member.organizationId,
+        memberId,
+      );
     }
 
     return this.organizationRepository.removeMember(memberId);
@@ -127,14 +164,20 @@ export class OrganizationMemberService {
    * Promote member to General Manager
    */
   async promoteToGeneralManager(memberId: string, userId: string) {
-    return this.updateMemberRole(memberId, OrganizationMemberRole.GENERAL_MANAGER, userId);
+    return this.updateMemberRole(
+      memberId,
+      OrganizationMemberRole.GENERAL_MANAGER,
+      userId,
+    );
   }
 
   /**
    * Ensure at least one General Manager exists
    */
   async ensureGeneralManagerExists(organizationId: string): Promise<void> {
-    await this.validationService.validateGeneralManagerRequirement(organizationId);
+    await this.validationService.validateGeneralManagerRequirement(
+      organizationId,
+    );
   }
 
   /**
@@ -147,18 +190,21 @@ export class OrganizationMemberService {
   /**
    * Check if user is General Manager
    */
-  async isGeneralManager(userId: string, organizationId: string): Promise<boolean> {
-    const organization = await this.organizationRepository.findById(organizationId);
+  async isGeneralManager(
+    userId: string,
+    organizationId: string,
+  ): Promise<boolean> {
+    const organization =
+      await this.organizationRepository.findById(organizationId);
     if (!organization) {
       return false;
     }
 
     // Get all General Managers and check if any match the userId
     // Note: findGeneralManagers already filters by ACTIVE status, so the status check here is redundant but safe
-    const gms = await this.organizationRepository.findGeneralManagers(organizationId);
-    const member = gms.find(
-      (m) => (m as any).player?.user?.id === userId,
-    );
+    const gms =
+      await this.organizationRepository.findGeneralManagers(organizationId);
+    const member = gms.find((m) => (m as any).player?.user?.id === userId);
 
     return !!member;
   }
@@ -167,8 +213,8 @@ export class OrganizationMemberService {
    * Check if organization has any General Managers
    */
   async hasGeneralManagers(organizationId: string): Promise<boolean> {
-    const gmCount = await this.organizationRepository.countGeneralManagers(organizationId);
+    const gmCount =
+      await this.organizationRepository.countGeneralManagers(organizationId);
     return gmCount > 0;
   }
 }
-

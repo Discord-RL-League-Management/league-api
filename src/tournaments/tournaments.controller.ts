@@ -31,7 +31,11 @@ export class TournamentsController {
     @Param('id', ParseCUIDPipe) id: string,
     @Body() body: RegisterParticipantDto,
   ) {
-    return this.tournamentService.registerParticipant(id, body.playerId || null, body.teamId || null, body.leagueId);
+    return this.tournamentService.registerParticipant(
+      id,
+      body.playerId || null,
+      body.teamId || null,
+      body.leagueId,
+    );
   }
 }
-

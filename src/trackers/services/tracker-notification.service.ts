@@ -54,7 +54,9 @@ export class TrackerNotificationService {
       });
 
       if (!tracker) {
-        this.logger.warn(`Tracker ${trackerId} not found, cannot send notification`);
+        this.logger.warn(
+          `Tracker ${trackerId} not found, cannot send notification`,
+        );
         return;
       }
 
@@ -76,7 +78,8 @@ export class TrackerNotificationService {
         `Sent scraping complete notification to user ${userId} for tracker ${trackerId}`,
       );
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       this.logger.error(
         `Failed to send scraping complete notification: ${errorMessage}`,
         error,
@@ -110,7 +113,9 @@ export class TrackerNotificationService {
       });
 
       if (!tracker) {
-        this.logger.warn(`Tracker ${trackerId} not found, cannot send notification`);
+        this.logger.warn(
+          `Tracker ${trackerId} not found, cannot send notification`,
+        );
         return;
       }
 
@@ -131,7 +136,8 @@ export class TrackerNotificationService {
         `Sent scraping failed notification to user ${userId} for tracker ${trackerId}`,
       );
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       this.logger.error(
         `Failed to send scraping failed notification: ${errorMessage}`,
         error,
@@ -156,7 +162,8 @@ export class TrackerNotificationService {
       );
       // TODO: Implement progress notifications if needed
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       this.logger.error(
         `Failed to send scraping progress notification: ${errorMessage}`,
         error,
@@ -164,4 +171,3 @@ export class TrackerNotificationService {
     }
   }
 }
-

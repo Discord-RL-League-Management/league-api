@@ -1,15 +1,11 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { DiscordBotService } from '../../discord/discord-bot.service';
 import { GuildSettingsDto } from '../dto/guild-settings.dto';
-import {
-  MAX_CHANNEL_NAME_LENGTH,
-} from '../constants/settings.constants';
+import { MAX_CHANNEL_NAME_LENGTH } from '../constants/settings.constants';
 
 @Injectable()
 export class SettingsValidationService {
-  constructor(
-    private discordValidation: DiscordBotService,
-  ) {}
+  constructor(private discordValidation: DiscordBotService) {}
 
   /**
    * Validate settings structure and values with Discord API verification
@@ -17,11 +13,17 @@ export class SettingsValidationService {
    */
   async validate(settings: GuildSettingsDto, guildId: string): Promise<void> {
     if (settings.bot_command_channels) {
-      await this.validateBotCommandChannels(settings.bot_command_channels, guildId);
+      await this.validateBotCommandChannels(
+        settings.bot_command_channels,
+        guildId,
+      );
     }
-    
+
     if (settings.register_command_channels) {
-      await this.validateRegisterCommandChannels(settings.register_command_channels, guildId);
+      await this.validateRegisterCommandChannels(
+        settings.register_command_channels,
+        guildId,
+      );
     }
   }
 
@@ -35,7 +37,7 @@ export class SettingsValidationService {
   ): Promise<void> {
     // Check for duplicate channel IDs
     const seenIds = new Set<string>();
-    
+
     for (const channel of channels) {
       if (!channel.id) {
         throw new BadRequestException('Channel ID is required');
@@ -94,10 +96,10 @@ export class SettingsValidationService {
   /**
    * Validate configuration structure (runtime validation)
    * Single Responsibility: Structure validation after migration
-   * 
+   *
    * Validates that config has correct structure, types, and required fields.
    * Used after migration to ensure integrity.
-   * 
+   *
    * @param config Configuration object to validate
    * @throws BadRequestException if structure is invalid
    */
@@ -109,7 +111,9 @@ export class SettingsValidationService {
 
     // Validate required top-level sections
     if (!('bot_command_channels' in config)) {
-      throw new BadRequestException('Missing required section: bot_command_channels');
+      throw new BadRequestException(
+        'Missing required section: bot_command_channels',
+      );
     }
 
     // Validate bot_command_channels structure

@@ -70,7 +70,10 @@ export class OrganizationsController {
   @Post('leagues/:leagueId/organizations')
   @ApiOperation({ summary: 'Create organization (creator becomes GM)' })
   @ApiParam({ name: 'leagueId', description: 'League ID' })
-  @ApiResponse({ status: 201, description: 'Organization created successfully' })
+  @ApiResponse({
+    status: 201,
+    description: 'Organization created successfully',
+  })
   createOrganization(
     @Param('leagueId', ParseCUIDPipe) leagueId: string,
     @Body() createDto: CreateOrganizationDto,
@@ -83,7 +86,10 @@ export class OrganizationsController {
   @UseGuards(OrganizationGmGuard)
   @ApiOperation({ summary: 'Update organization (GM only)' })
   @ApiParam({ name: 'id', description: 'Organization ID' })
-  @ApiResponse({ status: 200, description: 'Organization updated successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Organization updated successfully',
+  })
   @ApiResponse({ status: 403, description: 'Must be General Manager' })
   updateOrganization(
     @Param('id', ParseCUIDPipe) id: string,
@@ -95,9 +101,14 @@ export class OrganizationsController {
 
   @Delete('organizations/:id')
   @UseGuards(OrganizationGmGuard)
-  @ApiOperation({ summary: 'Delete organization (GM only, must have no teams)' })
+  @ApiOperation({
+    summary: 'Delete organization (GM only, must have no teams)',
+  })
   @ApiParam({ name: 'id', description: 'Organization ID' })
-  @ApiResponse({ status: 200, description: 'Organization deleted successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Organization deleted successfully',
+  })
   @ApiResponse({ status: 403, description: 'Must be General Manager' })
   @ApiResponse({ status: 400, description: 'Organization has teams' })
   deleteOrganization(
@@ -108,7 +119,10 @@ export class OrganizationsController {
   }
 
   @Post('organizations/:id/teams/:teamId/transfer')
-  @ApiOperation({ summary: 'Transfer team to different organization (GM of source or target org)' })
+  @ApiOperation({
+    summary:
+      'Transfer team to different organization (GM of source or target org)',
+  })
   @ApiParam({ name: 'id', description: 'Source Organization ID' })
   @ApiParam({ name: 'teamId', description: 'Team ID' })
   @ApiResponse({ status: 200, description: 'Team transferred successfully' })
@@ -118,7 +132,11 @@ export class OrganizationsController {
     @Body() transferDto: TransferTeamDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.organizationService.transferTeam(teamId, transferDto.targetOrganizationId, user.id);
+    return this.organizationService.transferTeam(
+      teamId,
+      transferDto.targetOrganizationId,
+      user.id,
+    );
   }
 
   @Get('organizations/:id/members')
@@ -154,24 +172,36 @@ export class OrganizationsController {
   @ApiParam({ name: 'memberId', description: 'Member ID' })
   @ApiResponse({ status: 200, description: 'Member updated successfully' })
   @ApiResponse({ status: 403, description: 'Must be General Manager' })
-  @ApiResponse({ status: 400, description: 'Cannot remove last General Manager' })
+  @ApiResponse({
+    status: 400,
+    description: 'Cannot remove last General Manager',
+  })
   updateOrganizationMember(
     @Param('id', ParseCUIDPipe) id: string,
     @Param('memberId', ParseCUIDPipe) memberId: string,
     @Body() updateDto: UpdateOrganizationMemberDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.organizationMemberService.updateMember(memberId, updateDto, user.id);
+    return this.organizationMemberService.updateMember(
+      memberId,
+      updateDto,
+      user.id,
+    );
   }
 
   @Delete('organizations/:id/members/:memberId')
   @UseGuards(OrganizationGmGuard)
-  @ApiOperation({ summary: 'Remove member from organization (GM only, cannot remove last GM)' })
+  @ApiOperation({
+    summary: 'Remove member from organization (GM only, cannot remove last GM)',
+  })
   @ApiParam({ name: 'id', description: 'Organization ID' })
   @ApiParam({ name: 'memberId', description: 'Member ID' })
   @ApiResponse({ status: 200, description: 'Member removed successfully' })
   @ApiResponse({ status: 403, description: 'Must be General Manager' })
-  @ApiResponse({ status: 400, description: 'Cannot remove last General Manager' })
+  @ApiResponse({
+    status: 400,
+    description: 'Cannot remove last General Manager',
+  })
   removeOrganizationMember(
     @Param('id', ParseCUIDPipe) id: string,
     @Param('memberId', ParseCUIDPipe) memberId: string,
@@ -180,4 +210,3 @@ export class OrganizationsController {
     return this.organizationMemberService.removeMember(memberId, user.id);
   }
 }
-

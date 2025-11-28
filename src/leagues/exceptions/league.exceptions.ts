@@ -1,4 +1,9 @@
-import { NotFoundException, ConflictException, ForbiddenException, ValidationException } from '../../common/exceptions/base.exception';
+import {
+  NotFoundException,
+  ConflictException,
+  ForbiddenException,
+  ValidationException,
+} from '../../common/exceptions/base.exception';
 
 /**
  * LeagueNotFoundException - Domain-specific exception for league not found
@@ -47,4 +52,3 @@ export class LeagueValidationException extends ValidationException {
     super(`League validation failed: ${message}`, { message });
   }
 }
-

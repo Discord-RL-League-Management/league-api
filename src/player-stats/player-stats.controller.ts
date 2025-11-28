@@ -13,7 +13,10 @@ export class PlayerStatsController {
 
   @Get('league/:leagueId')
   @ApiOperation({ summary: 'Get player stats for league' })
-  getStats(@Param('playerId') playerId: string, @Param('leagueId') leagueId: string) {
+  getStats(
+    @Param('playerId') playerId: string,
+    @Param('leagueId') leagueId: string,
+  ) {
     return this.statsService.getStats(playerId, leagueId);
   }
 }
@@ -27,8 +30,13 @@ export class LeaderboardController {
 
   @Get()
   @ApiOperation({ summary: 'Get league leaderboard' })
-  getLeaderboard(@Param('leagueId') leagueId: string, @Query('limit') limit?: number) {
-    return this.statsService.getLeaderboard(leagueId, limit ? parseInt(limit.toString()) : 10);
+  getLeaderboard(
+    @Param('leagueId') leagueId: string,
+    @Query('limit') limit?: number,
+  ) {
+    return this.statsService.getLeaderboard(
+      leagueId,
+      limit ? parseInt(limit.toString()) : 10,
+    );
   }
 }
-

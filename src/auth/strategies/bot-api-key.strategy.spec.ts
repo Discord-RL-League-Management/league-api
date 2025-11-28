@@ -11,10 +11,7 @@ describe('BotApiKeyStrategy', () => {
   const validBotApiKey = 'test-api-key-12345';
   const validApiKeySalt = 'test-salt-67890';
 
-  const createMockConfigService = (
-    botApiKey?: string,
-    apiKeySalt?: string,
-  ) => {
+  const createMockConfigService = (botApiKey?: string, apiKeySalt?: string) => {
     const mockGet = jest.fn((key: string) => {
       if (key === 'auth.botApiKey') {
         return botApiKey;
@@ -269,4 +266,3 @@ describe('BotApiKeyStrategy', () => {
     });
   });
 });
-

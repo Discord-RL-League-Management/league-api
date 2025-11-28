@@ -63,8 +63,11 @@ export class LeaguesController {
     @Query('game', new ParseEnumPipe(Game)) game?: Game,
   ) {
     this.logger.log(`User ${user.id} requested leagues for guild ${guildId}`);
-    
-    await this.leagueAccessValidationService.validateGuildAccess(user.id, guildId);
+
+    await this.leagueAccessValidationService.validateGuildAccess(
+      user.id,
+      guildId,
+    );
 
     const options = {
       guildId,
@@ -88,7 +91,7 @@ export class LeaguesController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     this.logger.log(`User ${user.id} requested league ${id}`);
-    
+
     await this.leagueAccessValidationService.validateLeagueAccess(user.id, id);
 
     return this.leaguesService.findOne(id);
@@ -105,7 +108,7 @@ export class LeaguesController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     this.logger.log(`User ${user.id} creating league ${createLeagueDto.name}`);
-    
+
     await this.leagueAccessValidationService.validateGuildAccess(
       user.id,
       createLeagueDto.guildId,
@@ -118,7 +121,9 @@ export class LeaguesController {
     );
 
     return this.leaguesService.create(
-      { ...createLeagueDto, createdBy: user.id } as CreateLeagueDto & { createdBy: string },
+      { ...createLeagueDto, createdBy: user.id } as CreateLeagueDto & {
+        createdBy: string;
+      },
       user.id,
     );
   }
@@ -135,17 +140,23 @@ export class LeaguesController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     this.logger.log(`User ${user.id} updating league ${id}`);
-    
+
     await this.leagueAccessValidationService.validateLeagueAccess(user.id, id);
 
-    await this.leaguePermissionService.checkLeagueAdminOrModeratorAccess(user.id, id);
+    await this.leaguePermissionService.checkLeagueAdminOrModeratorAccess(
+      user.id,
+      id,
+    );
 
     return this.leaguesService.update(id, updateLeagueDto);
   }
 
   @Patch(':id/status')
   @ApiOperation({ summary: 'Update league status (requires admin)' })
-  @ApiResponse({ status: 200, description: 'League status updated successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'League status updated successfully',
+  })
   @ApiResponse({ status: 400, description: 'Invalid status transition' })
   @ApiResponse({ status: 404, description: 'League not found' })
   @ApiParam({ name: 'id', description: 'League ID' })
@@ -154,8 +165,10 @@ export class LeaguesController {
     @Body() body: UpdateLeagueStatusDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    this.logger.log(`User ${user.id} updating league ${id} status to ${body.status}`);
-    
+    this.logger.log(
+      `User ${user.id} updating league ${id} status to ${body.status}`,
+    );
+
     await this.leagueAccessValidationService.validateLeagueAccess(user.id, id);
 
     // Status changes affect league visibility and participation, requiring admin privileges
@@ -174,7 +187,7 @@ export class LeaguesController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     this.logger.log(`User ${user.id} deleting league ${id}`);
-    
+
     await this.leagueAccessValidationService.validateLeagueAccess(user.id, id);
 
     // Deletion is irreversible and affects all members, requiring admin privileges
@@ -183,4 +196,3 @@ export class LeaguesController {
     return this.leaguesService.remove(id);
   }
 }
-

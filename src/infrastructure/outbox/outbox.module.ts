@@ -9,7 +9,7 @@ import { OutboxRepository } from './repositories/outbox.repository';
 
 /**
  * OutboxModule - Infrastructure module for transactional outbox pattern
- * 
+ *
  * Provides outbox functionality for any domain that needs reliable event publishing.
  * This module is domain-agnostic and can be used by any module.
  */
@@ -24,4 +24,3 @@ import { OutboxRepository } from './repositories/outbox.repository';
   exports: [OutboxService, OutboxProcessorService],
 })
 export class OutboxModule {}
-

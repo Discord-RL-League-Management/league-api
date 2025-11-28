@@ -1,4 +1,8 @@
-import { NotFoundException, ConflictException, ValidationException } from '../../common/exceptions/base.exception';
+import {
+  NotFoundException,
+  ConflictException,
+  ValidationException,
+} from '../../common/exceptions/base.exception';
 
 /**
  * PlayerNotFoundException - Domain-specific exception for player not found
@@ -14,7 +18,10 @@ export class PlayerNotFoundException extends NotFoundException {
  */
 export class PlayerAlreadyExistsException extends ConflictException {
   constructor(userId: string, guildId: string) {
-    super(`Player with userId '${userId}' and guildId '${guildId}' already exists`, { userId, guildId });
+    super(
+      `Player with userId '${userId}' and guildId '${guildId}' already exists`,
+      { userId, guildId },
+    );
   }
 }
 
@@ -35,4 +42,3 @@ export class PlayerValidationException extends ValidationException {
     super(`Player validation failed: ${message}`, { message });
   }
 }
-

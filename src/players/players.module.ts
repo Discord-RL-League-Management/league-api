@@ -27,10 +27,7 @@ import { PlayerRepository } from './repositories/player.repository';
     GuildsModule,
     InfrastructureModule,
   ],
-  controllers: [
-    PlayersController,
-    InternalPlayersController,
-  ],
+  controllers: [PlayersController, InternalPlayersController],
   providers: [
     PlayerService,
     PlayerValidationService,
@@ -45,4 +42,3 @@ import { PlayerRepository } from './repositories/player.repository';
   ],
 })
 export class PlayersModule {}
-

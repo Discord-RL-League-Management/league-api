@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GamePlatform, Game } from '@prisma/client';
 import { TrackerUrlConverterService } from './tracker-url-converter.service';
@@ -18,7 +14,8 @@ export interface ParsedTrackerUrl {
 export class TrackerValidationService {
   private readonly logger = new Logger(TrackerValidationService.name);
   private readonly TRN_BASE_URL = 'https://rocketleague.tracker.network';
-  private readonly TRN_PROFILE_REGEX = /^https:\/\/rocketleague\.tracker\.network\/rocket-league\/profile\/([^\/]+)\/([^\/]+)\/overview\/?$/i;
+  private readonly TRN_PROFILE_REGEX =
+    /^https:\/\/rocketleague\.tracker\.network\/rocket-league\/profile\/([^\/]+)\/([^\/]+)\/overview\/?$/i;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -91,12 +88,15 @@ export class TrackerValidationService {
     try {
       const urlObj = new URL(url);
       // Normalize trailing slashes: preserve at most one to match regex behavior (\/?$ allows 0-1)
-      const normalizedPathname = urlObj.pathname.replace(/\/+$/, (match) => match.length > 1 ? '/' : match);
+      const normalizedPathname = urlObj.pathname.replace(/\/+$/, (match) =>
+        match.length > 1 ? '/' : match,
+      );
       return (
         urlObj.protocol === 'https:' &&
         urlObj.hostname === 'rocketleague.tracker.network' &&
         normalizedPathname.startsWith('/rocket-league/profile/') &&
-        (normalizedPathname.endsWith('/overview') || normalizedPathname.endsWith('/overview/'))
+        (normalizedPathname.endsWith('/overview') ||
+          normalizedPathname.endsWith('/overview/'))
       );
     } catch {
       return false;
@@ -107,9 +107,13 @@ export class TrackerValidationService {
    * Parse tracker URL to extract platform and username
    * Normalizes trailing slashes before regex matching to match regex behavior (allows 0-1 trailing slash)
    */
-  private parseTrackerUrl(url: string): { platform: string; username: string } | null {
+  private parseTrackerUrl(
+    url: string,
+  ): { platform: string; username: string } | null {
     // Normalize URL: preserve at most one trailing slash to match regex pattern (\/?$ allows 0-1)
-    const normalizedUrl = url.replace(/\/+$/, (match) => match.length > 1 ? '/' : match);
+    const normalizedUrl = url.replace(/\/+$/, (match) =>
+      match.length > 1 ? '/' : match,
+    );
     const match = normalizedUrl.match(this.TRN_PROFILE_REGEX);
     if (!match || match.length < 3) {
       return null;
@@ -196,5 +200,3 @@ export class TrackerValidationService {
     };
   }
 }
-
-

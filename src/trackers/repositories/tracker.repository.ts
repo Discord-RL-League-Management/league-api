@@ -70,10 +70,7 @@ export class TrackerRepository {
     });
   }
 
-  async update(
-    id: string,
-    data: Prisma.TrackerUpdateInput,
-  ): Promise<Tracker> {
+  async update(id: string, data: Prisma.TrackerUpdateInput): Promise<Tracker> {
     return this.prisma.tracker.update({
       where: { id },
       data,
@@ -92,9 +89,3 @@ export class TrackerRepository {
     return existing === null;
   }
 }
-
-
-
-
-
-
