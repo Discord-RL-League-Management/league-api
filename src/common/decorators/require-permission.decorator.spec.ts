@@ -2,9 +2,16 @@ import {
   RequirePermission,
   PERMISSIONS_KEY,
 } from './require-permission.decorator';
+import { Reflector } from '@nestjs/core';
 import 'reflect-metadata';
 
 describe('RequirePermission Decorator', () => {
+  let reflector: Reflector;
+
+  beforeEach(() => {
+    reflector = new Reflector();
+  });
+
   class TestController {
     @RequirePermission('read:guild', 'write:guild')
     guildRoute() {
@@ -27,38 +34,34 @@ describe('RequirePermission Decorator', () => {
   }
 
   it('should set PERMISSIONS_KEY metadata with multiple permissions', () => {
-    const metadata = Reflect.getMetadata(
-      PERMISSIONS_KEY,
-      TestController.prototype,
-      'guildRoute',
-    ) as string[] | undefined;
+    const metadata = reflector.getAllAndOverride<string[]>(PERMISSIONS_KEY, [
+      TestController.prototype.guildRoute,
+      TestController,
+    ]);
     expect(metadata).toEqual(['read:guild', 'write:guild']);
   });
 
   it('should set PERMISSIONS_KEY metadata with single permission', () => {
-    const metadata = Reflect.getMetadata(
-      PERMISSIONS_KEY,
-      TestController.prototype,
-      'userRoute',
-    ) as string[] | undefined;
+    const metadata = reflector.getAllAndOverride<string[]>(PERMISSIONS_KEY, [
+      TestController.prototype.userRoute,
+      TestController,
+    ]);
     expect(metadata).toEqual(['read:user']);
   });
 
   it('should set PERMISSIONS_KEY metadata with empty array when no permissions provided', () => {
-    const metadata = Reflect.getMetadata(
-      PERMISSIONS_KEY,
-      TestController.prototype,
-      'noPermissionsRoute',
-    ) as string[] | undefined;
+    const metadata = reflector.getAllAndOverride<string[]>(PERMISSIONS_KEY, [
+      TestController.prototype.noPermissionsRoute,
+      TestController,
+    ]);
     expect(metadata).toEqual([]);
   });
 
   it('should not set metadata on routes without decorator', () => {
-    const metadata = Reflect.getMetadata(
-      PERMISSIONS_KEY,
-      TestController.prototype,
-      'privateRoute',
-    ) as string[] | undefined;
+    const metadata = reflector.getAllAndOverride<string[]>(PERMISSIONS_KEY, [
+      TestController.prototype.privateRoute,
+      TestController,
+    ]);
     expect(metadata).toBeUndefined();
   });
 

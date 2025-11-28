@@ -1,7 +1,14 @@
 import { Roles, ROLES_KEY } from './roles.decorator';
+import { Reflector } from '@nestjs/core';
 import 'reflect-metadata';
 
 describe('Roles Decorator', () => {
+  let reflector: Reflector;
+
+  beforeEach(() => {
+    reflector = new Reflector();
+  });
+
   class TestController {
     @Roles('admin', 'moderator')
     adminRoute() {
@@ -24,38 +31,34 @@ describe('Roles Decorator', () => {
   }
 
   it('should set ROLES_KEY metadata with multiple roles', () => {
-    const metadata = Reflect.getMetadata(
-      ROLES_KEY,
-      TestController.prototype,
-      'adminRoute',
-    ) as string[] | undefined;
+    const metadata = reflector.getAllAndOverride<string[]>(ROLES_KEY, [
+      TestController.prototype.adminRoute,
+      TestController,
+    ]);
     expect(metadata).toEqual(['admin', 'moderator']);
   });
 
   it('should set ROLES_KEY metadata with single role', () => {
-    const metadata = Reflect.getMetadata(
-      ROLES_KEY,
-      TestController.prototype,
-      'userRoute',
-    ) as string[] | undefined;
+    const metadata = reflector.getAllAndOverride<string[]>(ROLES_KEY, [
+      TestController.prototype.userRoute,
+      TestController,
+    ]);
     expect(metadata).toEqual(['user']);
   });
 
   it('should set ROLES_KEY metadata with empty array when no roles provided', () => {
-    const metadata = Reflect.getMetadata(
-      ROLES_KEY,
-      TestController.prototype,
-      'noRolesRoute',
-    ) as string[] | undefined;
+    const metadata = reflector.getAllAndOverride<string[]>(ROLES_KEY, [
+      TestController.prototype.noRolesRoute,
+      TestController,
+    ]);
     expect(metadata).toEqual([]);
   });
 
   it('should not set metadata on routes without decorator', () => {
-    const metadata = Reflect.getMetadata(
-      ROLES_KEY,
-      TestController.prototype,
-      'privateRoute',
-    ) as string[] | undefined;
+    const metadata = reflector.getAllAndOverride<string[]>(ROLES_KEY, [
+      TestController.prototype.privateRoute,
+      TestController,
+    ]);
     expect(metadata).toBeUndefined();
   });
 

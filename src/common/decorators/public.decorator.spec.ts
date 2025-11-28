@@ -1,7 +1,14 @@
 import { Public, IS_PUBLIC_KEY } from './public.decorator';
+import { Reflector } from '@nestjs/core';
 import 'reflect-metadata';
 
 describe('Public Decorator', () => {
+  let reflector: Reflector;
+
+  beforeEach(() => {
+    reflector = new Reflector();
+  });
+
   class TestController {
     @Public()
     publicRoute() {
@@ -14,20 +21,18 @@ describe('Public Decorator', () => {
   }
 
   it('should set IS_PUBLIC_KEY metadata to true', () => {
-    const metadata = Reflect.getMetadata(
-      IS_PUBLIC_KEY,
-      TestController.prototype,
-      'publicRoute',
-    ) as boolean | undefined;
+    const metadata = reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      TestController.prototype.publicRoute,
+      TestController,
+    ]);
     expect(metadata).toBe(true);
   });
 
   it('should not set metadata on routes without decorator', () => {
-    const metadata = Reflect.getMetadata(
-      IS_PUBLIC_KEY,
-      TestController.prototype,
-      'privateRoute',
-    ) as boolean | undefined;
+    const metadata = reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      TestController.prototype.privateRoute,
+      TestController,
+    ]);
     expect(metadata).toBeUndefined();
   });
 
