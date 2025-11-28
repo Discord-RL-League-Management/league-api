@@ -135,7 +135,7 @@ export class TrackerRefreshSchedulerService
     return trackers.map((t) => t.id);
   }
 
-  async onApplicationShutdown(signal?: string) {
+  onApplicationShutdown(signal?: string) {
     this.logger.log(`Application shutting down: ${signal || 'unknown signal'}`);
 
     if (this.cronJob) {
