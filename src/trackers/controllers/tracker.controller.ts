@@ -66,7 +66,7 @@ export class TrackerController {
   @ApiResponse({ status: 404, description: 'No trackers found for user' })
   async getMyTrackers(@CurrentUser() user: AuthenticatedUser) {
     const trackers = await this.trackerService.getTrackersByUserId(user.id);
-    return trackers; // Return array of trackers
+    return trackers;
   }
 
   @Get()
@@ -75,13 +75,13 @@ export class TrackerController {
   @ApiResponse({ status: 200, description: 'List of trackers' })
   async getTrackers(
     @Query('guildId') guildId?: string,
-    @CurrentUser() user?: AuthenticatedUser,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
     if (guildId) {
       return this.trackerService.getTrackersByGuild(guildId);
     }
-    // If no guildId, return user's trackers
-    return this.trackerService.getTrackersByUserId(user?.id || '');
+    // JwtAuthGuard ensures user is always present, preventing null reference errors
+    return this.trackerService.getTrackersByUserId(user.id);
   }
 
   @Get(':id')
@@ -100,12 +100,12 @@ export class TrackerController {
   @ApiResponse({ status: 404, description: 'Tracker not found' })
   async getTrackerDetail(@Param('id') id: string) {
     const tracker = await this.trackerService.getTrackerById(id);
-    // Tracker already includes seasons from getTrackerById, but we'll structure it explicitly
+    // Separate seasons into root-level property to match frontend API contract
     const seasons = tracker.seasons || [];
     return {
       tracker: {
         ...tracker,
-        seasons: undefined, // Remove seasons from tracker object
+        seasons: undefined,
       },
       seasons,
     };
@@ -138,7 +138,7 @@ export class TrackerController {
     @Param('id') id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    // Verify ownership
+    // Prevent unauthorized users from triggering expensive scraping jobs
     const tracker = await this.trackerService.getTrackerById(id);
     if (tracker.userId !== user.id) {
       throw new ForbiddenException('You can only refresh your own tracker');
