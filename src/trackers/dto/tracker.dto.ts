@@ -7,6 +7,7 @@ import {
   IsArray,
   ArrayMinSize,
   ArrayMaxSize,
+  IsUrl,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { GamePlatform, Game } from '@prisma/client';
@@ -18,6 +19,7 @@ export class CreateTrackerDto {
   })
   @IsString()
   @IsNotEmpty()
+  @IsUrl()
   url!: string;
 
   @ApiProperty({
@@ -86,6 +88,7 @@ export class RegisterTrackersDto {
   @ArrayMaxSize(4)
   @IsString({ each: true })
   @IsNotEmpty({ each: true })
+  @IsUrl({}, { each: true })
   urls!: string[];
 }
 
@@ -96,6 +99,7 @@ export class AddTrackerDto {
   })
   @IsString()
   @IsNotEmpty()
+  @IsUrl()
   url!: string;
 }
 
