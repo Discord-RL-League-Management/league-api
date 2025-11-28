@@ -17,6 +17,7 @@ import { LeaguesService } from './leagues.service';
 import { LeagueSettingsService } from './league-settings.service';
 import { CreateLeagueDto } from './dto/create-league.dto';
 import { UpdateLeagueDto } from './dto/update-league.dto';
+import { LeagueSettingsDto } from './dto/league-settings.dto';
 import {
   ApiTags,
   ApiOperation,
@@ -107,7 +108,7 @@ export class InternalLeaguesController {
   @ApiResponse({ status: 404, description: 'League not found' })
   @ApiResponse({ status: 401, description: 'Invalid bot API key' })
   @ApiParam({ name: 'id', description: 'League ID' })
-  async updateSettings(@Param('id') id: string, @Body() settings: any) {
+  async updateSettings(@Param('id') id: string, @Body() settings: LeagueSettingsDto) {
     this.logger.log(`Bot updating settings for league ${id}`);
     return this.leagueSettingsService.updateSettings(id, settings);
   }

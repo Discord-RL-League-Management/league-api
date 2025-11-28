@@ -21,6 +21,7 @@ import { AdminGuard } from '../../auth/guards/admin.guard';
 import { TrackerService } from '../services/tracker.service';
 import { TrackerRefreshSchedulerService } from '../services/tracker-refresh-scheduler.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { BatchRefreshDto } from '../dto/batch-refresh.dto';
 import { TrackerScrapingStatus } from '@prisma/client';
 
 @ApiTags('Admin - Trackers')
@@ -79,7 +80,7 @@ export class TrackerAdminController {
           },
           seasons: {
             orderBy: { seasonNumber: 'desc' },
-            take: 1, // Get latest season
+            take: 1,
           },
         },
         orderBy: { createdAt: 'desc' },
@@ -203,7 +204,7 @@ export class TrackerAdminController {
   @Post('batch-refresh')
   @ApiOperation({ summary: 'Trigger batch refresh for multiple trackers (Admin only)' })
   @ApiResponse({ status: 200, description: 'Batch refresh triggered' })
-  async batchRefresh(@Body() body: { trackerIds?: string[] }) {
+  async batchRefresh(@Body() body: BatchRefreshDto) {
     await this.refreshScheduler.triggerManualRefresh(body.trackerIds);
     return {
       message: 'Batch refresh triggered successfully',

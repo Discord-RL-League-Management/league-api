@@ -10,6 +10,7 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UsersService } from './users.service';
+import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import type { AuthenticatedUser } from '../common/interfaces/user.interface';
 
 /**
@@ -29,16 +30,16 @@ export class UsersController {
   @Patch('me')
   async updateMyProfile(
     @CurrentUser() user: AuthenticatedUser,
-    @Body() data: Partial<{ username: string; email: string }>,
+    @Body() data: UpdateUserProfileDto,
   ) {
-    // Users can only update certain fields
+    // Restrict updates to username only to prevent unauthorized email changes
     const allowedFields = { username: data.username };
     return this.usersService.update(user.id, allowedFields);
   }
 
   @Get(':id')
   async getUser(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
-    // Users can only view their own profile
+    // Enforce privacy by restricting profile access to the authenticated user
     if (id !== user.id) {
       throw new ForbiddenException('You can only view your own profile');
     }

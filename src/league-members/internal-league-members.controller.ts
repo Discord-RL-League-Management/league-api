@@ -23,6 +23,7 @@ import { LeagueMemberService } from './services/league-member.service';
 import { CreateLeagueMemberDto } from './dto/create-league-member.dto';
 import { UpdateLeagueMemberDto } from './dto/update-league-member.dto';
 import { JoinLeagueDto } from './dto/join-league.dto';
+import { ApproveLeagueMemberDto } from './dto/approve-league-member.dto';
 import { LeagueMemberNotFoundException } from './exceptions/league-member.exceptions';
 import type { LeagueMemberQueryOptions } from './interfaces/league-member.interface';
 
@@ -137,7 +138,7 @@ export class InternalLeagueMembersController {
   approveMember(
     @Param('leagueId') leagueId: string,
     @Param('playerId') playerId: string,
-    @Body() body: { approvedBy: string },
+    @Body() body: ApproveLeagueMemberDto,
   ) {
     return this.leagueMemberService.findByPlayerAndLeague(playerId, leagueId).then(
       (member) => {

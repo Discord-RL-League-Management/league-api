@@ -4,6 +4,8 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { MatchService } from './services/match.service';
 import { CreateMatchDto } from './dto/create-match.dto';
 import { CreateMatchParticipantDto } from './dto/create-match-participant.dto';
+import { UpdateMatchStatusDto } from './dto/update-match-status.dto';
+import { CompleteMatchDto } from './dto/complete-match.dto';
 
 @ApiTags('Matches')
 @Controller('api/matches')
@@ -32,13 +34,13 @@ export class MatchesController {
 
   @Patch(':id/status')
   @ApiOperation({ summary: 'Update match status' })
-  updateStatus(@Param('id') id: string, @Body() body: { status: string }) {
+  updateStatus(@Param('id') id: string, @Body() body: UpdateMatchStatusDto) {
     return this.matchService.updateStatus(id, body.status);
   }
 
   @Post(':id/complete')
   @ApiOperation({ summary: 'Complete match and update stats/ratings' })
-  completeMatch(@Param('id') id: string, @Body() body: { winnerId?: string }) {
+  completeMatch(@Param('id') id: string, @Body() body: CompleteMatchDto) {
     return this.matchService.completeMatch(id, body.winnerId);
   }
 }

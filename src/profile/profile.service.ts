@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { UserStatisticsService } from './services/user-statistics.service';
 import { UserSettingsService, UserSettings } from './services/user-settings.service';
+import { UpdateUserSettingsDto } from './dto/update-user-settings.dto';
 
 /**
  * ProfileService - Aggregates and presents user profile data
@@ -24,10 +25,8 @@ export class ProfileService {
    * Single Responsibility: Profile aggregation and transformation
    */
   async getProfile(userId: string) {
-    // Get user entity data
     const userData = await this.usersService.getProfile(userId);
 
-    // Transform to presentation-friendly format
     return {
       id: userData.id,
       username: userData.username,
@@ -61,8 +60,8 @@ export class ProfileService {
    */
   async updateSettings(
     userId: string,
-    settings: Partial<UserSettings>,
+    settings: UpdateUserSettingsDto,
   ): Promise<UserSettings> {
-    return this.userSettingsService.updateSettings(userId, settings);
+    return this.userSettingsService.updateSettings(userId, settings as Partial<UserSettings>);
   }
 }
