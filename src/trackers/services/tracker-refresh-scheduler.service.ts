@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnApplicationShutdown,
+} from '@nestjs/common';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { CronJob } from 'cron';
 import { ConfigService } from '@nestjs/config';
@@ -6,12 +11,20 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { TrackerScrapingQueueService } from '../queues/tracker-scraping.queue';
 import { TrackerBatchRefreshService } from './tracker-batch-refresh.service';
 
+/**
+ * TrackerRefreshSchedulerService - Schedules periodic tracker refreshes
+ *
+ * Implements OnApplicationShutdown to prevent orphaned scheduled tasks during application termination.
+ */
 @Injectable()
-export class TrackerRefreshSchedulerService implements OnModuleInit {
+export class TrackerRefreshSchedulerService
+  implements OnModuleInit, OnApplicationShutdown
+{
   private readonly logger = new Logger(TrackerRefreshSchedulerService.name);
   private readonly refreshIntervalHours: number;
   private readonly batchSize: number;
   private readonly cronExpression: string;
+  private cronJob: CronJob | null = null;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -33,9 +46,8 @@ export class TrackerRefreshSchedulerService implements OnModuleInit {
       `Tracker refresh scheduler initialized. Cron: ${cronExpression}, Batch size: ${this.batchSize}, Interval: ${this.refreshIntervalHours} hours`,
     );
 
-    // Register cron job dynamically using configured expression
     const job = new CronJob(cronExpression, () => {
-      // Handle async operation in cron callback to prevent unhandled promise rejections
+      // Catch errors to prevent unhandled promise rejections in cron callbacks
       this.scheduledRefresh().catch((error) => {
         const errorMessage =
           error instanceof Error ? error.message : String(error);
@@ -46,6 +58,7 @@ export class TrackerRefreshSchedulerService implements OnModuleInit {
       });
     });
 
+    this.cronJob = job;
     this.schedulerRegistry.addCronJob('tracker-refresh', job);
     job.start();
 
@@ -71,11 +84,9 @@ export class TrackerRefreshSchedulerService implements OnModuleInit {
   async triggerManualRefresh(trackerIds?: string[]): Promise<void> {
     try {
       if (trackerIds && trackerIds.length > 0) {
-        // Refresh specific trackers
         this.logger.log(`Manually refreshing ${trackerIds.length} trackers`);
         await this.batchRefreshService.refreshTrackers(trackerIds);
       } else {
-        // Refresh all trackers that need updating
         const trackersToRefresh = await this.getTrackersNeedingRefresh();
         this.logger.log(
           `Found ${trackersToRefresh.length} trackers needing refresh`,
@@ -86,7 +97,6 @@ export class TrackerRefreshSchedulerService implements OnModuleInit {
           return;
         }
 
-        // Process in batches
         await this.batchRefreshService.refreshTrackersInBatches(
           trackersToRefresh,
           this.batchSize,
@@ -112,7 +122,7 @@ export class TrackerRefreshSchedulerService implements OnModuleInit {
         isActive: true,
         isDeleted: false,
         OR: [{ lastScrapedAt: null }, { lastScrapedAt: { lt: cutoffTime } }],
-        // Don't refresh trackers that are currently being scraped
+        // Exclude trackers currently being scraped to prevent concurrent scraping conflicts
         scrapingStatus: {
           not: 'IN_PROGRESS',
         },
@@ -123,5 +133,17 @@ export class TrackerRefreshSchedulerService implements OnModuleInit {
     });
 
     return trackers.map((t) => t.id);
+  }
+
+  onApplicationShutdown(signal?: string) {
+    this.logger.log(`Application shutting down: ${signal || 'unknown signal'}`);
+
+    if (this.cronJob) {
+      this.cronJob.stop();
+      this.schedulerRegistry.deleteCronJob('tracker-refresh');
+      this.cronJob = null;
+    }
+
+    this.logger.log('✅ Tracker refresh scheduler stopped');
   }
 }

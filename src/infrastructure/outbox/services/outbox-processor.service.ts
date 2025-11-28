@@ -3,6 +3,7 @@ import {
   Logger,
   OnModuleInit,
   OnModuleDestroy,
+  OnApplicationShutdown,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -15,9 +16,12 @@ import { OutboxEventDispatcher } from './outbox-event-dispatcher.service';
  *
  * Polls for pending outbox events and processes them.
  * Handles retry logic and error recovery.
+ * Implements OnApplicationShutdown to gracefully stop polling and wait for in-flight processing during application termination.
  */
 @Injectable()
-export class OutboxProcessorService implements OnModuleInit, OnModuleDestroy {
+export class OutboxProcessorService
+  implements OnModuleInit, OnModuleDestroy, OnApplicationShutdown
+{
   private readonly logger = new Logger(OutboxProcessorService.name);
   private pollInterval: NodeJS.Timeout | null = null;
   private readonly pollIntervalMs: number;
@@ -42,6 +46,27 @@ export class OutboxProcessorService implements OnModuleInit, OnModuleDestroy {
 
   onModuleDestroy() {
     this.stopPolling();
+  }
+
+  async onApplicationShutdown(signal?: string) {
+    this.logger.log(`Application shutting down: ${signal || 'unknown signal'}`);
+    this.stopPolling();
+
+    // Wait for in-flight processing with timeout to prevent shutdown from hanging indefinitely
+    const maxWaitTime = 5000;
+    const startTime = Date.now();
+    while (this.isProcessing && Date.now() - startTime < maxWaitTime) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+
+    if (this.isProcessing) {
+      this.logger.warn(
+        'Shutdown timeout reached, forcing stop of outbox processor',
+      );
+      this.isProcessing = false;
+    }
+
+    this.logger.log('✅ Outbox processor stopped');
   }
 
   private startPolling() {
@@ -76,7 +101,7 @@ export class OutboxProcessorService implements OnModuleInit, OnModuleDestroy {
     this.isProcessing = true;
 
     try {
-      // Get pending outbox events (limit to prevent overload)
+      // Limit to 10 events per batch to prevent overload
       const pendingEvents = await this.outboxService.findPendingEvents(
         undefined,
         10,
@@ -90,16 +115,13 @@ export class OutboxProcessorService implements OnModuleInit, OnModuleDestroy {
 
       for (const event of pendingEvents) {
         try {
-          // Mark as processing
           await this.outboxService.updateStatus(
             event.id,
             OutboxStatus.PROCESSING,
           );
 
-          // Dispatch event to appropriate queue
           await this.eventDispatcher.dispatchEvent(event);
 
-          // Mark as completed
           await this.outboxService.updateStatus(
             event.id,
             OutboxStatus.COMPLETED,
@@ -115,7 +137,7 @@ export class OutboxProcessorService implements OnModuleInit, OnModuleDestroy {
             `Failed to process outbox event ${event.id}: ${errorMessage}`,
           );
 
-          // Mark as failed after max retries
+          // Mark as failed after 3 retries to prevent infinite retry loops
           const maxRetries = 3;
           const newStatus =
             retryCount >= maxRetries
