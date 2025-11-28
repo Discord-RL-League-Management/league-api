@@ -10,11 +10,23 @@ export class ParseEnumPipe<T extends object> implements PipeTransform<string | u
     if (value === undefined || value === null) {
       return undefined;
     }
+    
     const enumValues = Object.values(this.enumObject);
-    if (!enumValues.includes(value as T[keyof T])) {
-      throw new BadRequestException(`Invalid enum value: ${value}`);
+    
+    // Check if value matches as-is (for string enums)
+    if (enumValues.includes(value as T[keyof T])) {
+      return value as T[keyof T];
     }
-    return value as T[keyof T];
+    
+    // For numeric enums, try converting string to number
+    // This handles the case where HTTP query parameters arrive as strings (e.g., '1')
+    // but the enum values are numbers (e.g., NumberEnum.ONE = 1)
+    const numericValue = Number(value);
+    if (!isNaN(numericValue) && enumValues.includes(numericValue as T[keyof T])) {
+      return numericValue as T[keyof T];
+    }
+    
+    throw new BadRequestException(`Invalid enum value: ${value}`);
   }
 }
 
