@@ -3,6 +3,7 @@ import {
   NestModule,
   MiddlewareConsumer,
   ValidationPipe,
+  BadRequestException,
 } from '@nestjs/common';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD, APP_PIPE, APP_FILTER } from '@nestjs/core';
@@ -39,6 +40,9 @@ import { throttlerConfig } from './config/throttler.config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
+
+// Standard validation error message exported for consistent API responses across the application
+export const VALIDATION_FAILED_MESSAGE = 'Validation failed';
 
 @Module({
   imports: [
@@ -86,9 +90,37 @@ import { GlobalExceptionFilter } from './common/filters/global-exception.filter'
       provide: APP_PIPE,
       useFactory: (configService: ConfigService) => {
         return new ValidationPipe({
+          // Strip properties that don't have decorators to prevent injection attacks
           whitelist: true,
+          // Reject requests with non-whitelisted properties to catch typos and malicious input
           forbidNonWhitelisted: true,
+          // Automatically transform payloads to match DTO types for type safety
           transform: true,
+          // Enable automatic type conversion to reduce manual parsing and improve developer experience
+          transformOptions: {
+            enableImplicitConversion: true,
+          },
+          // Format validation errors consistently for better API consumer experience
+          exceptionFactory: (errors) => {
+            const formattedErrors = errors.map((error) => ({
+              property: error.property,
+              constraints: error.constraints,
+              value: error.value,
+            }));
+            return new BadRequestException({
+              message: VALIDATION_FAILED_MESSAGE,
+              errors: formattedErrors,
+            });
+          },
+          // Stop validation on first error to improve performance for invalid requests
+          stopAtFirstError: true,
+          // Explicitly require all properties to prevent silent failures from missing data
+          skipMissingProperties: false,
+          // Validate null values to ensure data integrity
+          skipNullProperties: false,
+          // Validate undefined values to catch missing required fields
+          skipUndefinedProperties: false,
+          // Hide detailed error messages in production to avoid exposing internal structure
           disableErrorMessages:
             configService.get<string>('app.nodeEnv') === 'production',
         });
