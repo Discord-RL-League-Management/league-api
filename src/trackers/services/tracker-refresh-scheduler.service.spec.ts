@@ -220,9 +220,7 @@ describe('TrackerRefreshSchedulerService', () => {
       await service.triggerManualRefresh(trackerIds);
 
       // ASSERT
-      expect(logSpy).toHaveBeenCalledWith(
-        'Manually refreshing 3 trackers',
-      );
+      expect(logSpy).toHaveBeenCalledWith('Manually refreshing 3 trackers');
       expect(mockBatchRefreshService.refreshTrackers).toHaveBeenCalledWith(
         trackerIds,
       );
@@ -250,7 +248,9 @@ describe('TrackerRefreshSchedulerService', () => {
           isDeleted: false,
           OR: [
             { lastScrapedAt: null },
-            { lastScrapedAt: expect.objectContaining({ lt: expect.any(Date) }) },
+            {
+              lastScrapedAt: expect.objectContaining({ lt: expect.any(Date) }),
+            },
           ],
           scrapingStatus: {
             not: 'IN_PROGRESS',
@@ -260,9 +260,7 @@ describe('TrackerRefreshSchedulerService', () => {
           id: true,
         },
       });
-      expect(logSpy).toHaveBeenCalledWith(
-        'Found 2 trackers needing refresh',
-      );
+      expect(logSpy).toHaveBeenCalledWith('Found 2 trackers needing refresh');
       expect(
         mockBatchRefreshService.refreshTrackersInBatches,
       ).toHaveBeenCalledWith(trackersNeedingRefresh, 10);
@@ -373,9 +371,7 @@ describe('TrackerRefreshSchedulerService', () => {
       await service.onApplicationShutdown('SIGTERM');
 
       // ASSERT
-      expect(logSpy).toHaveBeenCalledWith(
-        'Application shutting down: SIGTERM',
-      );
+      expect(logSpy).toHaveBeenCalledWith('Application shutting down: SIGTERM');
     });
 
     it('should handle unknown signal', async () => {
@@ -428,4 +424,3 @@ describe('TrackerRefreshSchedulerService', () => {
     });
   });
 });
-

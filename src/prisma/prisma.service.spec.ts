@@ -47,9 +47,7 @@ describe('PrismaService', () => {
     it('should log shutdown signal', async () => {
       const logSpy = jest.spyOn(service['logger'], 'log');
       await service.onApplicationShutdown('SIGTERM');
-      expect(logSpy).toHaveBeenCalledWith(
-        'Application shutting down: SIGTERM',
-      );
+      expect(logSpy).toHaveBeenCalledWith('Application shutting down: SIGTERM');
     });
 
     it('should handle unknown signal', async () => {
@@ -75,4 +73,3 @@ describe('PrismaService', () => {
     });
   });
 });
-
