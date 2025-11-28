@@ -15,10 +15,14 @@ export class BotApiKeyStrategy extends PassportStrategy(
 
   constructor(private configService: ConfigService) {
     super();
-    // Hash the API key for constant-time comparison
+    // Pre-hash API key to enable constant-time comparison and prevent timing attacks
     const botApiKey = this.configService.get<string>('auth.botApiKey');
     if (!botApiKey) {
       throw new Error('BOT_API_KEY environment variable is required');
+    }
+    const apiKeySalt = this.configService.get<string>('auth.apiKeySalt');
+    if (!apiKeySalt) {
+      throw new Error('API_KEY_SALT environment variable is required');
     }
     this.apiKeyHash = this.hashApiKey(botApiKey);
   }
@@ -55,7 +59,10 @@ export class BotApiKeyStrategy extends PassportStrategy(
   }
 
   private hashApiKey(key: string): string {
-    const salt = this.configService.get<string>('auth.apiKeySalt', 'default-salt');
+    const salt = this.configService.get<string>('auth.apiKeySalt');
+    if (!salt) {
+      throw new Error('API_KEY_SALT environment variable is required');
+    }
     return createHmac('sha256', salt)
       .update(key)
       .digest('hex');
