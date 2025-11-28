@@ -7,7 +7,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 
 /**
  * Audit Log Service - Single Responsibility: Business logic for audit logging
- * 
+ *
  * Separation of Concerns: Business logic separate from persistence.
  * Coordinates between repository and context services.
  */
@@ -25,10 +25,7 @@ export class AuditLogService {
    * Log permission check event
    * Single Responsibility: Log permission-related events
    */
-  async logPermissionCheck(
-    event: AuditEvent,
-    request: Request
-  ): Promise<void> {
+  async logPermissionCheck(event: AuditEvent, request: Request): Promise<void> {
     try {
       await this.prisma.$transaction(async (tx) => {
         await this.activityLogService.logActivity(
@@ -58,10 +55,7 @@ export class AuditLogService {
    * Log admin action event
    * Single Responsibility: Log admin-related events
    */
-  async logAdminAction(
-    event: AuditEvent,
-    request: Request
-  ): Promise<void> {
+  async logAdminAction(event: AuditEvent, request: Request): Promise<void> {
     try {
       await this.prisma.$transaction(async (tx) => {
         await this.activityLogService.logActivity(
@@ -101,7 +95,7 @@ export class AuditLogService {
       endDate?: Date;
       limit?: number;
       offset?: number;
-    }
+    },
   ): Promise<{
     logs: any[];
     total: number;
@@ -123,13 +117,3 @@ export class AuditLogService {
     };
   }
 }
-
-
-
-
-
-
-
-
-
-

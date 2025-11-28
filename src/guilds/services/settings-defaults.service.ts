@@ -13,24 +13,24 @@ export class SettingsDefaultsService {
   /**
    * Get default settings structure
    * Single Responsibility: Default settings definition
-   * 
+   *
    * Returns the complete default configuration for a new guild.
    * These defaults are used by:
    * - Database trigger (auto-creates settings on guild insert)
    * - Repository upsert operations
    * - Service layer lazy initialization
-   * 
+   *
    * Default structure:
    * - _metadata: Version tracking info (schemaVersion, configVersion)
    * - bot_command_channels: Empty array (listen on all channels)
-   * 
+   *
    * @returns Complete default guild settings structure with metadata
    */
   getDefaults(): GuildSettings {
     return {
       _metadata: this.getDefaultMetadata(),
-      bot_command_channels: [],  // Empty = listen on all channels
-      register_command_channels: [],  // Empty = use bot_command_channels fallback
+      bot_command_channels: [], // Empty = listen on all channels
+      register_command_channels: [], // Empty = use bot_command_channels fallback
       roles: {
         admin: [],
         moderator: [],
@@ -59,7 +59,7 @@ export class SettingsDefaultsService {
    */
   normalizeToCurrentSchema(config: Partial<GuildSettings>): GuildSettings {
     const normalized = this.mergeWithDefaults(config);
-    
+
     // Ensure metadata is present
     if (!normalized._metadata) {
       normalized._metadata = this.getDefaultMetadata();
@@ -69,10 +69,11 @@ export class SettingsDefaultsService {
         ...this.getDefaultMetadata(),
         ...normalized._metadata,
         version: normalized._metadata.version || CURRENT_CONFIG_VERSION,
-        schemaVersion: normalized._metadata.schemaVersion || CURRENT_SCHEMA_VERSION,
+        schemaVersion:
+          normalized._metadata.schemaVersion || CURRENT_SCHEMA_VERSION,
       };
     }
-    
+
     return normalized;
   }
 
@@ -180,5 +181,4 @@ export class SettingsDefaultsService {
 
     return result;
   }
-
 }

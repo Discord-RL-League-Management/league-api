@@ -40,7 +40,8 @@ export class ChannelConfigDto {
 export class GuildSettingsDto {
   @ApiPropertyOptional({
     type: [ChannelConfigDto],
-    description: 'Channels where bot listens for commands. Empty = all channels.',
+    description:
+      'Channels where bot listens for commands. Empty = all channels.',
   })
   @IsOptional()
   @IsArray()
@@ -50,7 +51,8 @@ export class GuildSettingsDto {
 
   @ApiPropertyOptional({
     type: [ChannelConfigDto],
-    description: 'Channels where /register command can be used. Empty = uses bot_command_channels or all channels.',
+    description:
+      'Channels where /register command can be used. Empty = uses bot_command_channels or all channels.',
   })
   @IsOptional()
   @IsArray()

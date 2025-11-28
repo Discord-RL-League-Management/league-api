@@ -1,4 +1,7 @@
-import { NotFoundException, ConflictException } from '../../common/exceptions/base.exception';
+import {
+  NotFoundException,
+  ConflictException,
+} from '../../common/exceptions/base.exception';
 
 /**
  * GuildNotFoundException - Domain-specific exception for guild not found

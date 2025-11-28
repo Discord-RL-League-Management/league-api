@@ -12,7 +12,12 @@ export class PlayerLeagueRatingRepository {
     });
   }
 
-  async upsert(playerId: string, leagueId: string, data: Partial<PlayerLeagueRating>, tx?: Prisma.TransactionClient) {
+  async upsert(
+    playerId: string,
+    leagueId: string,
+    data: Partial<PlayerLeagueRating>,
+    tx?: Prisma.TransactionClient,
+  ) {
     const client = tx || this.prisma;
     const { playerId: _, leagueId: __, ...updateData } = data;
     return client.playerLeagueRating.upsert({
@@ -31,4 +36,3 @@ export class PlayerLeagueRatingRepository {
     });
   }
 }
-

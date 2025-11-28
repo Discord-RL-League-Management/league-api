@@ -1,6 +1,9 @@
 import { IsOptional, IsEnum, IsString } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { OrganizationMemberRole, OrganizationMemberStatus } from '@prisma/client';
+import {
+  OrganizationMemberRole,
+  OrganizationMemberStatus,
+} from '@prisma/client';
 
 export class UpdateOrganizationMemberDto {
   @ApiPropertyOptional({
@@ -26,4 +29,3 @@ export class UpdateOrganizationMemberDto {
   @IsString()
   notes?: string;
 }
-

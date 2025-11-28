@@ -4,7 +4,7 @@ import { EntityVisibility } from '@prisma/client';
 
 /**
  * VisibilityService - Single Responsibility: Visibility management
- * 
+ *
  * Handles entity visibility/sharing operations.
  * Replaces domain-specific visibility patterns with generic pattern.
  */
@@ -66,4 +66,3 @@ export class VisibilityService {
     return this.repository.findVisibilityTargets(entityType, entityId);
   }
 }
-

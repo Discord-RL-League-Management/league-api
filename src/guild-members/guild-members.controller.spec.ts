@@ -2,7 +2,11 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { GuildMembersController } from './guild-members.controller';
 import { GuildMembersService } from './guild-members.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { createMockGuildMembersService, createMockRequest, createMockResponse } from '../../test/setup/test-helpers';
+import {
+  createMockGuildMembersService,
+  createMockRequest,
+  createMockResponse,
+} from '../../test/setup/test-helpers';
 import { apiFixtures } from '../../test/fixtures/member.fixtures';
 
 describe('GuildMembersController', () => {
@@ -24,7 +28,9 @@ describe('GuildMembersController', () => {
       .compile();
 
     controller = module.get<GuildMembersController>(GuildMembersController);
-    service = module.get<GuildMembersService>(GuildMembersService) as jest.Mocked<GuildMembersService>;
+    service = module.get<GuildMembersService>(
+      GuildMembersService,
+    ) as jest.Mocked<GuildMembersService>;
   });
 
   afterEach(() => {
@@ -128,7 +134,12 @@ describe('GuildMembersController', () => {
       service.searchMembers.mockResolvedValue(mockResponse);
 
       // Act
-      const result = await controller.searchMembers(guildId, query, page, limit);
+      const result = await controller.searchMembers(
+        guildId,
+        query,
+        page,
+        limit,
+      );
 
       // Assert
       expect(service.searchMembers).toHaveBeenCalledWith(guildId, query, 1, 20);
@@ -194,10 +205,20 @@ describe('GuildMembersController', () => {
       service.searchMembers.mockResolvedValue(mockResponse);
 
       // Act
-      const result = await controller.searchMembers(guildId, query, page, limit);
+      const result = await controller.searchMembers(
+        guildId,
+        query,
+        page,
+        limit,
+      );
 
       // Assert
-      expect(service.searchMembers).toHaveBeenCalledWith(guildId, query, 1, 100);
+      expect(service.searchMembers).toHaveBeenCalledWith(
+        guildId,
+        query,
+        1,
+        100,
+      );
       expect(result).toEqual(mockResponse);
     });
   });
@@ -264,7 +285,9 @@ describe('GuildMembersController', () => {
       service.findOne.mockRejectedValue(notFoundError);
 
       // Act & Assert
-      await expect(controller.getMember(guildId, userId)).rejects.toThrow('Member not found');
+      await expect(controller.getMember(guildId, userId)).rejects.toThrow(
+        'Member not found',
+      );
     });
   });
 
@@ -297,7 +320,9 @@ describe('GuildMembersController', () => {
       service.create.mockRejectedValue(validationError);
 
       // Act & Assert
-      await expect(controller.createMember(guildId, invalidDto)).rejects.toThrow('Validation failed');
+      await expect(
+        controller.createMember(guildId, invalidDto),
+      ).rejects.toThrow('Validation failed');
     });
   });
 
@@ -312,10 +337,18 @@ describe('GuildMembersController', () => {
       service.update.mockResolvedValue(mockResponse);
 
       // Act
-      const result = await controller.updateMember(guildId, userId, updateMemberDto);
+      const result = await controller.updateMember(
+        guildId,
+        userId,
+        updateMemberDto,
+      );
 
       // Assert
-      expect(service.update).toHaveBeenCalledWith(userId, guildId, updateMemberDto);
+      expect(service.update).toHaveBeenCalledWith(
+        userId,
+        guildId,
+        updateMemberDto,
+      );
       expect(result).toEqual(mockResponse);
     });
 
@@ -329,7 +362,9 @@ describe('GuildMembersController', () => {
       service.update.mockRejectedValue(notFoundError);
 
       // Act & Assert
-      await expect(controller.updateMember(guildId, userId, updateMemberDto)).rejects.toThrow('Member not found');
+      await expect(
+        controller.updateMember(guildId, userId, updateMemberDto),
+      ).rejects.toThrow('Member not found');
     });
   });
 
@@ -358,7 +393,9 @@ describe('GuildMembersController', () => {
       service.remove.mockRejectedValue(notFoundError);
 
       // Act & Assert
-      await expect(controller.removeMember(guildId, userId)).rejects.toThrow('Member not found');
+      await expect(controller.removeMember(guildId, userId)).rejects.toThrow(
+        'Member not found',
+      );
     });
   });
 
@@ -375,7 +412,10 @@ describe('GuildMembersController', () => {
       const result = await controller.syncMembers(guildId, syncData);
 
       // Assert
-      expect(service.syncGuildMembers).toHaveBeenCalledWith(guildId, syncData.members);
+      expect(service.syncGuildMembers).toHaveBeenCalledWith(
+        guildId,
+        syncData.members,
+      );
       expect(result).toEqual(mockResponse);
     });
 
@@ -388,7 +428,9 @@ describe('GuildMembersController', () => {
       service.syncGuildMembers.mockRejectedValue(syncError);
 
       // Act & Assert
-      await expect(controller.syncMembers(guildId, syncData)).rejects.toThrow('Sync failed');
+      await expect(controller.syncMembers(guildId, syncData)).rejects.toThrow(
+        'Sync failed',
+      );
     });
   });
 
@@ -404,12 +446,18 @@ describe('GuildMembersController', () => {
     it('should have correct Swagger decorators', () => {
       // Arrange - Check for ApiTags decorator which is the primary Swagger decorator
       const apiTags = Reflect.getMetadata('api:tags', GuildMembersController);
-      const apiBearerAuth = Reflect.getMetadata('__route__', GuildMembersController);
-      
+      const apiBearerAuth = Reflect.getMetadata(
+        '__route__',
+        GuildMembersController,
+      );
+
       // Alternative: Check if controller has decorators by checking metadata keys
       const metadataKeys = Reflect.getMetadataKeys(GuildMembersController);
-      const hasSwaggerDecorators = metadataKeys.some(key => 
-        key.includes('api') || key.includes('swagger') || key.includes('route')
+      const hasSwaggerDecorators = metadataKeys.some(
+        (key) =>
+          key.includes('api') ||
+          key.includes('swagger') ||
+          key.includes('route'),
       );
 
       // Assert - ApiTags decorator is on line 26 of guild-members.controller.ts
@@ -428,7 +476,9 @@ describe('GuildMembersController', () => {
       service.findAll.mockRejectedValue(serviceError);
 
       // Act & Assert
-      await expect(controller.getMembers(guildId)).rejects.toThrow('Database connection failed');
+      await expect(controller.getMembers(guildId)).rejects.toThrow(
+        'Database connection failed',
+      );
     });
 
     it('should handle network timeouts', async () => {
@@ -439,20 +489,24 @@ describe('GuildMembersController', () => {
       service.findAll.mockRejectedValue(timeoutError);
 
       // Act & Assert
-      await expect(controller.getMembers(guildId)).rejects.toThrow('Request timeout');
+      await expect(controller.getMembers(guildId)).rejects.toThrow(
+        'Request timeout',
+      );
     });
 
     it('should handle validation errors', async () => {
       // Arrange
       const guildId = '987654321098765432';
-      const validationError = new Error('Validation failed: username is required');
+      const validationError = new Error(
+        'Validation failed: username is required',
+      );
 
       service.create.mockRejectedValue(validationError);
 
       // Act & Assert
-      await expect(controller.createMember(guildId, apiFixtures.createCreateMemberDTO())).rejects.toThrow(
-        'Validation failed: username is required'
-      );
+      await expect(
+        controller.createMember(guildId, apiFixtures.createCreateMemberDTO()),
+      ).rejects.toThrow('Validation failed: username is required');
     });
   });
 
@@ -465,7 +519,9 @@ describe('GuildMembersController', () => {
       service.findAll.mockRejectedValue(serviceError);
 
       // Act & Assert
-      await expect(controller.getMembers(guildId)).rejects.toThrow('Guild ID is required');
+      await expect(controller.getMembers(guildId)).rejects.toThrow(
+        'Guild ID is required',
+      );
     });
 
     it('should handle missing userId parameter', async () => {
@@ -477,7 +533,9 @@ describe('GuildMembersController', () => {
       service.findOne.mockRejectedValue(serviceError);
 
       // Act & Assert
-      await expect(controller.getMember(guildId, userId)).rejects.toThrow('User ID is required');
+      await expect(controller.getMember(guildId, userId)).rejects.toThrow(
+        'User ID is required',
+      );
     });
   });
 

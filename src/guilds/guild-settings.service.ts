@@ -37,7 +37,7 @@ export class GuildSettingsService {
   /**
    * Get guild settings with caching and defaults
    * Single Responsibility: Settings retrieval with caching and lazy initialization
-   * 
+   *
    * Automatically persists default settings if they don't exist (lazy initialization).
    * Settings creation is independent of user validation - they exist regardless of who accesses them.
    * If settings don't exist, that's a bug - auto-create them immediately.
@@ -161,29 +161,31 @@ export class GuildSettingsService {
       }
 
       // Update with history tracking (transaction handled in service)
-      const result = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-        const updated = await this.settingsService.updateSettings(
-          'guild',
-          guildId,
-          mergedSettings as Record<string, any>,
-          tx,
-        );
+      const result = await this.prisma.$transaction(
+        async (tx: Prisma.TransactionClient) => {
+          const updated = await this.settingsService.updateSettings(
+            'guild',
+            guildId,
+            mergedSettings as Record<string, any>,
+            tx,
+          );
 
-        // Log activity
-        await this.activityLogService.logActivity(
-          tx,
-          'guild_settings',
-          guildId,
-          'SETTINGS_UPDATED',
-          'update',
-          userId,
-          guildId,
-          newSettings as unknown as Record<string, any>,
-          { action: 'update' },
-        );
+          // Log activity
+          await this.activityLogService.logActivity(
+            tx,
+            'guild_settings',
+            guildId,
+            'SETTINGS_UPDATED',
+            'update',
+            userId,
+            guildId,
+            newSettings as unknown as Record<string, any>,
+            { action: 'update' },
+          );
 
-        return updated;
-      });
+          return updated;
+        },
+      );
 
       await this.cacheManager.del(`settings:${guildId}`);
 
@@ -206,29 +208,31 @@ export class GuildSettingsService {
       const defaultSettings = this.settingsDefaults.getDefaults();
 
       // Reset with history tracking (transaction handled in service)
-      const result = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-        const updated = await this.settingsService.updateSettings(
-          'guild',
-          guildId,
-          defaultSettings as Record<string, any>,
-          tx,
-        );
+      const result = await this.prisma.$transaction(
+        async (tx: Prisma.TransactionClient) => {
+          const updated = await this.settingsService.updateSettings(
+            'guild',
+            guildId,
+            defaultSettings as Record<string, any>,
+            tx,
+          );
 
-        // Log activity
-        await this.activityLogService.logActivity(
-          tx,
-          'guild_settings',
-          guildId,
-          'SETTINGS_RESET',
-          'reset',
-          userId,
-          guildId,
-          { reset: true },
-          { action: 'reset' },
-        );
+          // Log activity
+          await this.activityLogService.logActivity(
+            tx,
+            'guild_settings',
+            guildId,
+            'SETTINGS_RESET',
+            'reset',
+            userId,
+            guildId,
+            { reset: true },
+            { action: 'reset' },
+          );
 
-        return updated;
-      });
+          return updated;
+        },
+      );
 
       await this.cacheManager.del(`settings:${guildId}`);
 

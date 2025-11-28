@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { OrganizationService } from './organization.service';
 import { OrganizationRepository } from '../repositories/organization.repository';
 import { OrganizationMemberService } from './organization-member.service';
@@ -119,9 +123,15 @@ describe('OrganizationService', () => {
     }).compile();
 
     service = module.get<OrganizationService>(OrganizationService);
-    organizationRepository = module.get<OrganizationRepository>(OrganizationRepository);
-    organizationMemberService = module.get<OrganizationMemberService>(OrganizationMemberService);
-    validationService = module.get<OrganizationValidationService>(OrganizationValidationService);
+    organizationRepository = module.get<OrganizationRepository>(
+      OrganizationRepository,
+    );
+    organizationMemberService = module.get<OrganizationMemberService>(
+      OrganizationMemberService,
+    );
+    validationService = module.get<OrganizationValidationService>(
+      OrganizationValidationService,
+    );
     playerService = module.get<PlayerService>(PlayerService);
     leagueRepository = module.get<LeagueRepository>(LeagueRepository);
     teamRepository = module.get<TeamRepository>(TeamRepository);
@@ -151,7 +161,9 @@ describe('OrganizationService', () => {
     it('should throw OrganizationNotFoundException when not found', async () => {
       mockOrganizationRepository.findById.mockResolvedValue(null);
 
-      await expect(service.findOne('org1')).rejects.toThrow(OrganizationNotFoundException);
+      await expect(service.findOne('org1')).rejects.toThrow(
+        OrganizationNotFoundException,
+      );
     });
   });
 
@@ -161,12 +173,16 @@ describe('OrganizationService', () => {
         { id: 'org1', leagueId: 'league1', name: 'Org 1' },
         { id: 'org2', leagueId: 'league1', name: 'Org 2' },
       ];
-      mockOrganizationRepository.findByLeagueId.mockResolvedValue(mockOrganizations);
+      mockOrganizationRepository.findByLeagueId.mockResolvedValue(
+        mockOrganizations,
+      );
 
       const result = await service.findByLeagueId('league1');
 
       expect(result).toEqual(mockOrganizations);
-      expect(mockOrganizationRepository.findByLeagueId).toHaveBeenCalledWith('league1');
+      expect(mockOrganizationRepository.findByLeagueId).toHaveBeenCalledWith(
+        'league1',
+      );
     });
   });
 
@@ -189,7 +205,9 @@ describe('OrganizationService', () => {
       };
 
       mockValidationService.validateCreate.mockResolvedValue(undefined);
-      mockValidationService.validateLeagueOrganizationCapacity.mockResolvedValue(undefined);
+      mockValidationService.validateLeagueOrganizationCapacity.mockResolvedValue(
+        undefined,
+      );
       mockLeagueRepository.findById.mockResolvedValue(mockLeague);
       mockPlayerService.ensurePlayerExists.mockResolvedValue(mockPlayer);
       mockOrganizationRepository.create.mockResolvedValue(mockOrganization);
@@ -201,9 +219,16 @@ describe('OrganizationService', () => {
 
       const result = await service.create(createDto, 'user1');
 
-      expect(mockValidationService.validateCreate).toHaveBeenCalledWith(createDto);
-      expect(mockValidationService.validateLeagueOrganizationCapacity).toHaveBeenCalledWith('league1', undefined);
-      expect(mockPlayerService.ensurePlayerExists).toHaveBeenCalledWith('user1', 'guild1');
+      expect(mockValidationService.validateCreate).toHaveBeenCalledWith(
+        createDto,
+      );
+      expect(
+        mockValidationService.validateLeagueOrganizationCapacity,
+      ).toHaveBeenCalledWith('league1', undefined);
+      expect(mockPlayerService.ensurePlayerExists).toHaveBeenCalledWith(
+        'user1',
+        'guild1',
+      );
       expect(mockOrganizationRepository.create).toHaveBeenCalledWith(createDto);
       expect(mockOrganizationMemberService.addMember).toHaveBeenCalledWith(
         'org1',
@@ -216,16 +241,24 @@ describe('OrganizationService', () => {
 
     it('should throw NotFoundException when league not found', async () => {
       mockValidationService.validateCreate.mockResolvedValue(undefined);
-      mockValidationService.validateLeagueOrganizationCapacity.mockResolvedValue(undefined);
+      mockValidationService.validateLeagueOrganizationCapacity.mockResolvedValue(
+        undefined,
+      );
       mockLeagueRepository.findById.mockResolvedValue(null);
 
-      await expect(service.create(createDto, 'user1')).rejects.toThrow(NotFoundException);
+      await expect(service.create(createDto, 'user1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw when validation fails', async () => {
-      mockValidationService.validateCreate.mockRejectedValue(new Error('Validation failed'));
+      mockValidationService.validateCreate.mockRejectedValue(
+        new Error('Validation failed'),
+      );
 
-      await expect(service.create(createDto, 'user1')).rejects.toThrow('Validation failed');
+      await expect(service.create(createDto, 'user1')).rejects.toThrow(
+        'Validation failed',
+      );
     });
 
     it('should throw when league organization capacity exceeded', async () => {
@@ -234,7 +267,9 @@ describe('OrganizationService', () => {
         new Error('Capacity exceeded'),
       );
 
-      await expect(service.create(createDto, 'user1')).rejects.toThrow('Capacity exceeded');
+      await expect(service.create(createDto, 'user1')).rejects.toThrow(
+        'Capacity exceeded',
+      );
     });
 
     it('should create organization for system user without player/GM (for auto-assignment)', async () => {
@@ -247,7 +282,9 @@ describe('OrganizationService', () => {
       };
 
       mockValidationService.validateCreate.mockResolvedValue(undefined);
-      mockValidationService.validateLeagueOrganizationCapacity.mockResolvedValue(undefined);
+      mockValidationService.validateLeagueOrganizationCapacity.mockResolvedValue(
+        undefined,
+      );
       mockLeagueRepository.findById.mockResolvedValue(mockLeague);
       // Should NOT call ensurePlayerExists for system user
       mockPlayerService.ensurePlayerExists.mockClear();
@@ -277,12 +314,20 @@ describe('OrganizationService', () => {
     it('should update organization when user is General Manager', async () => {
       mockOrganizationRepository.findById.mockResolvedValue(mockOrganization);
       mockOrganizationMemberService.isGeneralManager.mockResolvedValue(true);
-      mockOrganizationRepository.update.mockResolvedValue({ ...mockOrganization, ...updateDto });
+      mockOrganizationRepository.update.mockResolvedValue({
+        ...mockOrganization,
+        ...updateDto,
+      });
 
       const result = await service.update('org1', updateDto, 'user1');
 
-      expect(mockOrganizationMemberService.isGeneralManager).toHaveBeenCalledWith('user1', 'org1');
-      expect(mockOrganizationRepository.update).toHaveBeenCalledWith('org1', updateDto);
+      expect(
+        mockOrganizationMemberService.isGeneralManager,
+      ).toHaveBeenCalledWith('user1', 'org1');
+      expect(mockOrganizationRepository.update).toHaveBeenCalledWith(
+        'org1',
+        updateDto,
+      );
       expect(result.name).toBe('Updated Name');
     });
 
@@ -290,7 +335,9 @@ describe('OrganizationService', () => {
       mockOrganizationRepository.findById.mockResolvedValue(mockOrganization);
       mockOrganizationMemberService.isGeneralManager.mockResolvedValue(false);
 
-      await expect(service.update('org1', updateDto, 'user1')).rejects.toThrow(NotGeneralManagerException);
+      await expect(service.update('org1', updateDto, 'user1')).rejects.toThrow(
+        NotGeneralManagerException,
+      );
     });
   });
 
@@ -306,12 +353,16 @@ describe('OrganizationService', () => {
     it('should delete organization when user is GM and has no teams', async () => {
       mockOrganizationRepository.findById.mockResolvedValue(mockOrganization);
       mockOrganizationMemberService.isGeneralManager.mockResolvedValue(true);
-      mockValidationService.validateCanDeleteOrganization.mockResolvedValue(undefined);
+      mockValidationService.validateCanDeleteOrganization.mockResolvedValue(
+        undefined,
+      );
       mockOrganizationRepository.delete.mockResolvedValue(mockOrganization);
 
       const result = await service.delete('org1', 'user1');
 
-      expect(mockValidationService.validateCanDeleteOrganization).toHaveBeenCalledWith('org1');
+      expect(
+        mockValidationService.validateCanDeleteOrganization,
+      ).toHaveBeenCalledWith('org1');
       expect(mockOrganizationRepository.delete).toHaveBeenCalledWith('org1');
       expect(result).toEqual(mockOrganization);
     });
@@ -320,7 +371,9 @@ describe('OrganizationService', () => {
       mockOrganizationRepository.findById.mockResolvedValue(mockOrganization);
       mockOrganizationMemberService.isGeneralManager.mockResolvedValue(false);
 
-      await expect(service.delete('org1', 'user1')).rejects.toThrow(NotGeneralManagerException);
+      await expect(service.delete('org1', 'user1')).rejects.toThrow(
+        NotGeneralManagerException,
+      );
     });
   });
 
@@ -336,28 +389,57 @@ describe('OrganizationService', () => {
 
     it('should transfer team when user is GM of source organization', async () => {
       mockTeamRepository.findById.mockResolvedValue(mockTeam);
-      mockOrganizationRepository.findByIdAndLeague.mockResolvedValueOnce(mockSourceOrg);
-      mockOrganizationRepository.findByIdAndLeague.mockResolvedValueOnce(mockTargetOrg);
-      mockOrganizationMemberService.isGeneralManager.mockResolvedValueOnce(true); // source
-      mockOrganizationMemberService.isGeneralManager.mockResolvedValueOnce(false); // target
+      mockOrganizationRepository.findByIdAndLeague.mockResolvedValueOnce(
+        mockSourceOrg,
+      );
+      mockOrganizationRepository.findByIdAndLeague.mockResolvedValueOnce(
+        mockTargetOrg,
+      );
+      mockOrganizationMemberService.isGeneralManager.mockResolvedValueOnce(
+        true,
+      ); // source
+      mockOrganizationMemberService.isGeneralManager.mockResolvedValueOnce(
+        false,
+      ); // target
       mockValidationService.validateTeamTransfer.mockResolvedValue(undefined);
-      mockTeamRepository.update.mockResolvedValue({ ...mockTeam, organizationId: 'org2' });
+      mockTeamRepository.update.mockResolvedValue({
+        ...mockTeam,
+        organizationId: 'org2',
+      });
 
       const result = await service.transferTeam('team1', 'org2', 'user1');
 
-      expect(mockValidationService.validateTeamTransfer).toHaveBeenCalledWith('team1', 'org1', 'org2', 'league1');
-      expect(mockTeamRepository.update).toHaveBeenCalledWith('team1', { organizationId: 'org2' });
+      expect(mockValidationService.validateTeamTransfer).toHaveBeenCalledWith(
+        'team1',
+        'org1',
+        'org2',
+        'league1',
+      );
+      expect(mockTeamRepository.update).toHaveBeenCalledWith('team1', {
+        organizationId: 'org2',
+      });
       expect(result.organizationId).toBe('org2');
     });
 
     it('should transfer team when user is GM of target organization', async () => {
       mockTeamRepository.findById.mockResolvedValue(mockTeam);
-      mockOrganizationRepository.findByIdAndLeague.mockResolvedValueOnce(mockSourceOrg);
-      mockOrganizationRepository.findByIdAndLeague.mockResolvedValueOnce(mockTargetOrg);
-      mockOrganizationMemberService.isGeneralManager.mockResolvedValueOnce(false); // source
-      mockOrganizationMemberService.isGeneralManager.mockResolvedValueOnce(true); // target
+      mockOrganizationRepository.findByIdAndLeague.mockResolvedValueOnce(
+        mockSourceOrg,
+      );
+      mockOrganizationRepository.findByIdAndLeague.mockResolvedValueOnce(
+        mockTargetOrg,
+      );
+      mockOrganizationMemberService.isGeneralManager.mockResolvedValueOnce(
+        false,
+      ); // source
+      mockOrganizationMemberService.isGeneralManager.mockResolvedValueOnce(
+        true,
+      ); // target
       mockValidationService.validateTeamTransfer.mockResolvedValue(undefined);
-      mockTeamRepository.update.mockResolvedValue({ ...mockTeam, organizationId: 'org2' });
+      mockTeamRepository.update.mockResolvedValue({
+        ...mockTeam,
+        organizationId: 'org2',
+      });
 
       const result = await service.transferTeam('team1', 'org2', 'user1');
 
@@ -367,34 +449,56 @@ describe('OrganizationService', () => {
     it('should throw NotFoundException when team not found', async () => {
       mockTeamRepository.findById.mockResolvedValue(null);
 
-      await expect(service.transferTeam('team1', 'org2', 'user1')).rejects.toThrow(NotFoundException);
+      await expect(
+        service.transferTeam('team1', 'org2', 'user1'),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException when team has no organization', async () => {
       const teamWithoutOrg = { ...mockTeam, organizationId: null };
       mockTeamRepository.findById.mockResolvedValue(teamWithoutOrg);
 
-      await expect(service.transferTeam('team1', 'org2', 'user1')).rejects.toThrow(BadRequestException);
+      await expect(
+        service.transferTeam('team1', 'org2', 'user1'),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw when team transfer validation fails', async () => {
       mockTeamRepository.findById.mockResolvedValue(mockTeam);
-      mockOrganizationRepository.findByIdAndLeague.mockResolvedValueOnce(mockSourceOrg);
-      mockOrganizationRepository.findByIdAndLeague.mockResolvedValueOnce(mockTargetOrg);
-      mockOrganizationMemberService.isGeneralManager.mockResolvedValueOnce(true);
-      mockValidationService.validateTeamTransfer.mockRejectedValue(new Error('Transfer validation failed'));
+      mockOrganizationRepository.findByIdAndLeague.mockResolvedValueOnce(
+        mockSourceOrg,
+      );
+      mockOrganizationRepository.findByIdAndLeague.mockResolvedValueOnce(
+        mockTargetOrg,
+      );
+      mockOrganizationMemberService.isGeneralManager.mockResolvedValueOnce(
+        true,
+      );
+      mockValidationService.validateTeamTransfer.mockRejectedValue(
+        new Error('Transfer validation failed'),
+      );
 
-      await expect(service.transferTeam('team1', 'org2', 'user1')).rejects.toThrow('Transfer validation failed');
+      await expect(
+        service.transferTeam('team1', 'org2', 'user1'),
+      ).rejects.toThrow('Transfer validation failed');
     });
 
     it('should throw ForbiddenException when user is not GM of either org', async () => {
       mockTeamRepository.findById.mockResolvedValue(mockTeam);
-      mockOrganizationRepository.findByIdAndLeague.mockResolvedValueOnce(mockSourceOrg);
-      mockOrganizationRepository.findByIdAndLeague.mockResolvedValueOnce(mockTargetOrg);
+      mockOrganizationRepository.findByIdAndLeague.mockResolvedValueOnce(
+        mockSourceOrg,
+      );
+      mockOrganizationRepository.findByIdAndLeague.mockResolvedValueOnce(
+        mockTargetOrg,
+      );
       mockOrganizationMemberService.isGeneralManager.mockResolvedValue(false);
 
-      await expect(service.transferTeam('team1', 'org2', 'user1')).rejects.toThrow(ForbiddenException);
-      await expect(service.transferTeam('team1', 'org2', 'user1')).rejects.toThrow(
+      await expect(
+        service.transferTeam('team1', 'org2', 'user1'),
+      ).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.transferTeam('team1', 'org2', 'user1'),
+      ).rejects.toThrow(
         'User must be a General Manager of either the source or target organization',
       );
     });
@@ -415,18 +519,24 @@ describe('OrganizationService', () => {
       ];
 
       mockOrganizationRepository.findById.mockResolvedValue(mockOrganization);
-      mockOrganizationRepository.findTeamsByOrganization.mockResolvedValue(mockTeams);
+      mockOrganizationRepository.findTeamsByOrganization.mockResolvedValue(
+        mockTeams,
+      );
 
       const result = await service.findTeams('org1');
 
       expect(result).toEqual(mockTeams);
-      expect(mockOrganizationRepository.findTeamsByOrganization).toHaveBeenCalledWith('org1');
+      expect(
+        mockOrganizationRepository.findTeamsByOrganization,
+      ).toHaveBeenCalledWith('org1');
     });
 
     it('should throw OrganizationNotFoundException when organization not found', async () => {
       mockOrganizationRepository.findById.mockResolvedValue(null);
 
-      await expect(service.findTeams('org1')).rejects.toThrow(OrganizationNotFoundException);
+      await expect(service.findTeams('org1')).rejects.toThrow(
+        OrganizationNotFoundException,
+      );
     });
   });
 
@@ -466,22 +576,40 @@ describe('OrganizationService', () => {
       const mockOrganization = { id: 'org1', leagueId: 'league1' };
       const teamIds = ['team1', 'team2', 'team3'];
       const mockUpdatedTeams = [
-        { id: 'team1', organizationId: 'org1', members: [], organization: null },
-        { id: 'team2', organizationId: 'org1', members: [], organization: null },
-        { id: 'team3', organizationId: 'org1', members: [], organization: null },
+        {
+          id: 'team1',
+          organizationId: 'org1',
+          members: [],
+          organization: null,
+        },
+        {
+          id: 'team2',
+          organizationId: 'org1',
+          members: [],
+          organization: null,
+        },
+        {
+          id: 'team3',
+          organizationId: 'org1',
+          members: [],
+          organization: null,
+        },
       ];
 
       // Mock transaction client with team.update method
       const mockTx = {
         team: {
-          update: jest.fn()
+          update: jest
+            .fn()
             .mockResolvedValueOnce(mockUpdatedTeams[0])
             .mockResolvedValueOnce(mockUpdatedTeams[1])
             .mockResolvedValueOnce(mockUpdatedTeams[2]),
         },
       };
 
-      mockOrganizationRepository.findByIdAndLeague.mockResolvedValue(mockOrganization);
+      mockOrganizationRepository.findByIdAndLeague.mockResolvedValue(
+        mockOrganization,
+      );
       mockLeagueSettingsService.getSettings.mockResolvedValue({
         membership: { maxTeamsPerOrganization: null }, // No limit
       });
@@ -492,12 +620,20 @@ describe('OrganizationService', () => {
         return callback(mockTx);
       });
 
-      const result = await service.assignTeamsToOrganization('league1', 'org1', teamIds);
+      const result = await service.assignTeamsToOrganization(
+        'league1',
+        'org1',
+        teamIds,
+      );
 
       expect(result).toHaveLength(3);
-      expect(mockLeagueSettingsService.getSettings).toHaveBeenCalledWith('league1');
+      expect(mockLeagueSettingsService.getSettings).toHaveBeenCalledWith(
+        'league1',
+      );
       // When maxTeamsPerOrganization is null, countTeamsByOrganization should not be called
-      expect(mockOrganizationRepository.countTeamsByOrganization).not.toHaveBeenCalled();
+      expect(
+        mockOrganizationRepository.countTeamsByOrganization,
+      ).not.toHaveBeenCalled();
       expect(mockPrismaService.$transaction).toHaveBeenCalledTimes(1);
       expect(mockTx.team.update).toHaveBeenCalledTimes(3);
       expect(mockTx.team.update).toHaveBeenCalledWith({
@@ -524,9 +660,9 @@ describe('OrganizationService', () => {
       mockValidationService.validateOrganizationCapacity.mockReset();
       mockTeamRepository.update.mockReset();
 
-      await expect(service.assignTeamsToOrganization('league1', 'org1', ['team1'])).rejects.toThrow(
-        OrganizationNotFoundException,
-      );
+      await expect(
+        service.assignTeamsToOrganization('league1', 'org1', ['team1']),
+      ).rejects.toThrow(OrganizationNotFoundException);
       // Should not call validation or transaction if org not found
       expect(mockLeagueSettingsService.getSettings).not.toHaveBeenCalled();
       expect(mockPrismaService.$transaction).not.toHaveBeenCalled();
@@ -541,7 +677,9 @@ describe('OrganizationService', () => {
         },
       };
 
-      mockOrganizationRepository.findByIdAndLeague.mockResolvedValue(mockOrganization);
+      mockOrganizationRepository.findByIdAndLeague.mockResolvedValue(
+        mockOrganization,
+      );
       mockLeagueSettingsService.getSettings.mockResolvedValue({
         membership: { maxTeamsPerOrganization: 5 },
       });
@@ -549,10 +687,12 @@ describe('OrganizationService', () => {
         return callback(mockTx);
       });
 
-      await expect(service.assignTeamsToOrganization('league1', 'org1', ['team1'])).rejects.toThrow(
-        OrganizationCapacityExceededException,
-      );
-      expect(mockTx.team.count).toHaveBeenCalledWith({ where: { organizationId: 'org1' } });
+      await expect(
+        service.assignTeamsToOrganization('league1', 'org1', ['team1']),
+      ).rejects.toThrow(OrganizationCapacityExceededException);
+      expect(mockTx.team.count).toHaveBeenCalledWith({
+        where: { organizationId: 'org1' },
+      });
     });
 
     it('should throw when assigning teams would exceed capacity', async () => {
@@ -564,7 +704,9 @@ describe('OrganizationService', () => {
         },
       };
 
-      mockOrganizationRepository.findByIdAndLeague.mockResolvedValue(mockOrganization);
+      mockOrganizationRepository.findByIdAndLeague.mockResolvedValue(
+        mockOrganization,
+      );
       mockLeagueSettingsService.getSettings.mockResolvedValue({
         membership: { maxTeamsPerOrganization: 5 },
       });
@@ -572,17 +714,28 @@ describe('OrganizationService', () => {
         return callback(mockTx);
       });
 
-      await expect(service.assignTeamsToOrganization('league1', 'org1', ['team1', 'team2', 'team3'])).rejects.toThrow(
-        OrganizationCapacityExceededException,
-      );
-      expect(mockTx.team.count).toHaveBeenCalledWith({ where: { organizationId: 'org1' } });
+      await expect(
+        service.assignTeamsToOrganization('league1', 'org1', [
+          'team1',
+          'team2',
+          'team3',
+        ]),
+      ).rejects.toThrow(OrganizationCapacityExceededException);
+      expect(mockTx.team.count).toHaveBeenCalledWith({
+        where: { organizationId: 'org1' },
+      });
     });
 
     it('should allow assignment when at capacity but not exceeding', async () => {
       const mockOrganization = { id: 'org1', leagueId: 'league1' };
       const teamIds = ['team1'];
       const mockUpdatedTeams = [
-        { id: 'team1', organizationId: 'org1', members: [], organization: null },
+        {
+          id: 'team1',
+          organizationId: 'org1',
+          members: [],
+          organization: null,
+        },
       ];
       const mockTx = {
         team: {
@@ -591,7 +744,9 @@ describe('OrganizationService', () => {
         },
       };
 
-      mockOrganizationRepository.findByIdAndLeague.mockResolvedValue(mockOrganization);
+      mockOrganizationRepository.findByIdAndLeague.mockResolvedValue(
+        mockOrganization,
+      );
       mockLeagueSettingsService.getSettings.mockResolvedValue({
         membership: { maxTeamsPerOrganization: 5 },
       });
@@ -599,12 +754,17 @@ describe('OrganizationService', () => {
         return callback(mockTx);
       });
 
-      const result = await service.assignTeamsToOrganization('league1', 'org1', teamIds);
+      const result = await service.assignTeamsToOrganization(
+        'league1',
+        'org1',
+        teamIds,
+      );
 
       expect(result).toHaveLength(1);
-      expect(mockTx.team.count).toHaveBeenCalledWith({ where: { organizationId: 'org1' } });
+      expect(mockTx.team.count).toHaveBeenCalledWith({
+        where: { organizationId: 'org1' },
+      });
       expect(mockTx.team.update).toHaveBeenCalledTimes(1);
     });
   });
 });
-

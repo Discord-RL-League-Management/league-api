@@ -95,7 +95,11 @@ describe('TrackerSnapshotService', () => {
       mockTrackerRepository.findById.mockResolvedValue(mockTracker);
       mockSnapshotRepository.create.mockResolvedValue(mockSnapshot);
 
-      const result = await service.createSnapshot(trackerId, enteredBy, snapshotData);
+      const result = await service.createSnapshot(
+        trackerId,
+        enteredBy,
+        snapshotData,
+      );
 
       expect(result).toEqual(mockSnapshot);
       expect(mockTrackerRepository.findById).toHaveBeenCalledWith(trackerId);
@@ -194,7 +198,11 @@ describe('TrackerSnapshotService', () => {
       mockTrackerRepository.findById.mockResolvedValue(mockTracker);
       mockSnapshotRepository.create.mockResolvedValue(minimalSnapshot);
 
-      const result = await service.createSnapshot(trackerId, enteredBy, minimalData);
+      const result = await service.createSnapshot(
+        trackerId,
+        enteredBy,
+        minimalData,
+      );
 
       expect(result).toEqual(minimalSnapshot);
       expect(mockSnapshotRepository.create).toHaveBeenCalledWith({
@@ -260,7 +268,9 @@ describe('TrackerSnapshotService', () => {
 
       expect(result).toEqual(mockSnapshots);
       expect(mockTrackerRepository.findById).toHaveBeenCalledWith(trackerId);
-      expect(mockSnapshotRepository.findByTrackerId).toHaveBeenCalledWith(trackerId);
+      expect(mockSnapshotRepository.findByTrackerId).toHaveBeenCalledWith(
+        trackerId,
+      );
     });
 
     it('should throw NotFoundException when tracker does not exist', async () => {
@@ -280,7 +290,9 @@ describe('TrackerSnapshotService', () => {
       const result = await service.getSnapshotsByTracker(trackerId);
 
       expect(result).toEqual([]);
-      expect(mockSnapshotRepository.findByTrackerId).toHaveBeenCalledWith(trackerId);
+      expect(mockSnapshotRepository.findByTrackerId).toHaveBeenCalledWith(
+        trackerId,
+      );
     });
   });
 
@@ -309,7 +321,9 @@ describe('TrackerSnapshotService', () => {
 
     it('should successfully return snapshots filtered by season when tracker exists', async () => {
       mockTrackerRepository.findById.mockResolvedValue(mockTracker);
-      mockSnapshotRepository.findByTrackerIdAndSeason.mockResolvedValue(mockSnapshots);
+      mockSnapshotRepository.findByTrackerIdAndSeason.mockResolvedValue(
+        mockSnapshots,
+      );
 
       const result = await service.getSnapshotsByTrackerAndSeason(
         trackerId,
@@ -318,10 +332,9 @@ describe('TrackerSnapshotService', () => {
 
       expect(result).toEqual(mockSnapshots);
       expect(mockTrackerRepository.findById).toHaveBeenCalledWith(trackerId);
-      expect(mockSnapshotRepository.findByTrackerIdAndSeason).toHaveBeenCalledWith(
-        trackerId,
-        seasonNumber,
-      );
+      expect(
+        mockSnapshotRepository.findByTrackerIdAndSeason,
+      ).toHaveBeenCalledWith(trackerId, seasonNumber);
     });
 
     it('should throw NotFoundException when tracker does not exist', async () => {
@@ -331,7 +344,9 @@ describe('TrackerSnapshotService', () => {
         service.getSnapshotsByTrackerAndSeason(trackerId, seasonNumber),
       ).rejects.toThrow(NotFoundException);
       expect(mockTrackerRepository.findById).toHaveBeenCalledWith(trackerId);
-      expect(mockSnapshotRepository.findByTrackerIdAndSeason).not.toHaveBeenCalled();
+      expect(
+        mockSnapshotRepository.findByTrackerIdAndSeason,
+      ).not.toHaveBeenCalled();
     });
 
     it('should return empty array when no snapshots exist for the season', async () => {
@@ -344,10 +359,9 @@ describe('TrackerSnapshotService', () => {
       );
 
       expect(result).toEqual([]);
-      expect(mockSnapshotRepository.findByTrackerIdAndSeason).toHaveBeenCalledWith(
-        trackerId,
-        seasonNumber,
-      );
+      expect(
+        mockSnapshotRepository.findByTrackerIdAndSeason,
+      ).toHaveBeenCalledWith(trackerId, seasonNumber);
     });
   });
 
@@ -372,7 +386,9 @@ describe('TrackerSnapshotService', () => {
       const result = await service.getSnapshotsByGuild(guildId);
 
       expect(result).toEqual(mockSnapshots);
-      expect(mockSnapshotRepository.findByGuildId).toHaveBeenCalledWith(guildId);
+      expect(mockSnapshotRepository.findByGuildId).toHaveBeenCalledWith(
+        guildId,
+      );
     });
 
     it('should return empty array when guild has no visible snapshots', async () => {
@@ -381,7 +397,9 @@ describe('TrackerSnapshotService', () => {
       const result = await service.getSnapshotsByGuild(guildId);
 
       expect(result).toEqual([]);
-      expect(mockSnapshotRepository.findByGuildId).toHaveBeenCalledWith(guildId);
+      expect(mockSnapshotRepository.findByGuildId).toHaveBeenCalledWith(
+        guildId,
+      );
     });
   });
 
@@ -455,4 +473,3 @@ describe('TrackerSnapshotService', () => {
     });
   });
 });
-

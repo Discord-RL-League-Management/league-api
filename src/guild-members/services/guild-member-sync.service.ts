@@ -10,7 +10,7 @@ import { GuildMemberRepository } from '../repositories/guild-member.repository';
 /**
  * GuildMemberSyncService - Handles bulk operations and synchronization
  * Single Responsibility: Bulk operations and synchronization
- * 
+ *
  * Separates sync operations from CRUD operations.
  */
 @Injectable()
@@ -38,9 +38,7 @@ export class GuildMemberSyncService {
         members,
       );
 
-      this.logger.log(
-        `Synced ${result.synced} members for guild ${guildId}`,
-      );
+      this.logger.log(`Synced ${result.synced} members for guild ${guildId}`);
       return result;
     } catch (error) {
       // Handle Prisma foreign key constraint errors
@@ -49,9 +47,17 @@ export class GuildMemberSyncService {
         error.code === 'P2003'
       ) {
         const meta = error.meta as any;
-        if (meta?.field_name?.includes('userId') || meta?.field_name?.includes('user')) {
-          throw new NotFoundException(`One or more users not found for guild ${guildId}`);
-        } else if (meta?.field_name?.includes('guildId') || meta?.field_name?.includes('guild')) {
+        if (
+          meta?.field_name?.includes('userId') ||
+          meta?.field_name?.includes('user')
+        ) {
+          throw new NotFoundException(
+            `One or more users not found for guild ${guildId}`,
+          );
+        } else if (
+          meta?.field_name?.includes('guildId') ||
+          meta?.field_name?.includes('guild')
+        ) {
           throw new NotFoundException(`Guild ${guildId} not found`);
         }
         throw new NotFoundException('Foreign key constraint failed');
@@ -71,7 +77,11 @@ export class GuildMemberSyncService {
     roles: string[],
   ): Promise<{ count: number }> {
     try {
-      return await this.guildMemberRepository.updateRoles(userId, guildId, roles);
+      return await this.guildMemberRepository.updateRoles(
+        userId,
+        guildId,
+        roles,
+      );
     } catch (error) {
       this.logger.error(
         `Failed to update roles for member ${userId} in guild ${guildId}:`,
@@ -99,7 +109,10 @@ export class GuildMemberSyncService {
         ),
       );
 
-      const totalUpdated = results.reduce((sum, result) => sum + result.count, 0);
+      const totalUpdated = results.reduce(
+        (sum, result) => sum + result.count,
+        0,
+      );
 
       this.logger.log(`Batch updated roles for ${totalUpdated} members`);
       return { updated: totalUpdated };
@@ -109,6 +122,3 @@ export class GuildMemberSyncService {
     }
   }
 }
-
-
-

@@ -18,19 +18,25 @@ export class PlayerLeagueRatingService {
     return this.repository.getStandings(leagueId, limit);
   }
 
-  async updateRating(playerId: string, leagueId: string, rating: any, tx?: Prisma.TransactionClient) {
+  async updateRating(
+    playerId: string,
+    leagueId: string,
+    rating: any,
+    tx?: Prisma.TransactionClient,
+  ) {
     const client = tx || this.prisma;
-    
+
     // Fetch existing rating to check peak value
     const existing = await client.playerLeagueRating.findUnique({
       where: { playerId_leagueId: { playerId, leagueId } },
     });
 
     // Determine if we should update peak rating
-    const shouldUpdatePeak = 
+    const shouldUpdatePeak =
       rating.currentRating !== undefined &&
       existing &&
-      (existing.peakRating === null || Number(rating.currentRating) > Number(existing.peakRating));
+      (existing.peakRating === null ||
+        Number(rating.currentRating) > Number(existing.peakRating));
 
     // Use upsert to handle both create and update
     return client.playerLeagueRating.upsert({
@@ -51,13 +57,21 @@ export class PlayerLeagueRatingService {
         lastMatchId: rating.lastMatchId,
       },
       update: {
-        ...(rating.currentRating !== undefined && { currentRating: rating.currentRating }),
-        ...(rating.ratingData !== undefined && { ratingData: rating.ratingData }),
-        ...(rating.matchesPlayed !== undefined && { matchesPlayed: rating.matchesPlayed }),
+        ...(rating.currentRating !== undefined && {
+          currentRating: rating.currentRating,
+        }),
+        ...(rating.ratingData !== undefined && {
+          ratingData: rating.ratingData,
+        }),
+        ...(rating.matchesPlayed !== undefined && {
+          matchesPlayed: rating.matchesPlayed,
+        }),
         ...(rating.wins !== undefined && { wins: rating.wins }),
         ...(rating.losses !== undefined && { losses: rating.losses }),
         ...(rating.draws !== undefined && { draws: rating.draws }),
-        ...(rating.lastMatchId !== undefined && { lastMatchId: rating.lastMatchId }),
+        ...(rating.lastMatchId !== undefined && {
+          lastMatchId: rating.lastMatchId,
+        }),
         // Update peak rating only if current rating exceeds existing peak
         ...(shouldUpdatePeak && {
           peakRating: rating.currentRating,
@@ -67,4 +81,3 @@ export class PlayerLeagueRatingService {
     });
   }
 }
-

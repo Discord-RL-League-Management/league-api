@@ -66,5 +66,3 @@ import { LeagueRepository } from './repositories/league.repository';
   ],
 })
 export class LeaguesModule {}
-
-

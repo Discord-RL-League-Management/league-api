@@ -2,7 +2,10 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { PlayerLeagueRatingService } from './services/player-league-rating.service';
 import { PlayerLeagueRatingRepository } from './repositories/player-league-rating.repository';
-import { PlayerRatingsController, StandingsController } from './player-ratings.controller';
+import {
+  PlayerRatingsController,
+  StandingsController,
+} from './player-ratings.controller';
 
 @Module({
   imports: [PrismaModule],
@@ -11,4 +14,3 @@ import { PlayerRatingsController, StandingsController } from './player-ratings.c
   exports: [PlayerLeagueRatingService],
 })
 export class PlayerRatingsModule {}
-

@@ -25,6 +25,3 @@ export function getTraceId(): string | undefined {
   const context = getRequestContext();
   return context?.traceId || context?.requestId;
 }
-
-
-

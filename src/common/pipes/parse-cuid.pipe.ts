@@ -12,4 +12,3 @@ export class ParseCUIDPipe implements PipeTransform<string, string> {
     return value;
   }
 }
-

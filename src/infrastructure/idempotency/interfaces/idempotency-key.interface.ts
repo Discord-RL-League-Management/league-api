@@ -11,4 +11,3 @@ export interface ProcessedEvent {
   metadata?: Record<string, any>;
   processedAt: Date;
 }
-

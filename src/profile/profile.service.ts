@@ -1,13 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { UserStatisticsService } from './services/user-statistics.service';
-import { UserSettingsService, UserSettings } from './services/user-settings.service';
+import {
+  UserSettingsService,
+  UserSettings,
+} from './services/user-settings.service';
 import { UpdateUserSettingsDto } from './dto/update-user-settings.dto';
 
 /**
  * ProfileService - Aggregates and presents user profile data
  * Single Responsibility: Profile presentation and aggregation
- * 
+ *
  * Separates profile presentation from entity management.
  * This service aggregates data from multiple sources (User, Stats, Settings)
  * and transforms it into a presentation-friendly format.
@@ -62,6 +65,9 @@ export class ProfileService {
     userId: string,
     settings: UpdateUserSettingsDto,
   ): Promise<UserSettings> {
-    return this.userSettingsService.updateSettings(userId, settings as Partial<UserSettings>);
+    return this.userSettingsService.updateSettings(
+      userId,
+      settings as Partial<UserSettings>,
+    );
   }
 }

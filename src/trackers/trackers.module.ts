@@ -64,10 +64,7 @@ import { TrackerBatchRefreshService } from './services/tracker-batch-refresh.ser
       inject: [ConfigService],
     }),
   ],
-  controllers: [
-    TrackerController,
-    TrackerAdminController,
-  ],
+  controllers: [TrackerController, TrackerAdminController],
   providers: [
     TrackerService,
     TrackerSnapshotService,
@@ -93,4 +90,3 @@ import { TrackerBatchRefreshService } from './services/tracker-batch-refresh.ser
   ],
 })
 export class TrackersModule {}
-

@@ -492,10 +492,11 @@ describe('GlobalExceptionFilter', () => {
       const callArgs = mockResponse.json.mock.calls[0][0];
       const afterTime = new Date().toISOString();
 
-      expect(callArgs.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+      expect(callArgs.timestamp).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/,
+      );
       expect(callArgs.timestamp >= beforeTime).toBe(true);
       expect(callArgs.timestamp <= afterTime).toBe(true);
     });
   });
 });
-

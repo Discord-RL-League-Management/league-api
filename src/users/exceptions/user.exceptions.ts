@@ -1,4 +1,7 @@
-import { NotFoundException, ConflictException } from '../../common/exceptions/base.exception';
+import {
+  NotFoundException,
+  ConflictException,
+} from '../../common/exceptions/base.exception';
 
 /**
  * UserNotFoundException - Domain-specific exception for user not found

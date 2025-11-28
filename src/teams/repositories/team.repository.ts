@@ -9,7 +9,9 @@ import { BaseRepository } from '../../common/repositories/base.repository.interf
  * TeamRepository - Handles all database operations for Team entity
  */
 @Injectable()
-export class TeamRepository implements BaseRepository<Team, CreateTeamDto, UpdateTeamDto> {
+export class TeamRepository
+  implements BaseRepository<Team, CreateTeamDto, UpdateTeamDto>
+{
   private readonly logger = new Logger(TeamRepository.name);
 
   constructor(private prisma: PrismaService) {}
@@ -21,7 +23,10 @@ export class TeamRepository implements BaseRepository<Team, CreateTeamDto, Updat
     });
   }
 
-  async findAll(options?: { page?: number; limit?: number }): Promise<{ data: Team[]; total: number; page: number; limit: number }> {
+  async findAll(options?: {
+    page?: number;
+    limit?: number;
+  }): Promise<{ data: Team[]; total: number; page: number; limit: number }> {
     const page = options?.page ?? 1;
     const limit = options?.limit ?? 50;
     const skip = (page - 1) * limit;
@@ -72,13 +77,21 @@ export class TeamRepository implements BaseRepository<Team, CreateTeamDto, Updat
       data: {
         ...(data.name !== undefined && { name: data.name }),
         ...(data.tag !== undefined && { tag: data.tag }),
-        ...(data.description !== undefined && { description: data.description }),
+        ...(data.description !== undefined && {
+          description: data.description,
+        }),
         ...(data.captainId !== undefined && { captainId: data.captainId }),
-        ...(data.organizationId !== undefined && { organizationId: data.organizationId }),
+        ...(data.organizationId !== undefined && {
+          organizationId: data.organizationId,
+        }),
         ...(data.maxPlayers !== undefined && { maxPlayers: data.maxPlayers }),
         ...(data.minPlayers !== undefined && { minPlayers: data.minPlayers }),
-        ...(data.allowEmergencySubs !== undefined && { allowEmergencySubs: data.allowEmergencySubs }),
-        ...(data.maxSubstitutes !== undefined && { maxSubstitutes: data.maxSubstitutes }),
+        ...(data.allowEmergencySubs !== undefined && {
+          allowEmergencySubs: data.allowEmergencySubs,
+        }),
+        ...(data.maxSubstitutes !== undefined && {
+          maxSubstitutes: data.maxSubstitutes,
+        }),
       },
       include: { members: true, organization: true },
     });
@@ -112,4 +125,3 @@ export class TeamRepository implements BaseRepository<Team, CreateTeamDto, Updat
     });
   }
 }
-

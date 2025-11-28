@@ -23,13 +23,10 @@ export class TrackerBatchRefreshService {
   async refreshTrackers(trackerIds: string[]): Promise<void> {
     this.logger.log(`Refreshing ${trackerIds.length} trackers`);
 
-    const jobIds = await this.scrapingQueueService.addBatchScrapingJobs(
-      trackerIds,
-    );
+    const jobIds =
+      await this.scrapingQueueService.addBatchScrapingJobs(trackerIds);
 
-    this.logger.log(
-      `Enqueued ${jobIds.length} scraping jobs for trackers`,
-    );
+    this.logger.log(`Enqueued ${jobIds.length} scraping jobs for trackers`);
   }
 
   /**
@@ -64,7 +61,8 @@ export class TrackerBatchRefreshService {
           );
         }
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         this.logger.error(
           `Error processing batch ${batchNumber}: ${errorMessage}`,
         );
@@ -72,7 +70,8 @@ export class TrackerBatchRefreshService {
       }
     }
 
-    this.logger.log(`Completed batch refresh for ${trackerIds.length} trackers`);
+    this.logger.log(
+      `Completed batch refresh for ${trackerIds.length} trackers`,
+    );
   }
 }
-

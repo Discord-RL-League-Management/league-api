@@ -33,7 +33,9 @@ describe('ParseUUIDPipe', () => {
     it('should throw BadRequestException for invalid UUID format', () => {
       const invalidUUID = 'not-a-uuid';
       expect(() => pipe.transform(invalidUUID)).toThrow(BadRequestException);
-      expect(() => pipe.transform(invalidUUID)).toThrow('Invalid UUID format: not-a-uuid');
+      expect(() => pipe.transform(invalidUUID)).toThrow(
+        'Invalid UUID format: not-a-uuid',
+      );
     });
 
     it('should throw BadRequestException for empty string', () => {
@@ -44,7 +46,9 @@ describe('ParseUUIDPipe', () => {
     it('should throw BadRequestException for malformed UUID', () => {
       const malformedUUID = '550e8400-e29b-41d4-a716';
       expect(() => pipe.transform(malformedUUID)).toThrow(BadRequestException);
-      expect(() => pipe.transform(malformedUUID)).toThrow(`Invalid UUID format: ${malformedUUID}`);
+      expect(() => pipe.transform(malformedUUID)).toThrow(
+        `Invalid UUID format: ${malformedUUID}`,
+      );
     });
 
     it('should throw BadRequestException for UUID with invalid characters', () => {
@@ -53,4 +57,3 @@ describe('ParseUUIDPipe', () => {
     });
   });
 });
-

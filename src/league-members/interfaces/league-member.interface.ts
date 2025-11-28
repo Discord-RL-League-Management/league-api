@@ -40,10 +40,12 @@ export interface LeagueMemberQueryOptions {
 /**
  * Default league member query options
  */
-export const defaultLeagueMemberQueryOptions: Required<Omit<LeagueMemberQueryOptions, 'status' | 'role' | 'sortBy' | 'sortOrder'>> & Pick<LeagueMemberQueryOptions, 'status' | 'role' | 'sortBy' | 'sortOrder'> = {
+export const defaultLeagueMemberQueryOptions: Required<
+  Omit<LeagueMemberQueryOptions, 'status' | 'role' | 'sortBy' | 'sortOrder'>
+> &
+  Pick<LeagueMemberQueryOptions, 'status' | 'role' | 'sortBy' | 'sortOrder'> = {
   includePlayer: false,
   includeLeague: false,
   page: 1,
   limit: 50,
 };
-

@@ -16,7 +16,7 @@ import { GuildMemberSyncService } from './services/guild-member-sync.service';
 /**
  * GuildMembersService - Business logic layer for GuildMember CRUD operations
  * Single Responsibility: Orchestrates guild member entity lifecycle management
- * 
+ *
  * Uses GuildMemberRepository for data access, keeping concerns separated.
  * Delegates to specialized services for queries, statistics, and sync operations.
  */
@@ -39,7 +39,9 @@ export class GuildMembersService {
   async create(createGuildMemberDto: CreateGuildMemberDto) {
     try {
       // Validate user exists
-      const userExists = await this.usersService.exists(createGuildMemberDto.userId);
+      const userExists = await this.usersService.exists(
+        createGuildMemberDto.userId,
+      );
       if (!userExists) {
         throw new NotFoundException(
           `User ${createGuildMemberDto.userId} not found`,
@@ -57,11 +59,17 @@ export class GuildMembersService {
         error.code === 'P2003'
       ) {
         const meta = error.meta as any;
-        if (meta?.field_name?.includes('userId') || meta?.field_name?.includes('user')) {
+        if (
+          meta?.field_name?.includes('userId') ||
+          meta?.field_name?.includes('user')
+        ) {
           throw new NotFoundException(
             `User ${createGuildMemberDto.userId} not found`,
           );
-        } else if (meta?.field_name?.includes('guildId') || meta?.field_name?.includes('guild')) {
+        } else if (
+          meta?.field_name?.includes('guildId') ||
+          meta?.field_name?.includes('guild')
+        ) {
           throw new NotFoundException(
             `Guild ${createGuildMemberDto.guildId} not found`,
           );
@@ -128,7 +136,10 @@ export class GuildMembersService {
   ) {
     try {
       // Check if member exists
-      const exists = await this.guildMemberRepository.existsByCompositeKey(userId, guildId);
+      const exists = await this.guildMemberRepository.existsByCompositeKey(
+        userId,
+        guildId,
+      );
 
       if (!exists) {
         throw new NotFoundException(
@@ -160,7 +171,10 @@ export class GuildMembersService {
   async remove(userId: string, guildId: string) {
     try {
       // Check if member exists
-      const exists = await this.guildMemberRepository.existsByCompositeKey(userId, guildId);
+      const exists = await this.guildMemberRepository.existsByCompositeKey(
+        userId,
+        guildId,
+      );
 
       if (!exists) {
         throw new NotFoundException(
@@ -230,14 +244,21 @@ export class GuildMembersService {
    * Single Responsibility: Delegate to sync service
    */
   async updateMemberRoles(userId: string, guildId: string, roles: string[]) {
-    return this.guildMemberSyncService.updateMemberRoles(userId, guildId, roles);
+    return this.guildMemberSyncService.updateMemberRoles(
+      userId,
+      guildId,
+      roles,
+    );
   }
 
   /**
    * Count members with specific roles
    * Single Responsibility: Delegate to statistics service
    */
-  async countMembersWithRoles(guildId: string, roleIds: string[]): Promise<number> {
+  async countMembersWithRoles(
+    guildId: string,
+    roleIds: string[],
+  ): Promise<number> {
     return this.guildMemberStatisticsService.countMembersWithRoles(
       guildId,
       roleIds,
@@ -248,8 +269,18 @@ export class GuildMembersService {
    * Search guild members by username
    * Single Responsibility: Delegate to query service
    */
-  async searchMembers(guildId: string, query: string, page: number = 1, limit: number = 20) {
-    return this.guildMemberQueryService.searchMembers(guildId, query, page, limit);
+  async searchMembers(
+    guildId: string,
+    query: string,
+    page: number = 1,
+    limit: number = 20,
+  ) {
+    return this.guildMemberQueryService.searchMembers(
+      guildId,
+      query,
+      page,
+      limit,
+    );
   }
 
   /**

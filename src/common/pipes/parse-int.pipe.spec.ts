@@ -34,13 +34,19 @@ describe('ParseIntPipeWithError', () => {
     });
 
     it('should throw BadRequestException for non-numeric string', () => {
-      expect(() => pipe.transform('abc', {} as any)).toThrow(BadRequestException);
+      expect(() => pipe.transform('abc', {} as any)).toThrow(
+        BadRequestException,
+      );
       expect(() => pipe.transform('abc', {} as any)).toThrow(/Invalid integer/);
     });
 
     it('should throw BadRequestException for decimal number', () => {
-      expect(() => pipe.transform('123.45', {} as any)).toThrow(BadRequestException);
-      expect(() => pipe.transform('123.45', {} as any)).toThrow(/Invalid integer/);
+      expect(() => pipe.transform('123.45', {} as any)).toThrow(
+        BadRequestException,
+      );
+      expect(() => pipe.transform('123.45', {} as any)).toThrow(
+        /Invalid integer/,
+      );
     });
 
     it('should throw BadRequestException for empty string', () => {
@@ -48,7 +54,9 @@ describe('ParseIntPipeWithError', () => {
     });
 
     it('should throw BadRequestException for string with spaces', () => {
-      expect(() => pipe.transform('  123  ', {} as any)).toThrow(BadRequestException);
+      expect(() => pipe.transform('  123  ', {} as any)).toThrow(
+        BadRequestException,
+      );
     });
 
     it('should handle large integers', () => {
@@ -57,4 +65,3 @@ describe('ParseIntPipeWithError', () => {
     });
   });
 });
-

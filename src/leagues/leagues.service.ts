@@ -24,7 +24,7 @@ import { PrismaService } from '../prisma/prisma.service';
 /**
  * LeaguesService - Business logic layer for League operations
  * Single Responsibility: Orchestrates league-related business logic
- * 
+ *
  * Uses LeagueRepository for data access, keeping concerns separated.
  * This service handles business rules and validation logic.
  */
@@ -58,7 +58,7 @@ export class LeaguesService {
         createdBy,
         status: createLeagueDto.status || LeagueStatus.ACTIVE,
       };
-      
+
       const league = await this.leagueRepository.createWithSettings(
         leagueData,
         this.settingsDefaults.getDefaults() as Record<string, any>,
@@ -67,7 +67,10 @@ export class LeaguesService {
       this.logger.log(`Created league ${league.id} with default settings`);
       return league;
     } catch (error) {
-      if (error instanceof ConflictException || error instanceof LeagueAlreadyExistsException) {
+      if (
+        error instanceof ConflictException ||
+        error instanceof LeagueAlreadyExistsException
+      ) {
         throw error;
       }
       this.logger.error(`Failed to create league:`, error);
@@ -131,9 +134,17 @@ export class LeaguesService {
    * Find leagues by game within a guild
    * Single Responsibility: Game-filtered league retrieval
    */
-  async findByGame(guildId: string, game: string, options?: LeagueQueryOptions) {
+  async findByGame(
+    guildId: string,
+    game: string,
+    options?: LeagueQueryOptions,
+  ) {
     try {
-      const result = await this.leagueRepository.findByGame(guildId, game, options);
+      const result = await this.leagueRepository.findByGame(
+        guildId,
+        game,
+        options,
+      );
 
       return {
         leagues: result.data,
@@ -145,7 +156,10 @@ export class LeaguesService {
         },
       };
     } catch (error) {
-      this.logger.error(`Failed to fetch leagues for guild ${guildId} and game ${game}:`, error);
+      this.logger.error(
+        `Failed to fetch leagues for guild ${guildId} and game ${game}:`,
+        error,
+      );
       throw new InternalServerErrorException('Failed to fetch leagues');
     }
   }
@@ -153,7 +167,7 @@ export class LeaguesService {
   /**
    * Find league by ID with optional related data
    * Single Responsibility: Single league retrieval with flexible query options
-   * 
+   *
    * @param id - League ID
    * @param options - Optional query options to control what relations to include
    */
@@ -212,10 +226,16 @@ export class LeaguesService {
 
       return await this.leagueRepository.update(id, { status });
     } catch (error) {
-      if (error instanceof LeagueNotFoundException || error instanceof InvalidLeagueStatusException) {
+      if (
+        error instanceof LeagueNotFoundException ||
+        error instanceof InvalidLeagueStatusException
+      ) {
         throw error;
       }
-      this.logger.error(`Failed to update league ${id} status to ${status}:`, error);
+      this.logger.error(
+        `Failed to update league ${id} status to ${status}:`,
+        error,
+      );
       throw new InternalServerErrorException('Failed to update league status');
     }
   }
@@ -223,7 +243,7 @@ export class LeaguesService {
   /**
    * Delete league (hard delete)
    * Single Responsibility: League deletion
-   * 
+   *
    * Note: Consider soft delete or archive if you need to preserve historical data
    */
   async remove(id: string): Promise<League> {
@@ -260,7 +280,7 @@ export class LeaguesService {
   /**
    * Validate status transition
    * Single Responsibility: Status transition validation
-   * 
+   *
    * @param currentStatus - Current league status
    * @param newStatus - New league status
    * @throws InvalidLeagueStatusException if transition is invalid
@@ -287,11 +307,13 @@ export class LeaguesService {
 
     // Check if transition is valid
     const allowedTransitions = validTransitions[currentStatus] || [];
-    if (!allowedTransitions.includes(newStatus) && currentStatus !== newStatus) {
+    if (
+      !allowedTransitions.includes(newStatus) &&
+      currentStatus !== newStatus
+    ) {
       throw new InvalidLeagueStatusException(
         `Cannot transition from ${currentStatus} to ${newStatus}`,
       );
     }
   }
 }
-

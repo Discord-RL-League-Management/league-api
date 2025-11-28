@@ -40,11 +40,13 @@ export interface PlayerQueryOptions {
 /**
  * Default player query options
  */
-export const defaultPlayerQueryOptions: Required<Omit<PlayerQueryOptions, 'status' | 'sortBy' | 'sortOrder'>> & Pick<PlayerQueryOptions, 'status' | 'sortBy' | 'sortOrder'> = {
+export const defaultPlayerQueryOptions: Required<
+  Omit<PlayerQueryOptions, 'status' | 'sortBy' | 'sortOrder'>
+> &
+  Pick<PlayerQueryOptions, 'status' | 'sortBy' | 'sortOrder'> = {
   includeUser: false,
   includeGuild: false,
   includePrimaryTracker: false,
   page: 1,
   limit: 50,
 };
-

@@ -5,7 +5,7 @@ import { SettingsRepository } from './repositories/settings.repository';
 
 /**
  * SettingsModule - Infrastructure module for settings pattern
- * 
+ *
  * Provides generic settings management for any entity type.
  * Replaces domain-specific settings implementations.
  */
@@ -15,4 +15,3 @@ import { SettingsRepository } from './repositories/settings.repository';
   exports: [SettingsService],
 })
 export class SettingsModule {}
-

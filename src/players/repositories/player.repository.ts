@@ -12,12 +12,14 @@ import {
 /**
  * PlayerRepository - Handles all database operations for Player entity
  * Single Responsibility: Data access layer for Player entity
- * 
+ *
  * Separates data access concerns from business logic,
  * making services more focused and testable.
  */
 @Injectable()
-export class PlayerRepository implements BaseRepository<Player, CreatePlayerDto, UpdatePlayerDto> {
+export class PlayerRepository
+  implements BaseRepository<Player, CreatePlayerDto, UpdatePlayerDto>
+{
   private readonly logger = new Logger(PlayerRepository.name);
 
   constructor(private prisma: PrismaService) {}
@@ -25,9 +27,12 @@ export class PlayerRepository implements BaseRepository<Player, CreatePlayerDto,
   /**
    * Find by ID (cuid primary key)
    */
-  async findById(id: string, options?: PlayerQueryOptions): Promise<Player | null> {
+  async findById(
+    id: string,
+    options?: PlayerQueryOptions,
+  ): Promise<Player | null> {
     const opts = { ...defaultPlayerQueryOptions, ...options };
-    
+
     const include: Prisma.PlayerInclude = {};
     if (opts.includeUser) {
       include.user = true;
@@ -84,7 +89,7 @@ export class PlayerRepository implements BaseRepository<Player, CreatePlayerDto,
     options?: PlayerQueryOptions,
   ): Promise<Player | null> {
     const opts = { ...defaultPlayerQueryOptions, ...options };
-    
+
     const include: Prisma.PlayerInclude = {};
     if (opts.includeUser) {
       include.user = true;
@@ -253,7 +258,9 @@ export class PlayerRepository implements BaseRepository<Player, CreatePlayerDto,
       where: { id },
       data: {
         ...(data.status !== undefined && { status: data.status }),
-        ...(data.primaryTrackerId !== undefined && { primaryTrackerId: data.primaryTrackerId }),
+        ...(data.primaryTrackerId !== undefined && {
+          primaryTrackerId: data.primaryTrackerId,
+        }),
       },
     });
   }
@@ -294,4 +301,3 @@ export class PlayerRepository implements BaseRepository<Player, CreatePlayerDto,
     });
   }
 }
-

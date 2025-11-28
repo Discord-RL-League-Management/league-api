@@ -5,16 +5,14 @@ import { GuildMemberRepository } from '../../guild-members/repositories/guild-me
 /**
  * UserStatisticsService - Aggregates statistics for user profiles
  * Single Responsibility: Statistics aggregation and computation
- * 
+ *
  * Separates statistics calculation from profile presentation.
  */
 @Injectable()
 export class UserStatisticsService {
   private readonly logger = new Logger(UserStatisticsService.name);
 
-  constructor(
-    private guildMemberRepository: GuildMemberRepository,
-  ) {}
+  constructor(private guildMemberRepository: GuildMemberRepository) {}
 
   /**
    * Get user statistics aggregated from guild memberships
@@ -31,9 +29,12 @@ export class UserStatisticsService {
   }> {
     try {
       // Get user's guild memberships
-      const memberships = await this.guildMemberRepository.findByUserId(userId, {
-        guild: true,
-      });
+      const memberships = await this.guildMemberRepository.findByUserId(
+        userId,
+        {
+          guild: true,
+        },
+      );
 
       // Type the result to include the guild relation
       type GuildMemberWithGuild = Prisma.GuildMemberGetPayload<{
@@ -82,7 +83,10 @@ export class UserStatisticsService {
    * Get guild-specific statistics for a user
    * Single Responsibility: Guild-specific stat aggregation
    */
-  async getGuildStats(userId: string, guildId: string): Promise<{
+  async getGuildStats(
+    userId: string,
+    guildId: string,
+  ): Promise<{
     gamesPlayed: number;
     wins: number;
     losses: number;
@@ -128,4 +132,3 @@ export class UserStatisticsService {
     }
   }
 }
-

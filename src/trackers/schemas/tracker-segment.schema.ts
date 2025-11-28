@@ -22,4 +22,3 @@ export const trackerSegmentStatsSchema = Joi.object({
   matchesPlayed: statFieldSchema.optional().allow(null),
   winStreak: statFieldSchema.optional().allow(null),
 }).unknown(true); // Allow other stat fields that we don't explicitly validate
-

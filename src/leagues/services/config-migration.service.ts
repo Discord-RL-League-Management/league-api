@@ -11,7 +11,7 @@ import { LeagueSettingsDefaultsService } from './league-settings-defaults.servic
 
 /**
  * ConfigMigrationService - Single Responsibility: Configuration version migration
- * 
+ *
  * Handles migration of league configuration between schema versions.
  * Ensures backward compatibility and smooth upgrades.
  */
@@ -24,7 +24,7 @@ export class ConfigMigrationService {
   /**
    * Check if configuration needs migration
    * Single Responsibility: Migration need detection
-   * 
+   *
    * @param config - Configuration to check
    * @returns true if migration is needed
    */
@@ -46,7 +46,7 @@ export class ConfigMigrationService {
   /**
    * Migrate configuration to current schema version
    * Single Responsibility: Configuration migration
-   * 
+   *
    * @param config - Configuration to migrate
    * @returns Migrated configuration
    */
@@ -85,7 +85,11 @@ export class ConfigMigrationService {
 
     // Migrate from current version to CURRENT_SCHEMA_VERSION
     let migrated = config;
-    for (let version = currentVersion + 1; version <= CURRENT_SCHEMA_VERSION; version++) {
+    for (
+      let version = currentVersion + 1;
+      version <= CURRENT_SCHEMA_VERSION;
+      version++
+    ) {
       migrated = this.migrateToVersion(migrated, version);
     }
 
@@ -101,7 +105,7 @@ export class ConfigMigrationService {
   /**
    * Migrate configuration to specific version
    * Single Responsibility: Version-specific migration
-   * 
+   *
    * @param config - Configuration to migrate
    * @param targetVersion - Target schema version
    * @returns Migrated configuration
@@ -114,7 +118,7 @@ export class ConfigMigrationService {
         // Version 1 is the initial version - merge with defaults
         const defaults = this.settingsDefaults.getDefaults();
         return this.settingsDefaults.mergeSettings(defaults, config);
-      
+
       default:
         // Unknown version - merge with defaults for safety
         const safeDefaults = this.settingsDefaults.getDefaults();
@@ -125,7 +129,7 @@ export class ConfigMigrationService {
   /**
    * Get schema version from configuration
    * Single Responsibility: Schema version extraction
-   * 
+   *
    * @param config - Configuration to check
    * @returns Schema version (defaults to 1)
    */
@@ -136,5 +140,3 @@ export class ConfigMigrationService {
     return config._metadata.schemaVersion || 1;
   }
 }
-
-

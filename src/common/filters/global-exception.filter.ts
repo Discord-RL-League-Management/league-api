@@ -60,8 +60,11 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       // When InternalServerErrorException is thrown with an object like:
       // new InternalServerErrorException({ message, code, details }),
       // the exceptionResponse will be that object
-      const isObjectResponse = typeof exceptionResponse === 'object' && exceptionResponse !== null;
-      const errorData = isObjectResponse ? (exceptionResponse as any) : { message: exceptionResponse };
+      const isObjectResponse =
+        typeof exceptionResponse === 'object' && exceptionResponse !== null;
+      const errorData = isObjectResponse
+        ? (exceptionResponse as any)
+        : { message: exceptionResponse };
 
       return {
         statusCode: status,

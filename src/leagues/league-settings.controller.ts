@@ -56,7 +56,7 @@ export class LeagueSettingsController {
         user.id,
         leagueId,
       );
-      
+
       // Settings contain sensitive configuration, restricted to admins and moderators
       await this.leaguePermissionService.checkLeagueAdminOrModeratorAccess(
         user.id,
@@ -65,7 +65,10 @@ export class LeagueSettingsController {
 
       return await this.leagueSettingsService.getSettings(leagueId);
     } catch (error) {
-      this.logger.error(`Error getting settings for league ${leagueId}:`, error);
+      this.logger.error(
+        `Error getting settings for league ${leagueId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -90,16 +93,22 @@ export class LeagueSettingsController {
         user.id,
         leagueId,
       );
-      
+
       // Only admins can modify settings to prevent unauthorized configuration changes
-      await this.leaguePermissionService.checkLeagueAdminAccess(user.id, leagueId);
+      await this.leaguePermissionService.checkLeagueAdminAccess(
+        user.id,
+        leagueId,
+      );
 
       return await this.leagueSettingsService.updateSettings(
         leagueId,
         settingsDto,
       );
     } catch (error) {
-      this.logger.error(`Error updating settings for league ${leagueId}:`, error);
+      this.logger.error(
+        `Error updating settings for league ${leagueId}:`,
+        error,
+      );
       if (error instanceof BadRequestException) {
         throw error;
       }
@@ -107,5 +116,3 @@ export class LeagueSettingsController {
     }
   }
 }
-
-

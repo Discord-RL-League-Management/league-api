@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { TeamRepository } from '../repositories/team.repository';
 import { TeamValidationService } from './team-validation.service';
 import { CreateTeamDto } from '../dto/create-team.dto';
@@ -56,7 +61,10 @@ export class TeamService {
     if (updateTeamDto.organizationId !== undefined) {
       // If removing organizationId (setting to null), check if league requires organizations
       if (updateTeamDto.organizationId === null) {
-        await this.teamValidationService.validateOrganizationRequirement(team.leagueId, undefined);
+        await this.teamValidationService.validateOrganizationRequirement(
+          team.leagueId,
+          undefined,
+        );
       } else {
         // Validate new organization exists in league
         await this.teamValidationService.validateOrganizationExists(
@@ -81,4 +89,3 @@ export class TeamService {
     return this.teamRepository.delete(id);
   }
 }
-

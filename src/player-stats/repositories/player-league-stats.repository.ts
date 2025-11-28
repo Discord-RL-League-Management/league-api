@@ -12,11 +12,17 @@ export class PlayerLeagueStatsRepository {
     });
   }
 
-  async upsert(playerId: string, leagueId: string, data: Partial<PlayerLeagueStats>, tx?: Prisma.TransactionClient) {
+  async upsert(
+    playerId: string,
+    leagueId: string,
+    data: Partial<PlayerLeagueStats>,
+    tx?: Prisma.TransactionClient,
+  ) {
     // Calculate winRate if matchesPlayed > 0
-    const winRate = data.matchesPlayed && data.matchesPlayed > 0 && data.wins !== undefined
-      ? Number((data.wins / data.matchesPlayed).toFixed(4))
-      : 0;
+    const winRate =
+      data.matchesPlayed && data.matchesPlayed > 0 && data.wins !== undefined
+        ? Number((data.wins / data.matchesPlayed).toFixed(4))
+        : 0;
 
     const client = tx || this.prisma;
     return client.playerLeagueStats.upsert({
@@ -26,18 +32,23 @@ export class PlayerLeagueStatsRepository {
     });
   }
 
-  async incrementStats(playerId: string, leagueId: string, data: {
-    matchesPlayed?: number;
-    wins?: number;
-    losses?: number;
-    draws?: number;
-    totalGoals?: number;
-    totalAssists?: number;
-    totalSaves?: number;
-    totalShots?: number;
-  }, tx?: Prisma.TransactionClient) {
+  async incrementStats(
+    playerId: string,
+    leagueId: string,
+    data: {
+      matchesPlayed?: number;
+      wins?: number;
+      losses?: number;
+      draws?: number;
+      totalGoals?: number;
+      totalAssists?: number;
+      totalSaves?: number;
+      totalShots?: number;
+    },
+    tx?: Prisma.TransactionClient,
+  ) {
     const client = tx || this.prisma;
-    
+
     // First upsert using atomic increments for counters
     const updated = await client.playerLeagueStats.upsert({
       where: { playerId_leagueId: { playerId, leagueId } },
@@ -52,10 +63,22 @@ export class PlayerLeagueStatsRepository {
         totalAssists: data.totalAssists || 0,
         totalSaves: data.totalSaves || 0,
         totalShots: data.totalShots || 0,
-        winRate: (data.matchesPlayed && data.matchesPlayed > 0 && data.wins) ? Number((data.wins / data.matchesPlayed).toFixed(4)) : 0,
-        avgGoals: (data.matchesPlayed && data.matchesPlayed > 0 && data.totalGoals) ? Number((data.totalGoals / data.matchesPlayed).toFixed(4)) : 0,
-        avgAssists: (data.matchesPlayed && data.matchesPlayed > 0 && data.totalAssists) ? Number((data.totalAssists / data.matchesPlayed).toFixed(4)) : 0,
-        avgSaves: (data.matchesPlayed && data.matchesPlayed > 0 && data.totalSaves) ? Number((data.totalSaves / data.matchesPlayed).toFixed(4)) : 0,
+        winRate:
+          data.matchesPlayed && data.matchesPlayed > 0 && data.wins
+            ? Number((data.wins / data.matchesPlayed).toFixed(4))
+            : 0,
+        avgGoals:
+          data.matchesPlayed && data.matchesPlayed > 0 && data.totalGoals
+            ? Number((data.totalGoals / data.matchesPlayed).toFixed(4))
+            : 0,
+        avgAssists:
+          data.matchesPlayed && data.matchesPlayed > 0 && data.totalAssists
+            ? Number((data.totalAssists / data.matchesPlayed).toFixed(4))
+            : 0,
+        avgSaves:
+          data.matchesPlayed && data.matchesPlayed > 0 && data.totalSaves
+            ? Number((data.totalSaves / data.matchesPlayed).toFixed(4))
+            : 0,
         lastMatchAt: new Date(),
       },
       update: {
@@ -74,10 +97,20 @@ export class PlayerLeagueStatsRepository {
     // Recalculate derived stats
     const matchesPlayed = updated.matchesPlayed;
     const wins = updated.wins;
-    const winRate = matchesPlayed > 0 ? Number((wins / matchesPlayed).toFixed(4)) : 0;
-    const avgGoals = matchesPlayed > 0 ? Number((updated.totalGoals / matchesPlayed).toFixed(4)) : 0;
-    const avgAssists = matchesPlayed > 0 ? Number((updated.totalAssists / matchesPlayed).toFixed(4)) : 0;
-    const avgSaves = matchesPlayed > 0 ? Number((updated.totalSaves / matchesPlayed).toFixed(4)) : 0;
+    const winRate =
+      matchesPlayed > 0 ? Number((wins / matchesPlayed).toFixed(4)) : 0;
+    const avgGoals =
+      matchesPlayed > 0
+        ? Number((updated.totalGoals / matchesPlayed).toFixed(4))
+        : 0;
+    const avgAssists =
+      matchesPlayed > 0
+        ? Number((updated.totalAssists / matchesPlayed).toFixed(4))
+        : 0;
+    const avgSaves =
+      matchesPlayed > 0
+        ? Number((updated.totalSaves / matchesPlayed).toFixed(4))
+        : 0;
 
     // Update derived stats
     return client.playerLeagueStats.update({
@@ -100,4 +133,3 @@ export class PlayerLeagueStatsRepository {
     });
   }
 }
-

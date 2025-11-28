@@ -248,8 +248,8 @@ describe('DiscordApiService', () => {
       );
 
       // Assert
-      expect(result).toEqual({ 
-        isMember: false, 
+      expect(result).toEqual({
+        isMember: false,
         permissions: [],
         roles: [],
         hasAdministratorPermission: false,
@@ -269,8 +269,8 @@ describe('DiscordApiService', () => {
       );
 
       // Assert
-      expect(result).toEqual({ 
-        isMember: false, 
+      expect(result).toEqual({
+        isMember: false,
         permissions: [],
         roles: [],
         hasAdministratorPermission: false,

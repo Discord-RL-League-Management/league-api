@@ -4,7 +4,7 @@ import { Prisma, ProcessedEvent } from '@prisma/client';
 
 /**
  * IdempotencyService - Single Responsibility: Idempotency checks
- * 
+ *
  * Handles idempotency checks and marking events as processed.
  * Ensures operations can be safely retried without side effects.
  */
@@ -44,4 +44,3 @@ export class IdempotencyService {
     });
   }
 }
-

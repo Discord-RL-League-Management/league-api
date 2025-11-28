@@ -51,7 +51,10 @@ export class GuildAccessValidationService {
 
     // Check user is member of guild
     try {
-      const membership = await this.guildMembersService.findOne(userId, guildId);
+      const membership = await this.guildMembersService.findOne(
+        userId,
+        guildId,
+      );
       if (membership) {
         return; // User is member, access granted
       }
@@ -79,7 +82,8 @@ export class GuildAccessValidationService {
     guildId: string,
   ): Promise<void> {
     try {
-      const accessToken = await this.tokenManagementService.getValidAccessToken(userId);
+      const accessToken =
+        await this.tokenManagementService.getValidAccessToken(userId);
       if (!accessToken) {
         this.logger.warn(
           `No valid access token for user ${userId}, cannot verify Discord membership`,
@@ -87,10 +91,11 @@ export class GuildAccessValidationService {
         throw new ForbiddenException('You are not a member of this guild');
       }
 
-      const guildPermissions = await this.discordApiService.checkGuildPermissions(
-        accessToken,
-        guildId,
-      );
+      const guildPermissions =
+        await this.discordApiService.checkGuildPermissions(
+          accessToken,
+          guildId,
+        );
 
       if (!guildPermissions.isMember) {
         this.logger.warn(
@@ -132,5 +137,3 @@ export class GuildAccessValidationService {
     }
   }
 }
-
-

@@ -48,7 +48,10 @@ export class TrackerController {
   @Post('register')
   @ApiOperation({ summary: 'Register 1-4 tracker URLs (for new users)' })
   @ApiResponse({ status: 201, description: 'Trackers registered successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid URLs or user already has trackers' })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid URLs or user already has trackers',
+  })
   async registerTrackers(
     @Body() dto: RegisterTrackersDto,
     @CurrentUser() user: AuthenticatedUser,
@@ -62,8 +65,8 @@ export class TrackerController {
   }
 
   @Get('me')
-  @ApiOperation({ summary: 'Get current user\'s trackers' })
-  @ApiResponse({ status: 200, description: 'User\'s trackers (array)' })
+  @ApiOperation({ summary: "Get current user's trackers" })
+  @ApiResponse({ status: 200, description: "User's trackers (array)" })
   @ApiResponse({ status: 404, description: 'No trackers found for user' })
   async getMyTrackers(@CurrentUser() user: AuthenticatedUser) {
     const trackers = await this.trackerService.getTrackersByUserId(user.id);
@@ -72,7 +75,11 @@ export class TrackerController {
 
   @Get()
   @ApiOperation({ summary: 'Get trackers (filtered by guild access)' })
-  @ApiQuery({ name: 'guildId', required: false, description: 'Filter by guild ID' })
+  @ApiQuery({
+    name: 'guildId',
+    required: false,
+    description: 'Filter by guild ID',
+  })
   @ApiResponse({ status: 200, description: 'List of trackers' })
   async getTrackers(
     @Query('guildId') guildId?: string,
@@ -152,7 +159,11 @@ export class TrackerController {
   @Get(':id/snapshots')
   @ApiOperation({ summary: 'Get snapshots for a tracker' })
   @ApiParam({ name: 'id', description: 'Tracker ID' })
-  @ApiQuery({ name: 'season', required: false, description: 'Filter by season number' })
+  @ApiQuery({
+    name: 'season',
+    required: false,
+    description: 'Filter by season number',
+  })
   @ApiResponse({ status: 200, description: 'List of snapshots' })
   @ApiResponse({ status: 404, description: 'Tracker not found' })
   async getSnapshots(
@@ -214,7 +225,10 @@ export class TrackerController {
   @Post('add')
   @ApiOperation({ summary: 'Add an additional tracker (up to 4 total)' })
   @ApiResponse({ status: 201, description: 'Tracker added successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid URL or maximum trackers reached' })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid URL or maximum trackers reached',
+  })
   async addTracker(
     @Body() dto: AddTrackerDto,
     @CurrentUser() user: AuthenticatedUser,
@@ -227,10 +241,3 @@ export class TrackerController {
     return this.trackerService.addTracker(user.id, dto.url, userData);
   }
 }
-
-
-
-
-
-
-

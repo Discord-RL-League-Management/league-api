@@ -41,7 +41,10 @@ export class InternalUsersController {
   }
 
   @Patch(':id')
-  update(@Param('id', ParseCUIDPipe) id: string, @Body() updateUserDto: UpdateUserDto) {
+  update(
+    @Param('id', ParseCUIDPipe) id: string,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
     return this.usersService.update(id, updateUserDto);
   }
 

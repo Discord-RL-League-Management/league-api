@@ -8,7 +8,7 @@ import { User } from '@prisma/client';
 /**
  * UsersService - Business logic layer for User operations
  * Single Responsibility: Orchestrates user-related business logic
- * 
+ *
  * Uses UserRepository for data access, keeping concerns separated.
  * This service handles business rules and validation logic.
  */
@@ -30,10 +30,7 @@ export class UsersService {
    * Find all users with optional pagination
    * Single Responsibility: User retrieval with performance optimization
    */
-  async findAll(options?: {
-    page?: number;
-    limit?: number;
-  }): Promise<User[]> {
+  async findAll(options?: { page?: number; limit?: number }): Promise<User[]> {
     const result = await this.userRepository.findAll(options);
     return result.data;
   }

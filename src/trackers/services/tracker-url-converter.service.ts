@@ -3,8 +3,10 @@ import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 @Injectable()
 export class TrackerUrlConverterService {
   private readonly logger = new Logger(TrackerUrlConverterService.name);
-  private readonly TRN_PROFILE_REGEX = /^https:\/\/rocketleague\.tracker\.network\/rocket-league\/profile\/([^\/]+)\/([^\/]+)\/overview\/?$/i;
-  private readonly TRACKER_GG_API_BASE = 'https://api.tracker.gg/api/v2/rocket-league/standard/profile';
+  private readonly TRN_PROFILE_REGEX =
+    /^https:\/\/rocketleague\.tracker\.network\/rocket-league\/profile\/([^\/]+)\/([^\/]+)\/overview\/?$/i;
+  private readonly TRACKER_GG_API_BASE =
+    'https://api.tracker.gg/api/v2/rocket-league/standard/profile';
 
   /**
    * Convert TRN URL to tracker.gg API URL
@@ -40,8 +42,12 @@ export class TrackerUrlConverterService {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Error converting TRN URL to API URL: ${errorMessage}`, error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Error converting TRN URL to API URL: ${errorMessage}`,
+        error,
+      );
       throw new BadRequestException('Failed to convert tracker URL to API URL');
     }
   }
@@ -85,4 +91,3 @@ export class TrackerUrlConverterService {
     }
   }
 }
-

@@ -17,7 +17,7 @@ export class PermissionCheckService {
   /**
    * Check if user has access to a specific guild
    * Single Responsibility: Guild access validation
-   * 
+   *
    * Note: Settings are NOT a Prisma relation and cannot be accessed from membership.guild.
    * Settings must be provided by caller via GuildSettingsService.getSettings(guildId).
    * If settings are not provided, admin checks will fail (return false) but user will
@@ -47,7 +47,8 @@ export class PermissionCheckService {
         return { isMember: true, isAdmin: false, permissions: [] };
       }
 
-      const adminRoles = this.roleParser.getAdminRolesFromSettings(guildSettings);
+      const adminRoles =
+        this.roleParser.getAdminRolesFromSettings(guildSettings);
       const isAdmin = adminRoles.some((adminRole) =>
         membership.roles.includes(adminRole.id),
       );
@@ -70,7 +71,7 @@ export class PermissionCheckService {
   /**
    * Check if user has admin role in guild with Discord API validation
    * Single Responsibility: Admin permission checking with Discord verification
-   * 
+   *
    * Note: Settings are NOT a Prisma relation and cannot be accessed from membership.guild.
    * Settings must be provided by caller via GuildSettingsService.getSettings(guildId).
    * If settings are not provided, this method will return false.
@@ -119,7 +120,7 @@ export class PermissionCheckService {
   /**
    * Check if user roles include admin roles from guild settings
    * Single Responsibility: Role matching logic with optional Discord validation
-   * 
+   *
    * Note: If guildSettings is undefined/null, this will return false
    * (getAdminRolesFromSettings returns empty array for undefined settings).
    */
@@ -131,7 +132,9 @@ export class PermissionCheckService {
   ): Promise<boolean> {
     // Handle undefined/null settings gracefully
     if (!guildSettings) {
-      this.logger.warn(`No settings provided for admin role check in guild ${guildId}`);
+      this.logger.warn(
+        `No settings provided for admin role check in guild ${guildId}`,
+      );
       return false;
     }
 

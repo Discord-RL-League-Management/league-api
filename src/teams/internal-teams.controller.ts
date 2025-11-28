@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  UseGuards,
+} from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { BotAuthGuard } from '../auth/guards/bot-auth.guard';
@@ -28,7 +37,10 @@ export class InternalTeamsController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update team (Bot only)' })
-  updateTeam(@Param('id', ParseCUIDPipe) id: string, @Body() updateDto: UpdateTeamDto) {
+  updateTeam(
+    @Param('id', ParseCUIDPipe) id: string,
+    @Body() updateDto: UpdateTeamDto,
+  ) {
     return this.teamService.update(id, updateDto);
   }
 
@@ -38,4 +50,3 @@ export class InternalTeamsController {
     return this.teamService.delete(id);
   }
 }
-

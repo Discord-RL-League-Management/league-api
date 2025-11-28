@@ -68,11 +68,17 @@ describe('OrganizationValidationService', () => {
       ],
     }).compile();
 
-    service = module.get<OrganizationValidationService>(OrganizationValidationService);
-    organizationRepository = module.get<OrganizationRepository>(OrganizationRepository);
+    service = module.get<OrganizationValidationService>(
+      OrganizationValidationService,
+    );
+    organizationRepository = module.get<OrganizationRepository>(
+      OrganizationRepository,
+    );
     leagueRepository = module.get<LeagueRepository>(LeagueRepository);
     playerService = module.get<PlayerService>(PlayerService);
-    leagueSettingsService = module.get<LeagueSettingsService>(LeagueSettingsService);
+    leagueSettingsService = module.get<LeagueSettingsService>(
+      LeagueSettingsService,
+    );
   });
 
   afterEach(() => {
@@ -92,52 +98,74 @@ describe('OrganizationValidationService', () => {
       const createDto = { leagueId: 'league1', name: 'Test Org' };
       mockLeagueRepository.exists.mockResolvedValue(false);
 
-      await expect(service.validateCreate(createDto)).rejects.toThrow(LeagueNotFoundException);
+      await expect(service.validateCreate(createDto)).rejects.toThrow(
+        LeagueNotFoundException,
+      );
     });
   });
 
   describe('validateMemberAdd', () => {
     it('should pass validation when organization exists and player not in another org', async () => {
       const mockOrganization = { id: 'org1', leagueId: 'league1' };
-      mockOrganizationRepository.findByIdAndLeague.mockResolvedValue(mockOrganization);
+      mockOrganizationRepository.findByIdAndLeague.mockResolvedValue(
+        mockOrganization,
+      );
       mockPlayerService.findOne.mockResolvedValue({ id: 'player1' });
       mockOrganizationRepository.findMembersByPlayer.mockResolvedValue(null);
 
-      await expect(service.validateMemberAdd('org1', 'player1', 'league1')).resolves.not.toThrow();
+      await expect(
+        service.validateMemberAdd('org1', 'player1', 'league1'),
+      ).resolves.not.toThrow();
     });
 
     it('should throw OrganizationNotFoundException when organization not found', async () => {
       mockOrganizationRepository.findByIdAndLeague.mockResolvedValue(null);
 
-      await expect(service.validateMemberAdd('org1', 'player1', 'league1')).rejects.toThrow(
-        OrganizationNotFoundException,
-      );
+      await expect(
+        service.validateMemberAdd('org1', 'player1', 'league1'),
+      ).rejects.toThrow(OrganizationNotFoundException);
     });
 
     it('should throw PlayerAlreadyInOrganizationException when player in another org', async () => {
       const mockOrganization = { id: 'org1', leagueId: 'league1' };
-      const existingMembership = { id: 'm1', organizationId: 'org2', playerId: 'player1' };
+      const existingMembership = {
+        id: 'm1',
+        organizationId: 'org2',
+        playerId: 'player1',
+      };
 
-      mockOrganizationRepository.findByIdAndLeague.mockResolvedValue(mockOrganization);
-      mockPlayerService.findOne.mockResolvedValue({ id: 'player1' });
-      mockOrganizationRepository.findMembersByPlayer.mockResolvedValue(existingMembership);
-
-      await expect(service.validateMemberAdd('org1', 'player1', 'league1')).rejects.toThrow(
-        PlayerAlreadyInOrganizationException,
+      mockOrganizationRepository.findByIdAndLeague.mockResolvedValue(
+        mockOrganization,
       );
+      mockPlayerService.findOne.mockResolvedValue({ id: 'player1' });
+      mockOrganizationRepository.findMembersByPlayer.mockResolvedValue(
+        existingMembership,
+      );
+
+      await expect(
+        service.validateMemberAdd('org1', 'player1', 'league1'),
+      ).rejects.toThrow(PlayerAlreadyInOrganizationException);
     });
 
     it('should throw PlayerAlreadyInOrganizationException when player already in same org (duplicate add)', async () => {
       const mockOrganization = { id: 'org1', leagueId: 'league1' };
-      const existingMembership = { id: 'm1', organizationId: 'org1', playerId: 'player1' };
+      const existingMembership = {
+        id: 'm1',
+        organizationId: 'org1',
+        playerId: 'player1',
+      };
 
-      mockOrganizationRepository.findByIdAndLeague.mockResolvedValue(mockOrganization);
-      mockPlayerService.findOne.mockResolvedValue({ id: 'player1' });
-      mockOrganizationRepository.findMembersByPlayer.mockResolvedValue(existingMembership);
-
-      await expect(service.validateMemberAdd('org1', 'player1', 'league1')).rejects.toThrow(
-        PlayerAlreadyInOrganizationException,
+      mockOrganizationRepository.findByIdAndLeague.mockResolvedValue(
+        mockOrganization,
       );
+      mockPlayerService.findOne.mockResolvedValue({ id: 'player1' });
+      mockOrganizationRepository.findMembersByPlayer.mockResolvedValue(
+        existingMembership,
+      );
+
+      await expect(
+        service.validateMemberAdd('org1', 'player1', 'league1'),
+      ).rejects.toThrow(PlayerAlreadyInOrganizationException);
     });
   });
 
@@ -145,41 +173,57 @@ describe('OrganizationValidationService', () => {
     it('should pass when at least one GM exists', async () => {
       mockOrganizationRepository.countGeneralManagers.mockResolvedValue(1);
 
-      await expect(service.validateGeneralManagerRequirement('org1')).resolves.not.toThrow();
+      await expect(
+        service.validateGeneralManagerRequirement('org1'),
+      ).resolves.not.toThrow();
     });
 
     it('should throw NoGeneralManagerException when no GMs exist', async () => {
       mockOrganizationRepository.countGeneralManagers.mockResolvedValue(0);
 
-      await expect(service.validateGeneralManagerRequirement('org1')).rejects.toThrow(NoGeneralManagerException);
+      await expect(
+        service.validateGeneralManagerRequirement('org1'),
+      ).rejects.toThrow(NoGeneralManagerException);
     });
   });
 
   describe('validateCanRemoveGeneralManager', () => {
     it('should pass when not removing last GM', async () => {
-      const mockMember = { id: 'm1', role: OrganizationMemberRole.GENERAL_MANAGER };
+      const mockMember = {
+        id: 'm1',
+        role: OrganizationMemberRole.GENERAL_MANAGER,
+      };
       mockOrganizationRepository.findMemberById.mockResolvedValue(mockMember);
       mockOrganizationRepository.countGeneralManagers.mockResolvedValue(2);
 
-      await expect(service.validateCanRemoveGeneralManager('org1', 'm1')).resolves.not.toThrow();
+      await expect(
+        service.validateCanRemoveGeneralManager('org1', 'm1'),
+      ).resolves.not.toThrow();
     });
 
     it('should throw CannotRemoveLastGeneralManagerException when removing last GM', async () => {
-      const mockMember = { id: 'm1', role: OrganizationMemberRole.GENERAL_MANAGER };
+      const mockMember = {
+        id: 'm1',
+        role: OrganizationMemberRole.GENERAL_MANAGER,
+      };
       mockOrganizationRepository.findMemberById.mockResolvedValue(mockMember);
       mockOrganizationRepository.countGeneralManagers.mockResolvedValue(1);
 
-      await expect(service.validateCanRemoveGeneralManager('org1', 'm1')).rejects.toThrow(
-        CannotRemoveLastGeneralManagerException,
-      );
+      await expect(
+        service.validateCanRemoveGeneralManager('org1', 'm1'),
+      ).rejects.toThrow(CannotRemoveLastGeneralManagerException);
     });
 
     it('should pass when member is not a GM', async () => {
       const mockMember = { id: 'm1', role: OrganizationMemberRole.MEMBER };
       mockOrganizationRepository.findMemberById.mockResolvedValue(mockMember);
 
-      await expect(service.validateCanRemoveGeneralManager('org1', 'm1')).resolves.not.toThrow();
-      expect(mockOrganizationRepository.countGeneralManagers).not.toHaveBeenCalled();
+      await expect(
+        service.validateCanRemoveGeneralManager('org1', 'm1'),
+      ).resolves.not.toThrow();
+      expect(
+        mockOrganizationRepository.countGeneralManagers,
+      ).not.toHaveBeenCalled();
     });
   });
 
@@ -188,7 +232,9 @@ describe('OrganizationValidationService', () => {
       const mockSettings = { membership: { maxTeamsPerOrganization: null } };
       mockLeagueSettingsService.getSettings.mockResolvedValue(mockSettings);
 
-      await expect(service.validateOrganizationCapacity('league1', 'org1')).resolves.not.toThrow();
+      await expect(
+        service.validateOrganizationCapacity('league1', 'org1'),
+      ).resolves.not.toThrow();
     });
 
     it('should pass when under capacity limit', async () => {
@@ -196,7 +242,9 @@ describe('OrganizationValidationService', () => {
       mockLeagueSettingsService.getSettings.mockResolvedValue(mockSettings);
       mockOrganizationRepository.countTeamsByOrganization.mockResolvedValue(5);
 
-      await expect(service.validateOrganizationCapacity('league1', 'org1')).resolves.not.toThrow();
+      await expect(
+        service.validateOrganizationCapacity('league1', 'org1'),
+      ).resolves.not.toThrow();
     });
 
     it('should throw OrganizationCapacityExceededException when exceeding capacity', async () => {
@@ -204,9 +252,9 @@ describe('OrganizationValidationService', () => {
       mockLeagueSettingsService.getSettings.mockResolvedValue(mockSettings);
       mockOrganizationRepository.countTeamsByOrganization.mockResolvedValue(11); // Exceeds capacity
 
-      await expect(service.validateOrganizationCapacity('league1', 'org1')).rejects.toThrow(
-        OrganizationCapacityExceededException,
-      );
+      await expect(
+        service.validateOrganizationCapacity('league1', 'org1'),
+      ).rejects.toThrow(OrganizationCapacityExceededException);
     });
 
     it('should pass when at capacity (matches assignTeamsToOrganization logic)', async () => {
@@ -214,7 +262,9 @@ describe('OrganizationValidationService', () => {
       mockLeagueSettingsService.getSettings.mockResolvedValue(mockSettings);
       mockOrganizationRepository.countTeamsByOrganization.mockResolvedValue(10); // At capacity, not exceeding
 
-      await expect(service.validateOrganizationCapacity('league1', 'org1')).resolves.not.toThrow();
+      await expect(
+        service.validateOrganizationCapacity('league1', 'org1'),
+      ).resolves.not.toThrow();
     });
   });
 
@@ -223,25 +273,35 @@ describe('OrganizationValidationService', () => {
       const mockSettings = { membership: { maxOrganizations: null } };
       mockLeagueSettingsService.getSettings.mockResolvedValue(mockSettings);
 
-      await expect(service.validateLeagueOrganizationCapacity('league1')).resolves.not.toThrow();
+      await expect(
+        service.validateLeagueOrganizationCapacity('league1'),
+      ).resolves.not.toThrow();
     });
 
     it('should pass when under capacity limit', async () => {
       const mockSettings = { membership: { maxOrganizations: 10 } };
       mockLeagueSettingsService.getSettings.mockResolvedValue(mockSettings);
-      mockOrganizationRepository.findByLeagueId.mockResolvedValue([{ id: 'org1' }, { id: 'org2' }]);
+      mockOrganizationRepository.findByLeagueId.mockResolvedValue([
+        { id: 'org1' },
+        { id: 'org2' },
+      ]);
 
-      await expect(service.validateLeagueOrganizationCapacity('league1')).resolves.not.toThrow();
+      await expect(
+        service.validateLeagueOrganizationCapacity('league1'),
+      ).resolves.not.toThrow();
     });
 
     it('should throw LeagueOrganizationCapacityExceededException when at capacity', async () => {
       const mockSettings = { membership: { maxOrganizations: 2 } };
       mockLeagueSettingsService.getSettings.mockResolvedValue(mockSettings);
-      mockOrganizationRepository.findByLeagueId.mockResolvedValue([{ id: 'org1' }, { id: 'org2' }]);
+      mockOrganizationRepository.findByLeagueId.mockResolvedValue([
+        { id: 'org1' },
+        { id: 'org2' },
+      ]);
 
-      await expect(service.validateLeagueOrganizationCapacity('league1')).rejects.toThrow(
-        LeagueOrganizationCapacityExceededException,
-      );
+      await expect(
+        service.validateLeagueOrganizationCapacity('league1'),
+      ).rejects.toThrow(LeagueOrganizationCapacityExceededException);
     });
   });
 
@@ -249,13 +309,17 @@ describe('OrganizationValidationService', () => {
     it('should pass when organization has no teams', async () => {
       mockOrganizationRepository.countTeamsByOrganization.mockResolvedValue(0);
 
-      await expect(service.validateCanDeleteOrganization('org1')).resolves.not.toThrow();
+      await expect(
+        service.validateCanDeleteOrganization('org1'),
+      ).resolves.not.toThrow();
     });
 
     it('should throw OrganizationHasTeamsException when organization has teams', async () => {
       mockOrganizationRepository.countTeamsByOrganization.mockResolvedValue(3);
 
-      await expect(service.validateCanDeleteOrganization('org1')).rejects.toThrow(OrganizationHasTeamsException);
+      await expect(
+        service.validateCanDeleteOrganization('org1'),
+      ).rejects.toThrow(OrganizationHasTeamsException);
     });
   });
 
@@ -265,31 +329,38 @@ describe('OrganizationValidationService', () => {
       const mockTargetOrg = { id: 'org2', leagueId: 'league1' };
       const mockSettings = { membership: { maxTeamsPerOrganization: null } };
 
-      mockOrganizationRepository.findByIdAndLeague.mockResolvedValueOnce(mockSourceOrg);
-      mockOrganizationRepository.findByIdAndLeague.mockResolvedValueOnce(mockTargetOrg);
+      mockOrganizationRepository.findByIdAndLeague.mockResolvedValueOnce(
+        mockSourceOrg,
+      );
+      mockOrganizationRepository.findByIdAndLeague.mockResolvedValueOnce(
+        mockTargetOrg,
+      );
       mockLeagueSettingsService.getSettings.mockResolvedValue(mockSettings);
       mockOrganizationRepository.countTeamsByOrganization.mockResolvedValue(0);
 
-      await expect(service.validateTeamTransfer('team1', 'org1', 'org2', 'league1')).resolves.not.toThrow();
+      await expect(
+        service.validateTeamTransfer('team1', 'org1', 'org2', 'league1'),
+      ).resolves.not.toThrow();
     });
 
     it('should throw OrganizationNotFoundException when source org not found', async () => {
       mockOrganizationRepository.findByIdAndLeague.mockResolvedValueOnce(null);
 
-      await expect(service.validateTeamTransfer('team1', 'org1', 'org2', 'league1')).rejects.toThrow(
-        OrganizationNotFoundException,
-      );
+      await expect(
+        service.validateTeamTransfer('team1', 'org1', 'org2', 'league1'),
+      ).rejects.toThrow(OrganizationNotFoundException);
     });
 
     it('should throw OrganizationNotFoundException when target org not found', async () => {
       const mockSourceOrg = { id: 'org1', leagueId: 'league1' };
-      mockOrganizationRepository.findByIdAndLeague.mockResolvedValueOnce(mockSourceOrg);
+      mockOrganizationRepository.findByIdAndLeague.mockResolvedValueOnce(
+        mockSourceOrg,
+      );
       mockOrganizationRepository.findByIdAndLeague.mockResolvedValueOnce(null);
 
-      await expect(service.validateTeamTransfer('team1', 'org1', 'org2', 'league1')).rejects.toThrow(
-        OrganizationNotFoundException,
-      );
+      await expect(
+        service.validateTeamTransfer('team1', 'org1', 'org2', 'league1'),
+      ).rejects.toThrow(OrganizationNotFoundException);
     });
   });
 });
-

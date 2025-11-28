@@ -56,7 +56,12 @@ export class InternalGuildMembersController {
     @Param('guildId') guildId: string,
     @Body()
     syncData: {
-      members: Array<{ userId: string; username: string; nickname?: string; roles: string[] }>;
+      members: Array<{
+        userId: string;
+        username: string;
+        nickname?: string;
+        roles: string[];
+      }>;
     },
   ) {
     this.logger.log(
@@ -77,9 +82,7 @@ export class InternalGuildMembersController {
     @Param('userId') userId: string,
     @Body() updateMemberDto: UpdateGuildMemberDto,
   ) {
-    this.logger.log(
-      `Bot updating member ${userId} in guild ${guildId}`,
-    );
+    this.logger.log(`Bot updating member ${userId} in guild ${guildId}`);
     return this.guildMembersService.update(userId, guildId, updateMemberDto);
   }
 
@@ -94,9 +97,7 @@ export class InternalGuildMembersController {
     @Param('guildId') guildId: string,
     @Param('userId') userId: string,
   ) {
-    this.logger.log(
-      `Bot removing member ${userId} from guild ${guildId}`,
-    );
+    this.logger.log(`Bot removing member ${userId} from guild ${guildId}`);
     await this.guildMembersService.remove(userId, guildId);
     return { message: 'Member removed successfully' };
   }

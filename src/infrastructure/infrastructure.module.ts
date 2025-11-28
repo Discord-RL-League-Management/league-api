@@ -7,7 +7,7 @@ import { VisibilityModule } from './visibility/visibility.module';
 
 /**
  * InfrastructureModule - Barrel export for all infrastructure modules
- * 
+ *
  * Provides a single entry point for all infrastructure modules.
  * Enables clean imports across the application.
  */
@@ -28,4 +28,3 @@ import { VisibilityModule } from './visibility/visibility.module';
   ],
 })
 export class InfrastructureModule {}
-

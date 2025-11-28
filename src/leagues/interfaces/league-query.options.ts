@@ -60,7 +60,16 @@ export interface LeagueQueryOptions {
 /**
  * Default league query options
  */
-export const defaultLeagueQueryOptions: Required<Omit<LeagueQueryOptions, 'status' | 'game' | 'guildId' | 'sortBy' | 'sortOrder'>> & Pick<LeagueQueryOptions, 'status' | 'game' | 'guildId' | 'sortBy' | 'sortOrder'> = {
+export const defaultLeagueQueryOptions: Required<
+  Omit<
+    LeagueQueryOptions,
+    'status' | 'game' | 'guildId' | 'sortBy' | 'sortOrder'
+  >
+> &
+  Pick<
+    LeagueQueryOptions,
+    'status' | 'game' | 'guildId' | 'sortBy' | 'sortOrder'
+  > = {
   includeGuild: false,
   includeMembers: false,
   includeTeams: false,
@@ -69,5 +78,3 @@ export const defaultLeagueQueryOptions: Required<Omit<LeagueQueryOptions, 'statu
   page: 1,
   limit: 50,
 };
-
-

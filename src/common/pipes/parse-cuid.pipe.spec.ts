@@ -39,7 +39,9 @@ describe('ParseCUIDPipe', () => {
     it('should throw BadRequestException for invalid CUID format - missing c prefix', () => {
       const invalidCUID = 'lx1234567890abcdefghijkl';
       expect(() => pipe.transform(invalidCUID)).toThrow(BadRequestException);
-      expect(() => pipe.transform(invalidCUID)).toThrow('Invalid CUID format: lx1234567890abcdefghijkl');
+      expect(() => pipe.transform(invalidCUID)).toThrow(
+        'Invalid CUID format: lx1234567890abcdefghijkl',
+      );
     });
 
     it('should throw BadRequestException for invalid CUID format - uppercase letters', () => {
@@ -73,4 +75,3 @@ describe('ParseCUIDPipe', () => {
     });
   });
 });
-

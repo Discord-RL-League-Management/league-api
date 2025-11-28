@@ -7,22 +7,27 @@ import {
 import { Observable, defer } from 'rxjs';
 import { Request } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { requestContextStore, RequestContext } from '../context/request-context.store';
+import {
+  requestContextStore,
+  RequestContext,
+} from '../context/request-context.store';
 
 /**
  * RequestContextInterceptor - Maintains AsyncLocalStorage context throughout request lifecycle
- * 
+ *
  * This interceptor wraps the entire request execution, ensuring AsyncLocalStorage context
  * is maintained across all async operations in route handlers, services, and other interceptors.
- * 
+ *
  * Unlike middleware which only maintains context during the callback, interceptors wrap
  * the entire Observable chain, preserving context through async operations.
  */
 @Injectable()
 export class RequestContextInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    const request = context.switchToHttp().getRequest<Request & { requestId?: string }>();
-    
+    const request = context
+      .switchToHttp()
+      .getRequest<Request & { requestId?: string }>();
+
     // Get or create request ID
     const requestId = request.requestId || uuidv4();
     request.requestId = requestId;
@@ -43,4 +48,3 @@ export class RequestContextInterceptor implements NestInterceptor {
     });
   }
 }
-

@@ -14,7 +14,7 @@ import { LeagueConfiguration } from '../../leagues/interfaces/league-settings.in
 
 /**
  * LeagueJoinValidationService - Single Responsibility: League join validation logic
- * 
+ *
  * Validates player eligibility to join a league based on league settings.
  */
 @Injectable()
@@ -36,10 +36,7 @@ export class LeagueJoinValidationService {
    * Validate player can join league
    * Single Responsibility: Complete join validation
    */
-  async validateJoin(
-    playerId: string,
-    leagueId: string,
-  ): Promise<void> {
+  async validateJoin(playerId: string, leagueId: string): Promise<void> {
     // Get league settings
     const settings = await this.leagueSettingsService.getSettings(leagueId);
     const membershipConfig = settings.membership;
@@ -91,10 +88,10 @@ export class LeagueJoinValidationService {
 
     // 7. Check allowMultipleLeagues
     if (!membershipConfig.allowMultipleLeagues) {
-      const existingMemberships = await this.leagueMemberRepository.findByPlayerId(
-        playerId,
-        { status: 'ACTIVE' },
-      );
+      const existingMemberships =
+        await this.leagueMemberRepository.findByPlayerId(playerId, {
+          status: 'ACTIVE',
+        });
       if (existingMemberships.total > 0) {
         throw new LeagueJoinValidationException(
           'Player is already a member of another league and multiple leagues are not allowed',
@@ -103,7 +100,10 @@ export class LeagueJoinValidationService {
     }
 
     // 8. Check cooldownAfterLeave
-    if (membershipConfig.cooldownAfterLeave && membershipConfig.cooldownAfterLeave > 0) {
+    if (
+      membershipConfig.cooldownAfterLeave &&
+      membershipConfig.cooldownAfterLeave > 0
+    ) {
       this.playerValidationService.validateCooldown(
         player.lastLeftLeagueAt,
         membershipConfig.cooldownAfterLeave,
@@ -111,7 +111,10 @@ export class LeagueJoinValidationService {
     }
 
     // 9. Check joinMethod and requiresApproval
-    if (membershipConfig.joinMethod === 'INVITE_ONLY' || membershipConfig.joinMethod === 'APPLICATION') {
+    if (
+      membershipConfig.joinMethod === 'INVITE_ONLY' ||
+      membershipConfig.joinMethod === 'APPLICATION'
+    ) {
       if (!membershipConfig.allowSelfRegistration) {
         throw new LeagueJoinValidationException(
           'This league does not allow self-registration',
@@ -139,8 +142,10 @@ export class LeagueJoinValidationService {
     }
 
     // Get latest tracker snapshot
-    const tracker = await this.trackerService.getTrackerById(player.primaryTrackerId);
-    
+    const tracker = await this.trackerService.getTrackerById(
+      player.primaryTrackerId,
+    );
+
     // Get latest season data
     const latestSeason = tracker.seasons?.[0];
     if (!latestSeason) {
@@ -151,7 +156,7 @@ export class LeagueJoinValidationService {
 
     // Extract skill value based on metric
     let skillValue: number | null = null;
-    
+
     const playlist2v2 = latestSeason.playlist2v2 as any;
     switch (skillRequirements.skillMetric) {
       case 'MMR':
@@ -179,13 +184,19 @@ export class LeagueJoinValidationService {
     }
 
     // Validate min/max skill
-    if (skillRequirements.minSkill !== undefined && skillValue < skillRequirements.minSkill) {
+    if (
+      skillRequirements.minSkill !== undefined &&
+      skillValue < skillRequirements.minSkill
+    ) {
       throw new LeagueJoinValidationException(
         `Player skill (${skillValue}) is below minimum required (${skillRequirements.minSkill})`,
       );
     }
 
-    if (skillRequirements.maxSkill !== undefined && skillValue > skillRequirements.maxSkill) {
+    if (
+      skillRequirements.maxSkill !== undefined &&
+      skillValue > skillRequirements.maxSkill
+    ) {
       throw new LeagueJoinValidationException(
         `Player skill (${skillValue}) is above maximum allowed (${skillRequirements.maxSkill})`,
       );
@@ -198,7 +209,9 @@ export class LeagueJoinValidationService {
    */
   private validateRegistrationWindow(membershipConfig: any): void {
     if (!membershipConfig.registrationOpen) {
-      throw new LeagueJoinValidationException('League registration is currently closed');
+      throw new LeagueJoinValidationException(
+        'League registration is currently closed',
+      );
     }
 
     const now = new Date();
@@ -231,7 +244,8 @@ export class LeagueJoinValidationService {
     membershipConfig: any,
   ): Promise<void> {
     if (membershipConfig.maxPlayers) {
-      const activeCount = await this.leagueMemberRepository.countActiveMembers(leagueId);
+      const activeCount =
+        await this.leagueMemberRepository.countActiveMembers(leagueId);
       if (activeCount >= membershipConfig.maxPlayers) {
         if (membershipConfig.autoCloseOnFull) {
           throw new LeagueJoinValidationException(
@@ -246,4 +260,3 @@ export class LeagueJoinValidationService {
     }
   }
 }
-

@@ -59,8 +59,12 @@ describe('ParseEnumPipe', () => {
     });
 
     it('should throw BadRequestException for invalid enum value', () => {
-      expect(() => pipe.transform('INVALID_VALUE')).toThrow(BadRequestException);
-      expect(() => pipe.transform('INVALID_VALUE')).toThrow('Invalid enum value: INVALID_VALUE');
+      expect(() => pipe.transform('INVALID_VALUE')).toThrow(
+        BadRequestException,
+      );
+      expect(() => pipe.transform('INVALID_VALUE')).toThrow(
+        'Invalid enum value: INVALID_VALUE',
+      );
     });
 
     it('should throw BadRequestException for empty string', () => {
@@ -80,4 +84,3 @@ describe('ParseEnumPipe', () => {
     });
   });
 });
-

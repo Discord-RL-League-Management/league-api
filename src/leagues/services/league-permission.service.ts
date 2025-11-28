@@ -15,7 +15,7 @@ import { LeagueNotFoundException } from '../exceptions/league.exceptions';
 
 /**
  * LeaguePermissionService - Single Responsibility: League-level permission checking
- * 
+ *
  * Checks if users have admin or moderator permissions for specific leagues.
  * Supports both guild-level admin checks and league-specific role checks.
  */
@@ -35,16 +35,19 @@ export class LeaguePermissionService {
   /**
    * Check if user has league admin access
    * Single Responsibility: League admin permission check
-   * 
+   *
    * User has access if:
    * - They are a guild admin (full access to all leagues in guild), OR
    * - They are a league admin for this specific league
-   * 
+   *
    * @param userId - User ID to check
    * @param leagueId - League ID to check permissions for
    * @throws ForbiddenException if user doesn't have admin access
    */
-  async checkLeagueAdminAccess(userId: string, leagueId: string): Promise<void> {
+  async checkLeagueAdminAccess(
+    userId: string,
+    leagueId: string,
+  ): Promise<void> {
     try {
       const league = await this.leagueRepository.findOne(leagueId);
       if (!league) {
@@ -52,9 +55,14 @@ export class LeaguePermissionService {
       }
 
       // Guild admins have full access to all leagues in their guild
-      const isGuildAdmin = await this.checkGuildAdminAccess(userId, league.guildId);
+      const isGuildAdmin = await this.checkGuildAdminAccess(
+        userId,
+        league.guildId,
+      );
       if (isGuildAdmin) {
-        this.logger.debug(`User ${userId} has league admin access via guild admin role for league ${leagueId}`);
+        this.logger.debug(
+          `User ${userId} has league admin access via guild admin role for league ${leagueId}`,
+        );
         return;
       }
 
@@ -63,13 +71,17 @@ export class LeaguePermissionService {
       ]);
 
       if (!isLeagueAdmin) {
-        this.logger.warn(`User ${userId} does not have league admin access for league ${leagueId}`);
+        this.logger.warn(
+          `User ${userId} does not have league admin access for league ${leagueId}`,
+        );
         throw new ForbiddenException(
           'League admin access required - you must be a guild admin or league admin',
         );
       }
 
-      this.logger.debug(`User ${userId} has league admin access via league admin role for league ${leagueId}`);
+      this.logger.debug(
+        `User ${userId} has league admin access via league admin role for league ${leagueId}`,
+      );
     } catch (error) {
       if (
         error instanceof ForbiddenException ||
@@ -88,12 +100,12 @@ export class LeaguePermissionService {
   /**
    * Check if user has league admin or moderator access
    * Single Responsibility: League admin/moderator permission check
-   * 
+   *
    * User has access if:
    * - They are a guild admin (full access), OR
    * - They are a league admin for this specific league, OR
    * - They are a league moderator for this specific league
-   * 
+   *
    * @param userId - User ID to check
    * @param leagueId - League ID to check permissions for
    * @throws ForbiddenException if user doesn't have admin/moderator access
@@ -109,7 +121,10 @@ export class LeaguePermissionService {
       }
 
       // Guild admins have full access to all leagues in their guild
-      const isGuildAdmin = await this.checkGuildAdminAccess(userId, league.guildId);
+      const isGuildAdmin = await this.checkGuildAdminAccess(
+        userId,
+        league.guildId,
+      );
       if (isGuildAdmin) {
         this.logger.debug(
           `User ${userId} has league admin/moderator access via guild admin role for league ${leagueId}`,
@@ -152,7 +167,7 @@ export class LeaguePermissionService {
   /**
    * Check if user has guild admin access (for operations that require guild admin, not league admin)
    * Single Responsibility: Guild admin permission check for guild-level operations
-   * 
+   *
    * @param userId - User ID to check
    * @param guildId - Guild ID to check permissions for
    * @throws ForbiddenException if user doesn't have guild admin access
@@ -163,16 +178,20 @@ export class LeaguePermissionService {
   ): Promise<void> {
     const isAdmin = await this.checkGuildAdminAccess(userId, guildId);
     if (!isAdmin) {
-      this.logger.warn(`User ${userId} does not have guild admin access for guild ${guildId}`);
+      this.logger.warn(
+        `User ${userId} does not have guild admin access for guild ${guildId}`,
+      );
       throw new ForbiddenException('Guild admin access required');
     }
-    this.logger.debug(`User ${userId} has guild admin access for guild ${guildId}`);
+    this.logger.debug(
+      `User ${userId} has guild admin access for guild ${guildId}`,
+    );
   }
 
   /**
    * Check if user is a guild admin
    * Single Responsibility: Guild admin check helper
-   * 
+   *
    * @param userId - User ID to check
    * @param guildId - Guild ID to check permissions for
    * @returns true if user is guild admin
@@ -202,7 +221,7 @@ export class LeaguePermissionService {
   /**
    * Check if user has a specific role in the league
    * Single Responsibility: League role check helper
-   * 
+   *
    * @param userId - User ID to check
    * @param leagueId - League ID to check
    * @param roles - Roles to check for (ADMIN, MODERATOR, etc.)
@@ -231,10 +250,11 @@ export class LeaguePermissionService {
         return false;
       }
 
-      const leagueMember = await this.leagueMemberRepository.findByPlayerAndLeague(
-        player.id,
-        leagueId,
-      );
+      const leagueMember =
+        await this.leagueMemberRepository.findByPlayerAndLeague(
+          player.id,
+          leagueId,
+        );
 
       if (!leagueMember) {
         this.logger.debug(
@@ -257,4 +277,3 @@ export class LeaguePermissionService {
     }
   }
 }
-

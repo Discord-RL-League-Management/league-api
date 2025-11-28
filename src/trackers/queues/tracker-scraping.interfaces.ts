@@ -14,4 +14,3 @@ export interface ScrapingJobResult {
   seasonsFailed: number;
   error?: string;
 }
-

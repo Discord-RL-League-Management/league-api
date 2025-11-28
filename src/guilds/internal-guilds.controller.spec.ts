@@ -3,7 +3,10 @@ import { InternalGuildsController } from './internal-guilds.controller';
 import { GuildsService } from './guilds.service';
 import { GuildSettingsService } from './guild-settings.service';
 import { BotAuthGuard } from '../auth/guards/bot-auth.guard';
-import { createMockGuildsService, createMockGuildSettingsService } from '../../test/setup/test-helpers';
+import {
+  createMockGuildsService,
+  createMockGuildSettingsService,
+} from '../../test/setup/test-helpers';
 
 describe('InternalGuildsController', () => {
   let controller: InternalGuildsController;
@@ -29,8 +32,12 @@ describe('InternalGuildsController', () => {
       .compile();
 
     controller = module.get<InternalGuildsController>(InternalGuildsController);
-    guildsService = module.get<GuildsService>(GuildsService) as jest.Mocked<GuildsService>;
-    guildSettingsService = module.get<GuildSettingsService>(GuildSettingsService) as jest.Mocked<GuildSettingsService>;
+    guildsService = module.get<GuildsService>(
+      GuildsService,
+    ) as jest.Mocked<GuildsService>;
+    guildSettingsService = module.get<GuildSettingsService>(
+      GuildSettingsService,
+    ) as jest.Mocked<GuildSettingsService>;
   });
 
   afterEach(() => {
@@ -40,7 +47,10 @@ describe('InternalGuildsController', () => {
   describe('Authentication and Authorization', () => {
     it('should have BotAuthGuard applied', () => {
       // Arrange
-      const guards = Reflect.getMetadata('__guards__', InternalGuildsController);
+      const guards = Reflect.getMetadata(
+        '__guards__',
+        InternalGuildsController,
+      );
 
       // Assert
       expect(guards).toContain(BotAuthGuard);
@@ -80,7 +90,7 @@ describe('InternalGuildsController', () => {
       expect(guildsService.syncGuildWithMembers).toHaveBeenCalledWith(
         guildId,
         syncData.guild,
-        syncData.members
+        syncData.members,
       );
       expect(guildsService.syncGuildWithMembers).toHaveBeenCalledTimes(1);
     });
@@ -111,7 +121,7 @@ describe('InternalGuildsController', () => {
       expect(guildsService.syncGuildWithMembers).toHaveBeenCalledWith(
         guildId,
         syncData.guild,
-        []
+        [],
       );
     });
 
@@ -132,12 +142,12 @@ describe('InternalGuildsController', () => {
 
       // Act & Assert
       await expect(
-        controller.syncGuildWithMembers(guildId, syncData)
+        controller.syncGuildWithMembers(guildId, syncData),
       ).rejects.toThrow('Service error');
       expect(guildsService.syncGuildWithMembers).toHaveBeenCalledWith(
         guildId,
         syncData.guild,
-        syncData.members
+        syncData.members,
       );
     });
 
@@ -167,7 +177,7 @@ describe('InternalGuildsController', () => {
       expect(guildsService.syncGuildWithMembers).toHaveBeenCalledWith(
         guildId, // Route param
         syncData.guild, // Body guild data
-        syncData.members
+        syncData.members,
       );
     });
 
@@ -202,7 +212,7 @@ describe('InternalGuildsController', () => {
       expect(guildsService.syncGuildWithMembers).toHaveBeenCalledWith(
         guildId,
         syncData.guild,
-        largeMembersArray
+        largeMembersArray,
       );
     });
   });

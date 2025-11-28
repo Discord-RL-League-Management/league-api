@@ -5,7 +5,7 @@ import { ActivityLogRepository } from './repositories/activity-log.repository';
 
 /**
  * ActivityLogModule - Infrastructure module for activity logging
- * 
+ *
  * Provides unified activity logging for any domain.
  * Replaces both AuditLog and SettingsHistory patterns.
  */
@@ -15,4 +15,3 @@ import { ActivityLogRepository } from './repositories/activity-log.repository';
   exports: [ActivityLogService],
 })
 export class ActivityLogModule {}
-

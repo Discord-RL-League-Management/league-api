@@ -23,8 +23,12 @@ describe('InternalGuildMembersController', () => {
       .useValue({ canActivate: jest.fn(() => true) })
       .compile();
 
-    controller = module.get<InternalGuildMembersController>(InternalGuildMembersController);
-    guildMembersService = module.get<GuildMembersService>(GuildMembersService) as jest.Mocked<GuildMembersService>;
+    controller = module.get<InternalGuildMembersController>(
+      InternalGuildMembersController,
+    );
+    guildMembersService = module.get<GuildMembersService>(
+      GuildMembersService,
+    ) as jest.Mocked<GuildMembersService>;
   });
 
   afterEach(() => {
@@ -55,7 +59,9 @@ describe('InternalGuildMembersController', () => {
       guildMembersService.create.mockRejectedValue(validationError);
 
       // Act & Assert
-      await expect(controller.createMember(createMemberDto)).rejects.toThrow('Validation failed');
+      await expect(controller.createMember(createMemberDto)).rejects.toThrow(
+        'Validation failed',
+      );
     });
   });
 
@@ -72,7 +78,10 @@ describe('InternalGuildMembersController', () => {
       const result = await controller.syncMembers(guildId, syncData);
 
       // Assert
-      expect(guildMembersService.syncGuildMembers).toHaveBeenCalledWith(guildId, syncData.members);
+      expect(guildMembersService.syncGuildMembers).toHaveBeenCalledWith(
+        guildId,
+        syncData.members,
+      );
       expect(result).toEqual(mockResponse);
     });
 
@@ -85,7 +94,9 @@ describe('InternalGuildMembersController', () => {
       guildMembersService.syncGuildMembers.mockRejectedValue(notFoundError);
 
       // Act & Assert
-      await expect(controller.syncMembers(guildId, syncData)).rejects.toThrow('Guild not found');
+      await expect(controller.syncMembers(guildId, syncData)).rejects.toThrow(
+        'Guild not found',
+      );
     });
   });
 
@@ -100,10 +111,18 @@ describe('InternalGuildMembersController', () => {
       guildMembersService.update.mockResolvedValue(mockResponse);
 
       // Act
-      const result = await controller.updateMember(guildId, userId, updateMemberDto);
+      const result = await controller.updateMember(
+        guildId,
+        userId,
+        updateMemberDto,
+      );
 
       // Assert
-      expect(guildMembersService.update).toHaveBeenCalledWith(userId, guildId, updateMemberDto);
+      expect(guildMembersService.update).toHaveBeenCalledWith(
+        userId,
+        guildId,
+        updateMemberDto,
+      );
       expect(result).toEqual(mockResponse);
     });
 
@@ -117,7 +136,9 @@ describe('InternalGuildMembersController', () => {
       guildMembersService.update.mockRejectedValue(notFoundError);
 
       // Act & Assert
-      await expect(controller.updateMember(guildId, userId, updateMemberDto)).rejects.toThrow('Member not found');
+      await expect(
+        controller.updateMember(guildId, userId, updateMemberDto),
+      ).rejects.toThrow('Member not found');
     });
   });
 
@@ -160,14 +181,19 @@ describe('InternalGuildMembersController', () => {
       guildMembersService.remove.mockRejectedValue(notFoundError);
 
       // Act & Assert
-      await expect(controller.removeMember(guildId, userId)).rejects.toThrow('Member not found');
+      await expect(controller.removeMember(guildId, userId)).rejects.toThrow(
+        'Member not found',
+      );
     });
   });
 
   describe('Authentication and Authorization', () => {
     it('should have BotAuthGuard applied', () => {
       // Arrange
-      const guards = Reflect.getMetadata('__guards__', InternalGuildMembersController);
+      const guards = Reflect.getMetadata(
+        '__guards__',
+        InternalGuildMembersController,
+      );
 
       // Assert
       expect(guards).toContain(BotAuthGuard);
@@ -177,13 +203,17 @@ describe('InternalGuildMembersController', () => {
       // Arrange - Check if SkipThrottle decorator is applied to the controller
       // Note: Decorator metadata reflection is unreliable in Jest test environment,
       // so we verify the decorator exists by checking the controller implementation
-      const decorators = Reflect.getMetadataKeys(InternalGuildMembersController);
-      const hasSkipThrottle = decorators.some(key => key.includes('skip') || key.includes('throttle'));
-      
+      const decorators = Reflect.getMetadataKeys(
+        InternalGuildMembersController,
+      );
+      const hasSkipThrottle = decorators.some(
+        (key) => key.includes('skip') || key.includes('throttle'),
+      );
+
       // Verify controller is defined and SkipThrottle decorator is present in implementation
       // The @SkipThrottle() decorator is verified on line 29 of internal-guild-members.controller.ts
       expect(InternalGuildMembersController).toBeDefined();
-      
+
       // Assert - SkipThrottle is applied at the controller class level
       // This is verified by inspection of the controller implementation file
       expect(true).toBe(true); // Decorator presence verified in controller.ts line 29
@@ -201,7 +231,9 @@ describe('InternalGuildMembersController', () => {
       guildMembersService.update.mockRejectedValue(serviceError);
 
       // Act & Assert
-      await expect(controller.updateMember(guildId, userId, updateMemberDto)).rejects.toThrow('Service error');
+      await expect(
+        controller.updateMember(guildId, userId, updateMemberDto),
+      ).rejects.toThrow('Service error');
     });
 
     it('should handle database errors', async () => {
@@ -213,7 +245,9 @@ describe('InternalGuildMembersController', () => {
       guildMembersService.remove.mockRejectedValue(dbError);
 
       // Act & Assert
-      await expect(controller.removeMember(guildId, userId)).rejects.toThrow('Database connection failed');
+      await expect(controller.removeMember(guildId, userId)).rejects.toThrow(
+        'Database connection failed',
+      );
     });
   });
 
@@ -228,7 +262,9 @@ describe('InternalGuildMembersController', () => {
       guildMembersService.update.mockRejectedValue(serviceError);
 
       // Act & Assert
-      await expect(controller.updateMember(guildId, userId, updateMemberDto)).rejects.toThrow('Guild ID is required');
+      await expect(
+        controller.updateMember(guildId, userId, updateMemberDto),
+      ).rejects.toThrow('Guild ID is required');
     });
 
     it('should handle missing userId parameter', async () => {
@@ -241,7 +277,9 @@ describe('InternalGuildMembersController', () => {
       guildMembersService.update.mockRejectedValue(serviceError);
 
       // Act & Assert
-      await expect(controller.updateMember(guildId, userId, updateMemberDto)).rejects.toThrow('User ID is required');
+      await expect(
+        controller.updateMember(guildId, userId, updateMemberDto),
+      ).rejects.toThrow('User ID is required');
     });
   });
 });

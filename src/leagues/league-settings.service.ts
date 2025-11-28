@@ -1,4 +1,10 @@
-import { Injectable, Logger, NotFoundException, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import { SettingsService } from '../infrastructure/settings/services/settings.service';
@@ -6,9 +12,7 @@ import { LeagueRepository } from './repositories/league.repository';
 import { LeagueSettingsDefaultsService } from './services/league-settings-defaults.service';
 import { SettingsValidationService } from './services/settings-validation.service';
 import { ConfigMigrationService } from './services/config-migration.service';
-import {
-  LeagueConfiguration,
-} from './interfaces/league-settings.interface';
+import { LeagueConfiguration } from './interfaces/league-settings.interface';
 import { LeagueNotFoundException } from './exceptions/league.exceptions';
 import { LeagueSettingsDto } from './dto/league-settings.dto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -17,7 +21,7 @@ import { TeamRepository } from '../teams/repositories/team.repository';
 
 /**
  * LeagueSettingsService - Single Responsibility: League configuration management
- * 
+ *
  * Handles league settings retrieval, updates, caching, and migration.
  * Provides lazy initialization of settings if they don't exist.
  */
@@ -45,7 +49,7 @@ export class LeagueSettingsService {
   /**
    * Get league settings with caching and defaults
    * Single Responsibility: Settings retrieval with caching and lazy initialization
-   * 
+   *
    * Automatically persists default settings if they don't exist (lazy initialization).
    * Settings creation is independent of user validation - they exist regardless of who accesses them.
    * If settings don't exist, that's a bug - auto-create them immediately.
@@ -91,14 +95,16 @@ export class LeagueSettingsService {
           `Migrating league ${leagueId} settings from schema version ${this.configMigration.getSchemaVersion(settings.settings as any)} to ${1}`,
         );
         migratedConfig = this.configMigration.migrate(settings.settings as any);
-        
+
         // Persist migrated config
         await this.settingsService.updateSettings(
           'league',
           leagueId,
           migratedConfig as Record<string, any>,
         );
-        this.logger.log(`Successfully migrated settings for league ${leagueId}`);
+        this.logger.log(
+          `Successfully migrated settings for league ${leagueId}`,
+        );
       } else {
         migratedConfig = settings.settings as unknown as LeagueConfiguration;
       }
@@ -117,7 +123,10 @@ export class LeagueSettingsService {
       if (error instanceof LeagueNotFoundException) {
         throw error;
       }
-      this.logger.error(`Failed to get settings for league ${leagueId}:`, error);
+      this.logger.error(
+        `Failed to get settings for league ${leagueId}:`,
+        error,
+      );
       throw new NotFoundException('League', leagueId);
     }
   }
@@ -125,7 +134,7 @@ export class LeagueSettingsService {
   /**
    * Update league settings with validation and caching
    * Single Responsibility: Settings update with validation
-   * 
+   *
    * Validates new settings, merges with existing, and persists.
    * Invalidates cache after update.
    */
@@ -176,7 +185,9 @@ export class LeagueSettingsService {
         const cacheKey = `league:${leagueId}:settings`;
         await this.cacheManager.del(cacheKey);
 
-        this.logger.log(`Updated settings for league ${leagueId} and auto-assigned teams`);
+        this.logger.log(
+          `Updated settings for league ${leagueId} and auto-assigned teams`,
+        );
         return mergedSettings;
       }
 
@@ -197,7 +208,10 @@ export class LeagueSettingsService {
       if (error instanceof LeagueNotFoundException) {
         throw error;
       }
-      this.logger.error(`Failed to update settings for league ${leagueId}:`, error);
+      this.logger.error(
+        `Failed to update settings for league ${leagueId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -206,11 +220,17 @@ export class LeagueSettingsService {
    * Handle requireOrganization change: auto-assign teams to organizations
    * Single Responsibility: Automatic team assignment when league requires organizations
    */
-  private async handleRequireOrganizationChange(leagueId: string, mergedSettings: LeagueConfiguration): Promise<void> {
-    this.logger.log(`League ${leagueId} is changing to require organizations. Auto-assigning teams...`);
+  private async handleRequireOrganizationChange(
+    leagueId: string,
+    mergedSettings: LeagueConfiguration,
+  ): Promise<void> {
+    this.logger.log(
+      `League ${leagueId} is changing to require organizations. Auto-assigning teams...`,
+    );
 
     // Find all teams without organizations
-    const teamsWithoutOrg = await this.teamRepository.findTeamsWithoutOrganization(leagueId);
+    const teamsWithoutOrg =
+      await this.teamRepository.findTeamsWithoutOrganization(leagueId);
 
     if (teamsWithoutOrg.length === 0) {
       this.logger.log(`No teams need assignment in league ${leagueId}`);
@@ -218,7 +238,8 @@ export class LeagueSettingsService {
     }
 
     // Get or create organizations in league
-    const organizations = await this.organizationService.findByLeagueId(leagueId);
+    const organizations =
+      await this.organizationService.findByLeagueId(leagueId);
 
     // If no organizations exist, create a default one
     // Pass merged settings to validate against updated capacity limits
@@ -237,7 +258,9 @@ export class LeagueSettingsService {
       );
       defaultOrgId = defaultOrg.id;
       createdDefaultOrg = true;
-      this.logger.log(`Created default organization ${defaultOrgId} for league ${leagueId}`);
+      this.logger.log(
+        `Created default organization ${defaultOrgId} for league ${leagueId}`,
+      );
     } else {
       // Use first organization as default
       defaultOrgId = organizations[0].id;
@@ -252,7 +275,12 @@ export class LeagueSettingsService {
     // Pass merged settings to ensure validation uses updated limits before persistence
     // This ensures we don't violate maxTeamsPerOrganization limits with new settings
     try {
-      await this.organizationService.assignTeamsToOrganization(leagueId, defaultOrgId, teamIds, mergedSettings);
+      await this.organizationService.assignTeamsToOrganization(
+        leagueId,
+        defaultOrgId,
+        teamIds,
+        mergedSettings,
+      );
       this.logger.log(
         `Auto-assigned ${teamIds.length} teams to organization ${defaultOrgId} in league ${leagueId}`,
       );
@@ -283,5 +311,3 @@ export class LeagueSettingsService {
     }
   }
 }
-
-

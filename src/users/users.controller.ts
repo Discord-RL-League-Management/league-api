@@ -38,7 +38,10 @@ export class UsersController {
   }
 
   @Get(':id')
-  async getUser(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+  async getUser(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     // Enforce privacy by restricting profile access to the authenticated user
     if (id !== user.id) {
       throw new ForbiddenException('You can only view your own profile');

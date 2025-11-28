@@ -41,13 +41,22 @@ export class TrackerAdminController {
 
   @Get()
   @ApiOperation({ summary: 'List all trackers (Admin only)' })
-  @ApiQuery({ name: 'status', required: false, description: 'Filter by scraping status' })
-  @ApiQuery({ name: 'platform', required: false, description: 'Filter by platform' })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    description: 'Filter by scraping status',
+  })
+  @ApiQuery({
+    name: 'platform',
+    required: false,
+    description: 'Filter by platform',
+  })
   @ApiQuery({ name: 'page', required: false, description: 'Page number' })
   @ApiQuery({ name: 'limit', required: false, description: 'Items per page' })
   @ApiResponse({ status: 200, description: 'List of trackers' })
   async getTrackers(
-    @Query('status', new ParseEnumPipe(TrackerScrapingStatus)) status?: TrackerScrapingStatus,
+    @Query('status', new ParseEnumPipe(TrackerScrapingStatus))
+    status?: TrackerScrapingStatus,
     @Query('platform') platform?: string,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
@@ -140,14 +149,23 @@ export class TrackerAdminController {
 
   @Get('scraping-logs')
   @ApiOperation({ summary: 'Get scraping logs (Admin only)' })
-  @ApiQuery({ name: 'trackerId', required: false, description: 'Filter by tracker ID' })
-  @ApiQuery({ name: 'status', required: false, description: 'Filter by status' })
+  @ApiQuery({
+    name: 'trackerId',
+    required: false,
+    description: 'Filter by tracker ID',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    description: 'Filter by status',
+  })
   @ApiQuery({ name: 'page', required: false, description: 'Page number' })
   @ApiQuery({ name: 'limit', required: false, description: 'Items per page' })
   @ApiResponse({ status: 200, description: 'List of scraping logs' })
   async getScrapingLogs(
     @Query('trackerId') trackerId?: string,
-    @Query('status', new ParseEnumPipe(TrackerScrapingStatus)) status?: TrackerScrapingStatus,
+    @Query('status', new ParseEnumPipe(TrackerScrapingStatus))
+    status?: TrackerScrapingStatus,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
@@ -194,7 +212,9 @@ export class TrackerAdminController {
   }
 
   @Post(':id/refresh')
-  @ApiOperation({ summary: 'Manually trigger refresh for a tracker (Admin only)' })
+  @ApiOperation({
+    summary: 'Manually trigger refresh for a tracker (Admin only)',
+  })
   @ApiParam({ name: 'id', description: 'Tracker ID' })
   @ApiResponse({ status: 200, description: 'Refresh job enqueued' })
   @ApiResponse({ status: 404, description: 'Tracker not found' })
@@ -204,7 +224,9 @@ export class TrackerAdminController {
   }
 
   @Post('batch-refresh')
-  @ApiOperation({ summary: 'Trigger batch refresh for multiple trackers (Admin only)' })
+  @ApiOperation({
+    summary: 'Trigger batch refresh for multiple trackers (Admin only)',
+  })
   @ApiResponse({ status: 200, description: 'Batch refresh triggered' })
   async batchRefresh(@Body() body: BatchRefreshDto) {
     await this.refreshScheduler.triggerManualRefresh(body.trackerIds);
@@ -214,4 +236,3 @@ export class TrackerAdminController {
     };
   }
 }
-

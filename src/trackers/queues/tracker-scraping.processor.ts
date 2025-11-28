@@ -4,7 +4,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TrackerScrapingStatus } from '@prisma/client';
 import { TRACKER_SCRAPING_QUEUE } from './tracker-scraping.queue';
-import { ScrapingJobData, ScrapingJobResult } from './tracker-scraping.interfaces';
+import {
+  ScrapingJobData,
+  ScrapingJobResult,
+} from './tracker-scraping.interfaces';
 import { TrackerScraperService } from '../services/tracker-scraper.service';
 import { TrackerSeasonService } from '../services/tracker-season.service';
 import { TrackerService } from '../services/tracker.service';
@@ -98,8 +101,11 @@ export class TrackerScrapingProcessor extends WorkerHost {
         this.notificationService
           .sendScrapingCompleteNotification(trackerId, tracker.userId, 0, 0)
           .catch((err) => {
-            const errorMessage = err instanceof Error ? err.message : String(err);
-            this.logger.warn(`Failed to send success notification: ${errorMessage}`);
+            const errorMessage =
+              err instanceof Error ? err.message : String(err);
+            this.logger.warn(
+              `Failed to send success notification: ${errorMessage}`,
+            );
           });
 
         return {
@@ -118,7 +124,8 @@ export class TrackerScrapingProcessor extends WorkerHost {
           await this.seasonService.createOrUpdateSeason(trackerId, seasonData);
           seasonsScraped++;
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : String(error);
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
           this.logger.error(
             `Failed to store season ${seasonData.seasonNumber}: ${errorMessage}`,
           );
@@ -154,10 +161,17 @@ export class TrackerScrapingProcessor extends WorkerHost {
 
       // Send success notification (non-blocking)
       this.notificationService
-        .sendScrapingCompleteNotification(trackerId, tracker.userId, seasonsScraped, seasonsFailed)
+        .sendScrapingCompleteNotification(
+          trackerId,
+          tracker.userId,
+          seasonsScraped,
+          seasonsFailed,
+        )
         .catch((err) => {
           const errorMessage = err instanceof Error ? err.message : String(err);
-          this.logger.warn(`Failed to send success notification: ${errorMessage}`);
+          this.logger.warn(
+            `Failed to send success notification: ${errorMessage}`,
+          );
         });
 
       return {
@@ -166,7 +180,8 @@ export class TrackerScrapingProcessor extends WorkerHost {
         seasonsFailed,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       this.logger.error(
         `Failed to scrape tracker ${trackerId}: ${errorMessage}`,
         error,
@@ -199,9 +214,15 @@ export class TrackerScrapingProcessor extends WorkerHost {
       // Send failure notification (non-blocking)
       if (tracker) {
         this.notificationService
-          .sendScrapingFailedNotification(trackerId, tracker.userId, errorMessage)
+          .sendScrapingFailedNotification(
+            trackerId,
+            tracker.userId,
+            errorMessage,
+          )
           .catch((err) => {
-            this.logger.warn(`Failed to send failure notification: ${err.message}`);
+            this.logger.warn(
+              `Failed to send failure notification: ${err.message}`,
+            );
           });
       }
 
@@ -214,4 +235,3 @@ export class TrackerScrapingProcessor extends WorkerHost {
     }
   }
 }
-

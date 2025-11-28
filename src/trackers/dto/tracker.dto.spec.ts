@@ -13,7 +13,8 @@ describe('Tracker DTOs', () => {
   });
 
   describe('CreateTrackerDto', () => {
-    const validUrl = 'https://rocketleague.tracker.network/rocket-league/profile/steam/123456789/overview';
+    const validUrl =
+      'https://rocketleague.tracker.network/rocket-league/profile/steam/123456789/overview';
 
     it('should be defined', () => {
       expect(CreateTrackerDto).toBeDefined();
@@ -137,7 +138,8 @@ describe('Tracker DTOs', () => {
   });
 
   describe('AddTrackerDto', () => {
-    const validUrl = 'https://rocketleague.tracker.network/rocket-league/profile/steam/123456789/overview';
+    const validUrl =
+      'https://rocketleague.tracker.network/rocket-league/profile/steam/123456789/overview';
 
     it('should be defined', () => {
       expect(AddTrackerDto).toBeDefined();

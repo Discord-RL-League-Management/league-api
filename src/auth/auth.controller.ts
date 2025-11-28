@@ -25,6 +25,7 @@ import { UserGuildsService } from '../user-guilds/user-guilds.service';
 import { GuildsService } from '../guilds/guilds.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
+import { Public } from '../common/decorators';
 import type { AuthenticatedUser } from '../common/interfaces/user.interface';
 
 @ApiTags('Authentication')
@@ -44,6 +45,7 @@ export class AuthController {
   ) {}
 
   @Get('discord')
+  @Public()
   @ApiOperation({ summary: 'Initiate Discord OAuth login' })
   @ApiResponse({
     status: 302,
@@ -51,13 +53,13 @@ export class AuthController {
   })
   @ApiExcludeEndpoint()
   discordLogin(@Res() res: Response) {
-    // Generate Discord OAuth URL and redirect
     const authUrl = this.discordOAuthService.getAuthorizationUrl();
     this.logger.log('Discord OAuth flow initiated');
     res.redirect(authUrl);
   }
 
   @Get('discord/callback')
+  @Public()
   @ApiOperation({ summary: 'Discord OAuth callback' })
   @ApiResponse({
     status: 302,
@@ -70,7 +72,6 @@ export class AuthController {
     @Query('error_description') errorDescription: string,
     @Res() res: Response,
   ) {
-    // Check for OAuth errors
     if (error) {
       this.logger.warn(`OAuth error: ${error} - ${errorDescription}`);
       const frontendUrl = this.configService.get<string>('frontend.url', '');
@@ -78,7 +79,6 @@ export class AuthController {
       return res.redirect(errorUrl);
     }
 
-    // Check if code is present
     if (!code) {
       this.logger.error('OAuth callback received without authorization code');
       const frontendUrl = this.configService.get<string>('frontend.url', '');
@@ -87,15 +87,12 @@ export class AuthController {
     }
 
     try {
-      // Exchange code for access token
       const tokenResponse = await this.discordOAuthService.exchangeCode(code);
 
-      // Get user information from Discord via DiscordApiService
       const discordUser = await this.discordApiService.getUserProfile(
         tokenResponse.access_token,
       );
 
-      // Validate and create/update user in database
       const user = await this.authService.validateDiscordUser({
         discordId: discordUser.id,
         username: discordUser.username,
@@ -109,18 +106,16 @@ export class AuthController {
 
       this.logger.log(`OAuth callback successful for user ${user.id}`);
 
-      // Fetch user's guilds and sync with roles
+      // Sync guild memberships during OAuth to ensure user roles are current when they first log in
       try {
-        // Fetch user's guilds from Discord API
         const userGuilds = await this.discordApiService.getUserGuilds(
           tokenResponse.access_token,
         );
 
-        // Get bot's active guild IDs to filter mutual guilds
+        // Filter to guilds where bot is present to avoid storing data for inaccessible guilds
         const botGuildIds = await this.guildsService.findActiveGuildIds();
         const botGuildIdsSet = new Set(botGuildIds);
 
-        // Filter to mutual guilds and fetch roles for each
         const mutualGuildsWithRoles = await Promise.all(
           userGuilds
             .filter((guild) => botGuildIdsSet.has(guild.id))
@@ -139,7 +134,7 @@ export class AuthController {
                   `Failed to fetch roles for guild ${guild.id}:`,
                   error,
                 );
-                // Continue with empty roles if fetch fails
+                // Continue with empty roles if fetch fails to prevent OAuth failure from partial role fetch errors
                 return {
                   ...guild,
                   roles: [],
@@ -148,7 +143,6 @@ export class AuthController {
             }),
         );
 
-        // Sync guild memberships with roles
         await this.userGuildsService.syncUserGuildMembershipsWithRoles(
           user.id,
           mutualGuildsWithRoles,
@@ -165,7 +159,7 @@ export class AuthController {
         );
       }
 
-      // Generate JWT token - convert null to undefined for type compatibility
+      // Convert null to undefined because JWT payload uses optional properties that don't accept null
       const jwt = await this.authService.generateJwt({
         id: user.id,
         username: user.username,
@@ -174,10 +168,9 @@ export class AuthController {
         email: user.email ?? undefined,
       });
 
-      // Set JWT in HttpOnly cookie
       const cookieOptions = {
         httpOnly: true,
-        secure: this.configService.get('auth.cookieSecure', false),
+        secure: this.configService.get<boolean>('auth.cookieSecure', false),
         sameSite: this.configService.get<'strict' | 'lax' | 'none'>(
           'auth.cookieSameSite',
           'lax',
@@ -191,7 +184,7 @@ export class AuthController {
 
       res.cookie('auth_token', jwt.access_token, cookieOptions);
 
-      // Redirect to frontend (no token in URL)
+      // Use cookie-based auth instead of URL token to prevent token exposure in browser history and logs
       const frontendUrl = this.configService.get<string>('frontend.url', '');
       const redirectUrl = `${frontendUrl}/auth/callback`;
       res.redirect(redirectUrl);
@@ -227,7 +220,7 @@ export class AuthController {
     description: 'Unauthorized - Invalid or missing JWT token',
   })
   @ApiBearerAuth('JWT-auth')
-  async getCurrentUser(@CurrentUser() user: AuthenticatedUser) {
+  getCurrentUser(@CurrentUser() user: AuthenticatedUser) {
     return user;
   }
 
@@ -240,8 +233,11 @@ export class AuthController {
   })
   @ApiResponse({ status: 401, description: 'Invalid JWT token' })
   @ApiBearerAuth('JWT-auth')
-  async getUserGuilds(@CurrentUser() user: AuthenticatedUser) {
+  async getUserGuilds(
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<unknown[]> {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return await this.authService.getUserAvailableGuilds(user.id);
     } catch (error) {
       this.logger.error(`Error getting user guilds for ${user.id}:`, error);
@@ -257,7 +253,6 @@ export class AuthController {
   @ApiBearerAuth('JWT-auth')
   async logout(@CurrentUser() user: AuthenticatedUser, @Res() res: Response) {
     try {
-      // Clear JWT cookie
       res.clearCookie('auth_token', {
         httpOnly: true,
         secure: this.configService.get('auth.cookieSecure', false),
@@ -268,7 +263,6 @@ export class AuthController {
         path: '/',
       });
 
-      // Revoke Discord tokens
       await this.tokenManagementService.revokeTokens(user.id);
 
       return res.json({ message: 'Logged out successfully' });

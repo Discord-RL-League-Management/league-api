@@ -162,10 +162,18 @@ export const setupCommonMocks = (): void => {
     updatedAt: new Date(),
   });
 
-  mockPrismaService.guildMember.findMany.mockResolvedValue(apiFixtures.createMemberList(5));
-  mockPrismaService.guildMember.findUnique.mockResolvedValue(apiFixtures.createMockGuildMember());
-  mockPrismaService.guildMember.update.mockResolvedValue(apiFixtures.createMockGuildMember());
-  mockPrismaService.guildMember.delete.mockResolvedValue(apiFixtures.createMockGuildMember());
+  mockPrismaService.guildMember.findMany.mockResolvedValue(
+    apiFixtures.createMemberList(5),
+  );
+  mockPrismaService.guildMember.findUnique.mockResolvedValue(
+    apiFixtures.createMockGuildMember(),
+  );
+  mockPrismaService.guildMember.update.mockResolvedValue(
+    apiFixtures.createMockGuildMember(),
+  );
+  mockPrismaService.guildMember.delete.mockResolvedValue(
+    apiFixtures.createMockGuildMember(),
+  );
   mockPrismaService.guildMember.count.mockResolvedValue(100);
 
   mockPrismaService.guild.upsert.mockResolvedValue({
@@ -264,14 +272,22 @@ export const setupCommonMocks = (): void => {
     updatedAt: new Date(),
   });
 
-  mockGuildMembersService.create.mockResolvedValue(apiFixtures.createMockGuildMember());
+  mockGuildMembersService.create.mockResolvedValue(
+    apiFixtures.createMockGuildMember(),
+  );
   mockGuildMembersService.findAll.mockResolvedValue({
     members: apiFixtures.createMemberList(5),
     pagination: { page: 1, limit: 20, total: 5, pages: 1 },
   });
-  mockGuildMembersService.findOne.mockResolvedValue(apiFixtures.createMockGuildMember());
-  mockGuildMembersService.update.mockResolvedValue(apiFixtures.createMockGuildMember());
-  mockGuildMembersService.remove.mockResolvedValue(apiFixtures.createMockGuildMember());
+  mockGuildMembersService.findOne.mockResolvedValue(
+    apiFixtures.createMockGuildMember(),
+  );
+  mockGuildMembersService.update.mockResolvedValue(
+    apiFixtures.createMockGuildMember(),
+  );
+  mockGuildMembersService.remove.mockResolvedValue(
+    apiFixtures.createMockGuildMember(),
+  );
   mockGuildMembersService.searchMembers.mockResolvedValue({
     members: apiFixtures.createMemberList(2),
     pagination: { page: 1, limit: 20, total: 2, pages: 1 },
@@ -305,78 +321,80 @@ export const createMockGuildsService = (): jest.Mocked<GuildsService> => {
  * Create a fresh mock GuildSettingsService instance
  * Factory function that returns a new mock instance for each test
  */
-export const createMockGuildSettingsService = (): jest.Mocked<GuildSettingsService> => {
-  return {
-    getSettings: jest.fn(),
-    updateSettings: jest.fn(),
-    resetSettings: jest.fn(),
-    getSettingsHistory: jest.fn(),
-    logger: {} as any,
-    prisma: {} as any,
-    settingsDefaults: {} as any,
-    settingsValidation: {} as any,
-    cacheManager: {} as any,
-  } as jest.Mocked<GuildSettingsService>;
-};
+export const createMockGuildSettingsService =
+  (): jest.Mocked<GuildSettingsService> => {
+    return {
+      getSettings: jest.fn(),
+      updateSettings: jest.fn(),
+      resetSettings: jest.fn(),
+      getSettingsHistory: jest.fn(),
+      logger: {} as any,
+      prisma: {} as any,
+      settingsDefaults: {} as any,
+      settingsValidation: {} as any,
+      cacheManager: {} as any,
+    } as jest.Mocked<GuildSettingsService>;
+  };
 
 /**
  * Create a fresh mock GuildMembersService instance
  * Factory function that returns a new mock instance for each test
  */
-export const createMockGuildMembersService = (): jest.Mocked<GuildMembersService> => {
-  return {
-    create: jest.fn(),
-    findAll: jest.fn(),
-    findOne: jest.fn(),
-    update: jest.fn(),
-    remove: jest.fn(),
-    syncGuildMembers: jest.fn(),
-    searchMembers: jest.fn(),
-    getMemberStats: jest.fn(),
-    logger: {} as any,
-    prisma: {} as any,
-    guildsService: {} as any,
-    usersService: {} as any,
-  } as jest.Mocked<GuildMembersService>;
-};
+export const createMockGuildMembersService =
+  (): jest.Mocked<GuildMembersService> => {
+    return {
+      create: jest.fn(),
+      findAll: jest.fn(),
+      findOne: jest.fn(),
+      update: jest.fn(),
+      remove: jest.fn(),
+      syncGuildMembers: jest.fn(),
+      searchMembers: jest.fn(),
+      getMemberStats: jest.fn(),
+      logger: {} as any,
+      prisma: {} as any,
+      guildsService: {} as any,
+      usersService: {} as any,
+    } as jest.Mocked<GuildMembersService>;
+  };
 
 /**
  * Reset all mocks
  */
 export const resetAllMocks = (): void => {
   jest.clearAllMocks();
-  
+
   // Reset Prisma mocks
-  Object.values(mockPrismaService).forEach(mock => {
+  Object.values(mockPrismaService).forEach((mock) => {
     if (typeof mock === 'object' && mock !== null) {
-      Object.values(mock).forEach(fn => {
+      Object.values(mock).forEach((fn) => {
         if (jest.isMockFunction(fn)) {
           fn.mockClear();
         }
       });
     }
   });
-  
+
   // Reset service mocks
-  Object.values(mockGuildsService).forEach(fn => {
+  Object.values(mockGuildsService).forEach((fn) => {
     if (jest.isMockFunction(fn)) {
       fn.mockClear();
     }
   });
-  
-  Object.values(mockUsersService).forEach(fn => {
+
+  Object.values(mockUsersService).forEach((fn) => {
     if (jest.isMockFunction(fn)) {
       fn.mockClear();
     }
   });
-  
-  Object.values(mockGuildSettingsService).forEach(fn => {
+
+  Object.values(mockGuildSettingsService).forEach((fn) => {
     if (jest.isMockFunction(fn)) {
       fn.mockClear();
     }
   });
-  
-  Object.values(mockGuildMembersService).forEach(fn => {
+
+  Object.values(mockGuildMembersService).forEach((fn) => {
     if (jest.isMockFunction(fn)) {
       fn.mockClear();
     }

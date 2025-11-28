@@ -30,10 +30,7 @@ import { LeagueMemberRepository } from './repositories/league-member.repository'
     InfrastructureModule,
     PlayerRatingsModule,
   ],
-  controllers: [
-    LeagueMembersController,
-    InternalLeagueMembersController,
-  ],
+  controllers: [LeagueMembersController, InternalLeagueMembersController],
   providers: [
     LeagueMemberService,
     LeagueJoinValidationService,
@@ -46,4 +43,3 @@ import { LeagueMemberRepository } from './repositories/league-member.repository'
   ],
 })
 export class LeagueMembersModule {}
-

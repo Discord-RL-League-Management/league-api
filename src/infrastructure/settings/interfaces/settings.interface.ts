@@ -13,4 +13,3 @@ export interface Settings {
   createdAt: Date;
   updatedAt: Date;
 }
-

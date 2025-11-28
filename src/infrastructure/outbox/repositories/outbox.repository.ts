@@ -4,7 +4,7 @@ import { Prisma, Outbox, OutboxStatus } from '@prisma/client';
 
 /**
  * OutboxRepository - Single Responsibility: Data access layer for Outbox entity
- * 
+ *
  * Pure data access layer with no business logic.
  * Handles all database operations for Outbox model.
  */
@@ -29,10 +29,7 @@ export class OutboxRepository {
   /**
    * Find pending events
    */
-  async findPendingEvents(
-    sourceType?: string,
-    limit = 10,
-  ): Promise<Outbox[]> {
+  async findPendingEvents(sourceType?: string, limit = 10): Promise<Outbox[]> {
     return this.prisma.outbox.findMany({
       where: {
         status: OutboxStatus.PENDING,
@@ -46,10 +43,7 @@ export class OutboxRepository {
   /**
    * Find events by source
    */
-  async findBySource(
-    sourceType: string,
-    sourceId: string,
-  ): Promise<Outbox[]> {
+  async findBySource(sourceType: string, sourceId: string): Promise<Outbox[]> {
     return this.prisma.outbox.findMany({
       where: {
         sourceType,
@@ -62,10 +56,7 @@ export class OutboxRepository {
   /**
    * Update outbox event status
    */
-  async update(
-    id: string,
-    data: Prisma.OutboxUpdateInput,
-  ): Promise<Outbox> {
+  async update(id: string, data: Prisma.OutboxUpdateInput): Promise<Outbox> {
     return this.prisma.outbox.update({
       where: { id },
       data,
@@ -91,4 +82,3 @@ export class OutboxRepository {
     });
   }
 }
-

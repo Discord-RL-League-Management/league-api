@@ -4,7 +4,7 @@ import { PlayerNotFoundException } from '../exceptions/player.exceptions';
 
 /**
  * PlayerOwnershipService - Single Responsibility: Player ownership validation
- * 
+ *
  * Validates that a player belongs to a specific user before allowing operations.
  * This ensures users can only perform actions on players they own.
  */
@@ -17,13 +17,16 @@ export class PlayerOwnershipService {
   /**
    * Validate that a player belongs to the specified user
    * Single Responsibility: Player ownership validation
-   * 
+   *
    * @param userId - User ID to validate ownership for
    * @param playerId - Player ID to check ownership of
    * @throws PlayerNotFoundException if player doesn't exist
    * @throws ForbiddenException if player doesn't belong to user
    */
-  async validatePlayerOwnership(userId: string, playerId: string): Promise<void> {
+  async validatePlayerOwnership(
+    userId: string,
+    playerId: string,
+  ): Promise<void> {
     try {
       const player = await this.playerService.findOne(playerId);
 
@@ -50,4 +53,3 @@ export class PlayerOwnershipService {
     }
   }
 }
-

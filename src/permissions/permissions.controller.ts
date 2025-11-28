@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Get,
-  Param,
-  UseGuards,
-  Logger,
-} from '@nestjs/common';
+import { Controller, Get, Param, UseGuards, Logger } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -21,7 +15,7 @@ import type { AuthenticatedUser } from '../common/interfaces/user.interface';
 
 /**
  * Permissions Controller - Single Responsibility: Handle HTTP requests for permission state
- * 
+ *
  * Controller only handles HTTP concerns, delegates to services.
  */
 @ApiTags('Permissions')
@@ -44,9 +38,11 @@ export class PermissionsController {
   @ApiParam({ name: 'guildId', description: 'Discord guild ID' })
   async getMyPermissions(
     @Param('guildId') guildId: string,
-    @CurrentUser() user: AuthenticatedUser
+    @CurrentUser() user: AuthenticatedUser,
   ) {
-    this.logger.log(`User ${user.id} requested permissions for guild ${guildId}`);
+    this.logger.log(
+      `User ${user.id} requested permissions for guild ${guildId}`,
+    );
 
     // Fetch settings separately (settings are not a Prisma relation)
     const settings = await this.guildSettingsService.getSettings(guildId);
@@ -66,14 +62,3 @@ export class PermissionsController {
     };
   }
 }
-
-
-
-
-
-
-
-
-
-
-

@@ -9,7 +9,10 @@ import { BaseRepository } from '../../common/repositories/base.repository.interf
  * TeamMemberRepository - Handles all database operations for TeamMember entity
  */
 @Injectable()
-export class TeamMemberRepository implements BaseRepository<TeamMember, CreateTeamMemberDto, UpdateTeamMemberDto> {
+export class TeamMemberRepository
+  implements
+    BaseRepository<TeamMember, CreateTeamMemberDto, UpdateTeamMemberDto>
+{
   private readonly logger = new Logger(TeamMemberRepository.name);
 
   constructor(private prisma: PrismaService) {}
@@ -21,7 +24,12 @@ export class TeamMemberRepository implements BaseRepository<TeamMember, CreateTe
     });
   }
 
-  async findAll(options?: { page?: number; limit?: number }): Promise<{ data: TeamMember[]; total: number; page: number; limit: number }> {
+  async findAll(options?: { page?: number; limit?: number }): Promise<{
+    data: TeamMember[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
     const page = options?.page ?? 1;
     const limit = options?.limit ?? 50;
     const skip = (page - 1) * limit;
@@ -39,7 +47,10 @@ export class TeamMemberRepository implements BaseRepository<TeamMember, CreateTe
     return { data: members, total, page, limit: maxLimit };
   }
 
-  async findByPlayerAndLeague(playerId: string, leagueId: string): Promise<TeamMember | null> {
+  async findByPlayerAndLeague(
+    playerId: string,
+    leagueId: string,
+  ): Promise<TeamMember | null> {
     return this.prisma.teamMember.findFirst({
       where: {
         playerId,
@@ -50,7 +61,10 @@ export class TeamMemberRepository implements BaseRepository<TeamMember, CreateTe
     });
   }
 
-  async findByTeamId(teamId: string, includeInactive: boolean = false): Promise<TeamMember[]> {
+  async findByTeamId(
+    teamId: string,
+    includeInactive: boolean = false,
+  ): Promise<TeamMember[]> {
     const where: Prisma.TeamMemberWhereInput = { teamId };
     if (!includeInactive) {
       where.status = 'ACTIVE';
@@ -85,13 +99,24 @@ export class TeamMemberRepository implements BaseRepository<TeamMember, CreateTe
       data: {
         ...(data.role !== undefined && { role: data.role }),
         ...(data.status !== undefined && { status: data.status }),
-        ...(data.membershipType !== undefined && { membershipType: data.membershipType }),
-        ...(data.startDate !== undefined && { startDate: new Date(data.startDate) }),
-        ...(data.endDate !== undefined && { endDate: data.endDate ? new Date(data.endDate) : null }),
+        ...(data.membershipType !== undefined && {
+          membershipType: data.membershipType,
+        }),
+        ...(data.startDate !== undefined && {
+          startDate: new Date(data.startDate),
+        }),
+        ...(data.endDate !== undefined && {
+          endDate: data.endDate ? new Date(data.endDate) : null,
+        }),
         ...(data.notes !== undefined && { notes: data.notes }),
         // Handle leftAt: null clears the field, date string updates it, undefined is ignored
-        ...(data.leftAt !== undefined && { 
-          leftAt: data.leftAt === null ? null : (data.leftAt ? new Date(data.leftAt) : null)
+        ...(data.leftAt !== undefined && {
+          leftAt:
+            data.leftAt === null
+              ? null
+              : data.leftAt
+                ? new Date(data.leftAt)
+                : null,
         }),
       },
       include: { player: true, team: true },
@@ -119,4 +144,3 @@ export class TeamMemberRepository implements BaseRepository<TeamMember, CreateTe
     });
   }
 }
-

@@ -22,7 +22,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 /**
  * Audit Log Controller - Single Responsibility: Handle HTTP requests for audit logs
- * 
+ *
  * Controller only handles HTTP concerns, delegates to services.
  */
 @ApiTags('Audit Logs')
@@ -40,12 +40,36 @@ export class AuditLogController {
   @ApiResponse({ status: 403, description: 'Admin access required' })
   @ApiResponse({ status: 401, description: 'Invalid JWT token' })
   @ApiParam({ name: 'guildId', description: 'Discord guild ID' })
-  @ApiQuery({ name: 'userId', required: false, description: 'Filter by user ID' })
-  @ApiQuery({ name: 'action', required: false, description: 'Filter by action type' })
-  @ApiQuery({ name: 'startDate', required: false, description: 'Start date for filter' })
-  @ApiQuery({ name: 'endDate', required: false, description: 'End date for filter' })
-  @ApiQuery({ name: 'limit', required: false, description: 'Number of results (max 100)' })
-  @ApiQuery({ name: 'offset', required: false, description: 'Offset for pagination' })
+  @ApiQuery({
+    name: 'userId',
+    required: false,
+    description: 'Filter by user ID',
+  })
+  @ApiQuery({
+    name: 'action',
+    required: false,
+    description: 'Filter by action type',
+  })
+  @ApiQuery({
+    name: 'startDate',
+    required: false,
+    description: 'Start date for filter',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    description: 'End date for filter',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Number of results (max 100)',
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    description: 'Offset for pagination',
+  })
   async getAuditLogs(
     @Param('guildId') guildId: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -54,9 +78,11 @@ export class AuditLogController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
     @Query('limit') limit?: string,
-    @Query('offset') offset?: string
+    @Query('offset') offset?: string,
   ) {
-    this.logger.log(`User ${user.id} requested audit logs for guild ${guildId}`);
+    this.logger.log(
+      `User ${user.id} requested audit logs for guild ${guildId}`,
+    );
 
     const filters: any = {};
 
@@ -70,4 +96,3 @@ export class AuditLogController {
     return this.auditLogService.queryLogs(guildId, filters);
   }
 }
-

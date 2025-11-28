@@ -1,5 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { GuildSettings, ConfigMetadata } from '../interfaces/settings.interface';
+import {
+  GuildSettings,
+  ConfigMetadata,
+} from '../interfaces/settings.interface';
 import {
   CURRENT_SCHEMA_VERSION,
   CURRENT_CONFIG_VERSION,
@@ -8,10 +11,10 @@ import { SettingsDefaultsService } from './settings-defaults.service';
 
 /**
  * ConfigMigrationService - Single Responsibility: Configuration schema migrations
- * 
+ *
  * Handles migration of configuration from older schema versions to the current version.
  * Each migration method handles one version increment.
- * 
+ *
  * Responsibilities:
  * - Version detection
  * - Migration chain orchestration
@@ -21,14 +24,12 @@ import { SettingsDefaultsService } from './settings-defaults.service';
 export class ConfigMigrationService {
   private readonly logger = new Logger(ConfigMigrationService.name);
 
-  constructor(
-    private readonly settingsDefaults: SettingsDefaultsService,
-  ) {}
+  constructor(private readonly settingsDefaults: SettingsDefaultsService) {}
 
   /**
    * Migrate configuration from any version to current version
    * Single Responsibility: Migration orchestration
-   * 
+   *
    * @param config Configuration object (may be from any version)
    * @returns Migrated configuration matching current schema
    */
@@ -51,11 +52,11 @@ export class ConfigMigrationService {
     if (schemaVersion < 1) {
       migrated = await this.migrateToV1(migrated);
     }
-    
+
     if (schemaVersion < 2) {
       migrated = await this.migrateToV2(migrated);
     }
-    
+
     // Future migrations:
     // if (schemaVersion < 3) {
     //   migrated = await this.migrateToV3(migrated);
@@ -68,7 +69,7 @@ export class ConfigMigrationService {
   /**
    * Get schema version from config
    * Single Responsibility: Version extraction
-   * 
+   *
    * @param config Configuration object
    * @returns Schema version number (0 if not found/legacy)
    */
@@ -85,7 +86,7 @@ export class ConfigMigrationService {
   /**
    * Normalize config to current schema structure
    * Single Responsibility: Schema normalization
-   * 
+   *
    * Ensures config has all required fields and correct structure.
    * Uses SettingsDefaultsService to merge with defaults.
    */
@@ -96,7 +97,7 @@ export class ConfigMigrationService {
   /**
    * Migrate from version 0 (legacy) to version 1
    * Single Responsibility: V0 to V1 migration
-   * 
+   *
    * Handles migration of configs created before versioning was implemented.
    * Ensures all required fields exist and adds metadata.
    * Uses SettingsDefaultsService to merge with defaults.
@@ -129,7 +130,7 @@ export class ConfigMigrationService {
   /**
    * Migrate from version 1 to version 2
    * Single Responsibility: V1 to V2 migration
-   * 
+   *
    * Migrates from the old complex schema to the new minimal schema.
    * All old fields are dropped, only bot_command_channels remains.
    */
@@ -143,7 +144,7 @@ export class ConfigMigrationService {
         schemaVersion: 2,
         lastMigrated: new Date(),
       },
-      bot_command_channels: [],  // Default to listening on all channels
+      bot_command_channels: [], // Default to listening on all channels
     };
 
     return migrated;
@@ -152,7 +153,7 @@ export class ConfigMigrationService {
   /**
    * Check if config needs migration
    * Single Responsibility: Migration necessity check
-   * 
+   *
    * @param config Configuration object
    * @returns true if config needs migration
    */
@@ -161,4 +162,3 @@ export class ConfigMigrationService {
     return schemaVersion < CURRENT_SCHEMA_VERSION;
   }
 }
-

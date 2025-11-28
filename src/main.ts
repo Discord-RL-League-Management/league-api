@@ -50,7 +50,10 @@ async function bootstrap() {
 
   // Configure CORS to allow only trusted origins while supporting development and mobile clients
   app.enableCors({
-    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
       const allowedOrigins = [
         configService.get<string>('frontend.url'),
         'http://localhost:5173',
@@ -115,7 +118,7 @@ async function bootstrap() {
       .build();
 
     const document = SwaggerModule.createDocument(app, config);
-    
+
     SwaggerModule.setup('api-docs', app, document, {
       swaggerOptions: {
         persistAuthorization: true,

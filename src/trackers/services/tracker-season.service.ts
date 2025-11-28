@@ -27,10 +27,14 @@ export class TrackerSeasonService {
         },
         update: {
           seasonName: seasonData.seasonName,
-          playlist1v1: (seasonData.playlist1v1 as unknown) as Prisma.InputJsonValue,
-          playlist2v2: (seasonData.playlist2v2 as unknown) as Prisma.InputJsonValue,
-          playlist3v3: (seasonData.playlist3v3 as unknown) as Prisma.InputJsonValue,
-          playlist4v4: (seasonData.playlist4v4 as unknown) as Prisma.InputJsonValue,
+          playlist1v1:
+            seasonData.playlist1v1 as unknown as Prisma.InputJsonValue,
+          playlist2v2:
+            seasonData.playlist2v2 as unknown as Prisma.InputJsonValue,
+          playlist3v3:
+            seasonData.playlist3v3 as unknown as Prisma.InputJsonValue,
+          playlist4v4:
+            seasonData.playlist4v4 as unknown as Prisma.InputJsonValue,
           scrapedAt: new Date(),
           updatedAt: new Date(),
         },
@@ -38,10 +42,14 @@ export class TrackerSeasonService {
           trackerId,
           seasonNumber: seasonData.seasonNumber,
           seasonName: seasonData.seasonName,
-          playlist1v1: (seasonData.playlist1v1 as unknown) as Prisma.InputJsonValue,
-          playlist2v2: (seasonData.playlist2v2 as unknown) as Prisma.InputJsonValue,
-          playlist3v3: (seasonData.playlist3v3 as unknown) as Prisma.InputJsonValue,
-          playlist4v4: (seasonData.playlist4v4 as unknown) as Prisma.InputJsonValue,
+          playlist1v1:
+            seasonData.playlist1v1 as unknown as Prisma.InputJsonValue,
+          playlist2v2:
+            seasonData.playlist2v2 as unknown as Prisma.InputJsonValue,
+          playlist3v3:
+            seasonData.playlist3v3 as unknown as Prisma.InputJsonValue,
+          playlist4v4:
+            seasonData.playlist4v4 as unknown as Prisma.InputJsonValue,
           scrapedAt: new Date(),
         },
       });
@@ -52,7 +60,8 @@ export class TrackerSeasonService {
 
       return season;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       this.logger.error(
         `Failed to create/update season: ${errorMessage}`,
         error,
@@ -111,10 +120,14 @@ export class TrackerSeasonService {
             },
             update: {
               seasonName: seasonData.seasonName,
-              playlist1v1: (seasonData.playlist1v1 as unknown) as Prisma.InputJsonValue,
-              playlist2v2: (seasonData.playlist2v2 as unknown) as Prisma.InputJsonValue,
-              playlist3v3: (seasonData.playlist3v3 as unknown) as Prisma.InputJsonValue,
-              playlist4v4: (seasonData.playlist4v4 as unknown) as Prisma.InputJsonValue,
+              playlist1v1:
+                seasonData.playlist1v1 as unknown as Prisma.InputJsonValue,
+              playlist2v2:
+                seasonData.playlist2v2 as unknown as Prisma.InputJsonValue,
+              playlist3v3:
+                seasonData.playlist3v3 as unknown as Prisma.InputJsonValue,
+              playlist4v4:
+                seasonData.playlist4v4 as unknown as Prisma.InputJsonValue,
               scrapedAt: new Date(),
               updatedAt: new Date(),
             },
@@ -122,10 +135,14 @@ export class TrackerSeasonService {
               trackerId,
               seasonNumber: seasonData.seasonNumber,
               seasonName: seasonData.seasonName,
-              playlist1v1: (seasonData.playlist1v1 as unknown) as Prisma.InputJsonValue,
-              playlist2v2: (seasonData.playlist2v2 as unknown) as Prisma.InputJsonValue,
-              playlist3v3: (seasonData.playlist3v3 as unknown) as Prisma.InputJsonValue,
-              playlist4v4: (seasonData.playlist4v4 as unknown) as Prisma.InputJsonValue,
+              playlist1v1:
+                seasonData.playlist1v1 as unknown as Prisma.InputJsonValue,
+              playlist2v2:
+                seasonData.playlist2v2 as unknown as Prisma.InputJsonValue,
+              playlist3v3:
+                seasonData.playlist3v3 as unknown as Prisma.InputJsonValue,
+              playlist4v4:
+                seasonData.playlist4v4 as unknown as Prisma.InputJsonValue,
               scrapedAt: new Date(),
             },
           }),
@@ -141,7 +158,8 @@ export class TrackerSeasonService {
 
       return result;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       this.logger.error(
         `Failed to bulk upsert seasons: ${errorMessage}`,
         error,
@@ -150,4 +168,3 @@ export class TrackerSeasonService {
     }
   }
 }
-

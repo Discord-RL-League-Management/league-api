@@ -1,4 +1,10 @@
-import { IsString, IsOptional, IsBoolean, IsNumber, IsEnum } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsBoolean,
+  IsNumber,
+  IsEnum,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { MatchParticipantType } from '@prisma/client';
 
@@ -17,7 +23,10 @@ export class CreateMatchParticipantDto {
   @IsString()
   teamMemberId?: string;
 
-  @ApiPropertyOptional({ enum: MatchParticipantType, default: MatchParticipantType.TEAM_MEMBER })
+  @ApiPropertyOptional({
+    enum: MatchParticipantType,
+    default: MatchParticipantType.TEAM_MEMBER,
+  })
   @IsOptional()
   @IsEnum(MatchParticipantType)
   participantType?: MatchParticipantType;
@@ -61,4 +70,3 @@ export class CreateMatchParticipantDto {
   @IsString()
   substituteReason?: string;
 }
-

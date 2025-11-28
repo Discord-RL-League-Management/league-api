@@ -16,4 +16,3 @@ export interface OutboxEvent {
   createdAt: Date;
   updatedAt: Date;
 }
-

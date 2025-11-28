@@ -1,4 +1,8 @@
-import { NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 
 export class OrganizationNotFoundException extends NotFoundException {
   constructor(id: string) {
@@ -14,25 +18,33 @@ export class OrganizationMemberNotFoundException extends NotFoundException {
 
 export class OrganizationHasTeamsException extends BadRequestException {
   constructor(organizationId: string) {
-    super(`Cannot delete organization ${organizationId} because it has teams assigned`);
+    super(
+      `Cannot delete organization ${organizationId} because it has teams assigned`,
+    );
   }
 }
 
 export class NoGeneralManagerException extends BadRequestException {
   constructor(organizationId: string) {
-    super(`Organization ${organizationId} must have at least one General Manager`);
+    super(
+      `Organization ${organizationId} must have at least one General Manager`,
+    );
   }
 }
 
 export class CannotRemoveLastGeneralManagerException extends BadRequestException {
   constructor(organizationId: string) {
-    super(`Cannot remove the last General Manager from organization ${organizationId}`);
+    super(
+      `Cannot remove the last General Manager from organization ${organizationId}`,
+    );
   }
 }
 
 export class PlayerAlreadyInOrganizationException extends BadRequestException {
   constructor(playerId: string, leagueId: string) {
-    super(`Player ${playerId} is already in an organization in league ${leagueId}`);
+    super(
+      `Player ${playerId} is already in an organization in league ${leagueId}`,
+    );
   }
 }
 
@@ -44,13 +56,16 @@ export class NotGeneralManagerException extends ForbiddenException {
 
 export class OrganizationCapacityExceededException extends BadRequestException {
   constructor(organizationId: string, maxTeams: number) {
-    super(`Organization ${organizationId} has reached maximum capacity of ${maxTeams} teams`);
+    super(
+      `Organization ${organizationId} has reached maximum capacity of ${maxTeams} teams`,
+    );
   }
 }
 
 export class LeagueOrganizationCapacityExceededException extends BadRequestException {
   constructor(leagueId: string, maxOrganizations: number) {
-    super(`League ${leagueId} has reached maximum capacity of ${maxOrganizations} organizations`);
+    super(
+      `League ${leagueId} has reached maximum capacity of ${maxOrganizations} organizations`,
+    );
   }
 }
-

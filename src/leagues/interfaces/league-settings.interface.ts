@@ -24,18 +24,18 @@ export interface MembershipConfig {
   joinMethod: 'OPEN' | 'INVITE_ONLY' | 'APPLICATION';
   requiresApproval: boolean;
   allowSelfRegistration: boolean;
-  
+
   // Capacity
   maxPlayers?: number | null;
   minPlayers?: number | null;
   maxTeams?: number | null;
-  
+
   // Registration Windows
   registrationOpen: boolean;
   registrationStartDate?: Date | null;
   registrationEndDate?: Date | null;
   autoCloseOnFull: boolean;
-  
+
   // Eligibility Requirements
   requireGuildMembership: boolean;
   requirePlayerStatus: boolean;
@@ -44,11 +44,11 @@ export interface MembershipConfig {
     maxSkill?: number;
     skillMetric: 'MMR' | 'RANK' | 'ELO' | 'CUSTOM';
   } | null;
-  
+
   // Restrictions
   allowMultipleLeagues: boolean;
   cooldownAfterLeave?: number | null;
-  
+
   // Organization Requirements
   requireOrganization: boolean; // Teams must belong to an organization (default: false)
   maxOrganizations?: number | null; // Maximum organizations in league (null = unlimited)
@@ -105,5 +105,3 @@ export interface LeagueConfiguration {
   visibility: VisibilityConfig;
   administration: AdministrationConfig;
 }
-
-

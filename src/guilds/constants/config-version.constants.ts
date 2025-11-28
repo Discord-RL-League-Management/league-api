@@ -27,4 +27,3 @@ export type MigrationFunction = (config: any) => Promise<any> | any;
 export interface MigrationRegistry {
   [version: number]: MigrationFunction;
 }
-

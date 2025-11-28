@@ -144,7 +144,7 @@ export class DiscordApiService {
     guildId: string,
   ): Promise<GuildPermissions> {
     try {
-      const response = (await firstValueFrom(
+      const response = await firstValueFrom(
         this.httpService
           .get<any>(`${this.apiUrl}/users/@me/guilds/${guildId}/member`, {
             headers: { Authorization: `Bearer ${accessToken}` },
@@ -162,7 +162,7 @@ export class DiscordApiService {
               throw new ServiceUnavailableException('Discord API unavailable');
             }),
           ),
-      )) as any;
+      );
 
       if (!response.data) {
         return { isMember: false, permissions: [], roles: [] };
@@ -176,12 +176,13 @@ export class DiscordApiService {
       const memberData = response.data as GuildMemberResponse;
       const permissions = memberData?.permissions || [];
       const roles = memberData?.roles || [];
-      
+
       // Check for Administrator permission
       // Discord returns permissions as strings (e.g., "ADMINISTRATOR") or integers
       // ADMINISTRATOR permission flag is 0x8 = 8, but when all permissions are granted
       // it's typically represented as 2147483648 (0x80000000)
-      const hasAdministratorPermission = this.checkAdministratorPermission(permissions);
+      const hasAdministratorPermission =
+        this.checkAdministratorPermission(permissions);
 
       return {
         isMember: true,
@@ -194,14 +195,19 @@ export class DiscordApiService {
         `Failed to check guild permissions for ${guildId}:`,
         error,
       );
-      return { isMember: false, permissions: [], roles: [], hasAdministratorPermission: false };
+      return {
+        isMember: false,
+        permissions: [],
+        roles: [],
+        hasAdministratorPermission: false,
+      };
     }
   }
 
   /**
    * Get user's guild member data with roles for a specific guild
    * Single Responsibility: Guild member data fetching via OAuth
-   * 
+   *
    * Following: https://discord.com/developers/docs/resources/guild#get-current-user-guild-member
    */
   async getGuildMember(
@@ -221,9 +227,7 @@ export class DiscordApiService {
               if (error.response?.status === 404) {
                 return of({ data: null } as any); // User not in guild
               }
-              this.logger.error(
-                `Guild member fetch error: ${error.message}`,
-              );
+              this.logger.error(`Guild member fetch error: ${error.message}`);
               throw new ServiceUnavailableException('Discord API unavailable');
             }),
           ),
@@ -248,10 +252,7 @@ export class DiscordApiService {
       if (error instanceof ServiceUnavailableException) {
         throw error;
       }
-      this.logger.error(
-        `Failed to fetch guild member for ${guildId}:`,
-        error,
-      );
+      this.logger.error(`Failed to fetch guild member for ${guildId}:`, error);
       return null;
     }
   }
@@ -259,10 +260,10 @@ export class DiscordApiService {
   /**
    * Check if permissions array contains Administrator permission
    * Single Responsibility: Administrator permission parsing
-   * 
+   *
    * Checks for "ADMINISTRATOR" string or permission integer 2147483648 (0x80000000)
    * Also checks if permission integer has bit 0x8 set (Administrator flag)
-   * 
+   *
    * @param permissions Array of permission strings or integers
    * @returns true if Administrator permission is present
    */
@@ -286,8 +287,11 @@ export class DiscordApiService {
         // Check if bit 0x8 is set
         const ADMINISTRATOR_FLAG = 0x8; // 8 in decimal
         const ALL_PERMISSIONS_FLAG = 0x80000000; // 2147483648 in decimal
-        
-        if (permissionInt === ALL_PERMISSIONS_FLAG || (permissionInt & ADMINISTRATOR_FLAG) !== 0) {
+
+        if (
+          permissionInt === ALL_PERMISSIONS_FLAG ||
+          (permissionInt & ADMINISTRATOR_FLAG) !== 0
+        ) {
           return true;
         }
       }

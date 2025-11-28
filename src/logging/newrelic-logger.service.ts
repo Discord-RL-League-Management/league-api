@@ -23,16 +23,21 @@ export class NewRelicLoggerService implements LoggerService {
     this.hostname = os.hostname();
     // Support EU region: use log-api.eu.newrelic.com for EU accounts
     const region = process.env.NEW_RELIC_REGION || 'us';
-    this.logEndpoint = region === 'eu' 
-      ? 'https://log-api.eu.newrelic.com/log/v1'
-      : 'https://log-api.newrelic.com/log/v1';
+    this.logEndpoint =
+      region === 'eu'
+        ? 'https://log-api.eu.newrelic.com/log/v1'
+        : 'https://log-api.newrelic.com/log/v1';
   }
-
 
   /**
    * Send log to New Relic Logs API
    */
-  private async sendToNewRelic(level: string, message: string, context?: string, metadata?: any): Promise<void> {
+  private async sendToNewRelic(
+    level: string,
+    message: string,
+    context?: string,
+    metadata?: any,
+  ): Promise<void> {
     if (!this.enabled || !this.apiKey) {
       return;
     }
@@ -54,24 +59,25 @@ export class NewRelicLoggerService implements LoggerService {
         logEntry['trace.id'] = traceId;
       }
 
-      await axios.post(
-        this.logEndpoint,
-        [logEntry],
-        {
-          headers: {
-            'X-License-Key': this.apiKey,
-            'Content-Type': 'application/json',
-          },
-          timeout: 5000, // 5 second timeout
+      await axios.post(this.logEndpoint, [logEntry], {
+        headers: {
+          'X-License-Key': this.apiKey,
+          'Content-Type': 'application/json',
         },
-      );
+        timeout: 5000, // 5 second timeout
+      });
     } catch (error: any) {
       // Silently fail to avoid log recursion
       // Only log connection errors in development, and only once to avoid spam
-      if (process.env.NODE_ENV === 'development' && error?.code === 'ECONNREFUSED') {
+      if (
+        process.env.NODE_ENV === 'development' &&
+        error?.code === 'ECONNREFUSED'
+      ) {
         // Only log the first connection error to avoid spam
         if (!(this as any)._connectionErrorLogged) {
-          console.warn('⚠️  New Relic connection failed. This may be a network/firewall issue. Logs will continue to console only.');
+          console.warn(
+            '⚠️  New Relic connection failed. This may be a network/firewall issue. Logs will continue to console only.',
+          );
           (this as any)._connectionErrorLogged = true;
         }
       }
@@ -117,4 +123,3 @@ export class NewRelicLoggerService implements LoggerService {
     }
   }
 }
-

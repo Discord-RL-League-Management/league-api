@@ -380,7 +380,9 @@ describe('TrackerScraperService', () => {
         expect.stringContaining('playlistId: 3'),
       );
       expect(loggerSpy).toHaveBeenCalledWith(
-        expect.stringContaining('tracker.gg API response structure has changed'),
+        expect.stringContaining(
+          'tracker.gg API response structure has changed',
+        ),
       );
     });
 
@@ -406,9 +408,7 @@ describe('TrackerScraperService', () => {
 
       // ASSERT
       expect(result).toBeNull();
-      expect(loggerSpy).toHaveBeenCalledWith(
-        expect.stringContaining('type: '),
-      );
+      expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('type: '));
     });
 
     it('should handle segment with missing playlistId', () => {
@@ -460,4 +460,3 @@ describe('TrackerScraperService', () => {
     });
   });
 });
-

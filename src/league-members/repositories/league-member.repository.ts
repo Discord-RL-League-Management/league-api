@@ -12,12 +12,15 @@ import {
 /**
  * LeagueMemberRepository - Handles all database operations for LeagueMember entity
  * Single Responsibility: Data access layer for LeagueMember entity
- * 
+ *
  * Separates data access concerns from business logic,
  * making services more focused and testable.
  */
 @Injectable()
-export class LeagueMemberRepository implements BaseRepository<LeagueMember, CreateLeagueMemberDto, UpdateLeagueMemberDto> {
+export class LeagueMemberRepository
+  implements
+    BaseRepository<LeagueMember, CreateLeagueMemberDto, UpdateLeagueMemberDto>
+{
   private readonly logger = new Logger(LeagueMemberRepository.name);
 
   constructor(private prisma: PrismaService) {}
@@ -25,9 +28,12 @@ export class LeagueMemberRepository implements BaseRepository<LeagueMember, Crea
   /**
    * Find by ID (cuid primary key)
    */
-  async findById(id: string, options?: LeagueMemberQueryOptions): Promise<LeagueMember | null> {
+  async findById(
+    id: string,
+    options?: LeagueMemberQueryOptions,
+  ): Promise<LeagueMember | null> {
     const opts = { ...defaultLeagueMemberQueryOptions, ...options };
-    
+
     const include: Prisma.LeagueMemberInclude = {};
     if (opts.includePlayer) {
       include.player = true;
@@ -45,10 +51,12 @@ export class LeagueMemberRepository implements BaseRepository<LeagueMember, Crea
   /**
    * Find all league members with optional pagination
    */
-  async findAll(options?: {
-    page?: number;
-    limit?: number;
-  }): Promise<{ data: LeagueMember[]; total: number; page: number; limit: number }> {
+  async findAll(options?: { page?: number; limit?: number }): Promise<{
+    data: LeagueMember[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
     const page = options?.page ?? 1;
     const limit = options?.limit ?? 50;
     const skip = (page - 1) * limit;
@@ -81,7 +89,7 @@ export class LeagueMemberRepository implements BaseRepository<LeagueMember, Crea
     options?: LeagueMemberQueryOptions,
   ): Promise<LeagueMember | null> {
     const opts = { ...defaultLeagueMemberQueryOptions, ...options };
-    
+
     const include: Prisma.LeagueMemberInclude = {};
     if (opts.includePlayer) {
       include.player = true;
@@ -107,7 +115,12 @@ export class LeagueMemberRepository implements BaseRepository<LeagueMember, Crea
   async findByLeagueId(
     leagueId: string,
     options?: LeagueMemberQueryOptions,
-  ): Promise<{ data: LeagueMember[]; total: number; page: number; limit: number }> {
+  ): Promise<{
+    data: LeagueMember[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
     const opts = { ...defaultLeagueMemberQueryOptions, ...options };
     const page = opts.page ?? 1;
     const limit = opts.limit ?? 50;
@@ -174,7 +187,12 @@ export class LeagueMemberRepository implements BaseRepository<LeagueMember, Crea
   async findByPlayerId(
     playerId: string,
     options?: LeagueMemberQueryOptions,
-  ): Promise<{ data: LeagueMember[]; total: number; page: number; limit: number }> {
+  ): Promise<{
+    data: LeagueMember[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
     const opts = { ...defaultLeagueMemberQueryOptions, ...options };
     const page = opts.page ?? 1;
     const limit = opts.limit ?? 50;
@@ -271,8 +289,13 @@ export class LeagueMemberRepository implements BaseRepository<LeagueMember, Crea
           approvedAt: data.approvedBy ? new Date() : undefined,
         }),
         // Handle leftAt: null clears the field, date string updates it, undefined is ignored
-        ...(data.leftAt !== undefined && { 
-          leftAt: data.leftAt === null ? null : (data.leftAt ? new Date(data.leftAt) : null)
+        ...(data.leftAt !== undefined && {
+          leftAt:
+            data.leftAt === null
+              ? null
+              : data.leftAt
+                ? new Date(data.leftAt)
+                : null,
         }),
       },
     });
@@ -304,7 +327,10 @@ export class LeagueMemberRepository implements BaseRepository<LeagueMember, Crea
   /**
    * Check if player is a member of league
    */
-  async existsByPlayerAndLeague(playerId: string, leagueId: string): Promise<boolean> {
+  async existsByPlayerAndLeague(
+    playerId: string,
+    leagueId: string,
+  ): Promise<boolean> {
     const count = await this.prisma.leagueMember.count({
       where: {
         playerId,
@@ -314,4 +340,3 @@ export class LeagueMemberRepository implements BaseRepository<LeagueMember, Crea
     return count > 0;
   }
 }
-

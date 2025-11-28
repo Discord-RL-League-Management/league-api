@@ -1,11 +1,10 @@
-import {
-  IsString,
-  IsOptional,
-  IsEnum,
-  IsDateString,
-} from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsDateString } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { TeamRole, TeamMembershipStatus, TeamMembershipType } from '@prisma/client';
+import {
+  TeamRole,
+  TeamMembershipStatus,
+  TeamMembershipType,
+} from '@prisma/client';
 
 export class CreateTeamMemberDto {
   @ApiProperty({
@@ -83,4 +82,3 @@ export class CreateTeamMemberDto {
   @IsString()
   notes?: string;
 }
-

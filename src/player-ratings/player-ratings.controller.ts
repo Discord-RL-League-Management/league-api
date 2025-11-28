@@ -13,7 +13,10 @@ export class PlayerRatingsController {
 
   @Get('league/:leagueId')
   @ApiOperation({ summary: 'Get player rating for league' })
-  getRating(@Param('playerId') playerId: string, @Param('leagueId') leagueId: string) {
+  getRating(
+    @Param('playerId') playerId: string,
+    @Param('leagueId') leagueId: string,
+  ) {
     return this.ratingService.getRating(playerId, leagueId);
   }
 }
@@ -27,8 +30,13 @@ export class StandingsController {
 
   @Get()
   @ApiOperation({ summary: 'Get league standings' })
-  getStandings(@Param('leagueId') leagueId: string, @Query('limit') limit?: number) {
-    return this.ratingService.getStandings(leagueId, limit ? parseInt(limit.toString()) : 10);
+  getStandings(
+    @Param('leagueId') leagueId: string,
+    @Query('limit') limit?: number,
+  ) {
+    return this.ratingService.getStandings(
+      leagueId,
+      limit ? parseInt(limit.toString()) : 10,
+    );
   }
 }
-

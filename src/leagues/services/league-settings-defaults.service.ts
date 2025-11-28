@@ -15,12 +15,12 @@ import {
 
 /**
  * LeagueSettingsDefaultsService - Single Responsibility: Default settings definition
- * 
+ *
  * Returns the complete default configuration for a new league.
  * These defaults are used by:
  * - Repository upsert operations
  * - Service layer lazy initialization
- * 
+ *
  * Default configuration favors openness and accessibility.
  */
 @Injectable()
@@ -28,7 +28,7 @@ export class LeagueSettingsDefaultsService {
   /**
    * Get default settings structure
    * Single Responsibility: Default settings definition
-   * 
+   *
    * @returns Complete default league settings structure with metadata
    */
   getDefaults(): LeagueConfiguration {
@@ -63,27 +63,27 @@ export class LeagueSettingsDefaultsService {
       joinMethod: 'OPEN',
       requiresApproval: false,
       allowSelfRegistration: true,
-      
+
       // Capacity - no limits by default
       maxPlayers: null,
       minPlayers: 2,
       maxTeams: null,
-      
+
       // Registration Windows - always open by default
       registrationOpen: true,
       registrationStartDate: null,
       registrationEndDate: null,
       autoCloseOnFull: false,
-      
+
       // Eligibility Requirements - minimal requirements
       requireGuildMembership: true,
       requirePlayerStatus: false,
       skillRequirements: null,
-      
+
       // Restrictions - permissive
       allowMultipleLeagues: true,
       cooldownAfterLeave: null,
-      
+
       // Organization Requirements - optional by default
       requireOrganization: false,
       maxOrganizations: null,
@@ -145,7 +145,7 @@ export class LeagueSettingsDefaultsService {
   /**
    * Merge settings with defaults
    * Single Responsibility: Settings merging logic
-   * 
+   *
    * Deep merges new settings with existing settings, handling nested objects
    * Arrays are replaced completely (no merging)
    */
@@ -242,5 +242,3 @@ export class LeagueSettingsDefaultsService {
     return result;
   }
 }
-
-

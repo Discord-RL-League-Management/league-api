@@ -26,4 +26,3 @@ export class AddOrganizationMemberDto {
   @IsString()
   notes?: string;
 }
-

@@ -13,13 +13,13 @@ import { AuditLogController } from './audit-log.controller';
 
 /**
  * Audit Module - Modularity: Self-contained audit functionality
- * 
+ *
  * Encapsulates all audit-related services and controllers.
  * Exports AuditLogService for use in other modules.
- * 
+ *
  * Note: Imports CommonModule to use AdminGuard in AuditLogController.
  * Also imports GuildsModule so AdminGuard can resolve GuildSettingsService.
- * 
+ *
  * IMPORTANT: Because AuditModule uses AdminGuard from CommonModule, and due to
  * circular dependencies with forwardRef, we must also import all AdminGuard dependencies
  * here: GuildMembersModule, DiscordModule, and TokenManagementModule.
@@ -35,12 +35,8 @@ import { AuditLogController } from './audit-log.controller';
     DiscordModule,
     TokenManagementModule,
   ],
-  providers: [
-    AuditLogService,
-    RequestContextService,
-  ],
+  providers: [AuditLogService, RequestContextService],
   controllers: [AuditLogController],
   exports: [AuditLogService], // Export for use in other modules
 })
 export class AuditModule {}
-

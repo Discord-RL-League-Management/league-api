@@ -205,7 +205,9 @@ export class DiscordBotService {
    * Single Responsibility: Fetch guild roles for validation
    * Returns simplified role objects with only id and name
    */
-  async getGuildRoles(guildId: string): Promise<Array<{ id: string; name: string }>> {
+  async getGuildRoles(
+    guildId: string,
+  ): Promise<Array<{ id: string; name: string }>> {
     if (!this.botToken) {
       this.logger.error('Discord bot token is not configured');
       throw new ServiceUnavailableException(
@@ -215,7 +217,10 @@ export class DiscordBotService {
 
     try {
       const cacheKey = `discord:roles:${guildId}`;
-      const cached = await this.cacheManager.get<Array<{ id: string; name: string }>>(cacheKey);
+      const cached =
+        await this.cacheManager.get<Array<{ id: string; name: string }>>(
+          cacheKey,
+        );
 
       if (cached) {
         this.logger.debug(`Roles cache hit for guild ${guildId}`);
@@ -243,7 +248,9 @@ export class DiscordBotService {
         }));
 
       await this.cacheManager.set(cacheKey, roles, this.cacheTtl);
-      this.logger.log(`Successfully fetched ${roles.length} roles for guild ${guildId}`);
+      this.logger.log(
+        `Successfully fetched ${roles.length} roles for guild ${guildId}`,
+      );
       return roles;
     } catch (error) {
       this.logger.error(`Failed to fetch roles for guild ${guildId}:`, error);
@@ -259,7 +266,11 @@ export class DiscordBotService {
    * Single Responsibility: Fetch guild channels for validation
    * Returns simplified channel objects with id, name, type, and parent_id
    */
-  async getGuildChannels(guildId: string): Promise<Array<{ id: string; name: string; type: number; parent_id?: string }>> {
+  async getGuildChannels(
+    guildId: string,
+  ): Promise<
+    Array<{ id: string; name: string; type: number; parent_id?: string }>
+  > {
     if (!this.botToken) {
       this.logger.error('Discord bot token is not configured');
       throw new ServiceUnavailableException(
@@ -269,7 +280,10 @@ export class DiscordBotService {
 
     try {
       const cacheKey = `discord:channels:${guildId}`;
-      const cached = await this.cacheManager.get<Array<{ id: string; name: string; type: number; parent_id?: string }>>(cacheKey);
+      const cached =
+        await this.cacheManager.get<
+          Array<{ id: string; name: string; type: number; parent_id?: string }>
+        >(cacheKey);
 
       if (cached) {
         this.logger.debug(`Channels cache hit for guild ${guildId}`);
@@ -300,7 +314,9 @@ export class DiscordBotService {
         }));
 
       await this.cacheManager.set(cacheKey, channels, this.cacheTtl);
-      this.logger.log(`Successfully fetched ${channels.length} channels for guild ${guildId}`);
+      this.logger.log(
+        `Successfully fetched ${channels.length} channels for guild ${guildId}`,
+      );
       return channels;
     } catch (error) {
       this.logger.error(
@@ -327,7 +343,10 @@ export class DiscordBotService {
 
       if (status === 401) {
         return throwError(
-          () => new ServiceUnavailableException('Discord API authentication failed'),
+          () =>
+            new ServiceUnavailableException(
+              'Discord API authentication failed',
+            ),
         );
       } else if (status === 403) {
         return throwError(

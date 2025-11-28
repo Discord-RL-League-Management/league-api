@@ -47,7 +47,9 @@ export class TrackerSnapshotService {
     }
 
     if (tracker.isDeleted) {
-      throw new BadRequestException('Cannot create snapshot for deleted tracker');
+      throw new BadRequestException(
+        'Cannot create snapshot for deleted tracker',
+      );
     }
 
     // Create snapshot
@@ -156,9 +158,3 @@ export class TrackerSnapshotService {
     );
   }
 }
-
-
-
-
-
-

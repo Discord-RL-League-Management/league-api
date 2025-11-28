@@ -28,30 +28,30 @@ export class TrackerRefreshSchedulerService implements OnModuleInit {
 
   onModuleInit() {
     const cronExpression = this.cronExpression || '0 2 * * *';
-    
+
     this.logger.log(
       `Tracker refresh scheduler initialized. Cron: ${cronExpression}, Batch size: ${this.batchSize}, Interval: ${this.refreshIntervalHours} hours`,
     );
 
     // Register cron job dynamically using configured expression
-    const job = new CronJob(
-      cronExpression,
-      () => {
-        // Handle async operation in cron callback to prevent unhandled promise rejections
-        this.scheduledRefresh().catch((error) => {
-          const errorMessage = error instanceof Error ? error.message : String(error);
-          this.logger.error(
-            `Unhandled error in scheduled tracker refresh: ${errorMessage}`,
-            error instanceof Error ? error.stack : undefined,
-          );
-        });
-      },
-    );
-    
+    const job = new CronJob(cronExpression, () => {
+      // Handle async operation in cron callback to prevent unhandled promise rejections
+      this.scheduledRefresh().catch((error) => {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        this.logger.error(
+          `Unhandled error in scheduled tracker refresh: ${errorMessage}`,
+          error instanceof Error ? error.stack : undefined,
+        );
+      });
+    });
+
     this.schedulerRegistry.addCronJob('tracker-refresh', job);
     job.start();
-    
-    this.logger.log(`Tracker refresh cron job registered and started with expression: ${cronExpression}`);
+
+    this.logger.log(
+      `Tracker refresh cron job registered and started with expression: ${cronExpression}`,
+    );
   }
 
   /**
@@ -93,11 +93,9 @@ export class TrackerRefreshSchedulerService implements OnModuleInit {
         );
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error(
-        `Error during tracker refresh: ${errorMessage}`,
-        error,
-      );
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(`Error during tracker refresh: ${errorMessage}`, error);
       throw error;
     }
   }
@@ -107,18 +105,13 @@ export class TrackerRefreshSchedulerService implements OnModuleInit {
    */
   private async getTrackersNeedingRefresh(): Promise<string[]> {
     const cutoffTime = new Date();
-    cutoffTime.setHours(
-      cutoffTime.getHours() - this.refreshIntervalHours,
-    );
+    cutoffTime.setHours(cutoffTime.getHours() - this.refreshIntervalHours);
 
     const trackers = await this.prisma.tracker.findMany({
       where: {
         isActive: true,
         isDeleted: false,
-        OR: [
-          { lastScrapedAt: null },
-          { lastScrapedAt: { lt: cutoffTime } },
-        ],
+        OR: [{ lastScrapedAt: null }, { lastScrapedAt: { lt: cutoffTime } }],
         // Don't refresh trackers that are currently being scraped
         scrapingStatus: {
           not: 'IN_PROGRESS',
@@ -132,4 +125,3 @@ export class TrackerRefreshSchedulerService implements OnModuleInit {
     return trackers.map((t) => t.id);
   }
 }
-

@@ -597,7 +597,7 @@ describe('Guilds API (e2e)', () => {
     it('should delete existing members before creating new ones', async () => {
       // Arrange
       const guildId = 'atomic-guild-replace';
-      
+
       // Create guild with initial members
       await prisma.guild.create({
         data: {
@@ -643,7 +643,7 @@ describe('Guilds API (e2e)', () => {
       expect(members).toHaveLength(1);
       expect(members[0].userId).toBe('new-user1');
       expect(members[0].username).toBe('NewUser1');
-      
+
       // Verify old members are gone
       const oldMembers = await prisma.guildMember.findMany({
         where: {
@@ -764,7 +764,7 @@ describe('Guilds API (e2e)', () => {
     it('should update existing guild if it already exists', async () => {
       // Arrange
       const guildId = 'atomic-guild-update';
-      
+
       // Create existing guild
       await prisma.guild.create({
         data: {
@@ -796,7 +796,7 @@ describe('Guilds API (e2e)', () => {
 
       // Assert
       expect(response.body.guild.name).toBe('Updated Name');
-      
+
       const guild = await prisma.guild.findUnique({
         where: { id: guildId },
         include: { members: true },
@@ -848,7 +848,7 @@ describe('Guilds API (e2e)', () => {
 
       // Assert - Both should succeed (transactions should serialize)
       expect([response1.status, response2.status]).toContain(200);
-      
+
       // Verify final state - should be consistent (one of the two results)
       const guild = await prisma.guild.findUnique({
         where: { id: guildId },

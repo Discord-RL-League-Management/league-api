@@ -12,14 +12,12 @@ import { OutboxEventDispatcher } from './outbox-event-dispatcher.service';
 
 /**
  * OutboxProcessorService - Single Responsibility: Background processing
- * 
+ *
  * Polls for pending outbox events and processes them.
  * Handles retry logic and error recovery.
  */
 @Injectable()
-export class OutboxProcessorService
-  implements OnModuleInit, OnModuleDestroy
-{
+export class OutboxProcessorService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(OutboxProcessorService.name);
   private pollInterval: NodeJS.Timeout | null = null;
   private readonly pollIntervalMs: number;
@@ -36,7 +34,9 @@ export class OutboxProcessorService
   }
 
   onModuleInit() {
-    this.logger.log(`Starting outbox processor with interval ${this.pollIntervalMs}ms`);
+    this.logger.log(
+      `Starting outbox processor with interval ${this.pollIntervalMs}ms`,
+    );
     this.startPolling();
   }
 
@@ -149,4 +149,3 @@ export class OutboxProcessorService
     await this.processOutboxEvents();
   }
 }
-

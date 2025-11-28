@@ -1,5 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException, InternalServerErrorException } from '@nestjs/common';
+import {
+  NotFoundException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { GuildMembersService } from './guild-members.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -219,7 +222,9 @@ describe('GuildMembersService', () => {
         username: 'testuser',
         user: { id: userId, username: 'testuser' },
       };
-      mockGuildMemberRepository.findByCompositeKey.mockResolvedValue(mockMember);
+      mockGuildMemberRepository.findByCompositeKey.mockResolvedValue(
+        mockMember,
+      );
 
       // Act
       const result = await service.findOne(userId, guildId);
@@ -255,20 +260,20 @@ describe('GuildMembersService', () => {
       const userId = '123';
       const guildId = '456';
       mockGuildMemberRepository.existsByCompositeKey.mockResolvedValue(true);
-      mockGuildMemberRepository.deleteByCompositeKey.mockResolvedValue(undefined);
+      mockGuildMemberRepository.deleteByCompositeKey.mockResolvedValue(
+        undefined,
+      );
 
       // Act
       await service.remove(userId, guildId);
 
       // Assert
-      expect(mockGuildMemberRepository.existsByCompositeKey).toHaveBeenCalledWith(
-        userId,
-        guildId,
-      );
-      expect(mockGuildMemberRepository.deleteByCompositeKey).toHaveBeenCalledWith(
-        userId,
-        guildId,
-      );
+      expect(
+        mockGuildMemberRepository.existsByCompositeKey,
+      ).toHaveBeenCalledWith(userId, guildId);
+      expect(
+        mockGuildMemberRepository.deleteByCompositeKey,
+      ).toHaveBeenCalledWith(userId, guildId);
     });
 
     it('should throw NotFoundException when member not found', async () => {
@@ -313,8 +318,12 @@ describe('GuildMembersService', () => {
       const guildId = 'nonexistent';
       const members = [{ userId: '123', username: 'user1', roles: [] }];
 
-      const foreignKeyError = new NotFoundException('Guild nonexistent not found');
-      mockGuildMemberSyncService.syncGuildMembers.mockRejectedValue(foreignKeyError);
+      const foreignKeyError = new NotFoundException(
+        'Guild nonexistent not found',
+      );
+      mockGuildMemberSyncService.syncGuildMembers.mockRejectedValue(
+        foreignKeyError,
+      );
 
       // Act & Assert
       await expect(service.syncGuildMembers(guildId, members)).rejects.toThrow(
@@ -496,13 +505,15 @@ describe('GuildMembersService', () => {
       // Arrange
       const guildId = '987654321098765432';
       const query = 'test';
-      const dbError = new InternalServerErrorException('Failed to search guild members');
+      const dbError = new InternalServerErrorException(
+        'Failed to search guild members',
+      );
 
       mockGuildMemberQueryService.searchMembers.mockRejectedValue(dbError);
 
       // Act & Assert
       await expect(service.searchMembers(guildId, query)).rejects.toThrow(
-        InternalServerErrorException
+        InternalServerErrorException,
       );
     });
   });
@@ -530,9 +541,9 @@ describe('GuildMembersService', () => {
         activeMembers: 75,
         newThisWeek: 5,
       });
-      expect(mockGuildMemberStatisticsService.getMemberStats).toHaveBeenCalledWith(
-        guildId,
-      );
+      expect(
+        mockGuildMemberStatisticsService.getMemberStats,
+      ).toHaveBeenCalledWith(guildId);
     });
 
     it('should return correct active member count (updated in last 7 days)', async () => {
@@ -550,9 +561,9 @@ describe('GuildMembersService', () => {
       await service.getMemberStats(guildId);
 
       // Assert
-      expect(mockGuildMemberStatisticsService.getMemberStats).toHaveBeenCalledWith(
-        guildId,
-      );
+      expect(
+        mockGuildMemberStatisticsService.getMemberStats,
+      ).toHaveBeenCalledWith(guildId);
     });
 
     it('should return correct new member count (joined in last 7 days)', async () => {
@@ -569,9 +580,9 @@ describe('GuildMembersService', () => {
       await service.getMemberStats(guildId);
 
       // Assert
-      expect(mockGuildMemberStatisticsService.getMemberStats).toHaveBeenCalledWith(
-        guildId,
-      );
+      expect(
+        mockGuildMemberStatisticsService.getMemberStats,
+      ).toHaveBeenCalledWith(guildId);
     });
 
     it('should return zeros when guild has no members', async () => {
@@ -610,21 +621,25 @@ describe('GuildMembersService', () => {
       await service.getMemberStats(guildId);
 
       // Assert
-      expect(mockGuildMemberStatisticsService.getMemberStats).toHaveBeenCalledWith(
-        guildId,
-      );
+      expect(
+        mockGuildMemberStatisticsService.getMemberStats,
+      ).toHaveBeenCalledWith(guildId);
     });
 
     it('should throw InternalServerErrorException when database error occurs', async () => {
       // Arrange
       const guildId = '987654321098765432';
-      const dbError = new InternalServerErrorException('Failed to get member statistics');
+      const dbError = new InternalServerErrorException(
+        'Failed to get member statistics',
+      );
 
-      mockGuildMemberStatisticsService.getMemberStats.mockRejectedValue(dbError);
+      mockGuildMemberStatisticsService.getMemberStats.mockRejectedValue(
+        dbError,
+      );
 
       // Act & Assert
       await expect(service.getMemberStats(guildId)).rejects.toThrow(
-        InternalServerErrorException
+        InternalServerErrorException,
       );
     });
 
@@ -638,7 +653,7 @@ describe('GuildMembersService', () => {
 
       // Act & Assert
       await expect(service.getMemberStats(guildId)).rejects.toThrow(
-        InternalServerErrorException
+        InternalServerErrorException,
       );
     });
   });

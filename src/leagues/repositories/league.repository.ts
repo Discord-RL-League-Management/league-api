@@ -12,17 +12,27 @@ import {
 /**
  * LeagueRepository - Handles all database operations for League entity
  * Single Responsibility: Data access layer for League entity
- * 
+ *
  * Separates data access concerns from business logic,
  * making services more focused and testable.
  */
 @Injectable()
-export class LeagueRepository implements BaseRepository<League, CreateLeagueDto & { createdBy: string }, UpdateLeagueDto> {
+export class LeagueRepository
+  implements
+    BaseRepository<
+      League,
+      CreateLeagueDto & { createdBy: string },
+      UpdateLeagueDto
+    >
+{
   private readonly logger = new Logger(LeagueRepository.name);
 
   constructor(private prisma: PrismaService) {}
 
-  async findById(id: string, options?: LeagueQueryOptions): Promise<League | null> {
+  async findById(
+    id: string,
+    options?: LeagueQueryOptions,
+  ): Promise<League | null> {
     const opts = { ...defaultLeagueQueryOptions, ...options };
 
     const include: Prisma.LeagueInclude = {};
@@ -60,7 +70,10 @@ export class LeagueRepository implements BaseRepository<League, CreateLeagueDto 
     return league;
   }
 
-  async findOne(id: string, options?: LeagueQueryOptions): Promise<League | null> {
+  async findOne(
+    id: string,
+    options?: LeagueQueryOptions,
+  ): Promise<League | null> {
     return this.findById(id, options);
   }
 
@@ -131,7 +144,10 @@ export class LeagueRepository implements BaseRepository<League, CreateLeagueDto 
    * Find leagues by guild ID
    * Repository-specific method for filtering
    */
-  async findByGuild(guildId: string, options?: LeagueQueryOptions): Promise<{ data: League[]; total: number; page: number; limit: number }> {
+  async findByGuild(
+    guildId: string,
+    options?: LeagueQueryOptions,
+  ): Promise<{ data: League[]; total: number; page: number; limit: number }> {
     return this.findAll({
       ...options,
       guildId,
@@ -142,7 +158,11 @@ export class LeagueRepository implements BaseRepository<League, CreateLeagueDto 
    * Find leagues by game
    * Repository-specific method for filtering
    */
-  async findByGame(guildId: string, game: string, options?: LeagueQueryOptions): Promise<{ data: League[]; total: number; page: number; limit: number }> {
+  async findByGame(
+    guildId: string,
+    game: string,
+    options?: LeagueQueryOptions,
+  ): Promise<{ data: League[]; total: number; page: number; limit: number }> {
     return this.findAll({
       ...options,
       guildId,
@@ -153,7 +173,7 @@ export class LeagueRepository implements BaseRepository<League, CreateLeagueDto 
   /**
    * Create league
    * Single Responsibility: League creation
-   * 
+   *
    * Note: Prefer createWithSettings() for league creation
    * as it ensures settings are initialized atomically.
    */
@@ -252,7 +272,11 @@ export class LeagueRepository implements BaseRepository<League, CreateLeagueDto 
    * Find leagues by status
    * Repository-specific method for filtering
    */
-  async findByStatus(guildId: string, status: string, options?: LeagueQueryOptions): Promise<{ data: League[]; total: number; page: number; limit: number }> {
+  async findByStatus(
+    guildId: string,
+    status: string,
+    options?: LeagueQueryOptions,
+  ): Promise<{ data: League[]; total: number; page: number; limit: number }> {
     return this.findAll({
       ...options,
       guildId,
@@ -260,4 +284,3 @@ export class LeagueRepository implements BaseRepository<League, CreateLeagueDto 
     });
   }
 }
-

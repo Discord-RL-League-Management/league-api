@@ -4,7 +4,7 @@ import { Prisma, Settings, PrismaClient } from '@prisma/client';
 
 /**
  * SettingsRepository - Single Responsibility: Data access layer for Settings entity
- * 
+ *
  * Pure data access layer with no business logic.
  * Handles all database operations for Settings model.
  */
@@ -84,4 +84,3 @@ export class SettingsRepository {
     });
   }
 }
-

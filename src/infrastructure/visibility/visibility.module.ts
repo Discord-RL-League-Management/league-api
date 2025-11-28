@@ -5,7 +5,7 @@ import { VisibilityRepository } from './repositories/visibility.repository';
 
 /**
  * VisibilityModule - Infrastructure module for entity visibility pattern
- * 
+ *
  * Provides generic visibility/sharing functionality for any entity type.
  * Replaces domain-specific visibility implementations.
  */
@@ -15,4 +15,3 @@ import { VisibilityRepository } from './repositories/visibility.repository';
   exports: [VisibilityService],
 })
 export class VisibilityModule {}
-

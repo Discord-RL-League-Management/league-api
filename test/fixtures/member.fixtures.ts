@@ -72,18 +72,22 @@ export const apiFixtures = {
   createMemberList: (count: number = 5): any[] => {
     const members: any[] = [];
     for (let i = 0; i < count; i++) {
-      members.push(apiFixtures.createMockMember({
-        id: `member_${i + 1}`,
-        userId: `${123456789012345678 + i}`,
-        username: `user${i + 1}`,
-        user: {
-          id: `${123456789012345678 + i}`,
+      members.push(
+        apiFixtures.createMockMember({
+          id: `member_${i + 1}`,
+          userId: `${123456789012345678 + i}`,
           username: `user${i + 1}`,
-          globalName: `User ${i + 1}`,
-          avatar: `avatar_${i + 1}`,
-          lastLoginAt: new Date(`2024-01-${String(i + 1).padStart(2, '0')}T00:00:00Z`),
-        },
-      }));
+          user: {
+            id: `${123456789012345678 + i}`,
+            username: `user${i + 1}`,
+            globalName: `User ${i + 1}`,
+            avatar: `avatar_${i + 1}`,
+            lastLoginAt: new Date(
+              `2024-01-${String(i + 1).padStart(2, '0')}T00:00:00Z`,
+            ),
+          },
+        }),
+      );
     }
     return members;
   },
@@ -91,7 +95,11 @@ export const apiFixtures = {
   /**
    * Create pagination metadata
    */
-  createPaginationResponse: (page: number = 1, limit: number = 20, total: number = 100): any => ({
+  createPaginationResponse: (
+    page: number = 1,
+    limit: number = 20,
+    total: number = 100,
+  ): any => ({
     page,
     limit,
     total,
@@ -101,8 +109,14 @@ export const apiFixtures = {
   /**
    * Create a complete paginated member list response
    */
-  createMemberListResponse: (page: number = 1, limit: number = 20, total: number = 100): any => ({
-    members: apiFixtures.createMemberList(Math.min(limit, total - (page - 1) * limit)),
+  createMemberListResponse: (
+    page: number = 1,
+    limit: number = 20,
+    total: number = 100,
+  ): any => ({
+    members: apiFixtures.createMemberList(
+      Math.min(limit, total - (page - 1) * limit),
+    ),
     pagination: apiFixtures.createPaginationResponse(page, limit, total),
   }),
 
@@ -255,7 +269,10 @@ export const apiFixtures = {
   /**
    * Create API error response
    */
-  createApiError: (statusCode: number = 500, message: string = 'Internal Server Error'): any => ({
+  createApiError: (
+    statusCode: number = 500,
+    message: string = 'Internal Server Error',
+  ): any => ({
     statusCode,
     message,
     error: 'Internal Server Error',
@@ -352,7 +369,7 @@ export const apiFixtures = {
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
     const oneDayAgo = new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000);
-    
+
     return {
       now,
       sevenDaysAgo,
@@ -366,7 +383,7 @@ export const apiFixtures = {
    */
   createMembersWithActivityDates: (): any[] => {
     const dates = apiFixtures.createDateRange();
-    
+
     return [
       // Active member (updated recently)
       apiFixtures.createMockMember({

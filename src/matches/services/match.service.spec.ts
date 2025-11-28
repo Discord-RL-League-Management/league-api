@@ -89,7 +89,11 @@ describe('MatchService', () => {
   describe('findOne', () => {
     it('should successfully return a match when found', async () => {
       const matchId = 'match1';
-      const expectedMatch = { id: matchId, leagueId: 'league1', status: 'SCHEDULED' };
+      const expectedMatch = {
+        id: matchId,
+        leagueId: 'league1',
+        status: 'SCHEDULED',
+      };
       mockMatchRepository.findById.mockResolvedValue(expectedMatch);
 
       const result = await service.findOne(matchId);
@@ -135,7 +139,11 @@ describe('MatchService', () => {
         teamId: 'team1',
         isWinner: false,
       };
-      const expectedParticipant = { id: 'participant1', matchId, ...participantDto };
+      const expectedParticipant = {
+        id: 'participant1',
+        matchId,
+        ...participantDto,
+      };
       mockParticipantRepository.create.mockResolvedValue(expectedParticipant);
 
       const result = await service.addParticipant(matchId, participantDto);
@@ -158,7 +166,9 @@ describe('MatchService', () => {
       const result = await service.updateStatus(matchId, status);
 
       expect(result).toEqual(expectedMatch);
-      expect(mockMatchRepository.update).toHaveBeenCalledWith(matchId, { status });
+      expect(mockMatchRepository.update).toHaveBeenCalledWith(matchId, {
+        status,
+      });
     });
   });
 
@@ -170,7 +180,9 @@ describe('MatchService', () => {
     it('should throw NotFoundException when match is not found', async () => {
       mockMatchRepository.findById.mockResolvedValue(null);
 
-      await expect(service.completeMatch(matchId, winnerId)).rejects.toThrow(NotFoundException);
+      await expect(service.completeMatch(matchId, winnerId)).rejects.toThrow(
+        NotFoundException,
+      );
       await expect(service.completeMatch(matchId, winnerId)).rejects.toThrow(
         `Match with ID ${matchId} not found`,
       );
@@ -247,7 +259,9 @@ describe('MatchService', () => {
       };
 
       mockMatchRepository.findById.mockResolvedValue(mockMatch);
-      mockPrismaService.matchParticipant.findMany.mockResolvedValue(mockParticipants);
+      mockPrismaService.matchParticipant.findMany.mockResolvedValue(
+        mockParticipants,
+      );
       mockPrismaService.$transaction.mockImplementation(async (callback) => {
         const tx = {
           match: {
@@ -334,7 +348,9 @@ describe('MatchService', () => {
       };
 
       mockMatchRepository.findById.mockResolvedValue(mockMatch);
-      mockPrismaService.matchParticipant.findMany.mockResolvedValue(mockParticipants);
+      mockPrismaService.matchParticipant.findMany.mockResolvedValue(
+        mockParticipants,
+      );
       mockPrismaService.$transaction.mockImplementation(async (callback) => {
         const tx = {
           match: {

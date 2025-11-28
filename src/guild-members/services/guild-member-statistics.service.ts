@@ -8,14 +8,12 @@ import { GuildMemberRepository } from '../repositories/guild-member.repository';
 /**
  * GuildMemberStatisticsService - Handles statistics and aggregations
  * Single Responsibility: Statistics and aggregations
- * 
+ *
  * Separates statistics operations from CRUD operations.
  */
 @Injectable()
 export class GuildMemberStatisticsService {
-  private readonly logger = new Logger(
-    GuildMemberStatisticsService.name,
-  );
+  private readonly logger = new Logger(GuildMemberStatisticsService.name);
 
   constructor(private guildMemberRepository: GuildMemberRepository) {}
 
@@ -31,7 +29,10 @@ export class GuildMemberStatisticsService {
     try {
       return await this.guildMemberRepository.countStats(guildId);
     } catch (error) {
-      this.logger.error(`Failed to get member stats for guild ${guildId}:`, error);
+      this.logger.error(
+        `Failed to get member stats for guild ${guildId}:`,
+        error,
+      );
       throw new InternalServerErrorException('Failed to get member statistics');
     }
   }
@@ -54,7 +55,9 @@ export class GuildMemberStatisticsService {
         `Failed to count members with roles in guild ${guildId}:`,
         error,
       );
-      throw new InternalServerErrorException('Failed to count members with roles');
+      throw new InternalServerErrorException(
+        'Failed to count members with roles',
+      );
     }
   }
 
@@ -71,19 +74,9 @@ export class GuildMemberStatisticsService {
         `Failed to get active members count for guild ${guildId}:`,
         error,
       );
-      throw new InternalServerErrorException('Failed to get active members count');
+      throw new InternalServerErrorException(
+        'Failed to get active members count',
+      );
     }
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-

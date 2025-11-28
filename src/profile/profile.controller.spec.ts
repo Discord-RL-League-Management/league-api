@@ -93,7 +93,9 @@ describe('ProfileController', () => {
       await controller.getMyProfile(mockUser);
 
       // ASSERT
-      expect(profileService.getProfile).toHaveBeenCalledWith('different-user-id');
+      expect(profileService.getProfile).toHaveBeenCalledWith(
+        'different-user-id',
+      );
       expect(profileService.getProfile).toHaveBeenCalledTimes(1);
     });
   });
@@ -183,7 +185,9 @@ describe('ProfileController', () => {
         },
       };
 
-      mockProfileService.updateSettings.mockResolvedValue(expectedUpdatedSettings);
+      mockProfileService.updateSettings.mockResolvedValue(
+        expectedUpdatedSettings,
+      );
 
       // ACT
       const result = await controller.updateSettings(mockUser, inputSettings);
@@ -230,7 +234,9 @@ describe('ProfileController', () => {
         },
       };
 
-      mockProfileService.updateSettings.mockResolvedValue(expectedUpdatedSettings);
+      mockProfileService.updateSettings.mockResolvedValue(
+        expectedUpdatedSettings,
+      );
 
       // ACT
       await controller.updateSettings(mockUser, inputSettings);
@@ -271,7 +277,9 @@ describe('ProfileController', () => {
         },
       };
 
-      mockProfileService.updateSettings.mockResolvedValue(expectedUpdatedSettings);
+      mockProfileService.updateSettings.mockResolvedValue(
+        expectedUpdatedSettings,
+      );
 
       // ACT
       const result = await controller.updateSettings(mockUser, inputSettings);
@@ -321,7 +329,9 @@ describe('ProfileController', () => {
         },
       };
 
-      mockProfileService.updateSettings.mockResolvedValue(expectedUpdatedSettings);
+      mockProfileService.updateSettings.mockResolvedValue(
+        expectedUpdatedSettings,
+      );
 
       // ACT
       const result = await controller.updateSettings(mockUser, inputSettings);
@@ -336,4 +346,3 @@ describe('ProfileController', () => {
     });
   });
 });
-

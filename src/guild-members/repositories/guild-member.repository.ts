@@ -8,13 +8,14 @@ import { BaseRepository } from '../../common/repositories/base.repository.interf
 /**
  * GuildMemberRepository - Handles all database operations for GuildMember entity
  * Single Responsibility: Data access layer for GuildMember entity
- * 
+ *
  * Separates data access concerns from business logic,
  * making services more focused and testable.
  */
 @Injectable()
 export class GuildMemberRepository
-  implements BaseRepository<GuildMember, CreateGuildMemberDto, UpdateGuildMemberDto>
+  implements
+    BaseRepository<GuildMember, CreateGuildMemberDto, UpdateGuildMemberDto>
 {
   constructor(private prisma: PrismaService) {}
 
@@ -56,10 +57,12 @@ export class GuildMemberRepository
    * Find all members with optional pagination
    * Note: This is less useful for GuildMember since we typically filter by guildId or userId
    */
-  async findAll(options?: {
-    page?: number;
-    limit?: number;
-  }): Promise<{ data: GuildMember[]; total: number; page: number; limit: number }> {
+  async findAll(options?: { page?: number; limit?: number }): Promise<{
+    data: GuildMember[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
     const page = options?.page ?? 1;
     const limit = options?.limit ?? 50;
     const skip = (page - 1) * limit;
@@ -140,7 +143,7 @@ export class GuildMemberRepository
 
   /**
    * Find all guild memberships for a user
-   * 
+   *
    * Note: Settings are NOT a Prisma relation and cannot be included.
    * Settings must be fetched separately using GuildSettingsService.getSettings(guildId).
    */
@@ -223,7 +226,10 @@ export class GuildMemberRepository
   /**
    * Update by ID (cuid primary key)
    */
-  async updateById(id: string, data: UpdateGuildMemberDto): Promise<GuildMember> {
+  async updateById(
+    id: string,
+    data: UpdateGuildMemberDto,
+  ): Promise<GuildMember> {
     return this.prisma.guildMember.update({
       where: { id },
       data: {
@@ -281,7 +287,10 @@ export class GuildMemberRepository
   /**
    * Check if member exists by composite key
    */
-  async existsByCompositeKey(userId: string, guildId: string): Promise<boolean> {
+  async existsByCompositeKey(
+    userId: string,
+    guildId: string,
+  ): Promise<boolean> {
     const member = await this.prisma.guildMember.findUnique({
       where: {
         userId_guildId: {
@@ -318,7 +327,7 @@ export class GuildMemberRepository
 
   /**
    * Find member with guild included
-   * 
+   *
    * Note: This method name is misleading - it does NOT include settings.
    * Settings are NOT a Prisma relation and must be fetched separately
    * using GuildSettingsService.getSettings(guildId).
@@ -357,7 +366,10 @@ export class GuildMemberRepository
   /**
    * Count members with specific roles
    */
-  async countMembersWithRoles(guildId: string, roleIds: string[]): Promise<number> {
+  async countMembersWithRoles(
+    guildId: string,
+    roleIds: string[],
+  ): Promise<number> {
     return this.prisma.guildMember.count({
       where: {
         guildId,
@@ -522,4 +534,3 @@ export class GuildMemberRepository
     };
   }
 }
-
