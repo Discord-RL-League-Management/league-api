@@ -13,6 +13,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { LeagueSettingsService } from './league-settings.service';
 import { LeagueAccessValidationService } from './services/league-access-validation.service';
+import { LeaguePermissionService } from './services/league-permission.service';
 import { LeagueSettingsDto } from './dto/league-settings.dto';
 import {
   ApiTags,
@@ -33,6 +34,7 @@ export class LeagueSettingsController {
   constructor(
     private leagueSettingsService: LeagueSettingsService,
     private leagueAccessValidationService: LeagueAccessValidationService,
+    private leaguePermissionService: LeaguePermissionService,
   ) {}
 
   @Get()
@@ -50,14 +52,16 @@ export class LeagueSettingsController {
   ) {
     try {
       this.logger.log(`Getting settings for league ${leagueId}`);
-      // Validate user has access to league
       await this.leagueAccessValidationService.validateLeagueAccess(
         user.id,
         leagueId,
       );
       
-      // TODO: Add admin check here
-      // For now, we'll just check league access
+      // Settings contain sensitive configuration, restricted to admins and moderators
+      await this.leaguePermissionService.checkLeagueAdminOrModeratorAccess(
+        user.id,
+        leagueId,
+      );
 
       return await this.leagueSettingsService.getSettings(leagueId);
     } catch (error) {
@@ -82,13 +86,13 @@ export class LeagueSettingsController {
       this.logger.log(
         `Updating settings for league ${leagueId} by user ${user.id}`,
       );
-      // Validate user has access to league
       await this.leagueAccessValidationService.validateLeagueAccess(
         user.id,
         leagueId,
       );
       
-      // TODO: Add admin check here
+      // Only admins can modify settings to prevent unauthorized configuration changes
+      await this.leaguePermissionService.checkLeagueAdminAccess(user.id, leagueId);
 
       return await this.leagueSettingsService.updateSettings(
         leagueId,

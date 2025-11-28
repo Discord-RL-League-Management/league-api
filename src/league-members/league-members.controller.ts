@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
   ForbiddenException,
+  NotFoundException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -21,6 +22,8 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { LeagueMemberService } from './services/league-member.service';
+import { PlayerOwnershipService } from '../players/services/player-ownership.service';
+import { LeaguePermissionService } from '../leagues/services/league-permission.service';
 import { JoinLeagueDto } from './dto/join-league.dto';
 import { UpdateLeagueMemberDto } from './dto/update-league-member.dto';
 import type { AuthenticatedUser } from '../common/interfaces/user.interface';
@@ -35,7 +38,11 @@ import type { LeagueMemberQueryOptions } from './interfaces/league-member.interf
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class LeagueMembersController {
-  constructor(private leagueMemberService: LeagueMemberService) {}
+  constructor(
+    private leagueMemberService: LeagueMemberService,
+    private playerOwnershipService: PlayerOwnershipService,
+    private leaguePermissionService: LeaguePermissionService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Join a league' })
@@ -50,7 +57,11 @@ export class LeagueMembersController {
     @Body() joinLeagueDto: JoinLeagueDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    // TODO: Validate user owns the player
+    // Prevents users from joining leagues with other users' players
+    await this.playerOwnershipService.validatePlayerOwnership(
+      user.id,
+      joinLeagueDto.playerId,
+    );
     return this.leagueMemberService.joinLeague(leagueId, joinLeagueDto);
   }
 
@@ -86,7 +97,8 @@ export class LeagueMembersController {
     @Param('playerId') playerId: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    // TODO: Validate user owns the player
+    // Prevents users from leaving leagues on behalf of other users' players
+    await this.playerOwnershipService.validatePlayerOwnership(user.id, playerId);
     return this.leagueMemberService.leaveLeague(playerId, leagueId);
   }
 
@@ -104,14 +116,28 @@ export class LeagueMembersController {
     @Body() updateDto: UpdateLeagueMemberDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    // TODO: Validate user has permission (admin/moderator or owns player)
     const member = await this.leagueMemberService.findByPlayerAndLeague(
       playerId,
       leagueId,
     );
     if (!member) {
-      throw new ForbiddenException('Member not found');
+      throw new NotFoundException('Member not found');
     }
+
+    // Allow updates if user owns the player, otherwise require admin/moderator privileges
+    try {
+      await this.playerOwnershipService.validatePlayerOwnership(user.id, playerId);
+    } catch (error) {
+      if (error instanceof ForbiddenException) {
+        await this.leaguePermissionService.checkLeagueAdminOrModeratorAccess(
+          user.id,
+          leagueId,
+        );
+      } else {
+        throw error;
+      }
+    }
+
     return this.leagueMemberService.update(member.id, updateDto);
   }
 }

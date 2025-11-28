@@ -16,6 +16,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { LeaguesService } from './leagues.service';
 import { LeagueAccessValidationService } from './services/league-access-validation.service';
+import { LeaguePermissionService } from './services/league-permission.service';
 import { CreateLeagueDto } from './dto/create-league.dto';
 import { UpdateLeagueDto } from './dto/update-league.dto';
 import { UpdateLeagueStatusDto } from './dto/update-league-status.dto';
@@ -40,6 +41,7 @@ export class LeaguesController {
   constructor(
     private leaguesService: LeaguesService,
     private leagueAccessValidationService: LeagueAccessValidationService,
+    private leaguePermissionService: LeaguePermissionService,
   ) {}
 
   @Get('guild/:guildId')
@@ -108,9 +110,11 @@ export class LeaguesController {
       createLeagueDto.guildId,
     );
 
-    // TODO: Add admin check here
-    // For now, we'll just check guild access
-    // const isAdmin = await this.permissionCheckService.checkAdminRoles(...)
+    // Only guild admins can create leagues to prevent unauthorized league creation
+    await this.leaguePermissionService.checkGuildAdminAccessForGuild(
+      user.id,
+      createLeagueDto.guildId,
+    );
 
     return this.leaguesService.create(
       { ...createLeagueDto, createdBy: user.id } as CreateLeagueDto & { createdBy: string },
@@ -133,7 +137,7 @@ export class LeaguesController {
     
     await this.leagueAccessValidationService.validateLeagueAccess(user.id, id);
 
-    // TODO: Add admin/league admin check here
+    await this.leaguePermissionService.checkLeagueAdminOrModeratorAccess(user.id, id);
 
     return this.leaguesService.update(id, updateLeagueDto);
   }
@@ -153,7 +157,8 @@ export class LeaguesController {
     
     await this.leagueAccessValidationService.validateLeagueAccess(user.id, id);
 
-    // TODO: Add admin check here
+    // Status changes affect league visibility and participation, requiring admin privileges
+    await this.leaguePermissionService.checkLeagueAdminAccess(user.id, id);
 
     return this.leaguesService.updateStatus(id, body.status);
   }
@@ -171,7 +176,8 @@ export class LeaguesController {
     
     await this.leagueAccessValidationService.validateLeagueAccess(user.id, id);
 
-    // TODO: Add admin check here
+    // Deletion is irreversible and affects all members, requiring admin privileges
+    await this.leaguePermissionService.checkLeagueAdminAccess(user.id, id);
 
     return this.leaguesService.remove(id);
   }
