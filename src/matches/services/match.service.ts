@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MatchRepository } from '../repositories/match.repository';
 import { MatchParticipantRepository } from '../repositories/match-participant.repository';
@@ -35,27 +35,22 @@ export class MatchService {
     return this.matchRepository.update(id, { status });
   }
 
-  /**
-   * Complete match and update stats/ratings
-   * Single Responsibility: Match completion with stats/rating updates
-   */
+  // Completes match and updates player stats/ratings atomically to maintain data consistency.
   async completeMatch(matchId: string, winnerId?: string) {
     const match = await this.matchRepository.findById(matchId);
     if (!match) {
-      throw new Error('Match not found');
+      throw new NotFoundException(`Match with ID ${matchId} not found`);
     }
 
     if (match.status === 'COMPLETED') {
-      return match; // Already completed
+      return match;
     }
 
-    // Get all participants
     const participants = await this.prisma.matchParticipant.findMany({
       where: { matchId },
       include: { player: true },
     });
 
-    // Update match status and winner
     const updatedMatch = await this.prisma.$transaction(async (tx) => {
       const match = await tx.match.update({
         where: { id: matchId },
@@ -66,12 +61,11 @@ export class MatchService {
         },
       });
 
-      // Update stats and ratings for each participant
       for (const participant of participants) {
         const playerId = participant.playerId;
         const leagueId = match.leagueId;
 
-        // Update stats (within transaction) using atomic increments to prevent race conditions
+        // Use atomic increments within transaction to prevent race conditions when multiple matches complete simultaneously.
         await this.statsService.incrementStats(playerId, leagueId, {
           matchesPlayed: 1,
           wins: participant.isWinner ? 1 : 0,
@@ -83,8 +77,7 @@ export class MatchService {
           totalShots: participant.shots || 0,
         }, tx);
 
-        // Update rating (rating calculation is handled by external system, just update match count)
-        // Fix: Ensure rating record is created if it doesn't exist
+        // Rating calculation is handled by external service; only update match count to track participation.
         const currentRating = await tx.playerLeagueRating.findUnique({
           where: { playerId_leagueId: { playerId, leagueId } },
         });
@@ -95,7 +88,6 @@ export class MatchService {
           losses: !participant.isWinner ? (currentRating?.losses || 0) + 1 : (currentRating?.losses || 0),
           draws: 0,
           lastMatchId: matchId,
-          // Note: currentRating and ratingData should be updated by external rating calculation service
         }, tx);
       }
 
