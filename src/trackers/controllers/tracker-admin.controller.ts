@@ -22,6 +22,7 @@ import { TrackerRefreshSchedulerService } from '../services/tracker-refresh-sche
 import { PrismaService } from '../../prisma/prisma.service';
 import { BatchRefreshDto } from '../dto/batch-refresh.dto';
 import { TrackerScrapingStatus } from '@prisma/client';
+import { ParseCUIDPipe, ParseEnumPipe } from '../../common/pipes';
 
 @ApiTags('Admin - Trackers')
 @Controller('api/admin/trackers')
@@ -46,7 +47,7 @@ export class TrackerAdminController {
   @ApiQuery({ name: 'limit', required: false, description: 'Items per page' })
   @ApiResponse({ status: 200, description: 'List of trackers' })
   async getTrackers(
-    @Query('status') status?: TrackerScrapingStatus,
+    @Query('status', new ParseEnumPipe(TrackerScrapingStatus)) status?: TrackerScrapingStatus,
     @Query('platform') platform?: string,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
@@ -146,7 +147,7 @@ export class TrackerAdminController {
   @ApiResponse({ status: 200, description: 'List of scraping logs' })
   async getScrapingLogs(
     @Query('trackerId') trackerId?: string,
-    @Query('status') status?: TrackerScrapingStatus,
+    @Query('status', new ParseEnumPipe(TrackerScrapingStatus)) status?: TrackerScrapingStatus,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
@@ -197,7 +198,7 @@ export class TrackerAdminController {
   @ApiParam({ name: 'id', description: 'Tracker ID' })
   @ApiResponse({ status: 200, description: 'Refresh job enqueued' })
   @ApiResponse({ status: 404, description: 'Tracker not found' })
-  async refreshTracker(@Param('id') id: string) {
+  async refreshTracker(@Param('id', ParseCUIDPipe) id: string) {
     await this.trackerService.refreshTrackerData(id);
     return { message: 'Refresh job enqueued successfully' };
   }

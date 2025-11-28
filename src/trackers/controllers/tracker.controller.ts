@@ -31,6 +31,7 @@ import {
 } from '../dto/tracker.dto';
 import { CreateTrackerSnapshotDto } from '../dto/tracker-snapshot.dto';
 import type { AuthenticatedUser } from '../../common/interfaces/user.interface';
+import { ParseCUIDPipe } from '../../common/pipes';
 
 @ApiTags('Trackers')
 @Controller('api/trackers')
@@ -89,7 +90,7 @@ export class TrackerController {
   @ApiParam({ name: 'id', description: 'Tracker ID' })
   @ApiResponse({ status: 200, description: 'Tracker details' })
   @ApiResponse({ status: 404, description: 'Tracker not found' })
-  async getTracker(@Param('id') id: string) {
+  async getTracker(@Param('id', ParseCUIDPipe) id: string) {
     return this.trackerService.getTrackerById(id);
   }
 
@@ -98,7 +99,7 @@ export class TrackerController {
   @ApiParam({ name: 'id', description: 'Tracker ID' })
   @ApiResponse({ status: 200, description: 'Tracker details with seasons' })
   @ApiResponse({ status: 404, description: 'Tracker not found' })
-  async getTrackerDetail(@Param('id') id: string) {
+  async getTrackerDetail(@Param('id', ParseCUIDPipe) id: string) {
     const tracker = await this.trackerService.getTrackerById(id);
     // Separate seasons into root-level property to match frontend API contract
     const seasons = tracker.seasons || [];
@@ -116,7 +117,7 @@ export class TrackerController {
   @ApiParam({ name: 'id', description: 'Tracker ID' })
   @ApiResponse({ status: 200, description: 'Scraping status' })
   @ApiResponse({ status: 404, description: 'Tracker not found' })
-  async getScrapingStatus(@Param('id') id: string) {
+  async getScrapingStatus(@Param('id', ParseCUIDPipe) id: string) {
     return this.trackerService.getScrapingStatus(id);
   }
 
@@ -125,7 +126,7 @@ export class TrackerController {
   @ApiParam({ name: 'id', description: 'Tracker ID' })
   @ApiResponse({ status: 200, description: 'List of seasons' })
   @ApiResponse({ status: 404, description: 'Tracker not found' })
-  async getTrackerSeasons(@Param('id') id: string) {
+  async getTrackerSeasons(@Param('id', ParseCUIDPipe) id: string) {
     return this.trackerService.getTrackerSeasons(id);
   }
 
@@ -135,7 +136,7 @@ export class TrackerController {
   @ApiResponse({ status: 200, description: 'Refresh job enqueued' })
   @ApiResponse({ status: 404, description: 'Tracker not found' })
   async refreshTracker(
-    @Param('id') id: string,
+    @Param('id', ParseCUIDPipe) id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     // Prevent unauthorized users from triggering expensive scraping jobs
@@ -155,7 +156,7 @@ export class TrackerController {
   @ApiResponse({ status: 200, description: 'List of snapshots' })
   @ApiResponse({ status: 404, description: 'Tracker not found' })
   async getSnapshots(
-    @Param('id') id: string,
+    @Param('id', ParseCUIDPipe) id: string,
     @Query('season') season?: number,
   ) {
     if (season) {
@@ -170,7 +171,7 @@ export class TrackerController {
   @ApiResponse({ status: 201, description: 'Snapshot created' })
   @ApiResponse({ status: 404, description: 'Tracker not found' })
   async createSnapshot(
-    @Param('id') trackerId: string,
+    @Param('id', ParseCUIDPipe) trackerId: string,
     @Body() dto: CreateTrackerSnapshotDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -195,7 +196,7 @@ export class TrackerController {
   @ApiResponse({ status: 200, description: 'Tracker updated' })
   @ApiResponse({ status: 404, description: 'Tracker not found' })
   async updateTracker(
-    @Param('id') id: string,
+    @Param('id', ParseCUIDPipe) id: string,
     @Body() dto: UpdateTrackerDto,
   ) {
     return this.trackerService.updateTracker(id, dto.displayName, dto.isActive);
@@ -206,7 +207,7 @@ export class TrackerController {
   @ApiParam({ name: 'id', description: 'Tracker ID' })
   @ApiResponse({ status: 200, description: 'Tracker deleted' })
   @ApiResponse({ status: 404, description: 'Tracker not found' })
-  async deleteTracker(@Param('id') id: string) {
+  async deleteTracker(@Param('id', ParseCUIDPipe) id: string) {
     return this.trackerService.deleteTracker(id);
   }
 

@@ -13,6 +13,7 @@ import { BotAuthGuard } from '../auth/guards/bot-auth.guard';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { ParseCUIDPipe } from '../common/pipes';
 
 /**
  * InternalUsersController - Bot-only endpoints for full user management
@@ -30,7 +31,7 @@ export class InternalUsersController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseCUIDPipe) id: string) {
     return this.usersService.findOne(id);
   }
 
@@ -40,12 +41,12 @@ export class InternalUsersController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+  update(@Param('id', ParseCUIDPipe) id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(id, updateUserDto);
   }
 
   @Delete(':id')
-  delete(@Param('id') id: string) {
+  delete(@Param('id', ParseCUIDPipe) id: string) {
     return this.usersService.delete(id);
   }
 }

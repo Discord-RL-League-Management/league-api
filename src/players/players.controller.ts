@@ -23,6 +23,7 @@ import { GuildAccessValidationService } from '../guilds/services/guild-access-va
 import { UpdatePlayerDto } from './dto/update-player.dto';
 import type { AuthenticatedUser } from '../common/interfaces/user.interface';
 import type { PlayerQueryOptions } from './interfaces/player.interface';
+import { ParseCUIDPipe } from '../common/pipes';
 
 /**
  * PlayersController - User endpoints for accessing player data
@@ -81,7 +82,7 @@ export class PlayersController {
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Player not found' })
   async getPlayer(
-    @Param('id') id: string,
+    @Param('id', ParseCUIDPipe) id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const player = await this.playerService.findOne(id, {
@@ -106,7 +107,7 @@ export class PlayersController {
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Player not found' })
   async updatePlayer(
-    @Param('id') id: string,
+    @Param('id', ParseCUIDPipe) id: string,
     @Body() updatePlayerDto: UpdatePlayerDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {

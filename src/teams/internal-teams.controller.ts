@@ -5,6 +5,7 @@ import { BotAuthGuard } from '../auth/guards/bot-auth.guard';
 import { TeamService } from './services/team.service';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { UpdateTeamDto } from './dto/update-team.dto';
+import { ParseCUIDPipe } from '../common/pipes';
 
 @ApiTags('Internal - Teams')
 @Controller('internal/teams')
@@ -15,7 +16,7 @@ export class InternalTeamsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get team (Bot only)' })
-  getTeam(@Param('id') id: string) {
+  getTeam(@Param('id', ParseCUIDPipe) id: string) {
     return this.teamService.findOne(id);
   }
 
@@ -27,13 +28,13 @@ export class InternalTeamsController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update team (Bot only)' })
-  updateTeam(@Param('id') id: string, @Body() updateDto: UpdateTeamDto) {
+  updateTeam(@Param('id', ParseCUIDPipe) id: string, @Body() updateDto: UpdateTeamDto) {
     return this.teamService.update(id, updateDto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete team (Bot only)' })
-  deleteTeam(@Param('id') id: string) {
+  deleteTeam(@Param('id', ParseCUIDPipe) id: string) {
     return this.teamService.delete(id);
   }
 }

@@ -4,6 +4,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TournamentService } from './services/tournament.service';
 import { CreateTournamentDto } from './dto/create-tournament.dto';
 import { RegisterParticipantDto } from './dto/register-participant.dto';
+import { ParseCUIDPipe } from '../common/pipes';
 
 @ApiTags('Tournaments')
 @Controller('api/tournaments')
@@ -14,7 +15,7 @@ export class TournamentsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get tournament details' })
-  getTournament(@Param('id') id: string) {
+  getTournament(@Param('id', ParseCUIDPipe) id: string) {
     return this.tournamentService.findOne(id);
   }
 
@@ -27,7 +28,7 @@ export class TournamentsController {
   @Post(':id/register')
   @ApiOperation({ summary: 'Register participant' })
   registerParticipant(
-    @Param('id') id: string,
+    @Param('id', ParseCUIDPipe) id: string,
     @Body() body: RegisterParticipantDto,
   ) {
     return this.tournamentService.registerParticipant(id, body.playerId || null, body.teamId || null, body.leagueId);

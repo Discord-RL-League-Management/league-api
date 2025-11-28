@@ -25,6 +25,7 @@ import {
   ApiBearerAuth,
   ApiParam,
 } from '@nestjs/swagger';
+import { ParseCUIDPipe } from '../common/pipes';
 
 @ApiTags('Internal Leagues')
 @Controller('internal/leagues')
@@ -45,7 +46,7 @@ export class InternalLeaguesController {
   @ApiResponse({ status: 404, description: 'League not found' })
   @ApiResponse({ status: 401, description: 'Invalid bot API key' })
   @ApiParam({ name: 'id', description: 'League ID' })
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param('id', ParseCUIDPipe) id: string) {
     this.logger.log(`Bot requested league ${id}`);
     return this.leaguesService.findOne(id);
   }
@@ -73,7 +74,7 @@ export class InternalLeaguesController {
   @ApiResponse({ status: 401, description: 'Invalid bot API key' })
   @ApiParam({ name: 'id', description: 'League ID' })
   async update(
-    @Param('id') id: string,
+    @Param('id', ParseCUIDPipe) id: string,
     @Body() updateLeagueDto: UpdateLeagueDto,
   ) {
     this.logger.log(`Bot updating league ${id}`);
@@ -86,7 +87,7 @@ export class InternalLeaguesController {
   @ApiResponse({ status: 404, description: 'League not found' })
   @ApiResponse({ status: 401, description: 'Invalid bot API key' })
   @ApiParam({ name: 'id', description: 'League ID' })
-  async remove(@Param('id') id: string) {
+  async remove(@Param('id', ParseCUIDPipe) id: string) {
     this.logger.log(`Bot deleting league ${id}`);
     return this.leaguesService.remove(id);
   }
@@ -97,7 +98,7 @@ export class InternalLeaguesController {
   @ApiResponse({ status: 404, description: 'League not found' })
   @ApiResponse({ status: 401, description: 'Invalid bot API key' })
   @ApiParam({ name: 'id', description: 'League ID' })
-  async getSettings(@Param('id') id: string) {
+  async getSettings(@Param('id', ParseCUIDPipe) id: string) {
     this.logger.log(`Bot requested settings for league ${id}`);
     return this.leagueSettingsService.getSettings(id);
   }
@@ -108,7 +109,7 @@ export class InternalLeaguesController {
   @ApiResponse({ status: 404, description: 'League not found' })
   @ApiResponse({ status: 401, description: 'Invalid bot API key' })
   @ApiParam({ name: 'id', description: 'League ID' })
-  async updateSettings(@Param('id') id: string, @Body() settings: LeagueSettingsDto) {
+  async updateSettings(@Param('id', ParseCUIDPipe) id: string, @Body() settings: LeagueSettingsDto) {
     this.logger.log(`Bot updating settings for league ${id}`);
     return this.leagueSettingsService.updateSettings(id, settings);
   }
