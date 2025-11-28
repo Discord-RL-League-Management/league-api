@@ -1,6 +1,6 @@
-import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer, ValidationPipe } from '@nestjs/common';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_PIPE, APP_FILTER } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { ConfigService } from '@nestjs/config';
 import { ConfigModule as AppConfigModule } from './config/config.module';
@@ -32,6 +32,8 @@ import { AuthLoggerMiddleware } from './common/middleware/auth-logger.middleware
 import { RequestContextInterceptor } from './common/interceptors/request-context.interceptor';
 import { throttlerConfig } from './config/throttler.config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
+import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 
 @Module({
   imports: [
@@ -75,11 +77,32 @@ import { ScheduleModule } from '@nestjs/schedule';
       provide: APP_INTERCEPTOR,
       useClass: RequestContextInterceptor,
     },
+    {
+      provide: APP_PIPE,
+      useFactory: (configService: ConfigService) => {
+        return new ValidationPipe({
+          whitelist: true,
+          forbidNonWhitelisted: true,
+          transform: true,
+          disableErrorMessages:
+            configService.get<string>('app.nodeEnv') === 'production',
+        });
+      },
+      inject: [ConfigService],
+    },
+    // PrismaExceptionFilter must run first to catch database errors before the catch-all GlobalExceptionFilter
+    {
+      provide: APP_FILTER,
+      useClass: PrismaExceptionFilter,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: GlobalExceptionFilter,
+    },
   ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    // RequestContextInterceptor handles context setup via APP_INTERCEPTOR
     consumer.apply(AuthLoggerMiddleware).forRoutes('*');
   }
 }
