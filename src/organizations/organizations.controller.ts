@@ -27,6 +27,7 @@ import { UpdateOrganizationMemberDto } from './dto/update-organization-member.dt
 import { TransferTeamDto } from './dto/transfer-team.dto';
 import { OrganizationGmGuard } from './guards/organization-gm.guard';
 import { OrganizationMemberRole } from '@prisma/client';
+import { ParseCUIDPipe } from '../common/pipes';
 
 @ApiTags('Organizations')
 @Controller('api')
@@ -41,28 +42,28 @@ export class OrganizationsController {
   @Get('leagues/:leagueId/organizations')
   @ApiOperation({ summary: 'List organizations in league' })
   @ApiParam({ name: 'leagueId', description: 'League ID' })
-  getOrganizations(@Param('leagueId') leagueId: string) {
+  getOrganizations(@Param('leagueId', ParseCUIDPipe) leagueId: string) {
     return this.organizationService.findByLeagueId(leagueId);
   }
 
   @Get('organizations/:id')
   @ApiOperation({ summary: 'Get organization details' })
   @ApiParam({ name: 'id', description: 'Organization ID' })
-  getOrganization(@Param('id') id: string) {
+  getOrganization(@Param('id', ParseCUIDPipe) id: string) {
     return this.organizationService.findOne(id);
   }
 
   @Get('organizations/:id/teams')
   @ApiOperation({ summary: 'List teams in organization' })
   @ApiParam({ name: 'id', description: 'Organization ID' })
-  getOrganizationTeams(@Param('id') id: string) {
+  getOrganizationTeams(@Param('id', ParseCUIDPipe) id: string) {
     return this.organizationService.findTeams(id);
   }
 
   @Get('organizations/:id/stats')
   @ApiOperation({ summary: 'Get organization statistics' })
   @ApiParam({ name: 'id', description: 'Organization ID' })
-  getOrganizationStats(@Param('id') id: string) {
+  getOrganizationStats(@Param('id', ParseCUIDPipe) id: string) {
     return this.organizationService.getOrganizationStats(id);
   }
 
@@ -71,7 +72,7 @@ export class OrganizationsController {
   @ApiParam({ name: 'leagueId', description: 'League ID' })
   @ApiResponse({ status: 201, description: 'Organization created successfully' })
   createOrganization(
-    @Param('leagueId') leagueId: string,
+    @Param('leagueId', ParseCUIDPipe) leagueId: string,
     @Body() createDto: CreateOrganizationDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -85,7 +86,7 @@ export class OrganizationsController {
   @ApiResponse({ status: 200, description: 'Organization updated successfully' })
   @ApiResponse({ status: 403, description: 'Must be General Manager' })
   updateOrganization(
-    @Param('id') id: string,
+    @Param('id', ParseCUIDPipe) id: string,
     @Body() updateDto: UpdateOrganizationDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -100,7 +101,7 @@ export class OrganizationsController {
   @ApiResponse({ status: 403, description: 'Must be General Manager' })
   @ApiResponse({ status: 400, description: 'Organization has teams' })
   deleteOrganization(
-    @Param('id') id: string,
+    @Param('id', ParseCUIDPipe) id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.organizationService.delete(id, user.id);
@@ -112,8 +113,8 @@ export class OrganizationsController {
   @ApiParam({ name: 'teamId', description: 'Team ID' })
   @ApiResponse({ status: 200, description: 'Team transferred successfully' })
   transferTeam(
-    @Param('id') id: string,
-    @Param('teamId') teamId: string,
+    @Param('id', ParseCUIDPipe) id: string,
+    @Param('teamId', ParseCUIDPipe) teamId: string,
     @Body() transferDto: TransferTeamDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -123,7 +124,7 @@ export class OrganizationsController {
   @Get('organizations/:id/members')
   @ApiOperation({ summary: 'List organization members' })
   @ApiParam({ name: 'id', description: 'Organization ID' })
-  getOrganizationMembers(@Param('id') id: string) {
+  getOrganizationMembers(@Param('id', ParseCUIDPipe) id: string) {
     return this.organizationMemberService.findMembers(id);
   }
 
@@ -134,7 +135,7 @@ export class OrganizationsController {
   @ApiResponse({ status: 201, description: 'Member added successfully' })
   @ApiResponse({ status: 403, description: 'Must be General Manager' })
   addOrganizationMember(
-    @Param('id') id: string,
+    @Param('id', ParseCUIDPipe) id: string,
     @Body() addMemberDto: AddOrganizationMemberDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -155,8 +156,8 @@ export class OrganizationsController {
   @ApiResponse({ status: 403, description: 'Must be General Manager' })
   @ApiResponse({ status: 400, description: 'Cannot remove last General Manager' })
   updateOrganizationMember(
-    @Param('id') id: string,
-    @Param('memberId') memberId: string,
+    @Param('id', ParseCUIDPipe) id: string,
+    @Param('memberId', ParseCUIDPipe) memberId: string,
     @Body() updateDto: UpdateOrganizationMemberDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -172,8 +173,8 @@ export class OrganizationsController {
   @ApiResponse({ status: 403, description: 'Must be General Manager' })
   @ApiResponse({ status: 400, description: 'Cannot remove last General Manager' })
   removeOrganizationMember(
-    @Param('id') id: string,
-    @Param('memberId') memberId: string,
+    @Param('id', ParseCUIDPipe) id: string,
+    @Param('memberId', ParseCUIDPipe) memberId: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.organizationMemberService.removeMember(memberId, user.id);

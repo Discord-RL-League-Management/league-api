@@ -6,6 +6,7 @@ import { CreateMatchDto } from './dto/create-match.dto';
 import { CreateMatchParticipantDto } from './dto/create-match-participant.dto';
 import { UpdateMatchStatusDto } from './dto/update-match-status.dto';
 import { CompleteMatchDto } from './dto/complete-match.dto';
+import { ParseCUIDPipe } from '../common/pipes';
 
 @ApiTags('Matches')
 @Controller('api/matches')
@@ -16,7 +17,7 @@ export class MatchesController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get match details' })
-  getMatch(@Param('id') id: string) {
+  getMatch(@Param('id', ParseCUIDPipe) id: string) {
     return this.matchService.findOne(id);
   }
 
@@ -28,19 +29,19 @@ export class MatchesController {
 
   @Post(':id/participants')
   @ApiOperation({ summary: 'Add match participant' })
-  addParticipant(@Param('id') id: string, @Body() participantDto: CreateMatchParticipantDto) {
+  addParticipant(@Param('id', ParseCUIDPipe) id: string, @Body() participantDto: CreateMatchParticipantDto) {
     return this.matchService.addParticipant(id, participantDto);
   }
 
   @Patch(':id/status')
   @ApiOperation({ summary: 'Update match status' })
-  updateStatus(@Param('id') id: string, @Body() body: UpdateMatchStatusDto) {
+  updateStatus(@Param('id', ParseCUIDPipe) id: string, @Body() body: UpdateMatchStatusDto) {
     return this.matchService.updateStatus(id, body.status);
   }
 
   @Post(':id/complete')
   @ApiOperation({ summary: 'Complete match and update stats/ratings' })
-  completeMatch(@Param('id') id: string, @Body() body: CompleteMatchDto) {
+  completeMatch(@Param('id', ParseCUIDPipe) id: string, @Body() body: CompleteMatchDto) {
     return this.matchService.completeMatch(id, body.winnerId);
   }
 }

@@ -20,7 +20,7 @@ import { LeaguePermissionService } from './services/league-permission.service';
 import { CreateLeagueDto } from './dto/create-league.dto';
 import { UpdateLeagueDto } from './dto/update-league.dto';
 import { UpdateLeagueStatusDto } from './dto/update-league-status.dto';
-import { LeagueStatus } from '@prisma/client';
+import { LeagueStatus, Game } from '@prisma/client';
 import {
   ApiTags,
   ApiOperation,
@@ -30,6 +30,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import type { AuthenticatedUser } from '../common/interfaces/user.interface';
+import { ParseCUIDPipe, ParseEnumPipe } from '../common/pipes';
 
 @ApiTags('Leagues')
 @Controller('api/leagues')
@@ -58,8 +59,8 @@ export class LeaguesController {
     @CurrentUser() user: AuthenticatedUser,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
-    @Query('status') status?: string,
-    @Query('game') game?: string,
+    @Query('status', new ParseEnumPipe(LeagueStatus)) status?: LeagueStatus,
+    @Query('game', new ParseEnumPipe(Game)) game?: Game,
   ) {
     this.logger.log(`User ${user.id} requested leagues for guild ${guildId}`);
     
@@ -83,7 +84,7 @@ export class LeaguesController {
   @ApiResponse({ status: 404, description: 'League not found' })
   @ApiParam({ name: 'id', description: 'League ID' })
   async getLeague(
-    @Param('id') id: string,
+    @Param('id', ParseCUIDPipe) id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     this.logger.log(`User ${user.id} requested league ${id}`);
@@ -129,7 +130,7 @@ export class LeaguesController {
   @ApiResponse({ status: 403, description: 'Access denied' })
   @ApiParam({ name: 'id', description: 'League ID' })
   async updateLeague(
-    @Param('id') id: string,
+    @Param('id', ParseCUIDPipe) id: string,
     @Body() updateLeagueDto: UpdateLeagueDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -149,7 +150,7 @@ export class LeaguesController {
   @ApiResponse({ status: 404, description: 'League not found' })
   @ApiParam({ name: 'id', description: 'League ID' })
   async updateLeagueStatus(
-    @Param('id') id: string,
+    @Param('id', ParseCUIDPipe) id: string,
     @Body() body: UpdateLeagueStatusDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
@@ -169,7 +170,7 @@ export class LeaguesController {
   @ApiResponse({ status: 404, description: 'League not found' })
   @ApiParam({ name: 'id', description: 'League ID' })
   async deleteLeague(
-    @Param('id') id: string,
+    @Param('id', ParseCUIDPipe) id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     this.logger.log(`User ${user.id} deleting league ${id}`);

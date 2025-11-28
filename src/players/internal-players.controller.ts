@@ -23,6 +23,7 @@ import { PlayerService } from './services/player.service';
 import { CreatePlayerDto } from './dto/create-player.dto';
 import { UpdatePlayerDto } from './dto/update-player.dto';
 import type { PlayerQueryOptions } from './interfaces/player.interface';
+import { ParseCUIDPipe } from '../common/pipes';
 
 /**
  * InternalPlayersController - Bot-only endpoints for full player management
@@ -56,7 +57,7 @@ export class InternalPlayersController {
   @ApiResponse({ status: 200, description: 'Player details' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Player not found' })
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseCUIDPipe) id: string) {
     return this.playerService.findOne(id, {
       includeUser: true,
       includeGuild: true,
@@ -79,7 +80,7 @@ export class InternalPlayersController {
   @ApiResponse({ status: 200, description: 'Player updated' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Player not found' })
-  update(@Param('id') id: string, @Body() updatePlayerDto: UpdatePlayerDto) {
+  update(@Param('id', ParseCUIDPipe) id: string, @Body() updatePlayerDto: UpdatePlayerDto) {
     return this.playerService.update(id, updatePlayerDto);
   }
 
@@ -89,7 +90,7 @@ export class InternalPlayersController {
   @ApiResponse({ status: 200, description: 'Player deleted' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Player not found' })
-  delete(@Param('id') id: string) {
+  delete(@Param('id', ParseCUIDPipe) id: string) {
     return this.playerService.delete(id);
   }
 

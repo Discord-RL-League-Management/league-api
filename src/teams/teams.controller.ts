@@ -4,6 +4,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TeamService } from './services/team.service';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { UpdateTeamDto } from './dto/update-team.dto';
+import { ParseCUIDPipe } from '../common/pipes';
 
 @ApiTags('Teams')
 @Controller('api/leagues/:leagueId/teams')
@@ -14,31 +15,31 @@ export class TeamsController {
 
   @Get()
   @ApiOperation({ summary: 'List teams in league' })
-  getTeams(@Param('leagueId') leagueId: string) {
+  getTeams(@Param('leagueId', ParseCUIDPipe) leagueId: string) {
     return this.teamService.findByLeagueId(leagueId);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get team details' })
-  getTeam(@Param('id') id: string) {
+  getTeam(@Param('id', ParseCUIDPipe) id: string) {
     return this.teamService.findOne(id);
   }
 
   @Post()
   @ApiOperation({ summary: 'Create team' })
-  createTeam(@Param('leagueId') leagueId: string, @Body() createDto: CreateTeamDto) {
+  createTeam(@Param('leagueId', ParseCUIDPipe) leagueId: string, @Body() createDto: CreateTeamDto) {
     return this.teamService.create({ ...createDto, leagueId });
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update team' })
-  updateTeam(@Param('id') id: string, @Body() updateDto: UpdateTeamDto) {
+  updateTeam(@Param('id', ParseCUIDPipe) id: string, @Body() updateDto: UpdateTeamDto) {
     return this.teamService.update(id, updateDto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete team' })
-  deleteTeam(@Param('id') id: string) {
+  deleteTeam(@Param('id', ParseCUIDPipe) id: string) {
     return this.teamService.delete(id);
   }
 }

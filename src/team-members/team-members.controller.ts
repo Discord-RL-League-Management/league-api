@@ -4,6 +4,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TeamMemberService } from './services/team-member.service';
 import { CreateTeamMemberDto } from './dto/create-team-member.dto';
 import { UpdateTeamMemberDto } from './dto/update-team-member.dto';
+import { ParseCUIDPipe } from '../common/pipes';
 
 @ApiTags('Team Members')
 @Controller('api/teams/:teamId/members')
@@ -14,25 +15,25 @@ export class TeamMembersController {
 
   @Get()
   @ApiOperation({ summary: 'List team members' })
-  getMembers(@Param('teamId') teamId: string) {
+  getMembers(@Param('teamId', ParseCUIDPipe) teamId: string) {
     return this.teamMemberService.findByTeamId(teamId);
   }
 
   @Post()
   @ApiOperation({ summary: 'Add team member' })
-  addMember(@Param('teamId') teamId: string, @Body() createDto: CreateTeamMemberDto) {
+  addMember(@Param('teamId', ParseCUIDPipe) teamId: string, @Body() createDto: CreateTeamMemberDto) {
     return this.teamMemberService.addMember({ ...createDto, teamId });
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update team member' })
-  updateMember(@Param('id') id: string, @Body() updateDto: UpdateTeamMemberDto) {
+  updateMember(@Param('id', ParseCUIDPipe) id: string, @Body() updateDto: UpdateTeamMemberDto) {
     return this.teamMemberService.update(id, updateDto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Remove team member' })
-  removeMember(@Param('id') id: string) {
+  removeMember(@Param('id', ParseCUIDPipe) id: string) {
     return this.teamMemberService.removeMember(id);
   }
 }
