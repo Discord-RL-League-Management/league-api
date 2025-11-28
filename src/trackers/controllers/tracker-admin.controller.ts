@@ -17,7 +17,6 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { AdminGuard } from '../../auth/guards/admin.guard';
 import { TrackerService } from '../services/tracker.service';
 import { TrackerRefreshSchedulerService } from '../services/tracker-refresh-scheduler.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -26,8 +25,10 @@ import { TrackerScrapingStatus } from '@prisma/client';
 
 @ApiTags('Admin - Trackers')
 @Controller('api/admin/trackers')
-@UseGuards(JwtAuthGuard, AdminGuard)
+@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
+// SECURITY WARNING: System admin guard not yet implemented - see issue #20
+// Currently accessible to all authenticated users; requires system admin guard before production
 export class TrackerAdminController {
   private readonly logger = new Logger(TrackerAdminController.name);
 

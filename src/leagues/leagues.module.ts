@@ -7,6 +7,7 @@ import { AuthModule } from '../auth/auth.module';
 import { GuildsModule } from '../guilds/guilds.module';
 import { PlayersModule } from '../players/players.module';
 import { LeagueMembersModule } from '../league-members/league-members.module';
+import { PermissionCheckModule } from '../permissions/modules/permission-check/permission-check.module';
 import { OrganizationsModule } from '../organizations/organizations.module';
 import { TeamsModule } from '../teams/teams.module';
 
@@ -22,6 +23,7 @@ import { LeagueSettingsDefaultsService } from './services/league-settings-defaul
 import { SettingsValidationService } from './services/settings-validation.service';
 import { ConfigMigrationService } from './services/config-migration.service';
 import { LeagueAccessValidationService } from './services/league-access-validation.service';
+import { LeaguePermissionService } from './services/league-permission.service';
 
 // Repositories
 import { LeagueRepository } from './repositories/league.repository';
@@ -35,6 +37,7 @@ import { LeagueRepository } from './repositories/league.repository';
     AuthModule,
     GuildsModule, // For GuildsService dependency
     PlayersModule, // For PlayerService dependency
+    PermissionCheckModule, // For PermissionCheckService dependency
     forwardRef(() => LeagueMembersModule), // For LeagueMemberRepository dependency (circular dependency resolved)
     forwardRef(() => OrganizationsModule), // For OrganizationService dependency (circular dependency resolved)
     forwardRef(() => TeamsModule), // For TeamRepository dependency (circular dependency resolved)
@@ -51,12 +54,14 @@ import { LeagueRepository } from './repositories/league.repository';
     SettingsValidationService,
     ConfigMigrationService,
     LeagueAccessValidationService,
+    LeaguePermissionService,
     LeagueRepository,
   ],
   exports: [
     LeaguesService,
     LeagueSettingsService,
     LeagueSettingsDefaultsService,
+    LeaguePermissionService,
     LeagueRepository,
   ],
 })

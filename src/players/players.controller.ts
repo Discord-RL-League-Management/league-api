@@ -19,6 +19,7 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { PlayerService } from './services/player.service';
+import { GuildAccessValidationService } from '../guilds/services/guild-access-validation.service';
 import { UpdatePlayerDto } from './dto/update-player.dto';
 import type { AuthenticatedUser } from '../common/interfaces/user.interface';
 import type { PlayerQueryOptions } from './interfaces/player.interface';
@@ -32,7 +33,10 @@ import type { PlayerQueryOptions } from './interfaces/player.interface';
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class PlayersController {
-  constructor(private playerService: PlayerService) {}
+  constructor(
+    private playerService: PlayerService,
+    private guildAccessValidationService: GuildAccessValidationService,
+  ) {}
 
   @Get('me')
   @ApiOperation({ summary: "Get current user's players" })
@@ -59,7 +63,9 @@ export class PlayersController {
     @CurrentUser() user: AuthenticatedUser,
     @Query() query: PlayerQueryOptions,
   ) {
-    // TODO: Add guild membership check
+    // Restrict player listings to guild members to protect user privacy
+    await this.guildAccessValidationService.validateUserGuildAccess(user.id, guildId);
+    
     return this.playerService.findByGuildId(guildId, {
       ...query,
       includeUser: true,
@@ -84,7 +90,7 @@ export class PlayersController {
       includePrimaryTracker: true,
     });
 
-    // Users can only view their own players
+    // Enforce player ownership to prevent unauthorized access to user data
     if (player.userId !== user.id) {
       throw new ForbiddenException('You can only view your own players');
     }
@@ -106,7 +112,7 @@ export class PlayersController {
   ) {
     const player = await this.playerService.findOne(id);
 
-    // Users can only update their own players
+    // Enforce player ownership to prevent unauthorized modifications
     if (player.userId !== user.id) {
       throw new ForbiddenException('You can only update your own players');
     }
