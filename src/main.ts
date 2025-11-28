@@ -2,11 +2,8 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
-import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
-import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 import { ConfigService } from '@nestjs/config';
 import { NewRelicLoggerService } from './logging/newrelic-logger.service';
 import helmet from 'helmet';
@@ -17,16 +14,16 @@ async function bootstrap() {
     bufferLogs: true,
   });
 
-  // Configure NestJS to use New Relic logger
+  // Use New Relic logger for centralized error tracking and monitoring
   const logger = app.get(NewRelicLoggerService);
   app.useLogger(logger);
 
   const configService = app.get(ConfigService);
 
-  // Cookie parser for HttpOnly cookies
+  // Enable cookie parsing to support HttpOnly cookies for secure session management
   app.use(cookieParser());
 
-  // Security headers
+  // Apply security headers to prevent XSS, clickjacking, and other common web vulnerabilities
   app.use(
     helmet({
       contentSecurityPolicy: {
@@ -51,13 +48,13 @@ async function bootstrap() {
     }),
   );
 
-  // CORS configuration
+  // Configure CORS to allow only trusted origins while supporting development and mobile clients
   app.enableCors({
     origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
       const allowedOrigins = [
         configService.get<string>('frontend.url'),
-        'http://localhost:5173', // Development frontend
-        'http://localhost:3000', // Development API
+        'http://localhost:5173',
+        'http://localhost:3000',
       ];
 
       // Allow requests with no origin (mobile apps, Postman, etc.)
@@ -79,29 +76,10 @@ async function bootstrap() {
       'Authorization',
     ],
     credentials: true,
-    maxAge: 86400, // 24 hours
+    maxAge: 86400,
   });
 
-  // Global validation pipe
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true, // Strip properties not in DTO
-      forbidNonWhitelisted: true, // Throw error for non-whitelisted properties
-      transform: true, // Transform payloads to DTO instances
-      disableErrorMessages:
-        configService.get<string>('app.nodeEnv') === 'production',
-    }),
-  );
-
-  // Global exception filters
-  // Execution order: Filters are executed in reverse registration order
-  // PrismaExceptionFilter handles Prisma-specific errors and allows GlobalExceptionFilter to catch everything else
-  app.useGlobalFilters(
-    new PrismaExceptionFilter(), // Handles Prisma errors first
-    new GlobalExceptionFilter(configService), // Catches all other exceptions
-  );
-
-  // Swagger API Documentation (only in non-production)
+  // Expose Swagger documentation only in non-production to avoid exposing API structure in production
   if (configService.get<string>('app.nodeEnv') !== 'production') {
     const config = new DocumentBuilder()
       .setTitle('League Management API')
@@ -138,14 +116,13 @@ async function bootstrap() {
 
     const document = SwaggerModule.createDocument(app, config);
     
-    // Setup Swagger at /api-docs
     SwaggerModule.setup('api-docs', app, document, {
       swaggerOptions: {
         persistAuthorization: true,
       },
     });
 
-    // Also setup at /docs for convenience (redirect)
+    // Provide alternative /docs route for easier access during development
     SwaggerModule.setup('docs', app, document, {
       swaggerOptions: {
         persistAuthorization: true,
@@ -153,7 +130,7 @@ async function bootstrap() {
     });
   }
 
-  // Enable graceful shutdown
+  // Enable graceful shutdown to allow cleanup of database connections and other resources
   app.enableShutdownHooks();
 
   const port = configService.get<number>('app.port') || 3000;
