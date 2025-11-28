@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TournamentService } from './services/tournament.service';
 import { CreateTournamentDto } from './dto/create-tournament.dto';
+import { RegisterParticipantDto } from './dto/register-participant.dto';
 
 @ApiTags('Tournaments')
 @Controller('api/tournaments')
@@ -27,7 +28,7 @@ export class TournamentsController {
   @ApiOperation({ summary: 'Register participant' })
   registerParticipant(
     @Param('id') id: string,
-    @Body() body: { playerId?: string; teamId?: string; leagueId: string },
+    @Body() body: RegisterParticipantDto,
   ) {
     return this.tournamentService.registerParticipant(id, body.playerId || null, body.teamId || null, body.leagueId);
   }

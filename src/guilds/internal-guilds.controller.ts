@@ -19,6 +19,7 @@ import { GuildsService } from './guilds.service';
 import { GuildSettingsService } from './guild-settings.service';
 import { CreateGuildDto } from './dto/create-guild.dto';
 import { UpdateGuildDto } from './dto/update-guild.dto';
+import { GuildSettingsDto } from './dto/guild-settings.dto';
 import {
   ApiTags,
   ApiOperation,
@@ -79,11 +80,10 @@ export class InternalGuildsController {
   async upsert(@Body() createGuildDto: CreateGuildDto, @Res() res: Response) {
     this.logger.log(`Bot upserting guild ${createGuildDto.id}`);
     
-    // Check if guild exists to determine response status code
     const exists = await this.guildsService.exists(createGuildDto.id);
     const guild = await this.guildsService.upsert(createGuildDto);
     
-    // Return 201 if created, 200 if updated
+    // Return appropriate HTTP status to distinguish create vs update operations
     const statusCode = exists ? HttpStatus.OK : HttpStatus.CREATED;
     return res.status(statusCode).json(guild);
   }
@@ -155,9 +155,9 @@ export class InternalGuildsController {
   @ApiResponse({ status: 404, description: 'Guild not found' })
   @ApiResponse({ status: 401, description: 'Invalid bot API key' })
   @ApiParam({ name: 'id', description: 'Discord guild ID' })
-  async updateSettings(@Param('id') id: string, @Body() settings: any) {
+  async updateSettings(@Param('id') id: string, @Body() settings: GuildSettingsDto) {
     this.logger.log(`Bot updating settings for guild ${id}`);
-    // Note: Bot endpoints don't have userId, using a placeholder for audit trail
+    // Use placeholder userId for audit trail since bot endpoints lack user context
     return this.guildSettingsService.updateSettings(id, settings, 'bot');
   }
 }

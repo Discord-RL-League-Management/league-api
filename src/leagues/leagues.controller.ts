@@ -18,6 +18,7 @@ import { LeaguesService } from './leagues.service';
 import { LeagueAccessValidationService } from './services/league-access-validation.service';
 import { CreateLeagueDto } from './dto/create-league.dto';
 import { UpdateLeagueDto } from './dto/update-league.dto';
+import { UpdateLeagueStatusDto } from './dto/update-league-status.dto';
 import { LeagueStatus } from '@prisma/client';
 import {
   ApiTags,
@@ -60,7 +61,6 @@ export class LeaguesController {
   ) {
     this.logger.log(`User ${user.id} requested leagues for guild ${guildId}`);
     
-    // Validate user has access to guild
     await this.leagueAccessValidationService.validateGuildAccess(user.id, guildId);
 
     const options = {
@@ -86,7 +86,6 @@ export class LeaguesController {
   ) {
     this.logger.log(`User ${user.id} requested league ${id}`);
     
-    // Validate user has access to league
     await this.leagueAccessValidationService.validateLeagueAccess(user.id, id);
 
     return this.leaguesService.findOne(id);
@@ -104,7 +103,6 @@ export class LeaguesController {
   ) {
     this.logger.log(`User ${user.id} creating league ${createLeagueDto.name}`);
     
-    // Validate user has access to guild
     await this.leagueAccessValidationService.validateGuildAccess(
       user.id,
       createLeagueDto.guildId,
@@ -114,7 +112,6 @@ export class LeaguesController {
     // For now, we'll just check guild access
     // const isAdmin = await this.permissionCheckService.checkAdminRoles(...)
 
-    // Add createdBy to DTO for service
     return this.leaguesService.create(
       { ...createLeagueDto, createdBy: user.id } as CreateLeagueDto & { createdBy: string },
       user.id,
@@ -134,7 +131,6 @@ export class LeaguesController {
   ) {
     this.logger.log(`User ${user.id} updating league ${id}`);
     
-    // Validate user has access to league
     await this.leagueAccessValidationService.validateLeagueAccess(user.id, id);
 
     // TODO: Add admin/league admin check here
@@ -150,12 +146,11 @@ export class LeaguesController {
   @ApiParam({ name: 'id', description: 'League ID' })
   async updateLeagueStatus(
     @Param('id') id: string,
-    @Body() body: { status: LeagueStatus },
+    @Body() body: UpdateLeagueStatusDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     this.logger.log(`User ${user.id} updating league ${id} status to ${body.status}`);
     
-    // Validate user has access to league
     await this.leagueAccessValidationService.validateLeagueAccess(user.id, id);
 
     // TODO: Add admin check here
@@ -174,7 +169,6 @@ export class LeaguesController {
   ) {
     this.logger.log(`User ${user.id} deleting league ${id}`);
     
-    // Validate user has access to league
     await this.leagueAccessValidationService.validateLeagueAccess(user.id, id);
 
     // TODO: Add admin check here
