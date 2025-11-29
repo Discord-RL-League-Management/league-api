@@ -11,11 +11,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { TrackerScrapingQueueService } from '../queues/tracker-scraping.queue';
 import { TrackerBatchRefreshService } from './tracker-batch-refresh.service';
 
-/**
- * TrackerRefreshSchedulerService - Schedules periodic tracker refreshes
- *
- * Implements OnApplicationShutdown to prevent orphaned scheduled tasks during application termination.
- */
+// Manages cron jobs via SchedulerRegistry to schedule tracker refreshes and prevents orphaned tasks on shutdown
 @Injectable()
 export class TrackerRefreshSchedulerService
   implements OnModuleInit, OnApplicationShutdown
@@ -47,7 +43,7 @@ export class TrackerRefreshSchedulerService
     );
 
     const job = new CronJob(cronExpression, () => {
-      // Catch errors to prevent unhandled promise rejections in cron callbacks
+      // Prevents unhandled promise rejections from crashing the application when cron callback fails
       this.scheduledRefresh().catch((error) => {
         const errorMessage =
           error instanceof Error ? error.message : String(error);
@@ -67,20 +63,13 @@ export class TrackerRefreshSchedulerService
     );
   }
 
-  /**
-   * Scheduled job to refresh all trackers that need updating
-   * Runs according to configured cron expression (TRACKER_REFRESH_CRON environment variable)
-   * Default cron: '0 2 * * *' (2 AM daily) if not configured
-   */
+  // Executes on cron schedule to refresh trackers that exceed their refresh interval
   async scheduledRefresh() {
     this.logger.log('Starting scheduled tracker refresh');
     await this.triggerManualRefresh();
   }
 
-  /**
-   * Manually trigger refresh for trackers
-   * @param trackerIds - Optional array of tracker IDs to refresh. If not provided, refreshes all active trackers
-   */
+  // Allows admin-triggered refresh of specific trackers or all trackers when none specified
   async triggerManualRefresh(trackerIds?: string[]): Promise<void> {
     try {
       if (trackerIds && trackerIds.length > 0) {
@@ -110,9 +99,7 @@ export class TrackerRefreshSchedulerService
     }
   }
 
-  /**
-   * Get trackers that need refresh based on lastScrapedAt and refresh interval
-   */
+  // Identifies trackers that haven't been scraped within their configured refresh interval
   private async getTrackersNeedingRefresh(): Promise<string[]> {
     const cutoffTime = new Date();
     cutoffTime.setHours(cutoffTime.getHours() - this.refreshIntervalHours);
@@ -122,7 +109,7 @@ export class TrackerRefreshSchedulerService
         isActive: true,
         isDeleted: false,
         OR: [{ lastScrapedAt: null }, { lastScrapedAt: { lt: cutoffTime } }],
-        // Exclude trackers currently being scraped to prevent concurrent scraping conflicts
+        // Prevents race conditions by excluding trackers already in progress
         scrapingStatus: {
           not: 'IN_PROGRESS',
         },
