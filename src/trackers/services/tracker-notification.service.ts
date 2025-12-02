@@ -110,14 +110,6 @@ export class TrackerNotificationService {
         return;
       }
 
-      // Only send ephemeral follow-up if we have an interaction token
-      if (!tracker.registrationInteractionToken) {
-        this.logger.debug(
-          `No interaction token for tracker ${trackerId}, skipping notification`,
-        );
-        return;
-      }
-
       // Get user info for embed
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
@@ -136,17 +128,39 @@ export class TrackerNotificationService {
         this.frontendUrl,
       );
 
-      // Send ephemeral follow-up via Discord API
-      await this.discordMessageService.sendEphemeralFollowUp(
-        tracker.registrationInteractionToken,
-        {
+      // Try ephemeral follow-up if we have an interaction token, otherwise fall back to DM
+      if (tracker.registrationInteractionToken) {
+        try {
+          await this.discordMessageService.sendEphemeralFollowUp(
+            tracker.registrationInteractionToken,
+            {
+              embeds: [embed],
+            },
+          );
+          this.logger.log(
+            `Sent scraping failed ephemeral follow-up for tracker ${trackerId}`,
+          );
+        } catch (ephemeralError) {
+          // If ephemeral fails (e.g., token expired), fall back to DM
+          this.logger.debug(
+            `Ephemeral follow-up failed for tracker ${trackerId}, falling back to DM`,
+          );
+          await this.discordMessageService.sendDirectMessage(userId, {
+            embeds: [embed],
+          });
+          this.logger.log(
+            `Sent scraping failed DM notification for tracker ${trackerId}`,
+          );
+        }
+      } else {
+        // No interaction token available, send DM instead
+        await this.discordMessageService.sendDirectMessage(userId, {
           embeds: [embed],
-        },
-      );
-
-      this.logger.log(
-        `Sent scraping failed ephemeral follow-up for tracker ${trackerId}`,
-      );
+        });
+        this.logger.log(
+          `Sent scraping failed DM notification for tracker ${trackerId} (no interaction token)`,
+        );
+      }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);

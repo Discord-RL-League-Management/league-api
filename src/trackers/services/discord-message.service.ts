@@ -104,7 +104,7 @@ export class DiscordMessageService {
   ): Promise<void> {
     if (!this.botToken) {
       this.logger.error('Discord bot token not configured');
-      return; // Don't throw - graceful degradation
+      throw new Error('Discord bot token not configured');
     }
 
     // Validate interaction token
@@ -112,13 +112,13 @@ export class DiscordMessageService {
       this.logger.warn(
         'Invalid interaction token provided, skipping ephemeral follow-up',
       );
-      return;
+      throw new Error('Invalid interaction token provided');
     }
 
     // Check circuit breaker
     if (this.isCircuitOpen()) {
       this.logger.warn('Circuit breaker is open, skipping ephemeral follow-up');
-      return; // Don't throw - graceful degradation
+      throw new Error('Circuit breaker is open');
     }
 
     try {
@@ -159,10 +159,11 @@ export class DiscordMessageService {
           `Interaction token expired or invalid, skipping ephemeral follow-up`,
         );
         // Don't record as failure - token expiration is expected after 15 minutes
-        return;
+        // Throw to trigger fallback to DM notification
+        throw new Error('Interaction token expired or invalid');
       }
 
-      // For other errors, log but don't throw
+      // For other errors, log and throw to trigger fallback
       const errorMessage =
         error.response?.data?.message || error.message || 'Unknown error';
       this.logger.error(
@@ -170,7 +171,8 @@ export class DiscordMessageService {
         error,
       );
       this.recordFailure();
-      // Don't throw - notification failures shouldn't break the scraping process
+      // Throw to trigger fallback to DM notification
+      throw error;
     }
   }
 
