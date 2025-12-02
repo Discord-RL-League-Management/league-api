@@ -87,7 +87,9 @@ describe('Health Endpoints (e2e)', () => {
       // Check that each health indicator has a status
       Object.values(response.body.info).forEach((indicator: unknown) => {
         expect(indicator).toHaveProperty('status');
-        expect(['up', 'down']).toContain((indicator as { status: string }).status);
+        expect(['up', 'down']).toContain(
+          (indicator as { status: string }).status,
+        );
       });
     });
 

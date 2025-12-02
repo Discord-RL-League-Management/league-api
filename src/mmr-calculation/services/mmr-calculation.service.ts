@@ -42,12 +42,11 @@ export class MmrCalculationService {
    * @param config - Guild MMR calculation configuration
    * @returns Calculated MMR value (rounded integer)
    */
-  calculateMmr(
-    trackerData: TrackerData,
-    config: MmrCalculationConfig,
-  ): number {
+  calculateMmr(trackerData: TrackerData, config: MmrCalculationConfig): number {
     if (!config || !config.algorithm) {
-      throw new BadRequestException('MMR calculation configuration is required');
+      throw new BadRequestException(
+        'MMR calculation configuration is required',
+      );
     }
 
     switch (config.algorithm) {
@@ -263,10 +262,10 @@ export class MmrCalculationService {
 
     const data = testData || this.getDefaultTestData();
     try {
-      const result = this.calculateCustomFormula(
-        data,
-        { algorithm: 'CUSTOM', customFormula: formula },
-      );
+      const result = this.calculateCustomFormula(data, {
+        algorithm: 'CUSTOM',
+        customFormula: formula,
+      });
       return {
         result,
         testData: data,
@@ -299,4 +298,3 @@ export class MmrCalculationService {
     };
   }
 }
-

@@ -308,7 +308,9 @@ describe('TrackerRefreshSchedulerService', () => {
     it('should throw error when getTrackersNeedingRefresh fails', async () => {
       // ARRANGE
       const error = new Error('Database query failed');
-      (mockPrismaService.tracker.findMany as jest.Mock).mockRejectedValue(error);
+      (mockPrismaService.tracker.findMany as jest.Mock).mockRejectedValue(
+        error,
+      );
       const logSpy = jest.spyOn(service['logger'], 'error');
 
       // ACT & ASSERT

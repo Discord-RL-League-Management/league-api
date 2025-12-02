@@ -17,5 +17,3 @@ export class JoinLeagueDto {
   @IsString()
   notes?: string;
 }
-
-

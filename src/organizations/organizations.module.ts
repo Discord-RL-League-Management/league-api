@@ -35,5 +35,3 @@ import { TeamsModule } from '../teams/teams.module';
   ],
 })
 export class OrganizationsModule {}
-
-

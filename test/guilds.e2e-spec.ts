@@ -70,7 +70,7 @@ describe('Guilds API (e2e)', () => {
         where: { id: guildData.id },
       });
       expect(guild).toBeTruthy();
-      
+
       // Verify settings were created (Settings model with ownerType='guild')
       const settings = await prisma.settings.findUnique({
         where: {
@@ -180,7 +180,7 @@ describe('Guilds API (e2e)', () => {
       });
       expect(guild).toBeTruthy();
       expect(guild?.isActive).toBe(true);
-      
+
       // Verify settings were created (Settings model with ownerType='guild')
       const settings = await prisma.settings.findUnique({
         where: {
@@ -539,7 +539,7 @@ describe('Guilds API (e2e)', () => {
         include: { members: true },
       });
       expect(guild).toBeTruthy();
-      
+
       // Verify settings were created
       const settings = await prisma.settings.findUnique({
         where: {
@@ -550,7 +550,7 @@ describe('Guilds API (e2e)', () => {
         },
       });
       expect(settings).toBeTruthy();
-      
+
       expect(guild?.members).toHaveLength(2);
       expect(guild?.members[0].userId).toBe('user1');
       expect(guild?.members[1].userId).toBe('user2');

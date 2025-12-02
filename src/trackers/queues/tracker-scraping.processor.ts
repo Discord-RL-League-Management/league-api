@@ -171,7 +171,10 @@ export class TrackerScrapingProcessor extends WorkerHost {
         // Fallback: process seasons individually
         for (const seasonData of seasons) {
           try {
-            await this.seasonService.createOrUpdateSeason(trackerId, seasonData);
+            await this.seasonService.createOrUpdateSeason(
+              trackerId,
+              seasonData,
+            );
             seasonsScraped++;
           } catch (individualError) {
             const individualErrorMessage =

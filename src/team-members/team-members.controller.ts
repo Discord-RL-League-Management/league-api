@@ -52,5 +52,3 @@ export class TeamMembersController {
     return this.teamMemberService.removeMember(id);
   }
 }
-
-

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MmrCalculationController } from './controllers/mmr-calculation.controller';
 import { MmrCalculationService } from './services/mmr-calculation.service';
 import { FormulaValidationService } from './services/formula-validation.service';
@@ -14,7 +14,7 @@ import { GuildsModule } from '../guilds/guilds.module';
  * internal MMR calculation with custom formula support.
  */
 @Module({
-  imports: [PrismaModule, GuildsModule],
+  imports: [PrismaModule, forwardRef(() => GuildsModule)],
   controllers: [MmrCalculationController],
   providers: [
     MmrCalculationService,
@@ -29,4 +29,3 @@ import { GuildsModule } from '../guilds/guilds.module';
   ],
 })
 export class MmrCalculationModule {}
-

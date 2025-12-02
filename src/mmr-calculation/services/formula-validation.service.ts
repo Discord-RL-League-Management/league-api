@@ -40,7 +40,11 @@ export class FormulaValidationService {
     error?: string;
     parsedExpression?: any;
   } {
-    if (!formula || typeof formula !== 'string' || formula.trim().length === 0) {
+    if (
+      !formula ||
+      typeof formula !== 'string' ||
+      formula.trim().length === 0
+    ) {
       return {
         valid: false,
         error: 'Formula cannot be empty',
@@ -97,11 +101,37 @@ export class FormulaValidationService {
     const variables = new Set<string>();
     // List of known mathjs function names to exclude from variable extraction
     const functionNames = new Set([
-      'abs', 'acos', 'asin', 'atan', 'ceil', 'cos', 'exp', 'floor', 'log',
-      'log10', 'max', 'min', 'pow', 'round', 'sin', 'sqrt', 'tan',
-      'add', 'subtract', 'multiply', 'divide', 'mod',
-      'equal', 'unequal', 'smaller', 'larger', 'smallerEq', 'largerEq',
-      'and', 'or', 'not',
+      'abs',
+      'acos',
+      'asin',
+      'atan',
+      'ceil',
+      'cos',
+      'exp',
+      'floor',
+      'log',
+      'log10',
+      'max',
+      'min',
+      'pow',
+      'round',
+      'sin',
+      'sqrt',
+      'tan',
+      'add',
+      'subtract',
+      'multiply',
+      'divide',
+      'mod',
+      'equal',
+      'unequal',
+      'smaller',
+      'larger',
+      'smallerEq',
+      'largerEq',
+      'and',
+      'or',
+      'not',
     ]);
 
     const traverse = (node: any) => {
@@ -160,4 +190,3 @@ export class FormulaValidationService {
     };
   }
 }
-

@@ -33,7 +33,8 @@ export class MmrCalculationIntegrationService {
   async calculateMmrForUser(userId: string, trackerId: string): Promise<void> {
     try {
       // Extract tracker data
-      const trackerData = await this.trackerDataExtraction.extractTrackerData(trackerId);
+      const trackerData =
+        await this.trackerDataExtraction.extractTrackerData(trackerId);
       if (!trackerData) {
         this.logger.debug(
           `No tracker data available for tracker ${trackerId}, skipping MMR calculation`,
@@ -48,7 +49,9 @@ export class MmrCalculationIntegrationService {
       });
 
       if (guildMemberships.length === 0) {
-        this.logger.debug(`User ${userId} has no guild memberships, skipping MMR calculation`);
+        this.logger.debug(
+          `User ${userId} has no guild memberships, skipping MMR calculation`,
+        );
         return;
       }
 
@@ -60,7 +63,9 @@ export class MmrCalculationIntegrationService {
       );
 
       // Log results
-      const successful = calculations.filter((r) => r.status === 'fulfilled').length;
+      const successful = calculations.filter(
+        (r) => r.status === 'fulfilled',
+      ).length;
       const failed = calculations.filter((r) => r.status === 'rejected').length;
 
       this.logger.log(
@@ -131,21 +136,22 @@ export class MmrCalculationIntegrationService {
    */
   private getDefaultMmrConfig(): MmrCalculationConfig {
     const defaults = this.settingsDefaults.getDefaults();
-    return defaults.mmrCalculation || {
-      algorithm: 'WEIGHTED_AVERAGE',
-      weights: {
-        ones: 0.1,
-        twos: 0.3,
-        threes: 0.5,
-        fours: 0.1,
-      },
-      minGamesPlayed: {
-        ones: 50,
-        twos: 50,
-        threes: 50,
-        fours: 50,
-      },
-    };
+    return (
+      defaults.mmrCalculation || {
+        algorithm: 'WEIGHTED_AVERAGE',
+        weights: {
+          ones: 0.1,
+          twos: 0.3,
+          threes: 0.5,
+          fours: 0.1,
+        },
+        minGamesPlayed: {
+          ones: 50,
+          twos: 50,
+          threes: 50,
+          fours: 50,
+        },
+      }
+    );
   }
 }
-

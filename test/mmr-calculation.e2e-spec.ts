@@ -11,7 +11,6 @@ describe('MMR Calculation API (e2e)', () => {
   let prisma: PrismaService;
   let jwtService: JwtService;
   let adminToken: string;
-  let userId: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -41,7 +40,6 @@ describe('MMR Calculation API (e2e)', () => {
         globalName: 'Test Admin',
       },
     });
-    userId = user.id;
     adminToken = jwtService.sign({ sub: user.id, username: user.username });
   });
 
@@ -51,7 +49,9 @@ describe('MMR Calculation API (e2e)', () => {
       const response = await request(app.getHttpServer())
         .post('/api/mmr-calculation/validate-formula')
         .set('Authorization', `Bearer ${adminToken}`)
-        .send({ formula: '(ones * 0.1 + twos * 0.3 + threes * 0.5 + fours * 0.1)' })
+        .send({
+          formula: '(ones * 0.1 + twos * 0.3 + threes * 0.5 + fours * 0.1)',
+        })
         .expect(200);
 
       expect(response.body).toMatchObject({
@@ -126,15 +126,22 @@ describe('MMR Calculation API (e2e)', () => {
       const response = await request(app.getHttpServer())
         .post('/api/mmr-calculation/test-formula')
         .set('Authorization', `Bearer ${adminToken}`)
-        .send({ formula: '(ones * 0.1 + twos * 0.3 + threes * 0.5 + fours * 0.1)' })
+        .send({
+          formula: '(ones * 0.1 + twos * 0.3 + threes * 0.5 + fours * 0.1)',
+        })
         .expect(200);
 
-      expect(response.body).toMatchObject({
+      const body = response.body as {
+        valid: boolean;
+        result: number;
+        testData: Record<string, unknown>;
+      };
+      expect(body).toMatchObject({
         valid: true,
         result: expect.any(Number),
         testData: expect.any(Object),
       });
-      expect(response.body.result).toBeGreaterThan(0);
+      expect(body.result).toBeGreaterThan(0);
     });
 
     // INPUT: Valid formula with custom test data
@@ -153,7 +160,12 @@ describe('MMR Calculation API (e2e)', () => {
         })
         .expect(200);
 
-      expect(response.body).toMatchObject({
+      const body = response.body as {
+        valid: boolean;
+        result: number;
+        testData: Record<string, unknown>;
+      };
+      expect(body).toMatchObject({
         valid: true,
         result: 2000,
         testData: expect.objectContaining({
@@ -173,7 +185,12 @@ describe('MMR Calculation API (e2e)', () => {
         .send({ formula: 'invalid syntax + +' })
         .expect(200);
 
-      expect(response.body).toMatchObject({
+      const body = response.body as {
+        valid: boolean;
+        result: number;
+        error?: string;
+      };
+      expect(body).toMatchObject({
         valid: false,
         result: 0,
         error: expect.any(String),
@@ -189,4 +206,3 @@ describe('MMR Calculation API (e2e)', () => {
     });
   });
 });
-

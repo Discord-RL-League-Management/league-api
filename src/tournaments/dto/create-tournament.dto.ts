@@ -35,5 +35,3 @@ export class CreateTournamentDto {
   @IsNumber()
   maxParticipants?: number;
 }
-
-

@@ -31,7 +31,8 @@ describe('FormulaValidationService', () => {
     });
 
     it('should validate formula with conditional', () => {
-      const formula = '(onesGames >= 50 ? ones * 0.2 : 0) + (twosGames >= 50 ? twos * 0.3 : 0)';
+      const formula =
+        '(onesGames >= 50 ? ones * 0.2 : 0) + (twosGames >= 50 ? twos * 0.3 : 0)';
       const result = service.validateFormula(formula);
       expect(result.valid).toBe(true);
     });
@@ -62,13 +63,15 @@ describe('FormulaValidationService', () => {
     });
 
     it('should validate formula with totalGames', () => {
-      const formula = '(ones * 0.1 + twos * 0.3 + threes * 0.5 + fours * 0.1) * (totalGames >= 100 ? 1 : 0.8)';
+      const formula =
+        '(ones * 0.1 + twos * 0.3 + threes * 0.5 + fours * 0.1) * (totalGames >= 100 ? 1 : 0.8)';
       const result = service.validateFormula(formula);
       expect(result.valid).toBe(true);
     });
 
     it('should validate formula with games played variables', () => {
-      const formula = '(onesGames >= 50 ? ones : 0) + (twosGames >= 50 ? twos : 0)';
+      const formula =
+        '(onesGames >= 50 ? ones : 0) + (twosGames >= 50 ? twos : 0)';
       const result = service.validateFormula(formula);
       expect(result.valid).toBe(true);
     });
@@ -121,4 +124,3 @@ describe('FormulaValidationService', () => {
     });
   });
 });
-

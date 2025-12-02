@@ -147,5 +147,3 @@ export class PlayerValidationService {
     }
   }
 }
-
-

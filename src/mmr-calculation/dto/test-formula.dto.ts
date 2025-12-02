@@ -83,4 +83,3 @@ export class TestFormulaDto {
   @Type(() => TrackerDataDto)
   testData?: TrackerDataDto;
 }
-

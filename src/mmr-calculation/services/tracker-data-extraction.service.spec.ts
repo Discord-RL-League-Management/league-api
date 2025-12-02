@@ -42,7 +42,9 @@ describe('TrackerDataExtractionService', () => {
         playlist4v4: { rating: 1000, matchesPlayed: 50 },
       };
 
-      (prisma.trackerSeason.findFirst as jest.Mock).mockResolvedValue(mockSeason);
+      (prisma.trackerSeason.findFirst as jest.Mock).mockResolvedValue(
+        mockSeason,
+      );
 
       const result = await service.extractTrackerData('tracker-123');
 
@@ -76,7 +78,9 @@ describe('TrackerDataExtractionService', () => {
         playlist4v4: { rating: 1000, matchesPlayed: 50 },
       };
 
-      (prisma.trackerSeason.findFirst as jest.Mock).mockResolvedValue(mockSeason);
+      (prisma.trackerSeason.findFirst as jest.Mock).mockResolvedValue(
+        mockSeason,
+      );
 
       const result = await service.extractTrackerData('tracker-123');
 
@@ -99,7 +103,9 @@ describe('TrackerDataExtractionService', () => {
         playlist2v2: { rating: 1400, matchesPlayed: 300 },
       };
 
-      (prisma.trackerSeason.findFirst as jest.Mock).mockResolvedValue(mockSeason);
+      (prisma.trackerSeason.findFirst as jest.Mock).mockResolvedValue(
+        mockSeason,
+      );
 
       const result = await service.extractTrackerData('tracker-123');
 
@@ -136,4 +142,3 @@ describe('TrackerDataExtractionService', () => {
     });
   });
 });
-

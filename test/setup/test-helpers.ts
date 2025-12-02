@@ -384,7 +384,9 @@ export const createMockGuildMembersService =
 /**
  * Create a mock Express Request
  */
-export const createMockRequest = (overrides: Partial<Request> = {}): Request => {
+export const createMockRequest = (
+  overrides: Partial<Request> = {},
+): Request => {
   return {
     method: 'GET',
     path: '/test',

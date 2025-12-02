@@ -1,11 +1,10 @@
+import { Controller, Post, Body, UseGuards, Logger } from '@nestjs/common';
 import {
-  Controller,
-  Post,
-  Body,
-  UseGuards,
-  Logger,
-} from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { AdminGuard } from '../../common/guards/admin.guard';
 import { MmrCalculationService } from '../services/mmr-calculation.service';
@@ -32,7 +31,9 @@ export class MmrCalculationController {
   ) {}
 
   @Post('test-formula')
-  @ApiOperation({ summary: 'Test a custom MMR formula with sample or custom data' })
+  @ApiOperation({
+    summary: 'Test a custom MMR formula with sample or custom data',
+  })
   @ApiResponse({ status: 200, description: 'Formula test result' })
   @ApiResponse({ status: 400, description: 'Invalid formula or test data' })
   async testFormula(@Body() body: TestFormulaDto) {
@@ -47,4 +48,3 @@ export class MmrCalculationController {
     return this.formulaValidation.validateFormula(body.formula);
   }
 }
-

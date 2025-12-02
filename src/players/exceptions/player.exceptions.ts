@@ -42,5 +42,3 @@ export class PlayerValidationException extends ValidationException {
     super(`Player validation failed: ${message}`, { message });
   }
 }
-
-

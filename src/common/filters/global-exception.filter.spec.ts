@@ -206,7 +206,10 @@ describe('GlobalExceptionFilter', () => {
 
     it('should handle HttpException with null response object', () => {
       // ARRANGE
-      const exception = new HttpException('Bad Request', HttpStatus.BAD_REQUEST);
+      const exception = new HttpException(
+        'Bad Request',
+        HttpStatus.BAD_REQUEST,
+      );
 
       // ACT
       filter.catch(exception, mockArgumentsHost);

@@ -54,5 +54,3 @@ export class MatchRepository
     return (await this.prisma.match.count({ where: { id } })) > 0;
   }
 }
-
-
