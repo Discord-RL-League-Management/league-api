@@ -4,6 +4,7 @@ import { TrackerService } from '../services/tracker.service';
 import { TrackerRefreshSchedulerService } from '../services/tracker-refresh-scheduler.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { SystemAdminGuard } from '../../common/guards/system-admin.guard';
 import { TrackerScrapingStatus } from '@prisma/client';
 
 const mockTrackerService = {
@@ -52,6 +53,8 @@ describe('TrackerAdminController', () => {
     })
       .overrideGuard(JwtAuthGuard)
       .useValue({ canActivate: jest.fn(() => true) })
+      .overrideGuard(SystemAdminGuard)
+      .useValue({ canActivate: jest.fn(() => true) })
       .compile();
 
     controller = module.get<TrackerAdminController>(TrackerAdminController);
@@ -61,7 +64,9 @@ describe('TrackerAdminController', () => {
     refreshScheduler = module.get<TrackerRefreshSchedulerService>(
       TrackerRefreshSchedulerService,
     ) as jest.Mocked<TrackerRefreshSchedulerService>;
-    prisma = module.get<PrismaService>(PrismaService) as jest.Mocked<PrismaService>;
+    prisma = module.get<PrismaService>(
+      PrismaService,
+    ) as jest.Mocked<PrismaService>;
   });
 
   afterEach(() => {
@@ -251,7 +256,12 @@ describe('TrackerAdminController', () => {
       prisma.tracker.count.mockResolvedValue(totalCount);
 
       // ACT
-      const result = await controller.getTrackers(undefined, undefined, page, limit);
+      const result = await controller.getTrackers(
+        undefined,
+        undefined,
+        page,
+        limit,
+      );
 
       // ASSERT
       expect(result.pagination).toEqual({
@@ -294,7 +304,12 @@ describe('TrackerAdminController', () => {
       prisma.tracker.count.mockResolvedValue(totalCount);
 
       // ACT
-      const result = await controller.getTrackers(status, platform, page, limit);
+      const result = await controller.getTrackers(
+        status,
+        platform,
+        page,
+        limit,
+      );
 
       // ASSERT
       expect(prisma.tracker.findMany).toHaveBeenCalledWith({
@@ -337,7 +352,12 @@ describe('TrackerAdminController', () => {
       prisma.tracker.count.mockResolvedValue(totalCount);
 
       // ACT
-      const result = await controller.getTrackers(undefined, undefined, 1, limit);
+      const result = await controller.getTrackers(
+        undefined,
+        undefined,
+        1,
+        limit,
+      );
 
       // ASSERT
       expect(result.pagination.totalPages).toBe(3); // Math.ceil(27 / 10) = 3
@@ -349,7 +369,10 @@ describe('TrackerAdminController', () => {
       // ARRANGE
       const statusCounts = [
         { scrapingStatus: TrackerScrapingStatus.PENDING, _count: { id: 5 } },
-        { scrapingStatus: TrackerScrapingStatus.IN_PROGRESS, _count: { id: 3 } },
+        {
+          scrapingStatus: TrackerScrapingStatus.IN_PROGRESS,
+          _count: { id: 3 },
+        },
         { scrapingStatus: TrackerScrapingStatus.COMPLETED, _count: { id: 10 } },
         { scrapingStatus: TrackerScrapingStatus.FAILED, _count: { id: 2 } },
       ];
@@ -583,7 +606,12 @@ describe('TrackerAdminController', () => {
       prisma.trackerScrapingLog.count.mockResolvedValue(totalCount);
 
       // ACT
-      const result = await controller.getScrapingLogs(undefined, undefined, page, limit);
+      const result = await controller.getScrapingLogs(
+        undefined,
+        undefined,
+        page,
+        limit,
+      );
 
       // ASSERT
       expect(result.pagination).toEqual({
@@ -621,7 +649,12 @@ describe('TrackerAdminController', () => {
       prisma.trackerScrapingLog.count.mockResolvedValue(totalCount);
 
       // ACT
-      const result = await controller.getScrapingLogs(trackerId, status, page, limit);
+      const result = await controller.getScrapingLogs(
+        trackerId,
+        status,
+        page,
+        limit,
+      );
 
       // ASSERT
       expect(prisma.trackerScrapingLog.findMany).toHaveBeenCalledWith({
@@ -696,7 +729,9 @@ describe('TrackerAdminController', () => {
         message: 'Batch refresh triggered successfully',
         trackerIds: trackerIds,
       });
-      expect(refreshScheduler.triggerManualRefresh).toHaveBeenCalledWith(trackerIds);
+      expect(refreshScheduler.triggerManualRefresh).toHaveBeenCalledWith(
+        trackerIds,
+      );
       expect(refreshScheduler.triggerManualRefresh).toHaveBeenCalledTimes(1);
     });
 
@@ -713,7 +748,9 @@ describe('TrackerAdminController', () => {
         message: 'Batch refresh triggered successfully',
         trackerIds: 'all',
       });
-      expect(refreshScheduler.triggerManualRefresh).toHaveBeenCalledWith(undefined);
+      expect(refreshScheduler.triggerManualRefresh).toHaveBeenCalledWith(
+        undefined,
+      );
       expect(refreshScheduler.triggerManualRefresh).toHaveBeenCalledTimes(1);
     });
 
@@ -743,7 +780,9 @@ describe('TrackerAdminController', () => {
       await expect(controller.batchRefresh(dto)).rejects.toThrow(
         'Failed to trigger batch refresh',
       );
-      expect(refreshScheduler.triggerManualRefresh).toHaveBeenCalledWith(['tracker1']);
+      expect(refreshScheduler.triggerManualRefresh).toHaveBeenCalledWith([
+        'tracker1',
+      ]);
     });
   });
 });

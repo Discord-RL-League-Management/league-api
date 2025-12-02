@@ -53,10 +53,7 @@ describe('InternalUsersController', () => {
   describe('Authentication and Authorization', () => {
     it('should have BotAuthGuard applied', () => {
       // ARRANGE
-      const guards = Reflect.getMetadata(
-        '__guards__',
-        InternalUsersController,
-      );
+      const guards = Reflect.getMetadata('__guards__', InternalUsersController);
 
       // ASSERT
       expect(guards).toContain(BotAuthGuard);
@@ -134,9 +131,7 @@ describe('InternalUsersController', () => {
     it('should throw UserNotFoundException when user does not exist', async () => {
       // ARRANGE
       const userId = 'nonexistent-id';
-      usersService.findOne.mockRejectedValue(
-        new UserNotFoundException(userId),
-      );
+      usersService.findOne.mockRejectedValue(new UserNotFoundException(userId));
 
       // ACT & ASSERT
       await expect(controller.findOne(userId)).rejects.toThrow(
@@ -274,9 +269,7 @@ describe('InternalUsersController', () => {
       const updateUserDto: UpdateUserDto = {
         username: 'updateduser',
       };
-      usersService.update.mockRejectedValue(
-        new UserNotFoundException(userId),
-      );
+      usersService.update.mockRejectedValue(new UserNotFoundException(userId));
 
       // ACT & ASSERT
       await expect(controller.update(userId, updateUserDto)).rejects.toThrow(
@@ -332,9 +325,7 @@ describe('InternalUsersController', () => {
     it('should throw UserNotFoundException when deleting non-existent user', async () => {
       // ARRANGE
       const userId = 'nonexistent-id';
-      usersService.delete.mockRejectedValue(
-        new UserNotFoundException(userId),
-      );
+      usersService.delete.mockRejectedValue(new UserNotFoundException(userId));
 
       // ACT & ASSERT
       await expect(controller.delete(userId)).rejects.toThrow(
@@ -357,4 +348,3 @@ describe('InternalUsersController', () => {
     });
   });
 });
-

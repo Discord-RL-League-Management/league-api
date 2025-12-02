@@ -17,19 +17,18 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { SystemAdminGuard } from '../../common/guards/system-admin.guard';
 import { TrackerService } from '../services/tracker.service';
 import { TrackerRefreshSchedulerService } from '../services/tracker-refresh-scheduler.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BatchRefreshDto } from '../dto/batch-refresh.dto';
-import { TrackerScrapingStatus } from '@prisma/client';
+import { TrackerScrapingStatus, Prisma, GamePlatform } from '@prisma/client';
 import { ParseCUIDPipe, ParseEnumPipe } from '../../common/pipes';
 
 @ApiTags('Admin - Trackers')
 @Controller('api/admin/trackers')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, SystemAdminGuard)
 @ApiBearerAuth('JWT-auth')
-// SECURITY WARNING: System admin guard not yet implemented - see issue #20
-// Currently accessible to all authenticated users; requires system admin guard before production
 export class TrackerAdminController {
   private readonly logger = new Logger(TrackerAdminController.name);
 
@@ -64,17 +63,11 @@ export class TrackerAdminController {
     const skip = page && limit ? (page - 1) * limit : undefined;
     const take = limit || 50;
 
-    const where: any = {
+    const where: Prisma.TrackerWhereInput = {
       isDeleted: false,
+      ...(status && { scrapingStatus: status }),
+      ...(platform && { platform: platform as GamePlatform }),
     };
-
-    if (status) {
-      where.scrapingStatus = status;
-    }
-
-    if (platform) {
-      where.platform = platform;
-    }
 
     const [trackers, total] = await Promise.all([
       this.prisma.tracker.findMany({
@@ -172,13 +165,10 @@ export class TrackerAdminController {
     const skip = page && limit ? (page - 1) * limit : undefined;
     const take = limit || 50;
 
-    const where: any = {};
-    if (trackerId) {
-      where.trackerId = trackerId;
-    }
-    if (status) {
-      where.status = status;
-    }
+    const where: Prisma.TrackerScrapingLogWhereInput = {
+      ...(trackerId && { trackerId }),
+      ...(status && { status }),
+    };
 
     const [logs, total] = await Promise.all([
       this.prisma.trackerScrapingLog.findMany({
