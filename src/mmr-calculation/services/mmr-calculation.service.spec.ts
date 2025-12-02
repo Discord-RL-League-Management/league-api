@@ -207,5 +207,174 @@ describe('MmrCalculationService', () => {
       expect(result.error).toBeDefined();
     });
   });
+
+  describe('calculateMmr - Edge Cases and Protections', () => {
+    // PROTECTION: Handle missing/null tracker data
+    it('should handle missing MMR values gracefully', () => {
+      const trackerData: TrackerData = {
+        ones: undefined,
+        twos: 1400,
+        threes: undefined,
+        fours: 1000,
+      };
+      const config: MmrCalculationConfig = {
+        algorithm: 'WEIGHTED_AVERAGE',
+        weights: {
+          twos: 0.5,
+          fours: 0.5,
+        },
+      };
+
+      const result = service.calculateMmr(trackerData, config);
+      // Should only use available values: (1400 * 0.5) + (1000 * 0.5) = 1200
+      expect(result).toBe(1200);
+    });
+
+    it('should handle null MMR values', () => {
+      const trackerData: TrackerData = {
+        ones: null as any,
+        twos: 1400,
+        threes: null as any,
+        fours: 1000,
+      };
+      const config: MmrCalculationConfig = {
+        algorithm: 'PEAK_MMR',
+      };
+
+      const result = service.calculateMmr(trackerData, config);
+      expect(result).toBe(1400); // Max of available values
+    });
+
+    it('should return 0 when all MMR values are missing for WEIGHTED_AVERAGE', () => {
+      const trackerData: TrackerData = {
+        ones: undefined,
+        twos: undefined,
+        threes: undefined,
+        fours: undefined,
+      };
+      const config: MmrCalculationConfig = {
+        algorithm: 'WEIGHTED_AVERAGE',
+        weights: {
+          ones: 0.25,
+          twos: 0.25,
+          threes: 0.25,
+          fours: 0.25,
+        },
+      };
+
+      const result = service.calculateMmr(trackerData, config);
+      expect(result).toBe(0);
+    });
+
+    it('should return 0 when all MMR values are missing for PEAK_MMR', () => {
+      const trackerData: TrackerData = {
+        ones: undefined,
+        twos: undefined,
+        threes: undefined,
+        fours: undefined,
+      };
+      const config: MmrCalculationConfig = {
+        algorithm: 'PEAK_MMR',
+      };
+
+      const result = service.calculateMmr(trackerData, config);
+      expect(result).toBe(0);
+    });
+
+    // INPUT: Test invalid algorithm
+    it('should throw error for unknown algorithm', () => {
+      const trackerData: TrackerData = {
+        ones: 1200,
+        twos: 1400,
+      };
+      const config: MmrCalculationConfig = {
+        algorithm: 'INVALID_ALGORITHM' as any,
+      };
+
+      expect(() => service.calculateMmr(trackerData, config)).toThrow(
+        'Unknown algorithm',
+      );
+    });
+
+    // INPUT: Test missing config
+    it('should throw error when config is missing', () => {
+      const trackerData: TrackerData = {
+        ones: 1200,
+        twos: 1400,
+      };
+
+      expect(() => service.calculateMmr(trackerData, null as any)).toThrow(
+        'MMR calculation configuration is required',
+      );
+    });
+
+    // PROTECTION: Handle extreme values
+    it('should handle very large MMR values', () => {
+      const trackerData: TrackerData = {
+        ones: 999999,
+        twos: 888888,
+      };
+      const config: MmrCalculationConfig = {
+        algorithm: 'PEAK_MMR',
+      };
+
+      const result = service.calculateMmr(trackerData, config);
+      expect(result).toBe(999999);
+    });
+
+    it('should handle negative MMR values (if tracker provides them)', () => {
+      const trackerData: TrackerData = {
+        ones: -100,
+        twos: 1400,
+      };
+      const config: MmrCalculationConfig = {
+        algorithm: 'PEAK_MMR',
+      };
+
+      const result = service.calculateMmr(trackerData, config);
+      expect(result).toBe(1400); // Should use the positive value
+    });
+
+    // OUTPUT: Verify rounding behavior
+    it('should round MMR to integer', () => {
+      const trackerData: TrackerData = {
+        ones: 1200.7,
+        twos: 1400.3,
+      };
+      const config: MmrCalculationConfig = {
+        algorithm: 'WEIGHTED_AVERAGE',
+        weights: {
+          ones: 0.5,
+          twos: 0.5,
+        },
+      };
+
+      const result = service.calculateMmr(trackerData, config);
+      // (1200.7 * 0.5) + (1400.3 * 0.5) = 600.35 + 700.15 = 1300.5 → 1301
+      expect(result).toBe(1301);
+      expect(Number.isInteger(result)).toBe(true);
+    });
+
+    // PROTECTION: Handle zero weights
+    it('should handle zero weights correctly', () => {
+      const trackerData: TrackerData = {
+        ones: 1200,
+        twos: 1400,
+        threes: 1600,
+      };
+      const config: MmrCalculationConfig = {
+        algorithm: 'WEIGHTED_AVERAGE',
+        weights: {
+          ones: 0,
+          twos: 0.5,
+          threes: 0.5,
+        },
+      };
+
+      const result = service.calculateMmr(trackerData, config);
+      // Should exclude ones (weight = 0): (1400 * 0.5) + (1600 * 0.5) = 1500
+      expect(result).toBe(1500);
+    });
+  });
 });
 

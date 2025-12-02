@@ -72,6 +72,53 @@ describe('FormulaValidationService', () => {
       const result = service.validateFormula(formula);
       expect(result.valid).toBe(true);
     });
+
+    // PROTECTION: Reject malicious code injection attempts
+    it('should reject formula with function calls that could execute code', () => {
+      const formula = 'eval("malicious code")';
+      const result = service.validateFormula(formula);
+      expect(result.valid).toBe(false);
+      expect(result.error).toBeDefined();
+    });
+
+    it('should reject formula with require() calls', () => {
+      const formula = 'require("fs")';
+      const result = service.validateFormula(formula);
+      expect(result.valid).toBe(false);
+    });
+
+    it('should reject formula with import statements', () => {
+      const formula = 'import("module")';
+      const result = service.validateFormula(formula);
+      expect(result.valid).toBe(false);
+    });
+
+    // PROTECTION: Reject formulas that don't evaluate to numbers
+    it('should reject formula that evaluates to non-number', () => {
+      const formula = 'ones > twos'; // Boolean result
+      const result = service.validateFormula(formula);
+      // This might parse but should fail evaluation check
+      // The test data evaluation should catch this
+      expect(result.valid).toBe(false);
+    });
+
+    // INPUT: Test null/undefined inputs
+    it('should reject null input', () => {
+      const result = service.validateFormula(null as any);
+      expect(result.valid).toBe(false);
+    });
+
+    it('should reject undefined input', () => {
+      const result = service.validateFormula(undefined as any);
+      expect(result.valid).toBe(false);
+    });
+
+    // PROTECTION: Reject formulas with only whitespace
+    it('should reject formula with only whitespace', () => {
+      const result = service.validateFormula('   \n\t   ');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('cannot be empty');
+    });
   });
 });
 
