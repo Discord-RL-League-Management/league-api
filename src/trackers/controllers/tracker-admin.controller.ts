@@ -22,7 +22,11 @@ import { TrackerService } from '../services/tracker.service';
 import { TrackerRefreshSchedulerService } from '../services/tracker-refresh-scheduler.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BatchRefreshDto } from '../dto/batch-refresh.dto';
-import { TrackerScrapingStatus, Prisma } from '@prisma/client';
+import {
+  TrackerScrapingStatus,
+  Prisma,
+  GamePlatform,
+} from '@prisma/client';
 import { ParseCUIDPipe, ParseEnumPipe } from '../../common/pipes';
 
 @ApiTags('Admin - Trackers')
@@ -66,7 +70,7 @@ export class TrackerAdminController {
     const where: Prisma.TrackerWhereInput = {
       isDeleted: false,
       ...(status && { scrapingStatus: status }),
-      ...(platform && { platform }),
+      ...(platform && { platform: platform as GamePlatform }),
     };
 
     const [trackers, total] = await Promise.all([
