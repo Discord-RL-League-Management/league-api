@@ -82,8 +82,8 @@ export class TrackerController {
   })
   @ApiResponse({ status: 200, description: 'List of trackers' })
   async getTrackers(
-    @Query('guildId') guildId?: string,
     @CurrentUser() user: AuthenticatedUser,
+    @Query('guildId') guildId?: string,
   ) {
     if (guildId) {
       return this.trackerService.getTrackersByGuild(guildId);
