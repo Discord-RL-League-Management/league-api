@@ -49,4 +49,3 @@ export class InternalTeamMembersController {
     return this.teamMemberService.removeMember(id);
   }
 }
-

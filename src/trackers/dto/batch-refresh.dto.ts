@@ -13,5 +13,3 @@ export class BatchRefreshDto {
   @IsString({ each: true })
   trackerIds?: string[];
 }
-
-

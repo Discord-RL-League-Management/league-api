@@ -238,7 +238,7 @@ describe('AppModule', () => {
         const exception = pipeOptions.exceptionFactory(mockErrors);
 
         expect(exception).toBeInstanceOf(BadRequestException);
-        const response = exception.getResponse() as any;
+        const response = exception.getResponse();
         expect(response.message).toBe(VALIDATION_FAILED_MESSAGE);
         expect(response.errors).toHaveLength(2);
         expect(response.errors[0]).toEqual({
@@ -288,7 +288,7 @@ describe('AppModule', () => {
 
         expect(exception).toBeInstanceOf(BadRequestException);
         expect(exception.getStatus()).toBe(400);
-        const response = exception.getResponse() as any;
+        const response = exception.getResponse();
         expect(response).toHaveProperty('message');
         expect(response).toHaveProperty('errors');
         expect(Array.isArray(response.errors)).toBe(true);
@@ -315,14 +315,15 @@ describe('AppModule', () => {
           {
             property: 'password',
             constraints: {
-              minLength: 'password must be longer than or equal to 8 characters',
+              minLength:
+                'password must be longer than or equal to 8 characters',
             },
             value: 'short',
           },
         ];
 
         const exception = pipeOptions.exceptionFactory(mockErrors);
-        const response = exception.getResponse() as any;
+        const response = exception.getResponse();
 
         expect(response).toEqual({
           message: VALIDATION_FAILED_MESSAGE,
@@ -330,7 +331,8 @@ describe('AppModule', () => {
             {
               property: 'password',
               constraints: {
-                minLength: 'password must be longer than or equal to 8 characters',
+                minLength:
+                  'password must be longer than or equal to 8 characters',
               },
               value: 'short',
             },

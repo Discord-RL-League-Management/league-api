@@ -62,4 +62,3 @@ export class MatchParticipantRepository
     return (await this.prisma.matchParticipant.count({ where: { id } })) > 0;
   }
 }
-

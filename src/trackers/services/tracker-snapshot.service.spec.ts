@@ -473,5 +473,3 @@ describe('TrackerSnapshotService', () => {
     });
   });
 });
-
-

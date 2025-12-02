@@ -464,5 +464,3 @@ describe('LeaguePermissionService', () => {
     });
   });
 });
-
-

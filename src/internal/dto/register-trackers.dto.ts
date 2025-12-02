@@ -53,5 +53,3 @@ export class RegisterTrackersDto {
   @Type(() => UserDataDto)
   userData?: UserDataDto;
 }
-
-

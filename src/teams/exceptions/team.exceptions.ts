@@ -42,4 +42,3 @@ export class TeamMemberAlreadyExistsException extends ConflictException {
     });
   }
 }
-

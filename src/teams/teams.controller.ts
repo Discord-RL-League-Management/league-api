@@ -58,4 +58,3 @@ export class TeamsController {
     return this.teamService.delete(id);
   }
 }
-

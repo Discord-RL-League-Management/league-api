@@ -583,5 +583,3 @@ describe('PrismaExceptionFilter', () => {
     });
   });
 });
-
-

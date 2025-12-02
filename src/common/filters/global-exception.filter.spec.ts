@@ -500,5 +500,3 @@ describe('GlobalExceptionFilter', () => {
     });
   });
 });
-
-

@@ -117,5 +117,3 @@ export class UpdateUserSettingsDto {
   @Type(() => PreferencesSettingsDto)
   preferences?: PreferencesSettingsDto;
 }
-
-

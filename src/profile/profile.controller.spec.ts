@@ -346,5 +346,3 @@ describe('ProfileController', () => {
     });
   });
 });
-
-

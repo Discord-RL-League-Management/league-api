@@ -22,11 +22,7 @@ import { TrackerService } from '../services/tracker.service';
 import { TrackerRefreshSchedulerService } from '../services/tracker-refresh-scheduler.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BatchRefreshDto } from '../dto/batch-refresh.dto';
-import {
-  TrackerScrapingStatus,
-  Prisma,
-  GamePlatform,
-} from '@prisma/client';
+import { TrackerScrapingStatus, Prisma, GamePlatform } from '@prisma/client';
 import { ParseCUIDPipe, ParseEnumPipe } from '../../common/pipes';
 
 @ApiTags('Admin - Trackers')

@@ -14,5 +14,3 @@ export class UpdateLeagueStatusDto {
   @IsNotEmpty()
   status!: LeagueStatus;
 }
-
-
