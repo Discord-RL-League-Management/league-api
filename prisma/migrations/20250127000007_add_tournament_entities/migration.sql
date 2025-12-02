@@ -58,3 +58,4 @@ ALTER TABLE "tournament_participants" ADD CONSTRAINT "tournament_participants_te
 -- AddForeignKey
 ALTER TABLE "tournament_participants" ADD CONSTRAINT "tournament_participants_leagueId_fkey" FOREIGN KEY ("leagueId") REFERENCES "leagues"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
+

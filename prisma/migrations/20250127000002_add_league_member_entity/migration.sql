@@ -37,3 +37,4 @@ ALTER TABLE "league_members" ADD CONSTRAINT "league_members_playerId_fkey" FOREI
 -- AddForeignKey
 ALTER TABLE "league_members" ADD CONSTRAINT "league_members_leagueId_fkey" FOREIGN KEY ("leagueId") REFERENCES "leagues"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
+

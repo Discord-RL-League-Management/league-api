@@ -24,3 +24,4 @@ export class TournamentService {
     return { tournamentId, playerId, teamId, leagueId };
   }
 }
+
