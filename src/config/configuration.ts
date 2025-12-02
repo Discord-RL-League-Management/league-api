@@ -90,4 +90,11 @@ export default () => ({
       10,
     ),
   },
+  systemAdmin: {
+    userIds: process.env.SYSTEM_ADMIN_USER_IDS
+      ? process.env.SYSTEM_ADMIN_USER_IDS.split(',')
+          .map((id) => id.trim())
+          .filter(Boolean)
+      : [],
+  },
 });

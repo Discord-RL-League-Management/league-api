@@ -4,6 +4,7 @@ import { TrackerService } from '../services/tracker.service';
 import { TrackerRefreshSchedulerService } from '../services/tracker-refresh-scheduler.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { SystemAdminGuard } from '../../common/guards/system-admin.guard';
 import { TrackerScrapingStatus } from '@prisma/client';
 
 const mockTrackerService = {
@@ -51,6 +52,8 @@ describe('TrackerAdminController', () => {
       ],
     })
       .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: jest.fn(() => true) })
+      .overrideGuard(SystemAdminGuard)
       .useValue({ canActivate: jest.fn(() => true) })
       .compile();
 

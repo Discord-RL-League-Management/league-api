@@ -77,4 +77,11 @@ export const configurationSchema = Joi.object({
   TRACKER_BATCH_SIZE: Joi.number().default(100),
   TRACKER_REFRESH_CRON: Joi.string().default('0 2 * * *'),
   TRACKER_MAX_SCRAPING_ATTEMPTS: Joi.number().default(3),
+
+  // System Admin Configuration
+  SYSTEM_ADMIN_USER_IDS: Joi.string()
+    .optional()
+    .allow('')
+    .pattern(/^(\d{17,20})(,\s*\d{17,20})*$/)
+    .description('Comma-separated Discord user IDs (snowflakes)'),
 });
