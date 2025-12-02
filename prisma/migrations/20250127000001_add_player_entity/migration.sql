@@ -35,3 +35,5 @@ ALTER TABLE "players" ADD CONSTRAINT "players_guildId_fkey" FOREIGN KEY ("guildI
 ALTER TABLE "players" ADD CONSTRAINT "players_primaryTrackerId_fkey" FOREIGN KEY ("primaryTrackerId") REFERENCES "trackers"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 
+
+

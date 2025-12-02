@@ -74,3 +74,5 @@ ALTER TABLE "team_members" ADD CONSTRAINT "team_members_playerId_fkey" FOREIGN K
 ALTER TABLE "team_members" ADD CONSTRAINT "team_members_leagueId_fkey" FOREIGN KEY ("leagueId") REFERENCES "leagues"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 
+
+

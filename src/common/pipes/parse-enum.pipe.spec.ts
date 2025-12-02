@@ -73,8 +73,12 @@ describe('ParseEnumPipe', () => {
     });
 
     it('should throw BadRequestException for empty string', () => {
-      expect(() => pipe.transform('', mockMetadata)).toThrow(BadRequestException);
-      expect(() => pipe.transform('', mockMetadata)).toThrow('Invalid enum value: ');
+      expect(() => pipe.transform('', mockMetadata)).toThrow(
+        BadRequestException,
+      );
+      expect(() => pipe.transform('', mockMetadata)).toThrow(
+        'Invalid enum value: ',
+      );
     });
 
     it('should work with different enum types', () => {
@@ -84,7 +88,9 @@ describe('ParseEnumPipe', () => {
     });
 
     it('should handle case-sensitive enum values', () => {
-      expect(() => pipe.transform('value1', mockMetadata)).toThrow(BadRequestException);
+      expect(() => pipe.transform('value1', mockMetadata)).toThrow(
+        BadRequestException,
+      );
       expect(() => pipe.transform('VALUE1', mockMetadata)).not.toThrow();
     });
   });

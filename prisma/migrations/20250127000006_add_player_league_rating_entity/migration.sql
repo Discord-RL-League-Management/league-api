@@ -32,3 +32,5 @@ ALTER TABLE "player_league_ratings" ADD CONSTRAINT "player_league_ratings_player
 ALTER TABLE "player_league_ratings" ADD CONSTRAINT "player_league_ratings_leagueId_fkey" FOREIGN KEY ("leagueId") REFERENCES "leagues"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 
+
+

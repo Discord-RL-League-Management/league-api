@@ -23,7 +23,7 @@ describe('AuditLogService', () => {
       'user-agent': 'Mozilla/5.0',
       'x-forwarded-for': '192.168.1.1',
     },
-  } as Request;
+  } as unknown as Request;
 
   beforeEach(async () => {
     const mockActivityLogService = {
@@ -160,7 +160,7 @@ describe('AuditLogService', () => {
         userId: '123456789012345678',
         guildId: '987654321098765432',
         action: AuditAction.ADMIN_CHECK,
-        resource: undefined,
+        resource: 'test-resource',
         result: 'allowed' as const,
       };
 
@@ -364,7 +364,7 @@ describe('AuditLogService', () => {
         userId: '123456789012345678',
         guildId: '987654321098765432',
         action: AuditAction.MEMBER_PERMISSION_CHECK,
-        resource: undefined,
+        resource: 'test-resource',
         result: 'denied' as const,
       };
 
@@ -517,6 +517,10 @@ describe('AuditLogService', () => {
           entityId: 'resource-1',
           eventType: 'ADMIN_ACTION',
           action: 'admin.check',
+          userId: '123456789012345678',
+          guildId: '987654321098765432',
+          changes: {},
+          metadata: {},
           timestamp: new Date(),
         },
       ];
@@ -588,4 +592,3 @@ describe('AuditLogService', () => {
     });
   });
 });
-

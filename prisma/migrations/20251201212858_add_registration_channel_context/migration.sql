@@ -5,3 +5,5 @@
 ALTER TABLE "trackers" ADD COLUMN IF NOT EXISTS "registrationChannelId" TEXT;
 ALTER TABLE "trackers" ADD COLUMN IF NOT EXISTS "registrationInteractionToken" TEXT;
 
+
+

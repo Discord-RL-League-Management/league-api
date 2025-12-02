@@ -604,6 +604,7 @@ describe('OrganizationService', () => {
             .mockResolvedValueOnce(mockUpdatedTeams[0])
             .mockResolvedValueOnce(mockUpdatedTeams[1])
             .mockResolvedValueOnce(mockUpdatedTeams[2]),
+          count: jest.fn().mockResolvedValue(0),
         },
       };
 
@@ -613,8 +614,6 @@ describe('OrganizationService', () => {
       mockLeagueSettingsService.getSettings.mockResolvedValue({
         membership: { maxTeamsPerOrganization: null }, // No limit
       });
-      // Mock count to return 0 for no limit case
-      mockTx.team.count = jest.fn().mockResolvedValue(0);
       // Mock transaction to execute callback with mock transaction client
       mockPrismaService.$transaction.mockImplementation(async (callback) => {
         return callback(mockTx);
