@@ -22,7 +22,7 @@ import { TrackerService } from '../services/tracker.service';
 import { TrackerRefreshSchedulerService } from '../services/tracker-refresh-scheduler.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BatchRefreshDto } from '../dto/batch-refresh.dto';
-import { TrackerScrapingStatus } from '@prisma/client';
+import { TrackerScrapingStatus, Prisma } from '@prisma/client';
 import { ParseCUIDPipe, ParseEnumPipe } from '../../common/pipes';
 
 @ApiTags('Admin - Trackers')
@@ -63,17 +63,11 @@ export class TrackerAdminController {
     const skip = page && limit ? (page - 1) * limit : undefined;
     const take = limit || 50;
 
-    const where: any = {
+    const where: Prisma.TrackerWhereInput = {
       isDeleted: false,
+      ...(status && { scrapingStatus: status }),
+      ...(platform && { platform }),
     };
-
-    if (status) {
-      where.scrapingStatus = status;
-    }
-
-    if (platform) {
-      where.platform = platform;
-    }
 
     const [trackers, total] = await Promise.all([
       this.prisma.tracker.findMany({
@@ -171,13 +165,10 @@ export class TrackerAdminController {
     const skip = page && limit ? (page - 1) * limit : undefined;
     const take = limit || 50;
 
-    const where: any = {};
-    if (trackerId) {
-      where.trackerId = trackerId;
-    }
-    if (status) {
-      where.status = status;
-    }
+    const where: Prisma.TrackerScrapingLogWhereInput = {
+      ...(trackerId && { trackerId }),
+      ...(status && { status }),
+    };
 
     const [logs, total] = await Promise.all([
       this.prisma.trackerScrapingLog.findMany({

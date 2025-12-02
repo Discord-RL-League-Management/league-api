@@ -6,8 +6,10 @@ import {
   Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Request } from 'express';
 import { AuditLogService } from '../../audit/services/audit-log.service';
 import { AuditAction } from '../../audit/interfaces/audit-event.interface';
+import type { AuthenticatedUser } from '../../common/interfaces/user.interface';
 
 /**
  * SystemAdminGuard - Single Responsibility: System-wide admin permission checking
@@ -34,7 +36,9 @@ export class SystemAdminGuard implements CanActivate {
    * Separation of Concerns: Handles only permission logic, no HTTP concerns
    */
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
+    const request = context
+      .switchToHttp()
+      .getRequest<Request & { user: AuthenticatedUser }>();
     const user = request.user;
 
     if (!user) {
@@ -59,9 +63,7 @@ export class SystemAdminGuard implements CanActivate {
           result: isSystemAdmin ? 'allowed' : 'denied',
           metadata: {
             method: request.method,
-            reason: isSystemAdmin
-              ? 'system_admin_user_id'
-              : 'not_system_admin',
+            reason: isSystemAdmin ? 'system_admin_user_id' : 'not_system_admin',
             guardType: 'SystemAdminGuard',
           },
         },
@@ -86,13 +88,8 @@ export class SystemAdminGuard implements CanActivate {
       if (error instanceof ForbiddenException) {
         throw error;
       }
-      this.logger.error(
-        `SystemAdminGuard error for user ${user.id}:`,
-        error,
-      );
+      this.logger.error(`SystemAdminGuard error for user ${user.id}:`, error);
       throw new ForbiddenException('Error checking system admin permissions');
     }
   }
 }
-
-
