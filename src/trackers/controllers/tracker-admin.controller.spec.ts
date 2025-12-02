@@ -31,7 +31,7 @@ describe('TrackerAdminController', () => {
   let controller: TrackerAdminController;
   let trackerService: jest.Mocked<TrackerService>;
   let refreshScheduler: jest.Mocked<TrackerRefreshSchedulerService>;
-  let prisma: jest.Mocked<PrismaService>;
+  let prisma: typeof mockPrismaService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -64,9 +64,7 @@ describe('TrackerAdminController', () => {
     refreshScheduler = module.get<TrackerRefreshSchedulerService>(
       TrackerRefreshSchedulerService,
     ) as jest.Mocked<TrackerRefreshSchedulerService>;
-    prisma = module.get<PrismaService>(
-      PrismaService,
-    ) as jest.Mocked<PrismaService>;
+    prisma = module.get(PrismaService) as typeof mockPrismaService;
   });
 
   afterEach(() => {

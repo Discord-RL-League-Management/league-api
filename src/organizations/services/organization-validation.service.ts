@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { OrganizationRepository } from '../repositories/organization.repository';
 import { LeagueRepository } from '../../leagues/repositories/league.repository';
 import { PlayerService } from '../../players/services/player.service';
@@ -27,6 +27,7 @@ export class OrganizationValidationService {
     private organizationRepository: OrganizationRepository,
     private leagueRepository: LeagueRepository,
     private playerService: PlayerService,
+    @Inject(forwardRef(() => LeagueSettingsService))
     private leagueSettingsService: LeagueSettingsService,
   ) {}
 

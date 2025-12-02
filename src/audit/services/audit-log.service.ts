@@ -30,7 +30,7 @@ export class AuditLogService {
       await this.prisma.$transaction(async (tx) => {
         await this.activityLogService.logActivity(
           tx,
-          event.resource || 'permission',
+          'permission',
           event.resource || 'unknown',
           'PERMISSION_CHECK',
           event.action,
@@ -39,6 +39,7 @@ export class AuditLogService {
           { result: event.result },
           {
             ...event.metadata,
+            resource: event.resource,
             ipAddress: this.contextService.getIpAddress(request),
             userAgent: this.contextService.getUserAgent(request),
             requestId: this.contextService.getRequestId(request),
@@ -60,7 +61,7 @@ export class AuditLogService {
       await this.prisma.$transaction(async (tx) => {
         await this.activityLogService.logActivity(
           tx,
-          event.resource || 'admin',
+          'admin',
           event.resource || 'unknown',
           'ADMIN_ACTION',
           event.action,
@@ -69,6 +70,7 @@ export class AuditLogService {
           { result: event.result },
           {
             ...event.metadata,
+            resource: event.resource,
             adminAction: true,
             ipAddress: this.contextService.getIpAddress(request),
             userAgent: this.contextService.getUserAgent(request),
