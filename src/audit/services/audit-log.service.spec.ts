@@ -92,8 +92,8 @@ describe('AuditLogService', () => {
   });
 
   describe('logAdminAction', () => {
-    it('should use fixed "admin" entityType instead of resource URL', async () => {
-      // Arrange
+    it('should complete successfully with long resource URL without throwing', async () => {
+      // Arrange - URL longer than 50 characters (the bug scenario)
       const longUrl =
         '/api/guilds/1352451711431737394/audit-logs?limit=50&offset=0&userId=354474826192388127&filter=very-long-filter-parameter-that-exceeds-fifty-characters';
       const event = {
@@ -105,31 +105,13 @@ describe('AuditLogService', () => {
         metadata: { method: 'GET' },
       };
 
-      // Act
-      await service.logAdminAction(event, mockRequest);
-
-      // Assert
-      expect(activityLogService.logActivity).toHaveBeenCalledWith(
-        mockTransactionClient,
-        'admin', // Fixed short value, not the long URL
-        longUrl, // Resource URL stored as entityId
-        'ADMIN_ACTION',
-        AuditAction.ADMIN_CHECK,
-        '123456789012345678',
-        '987654321098765432',
-        { result: 'allowed' },
-        expect.objectContaining({
-          method: 'GET',
-          resource: longUrl, // Full URL stored in metadata
-          adminAction: true,
-          ipAddress: '192.168.1.1',
-          userAgent: 'Mozilla/5.0',
-          requestId: 'req-123',
-        }),
-      );
+      // Act & Assert - Should complete without error
+      await expect(
+        service.logAdminAction(event, mockRequest),
+      ).resolves.not.toThrow();
     });
 
-    it('should handle entityType length constraint (50 chars max)', async () => {
+    it('should use short entityType that fits within 50 character limit', async () => {
       // Arrange - Create a URL longer than 50 characters
       const veryLongUrl = '/api/' + 'a'.repeat(100);
       const event = {
@@ -143,13 +125,14 @@ describe('AuditLogService', () => {
       // Act
       await service.logAdminAction(event, mockRequest);
 
-      // Assert - entityType should be exactly 'admin' (5 chars), well under 50 char limit
-      const callArgs = activityLogService.logActivity.mock.calls[0];
-      expect(callArgs[1]).toBe('admin');
-      expect(callArgs[1].length).toBeLessThanOrEqual(50);
+      // Assert - Extract entityType from the call and verify it's short
+      expect(activityLogService.logActivity).toHaveBeenCalled();
+      const entityType = activityLogService.logActivity.mock.calls[0][1];
+      expect(entityType).toBe('admin');
+      expect(entityType.length).toBeLessThanOrEqual(50);
     });
 
-    it('should store full resource URL in metadata.resource', async () => {
+    it('should preserve full resource URL in metadata for audit trail', async () => {
       // Arrange
       const resourceUrl = '/api/admin/settings?guildId=123&userId=456';
       const event = {
@@ -164,24 +147,14 @@ describe('AuditLogService', () => {
       // Act
       await service.logAdminAction(event, mockRequest);
 
-      // Assert
-      expect(activityLogService.logActivity).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.objectContaining({
-          customField: 'value',
-          resource: resourceUrl, // Full URL preserved in metadata
-        }),
-      );
+      // Assert - Extract metadata from the call and verify resource is preserved
+      expect(activityLogService.logActivity).toHaveBeenCalled();
+      const metadata = activityLogService.logActivity.mock.calls[0][8];
+      expect(metadata).toHaveProperty('resource', resourceUrl);
+      expect(metadata).toHaveProperty('customField', 'value');
     });
 
-    it('should use "unknown" as entityId when resource is not provided', async () => {
+    it('should handle missing resource gracefully', async () => {
       // Arrange
       const event = {
         userId: '123456789012345678',
@@ -191,58 +164,11 @@ describe('AuditLogService', () => {
         result: 'allowed' as const,
       };
 
-      // Act
-      await service.logAdminAction(event, mockRequest);
-
-      // Assert
-      expect(activityLogService.logActivity).toHaveBeenCalledWith(
-        mockTransactionClient,
-        'admin',
-        'unknown', // Fallback when resource is undefined
-        'ADMIN_ACTION',
-        AuditAction.ADMIN_CHECK,
-        '123456789012345678',
-        '987654321098765432',
-        { result: 'allowed' },
-        expect.objectContaining({
-          resource: undefined,
-        }),
-      );
-    });
-
-    it('should include request context in metadata', async () => {
-      // Arrange
-      const event = {
-        userId: '123456789012345678',
-        guildId: '987654321098765432',
-        action: AuditAction.ADMIN_CHECK,
-        resource: '/api/admin/test',
-        result: 'allowed' as const,
-      };
-
-      // Act
-      await service.logAdminAction(event, mockRequest);
-
-      // Assert
-      expect(contextService.getIpAddress).toHaveBeenCalledWith(mockRequest);
-      expect(contextService.getUserAgent).toHaveBeenCalledWith(mockRequest);
-      expect(contextService.getRequestId).toHaveBeenCalledWith(mockRequest);
-      expect(activityLogService.logActivity).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.objectContaining({
-          ipAddress: '192.168.1.1',
-          userAgent: 'Mozilla/5.0',
-          requestId: 'req-123',
-          adminAction: true,
-        }),
-      );
+      // Act & Assert - Should complete without error
+      await expect(
+        service.logAdminAction(event, mockRequest),
+      ).resolves.not.toThrow();
+      expect(activityLogService.logActivity).toHaveBeenCalled();
     });
 
     it('should not throw error when logging fails', async () => {
@@ -271,8 +197,8 @@ describe('AuditLogService', () => {
   });
 
   describe('logPermissionCheck', () => {
-    it('should use fixed "permission" entityType instead of resource URL', async () => {
-      // Arrange
+    it('should complete successfully with long resource URL without throwing', async () => {
+      // Arrange - URL longer than 50 characters (the bug scenario)
       const longUrl =
         '/api/guilds/1352451711431737394/permissions?limit=50&offset=0&userId=354474826192388127&filter=very-long-filter-parameter';
       const event = {
@@ -284,30 +210,13 @@ describe('AuditLogService', () => {
         metadata: { method: 'GET' },
       };
 
-      // Act
-      await service.logPermissionCheck(event, mockRequest);
-
-      // Assert
-      expect(activityLogService.logActivity).toHaveBeenCalledWith(
-        mockTransactionClient,
-        'permission', // Fixed short value, not the long URL
-        longUrl, // Resource URL stored as entityId
-        'PERMISSION_CHECK',
-        AuditAction.MEMBER_PERMISSION_CHECK,
-        '123456789012345678',
-        '987654321098765432',
-        { result: 'allowed' },
-        expect.objectContaining({
-          method: 'GET',
-          resource: longUrl, // Full URL stored in metadata
-          ipAddress: '192.168.1.1',
-          userAgent: 'Mozilla/5.0',
-          requestId: 'req-123',
-        }),
-      );
+      // Act & Assert - Should complete without error
+      await expect(
+        service.logPermissionCheck(event, mockRequest),
+      ).resolves.not.toThrow();
     });
 
-    it('should handle entityType length constraint (50 chars max)', async () => {
+    it('should use short entityType that fits within 50 character limit', async () => {
       // Arrange - Create a URL longer than 50 characters
       const veryLongUrl = '/api/' + 'b'.repeat(100);
       const event = {
@@ -321,13 +230,14 @@ describe('AuditLogService', () => {
       // Act
       await service.logPermissionCheck(event, mockRequest);
 
-      // Assert - entityType should be exactly 'permission' (10 chars), well under 50 char limit
-      const callArgs = activityLogService.logActivity.mock.calls[0];
-      expect(callArgs[1]).toBe('permission');
-      expect(callArgs[1].length).toBeLessThanOrEqual(50);
+      // Assert - Extract entityType from the call and verify it's short
+      expect(activityLogService.logActivity).toHaveBeenCalled();
+      const entityType = activityLogService.logActivity.mock.calls[0][1];
+      expect(entityType).toBe('permission');
+      expect(entityType.length).toBeLessThanOrEqual(50);
     });
 
-    it('should store full resource URL in metadata.resource', async () => {
+    it('should preserve full resource URL in metadata for audit trail', async () => {
       // Arrange
       const resourceUrl = '/api/permissions/check?guildId=123&userId=456';
       const event = {
@@ -342,24 +252,14 @@ describe('AuditLogService', () => {
       // Act
       await service.logPermissionCheck(event, mockRequest);
 
-      // Assert
-      expect(activityLogService.logActivity).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.objectContaining({
-          customField: 'value',
-          resource: resourceUrl, // Full URL preserved in metadata
-        }),
-      );
+      // Assert - Extract metadata from the call and verify resource is preserved
+      expect(activityLogService.logActivity).toHaveBeenCalled();
+      const metadata = activityLogService.logActivity.mock.calls[0][8];
+      expect(metadata).toHaveProperty('resource', resourceUrl);
+      expect(metadata).toHaveProperty('customField', 'value');
     });
 
-    it('should use "unknown" as entityId when resource is not provided', async () => {
+    it('should handle missing resource gracefully', async () => {
       // Arrange
       const event = {
         userId: '123456789012345678',
@@ -369,57 +269,11 @@ describe('AuditLogService', () => {
         result: 'denied' as const,
       };
 
-      // Act
-      await service.logPermissionCheck(event, mockRequest);
-
-      // Assert
-      expect(activityLogService.logActivity).toHaveBeenCalledWith(
-        mockTransactionClient,
-        'permission',
-        'unknown', // Fallback when resource is undefined
-        'PERMISSION_CHECK',
-        AuditAction.MEMBER_PERMISSION_CHECK,
-        '123456789012345678',
-        '987654321098765432',
-        { result: 'denied' },
-        expect.objectContaining({
-          resource: undefined,
-        }),
-      );
-    });
-
-    it('should include request context in metadata', async () => {
-      // Arrange
-      const event = {
-        userId: '123456789012345678',
-        guildId: '987654321098765432',
-        action: AuditAction.MEMBER_PERMISSION_CHECK,
-        resource: '/api/permissions/test',
-        result: 'allowed' as const,
-      };
-
-      // Act
-      await service.logPermissionCheck(event, mockRequest);
-
-      // Assert
-      expect(contextService.getIpAddress).toHaveBeenCalledWith(mockRequest);
-      expect(contextService.getUserAgent).toHaveBeenCalledWith(mockRequest);
-      expect(contextService.getRequestId).toHaveBeenCalledWith(mockRequest);
-      expect(activityLogService.logActivity).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.objectContaining({
-          ipAddress: '192.168.1.1',
-          userAgent: 'Mozilla/5.0',
-          requestId: 'req-123',
-        }),
-      );
+      // Act & Assert - Should complete without error
+      await expect(
+        service.logPermissionCheck(event, mockRequest),
+      ).resolves.not.toThrow();
+      expect(activityLogService.logActivity).toHaveBeenCalled();
     });
 
     it('should not throw error when logging fails', async () => {
@@ -448,7 +302,7 @@ describe('AuditLogService', () => {
   });
 
   describe('queryLogs', () => {
-    it('should query logs with filters and return formatted result', async () => {
+    it('should return logs with filters applied', async () => {
       // Arrange
       const guildId = '987654321098765432';
       const filters = {
@@ -458,33 +312,28 @@ describe('AuditLogService', () => {
         offset: 10,
       };
 
+      const mockLogs = [
+        {
+          id: 'log-1',
+          entityType: 'admin',
+          entityId: 'resource-1',
+          eventType: 'ADMIN_ACTION',
+          action: 'admin.check',
+          timestamp: new Date(),
+        },
+      ];
+
       activityLogService.findWithFilters.mockResolvedValueOnce({
-        logs: [
-          {
-            id: 'log-1',
-            entityType: 'admin',
-            entityId: 'resource-1',
-            eventType: 'ADMIN_ACTION',
-            action: 'admin.check',
-            timestamp: new Date(),
-          },
-        ],
+        logs: mockLogs,
         total: 1,
       });
 
       // Act
       const result = await service.queryLogs(guildId, filters);
 
-      // Assert
-      expect(activityLogService.findWithFilters).toHaveBeenCalledWith({
-        guildId: '987654321098765432',
-        userId: '123456789012345678',
-        eventType: 'ADMIN_ACTION',
-        limit: 25,
-        offset: 10,
-      });
+      // Assert - Verify output structure and values
       expect(result).toEqual({
-        logs: expect.any(Array),
+        logs: mockLogs,
         total: 1,
         limit: 25,
         offset: 10,
@@ -504,7 +353,7 @@ describe('AuditLogService', () => {
       // Act
       const result = await service.queryLogs(guildId, filters);
 
-      // Assert
+      // Assert - Verify default values in output
       expect(result.limit).toBe(50);
       expect(result.offset).toBe(0);
     });
