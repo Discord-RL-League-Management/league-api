@@ -24,7 +24,6 @@ export class InternalTrackerController {
       body.urls,
       body.userData,
       body.channelId,
-      body.guildId,
       body.interactionToken,
     );
   }
@@ -38,7 +37,6 @@ export class InternalTrackerController {
       body.url,
       body.userData,
       body.channelId,
-      body.guildId,
       body.interactionToken,
     );
   }

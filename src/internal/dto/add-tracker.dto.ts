@@ -60,14 +60,6 @@ export class AddTrackerDto {
   channelId?: string;
 
   @ApiPropertyOptional({
-    description: 'Discord guild ID where add-tracker command was called',
-    example: '987654321098765432',
-  })
-  @IsOptional()
-  @IsString()
-  guildId?: string;
-
-  @ApiPropertyOptional({
     description: 'Discord interaction token for ephemeral follow-up messages',
     example: 'interaction_token_here',
   })
