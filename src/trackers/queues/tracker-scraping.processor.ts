@@ -13,6 +13,7 @@ import { TrackerSeasonService } from '../services/tracker-season.service';
 import { TrackerService } from '../services/tracker.service';
 import { TrackerNotificationService } from '../services/tracker-notification.service';
 import { ActivityLogService } from '../../infrastructure/activity-log/services/activity-log.service';
+import { MmrCalculationIntegrationService } from '../../mmr-calculation/services/mmr-calculation-integration.service';
 
 @Processor(TRACKER_SCRAPING_QUEUE)
 @Injectable()
@@ -26,6 +27,7 @@ export class TrackerScrapingProcessor extends WorkerHost {
     private readonly trackerService: TrackerService,
     private readonly notificationService: TrackerNotificationService,
     private readonly activityLogService: ActivityLogService,
+    private readonly mmrCalculationIntegration: MmrCalculationIntegrationService,
   ) {
     super();
   }
@@ -254,6 +256,20 @@ export class TrackerScrapingProcessor extends WorkerHost {
           this.logger.warn(
             `Failed to send success notification: ${errorMessage}`,
           );
+        });
+
+      // Calculate MMR for user across all guilds (non-blocking)
+      // This happens after scraping completes successfully
+      // tracker is guaranteed to be non-null here due to check above
+      const mmrUserId = tracker.userId;
+      this.mmrCalculationIntegration
+        .calculateMmrForUser(mmrUserId, trackerId)
+        .catch((err) => {
+          const errorMessage = err instanceof Error ? err.message : String(err);
+          this.logger.warn(
+            `Failed to calculate MMR for user ${mmrUserId}: ${errorMessage}`,
+          );
+          // Don't fail the scraping job if MMR calculation fails
         });
 
       return {
