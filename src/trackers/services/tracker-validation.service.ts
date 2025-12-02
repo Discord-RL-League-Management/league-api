@@ -28,11 +28,13 @@ export class TrackerValidationService {
    * @param url - TRN profile URL
    * @param userId - User ID to check for uniqueness
    * @param excludeTrackerId - Optional tracker ID to exclude from URL uniqueness check (for replacement)
+   * @param skipUniquenessCheck - Skip uniqueness check if already validated in batch
    */
   async validateTrackerUrl(
     url: string,
     userId: string,
     excludeTrackerId?: string,
+    skipUniquenessCheck?: boolean,
   ): Promise<ParsedTrackerUrl> {
     // 1. Basic URL format validation
     if (!this.isValidUrlFormat(url)) {
@@ -65,11 +67,14 @@ export class TrackerValidationService {
     }
 
     // 6. Check URL uniqueness in database (excluding current tracker if replacing)
-    const isUnique = await this.checkUrlUniqueness(url, excludeTrackerId);
-    if (!isUnique) {
-      throw new BadRequestException(
-        'This tracker URL has already been registered with another user.',
-      );
+    // Skip if uniqueness was already validated in batch operation
+    if (!skipUniquenessCheck) {
+      const isUnique = await this.checkUrlUniqueness(url, excludeTrackerId);
+      if (!isUnique) {
+        throw new BadRequestException(
+          'This tracker URL has already been registered with another user.',
+        );
+      }
     }
 
     return {
@@ -180,6 +185,60 @@ export class TrackerValidationService {
     }
 
     return false;
+  }
+
+  /**
+   * Batch check URL uniqueness for multiple URLs
+   * Optimizes N+1 query problem by checking all URLs in a single database query
+   * @param urls - Array of URLs to check
+   * @param excludeTrackerIds - Optional array of tracker IDs to exclude from check
+   * @returns Map of URL to boolean indicating uniqueness
+   */
+  async batchCheckUrlUniqueness(
+    urls: string[],
+    excludeTrackerIds?: string[],
+  ): Promise<Map<string, boolean>> {
+    if (urls.length === 0) {
+      return new Map();
+    }
+
+    // Single database query to check all URLs at once
+    const existingTrackers = await this.prisma.tracker.findMany({
+      where: {
+        url: { in: urls },
+      },
+      select: {
+        url: true,
+        id: true,
+      },
+    });
+
+    // Create a map of existing URLs to their tracker IDs
+    const existingUrlMap = new Map<string, string>();
+    for (const tracker of existingTrackers) {
+      existingUrlMap.set(tracker.url, tracker.id);
+    }
+
+    // Create exclude set for fast lookup
+    const excludeSet = new Set(excludeTrackerIds || []);
+
+    // Build result map
+    const resultMap = new Map<string, boolean>();
+    for (const url of urls) {
+      const existingTrackerId = existingUrlMap.get(url);
+      if (!existingTrackerId) {
+        // URL doesn't exist, it's unique
+        resultMap.set(url, true);
+      } else if (excludeSet.has(existingTrackerId)) {
+        // URL exists but is excluded (for replacement), consider it unique
+        resultMap.set(url, true);
+      } else {
+        // URL exists and is not excluded, it's not unique
+        resultMap.set(url, false);
+      }
+    }
+
+    return resultMap;
   }
 
   /**

@@ -149,21 +149,38 @@ export class TrackerScrapingProcessor extends WorkerHost {
         };
       }
 
-      // Store season data
+      // Store season data using bulk upsert to avoid N+1 query problem
       let seasonsScraped = 0;
       let seasonsFailed = 0;
 
-      for (const seasonData of seasons) {
-        try {
-          await this.seasonService.createOrUpdateSeason(trackerId, seasonData);
-          seasonsScraped++;
-        } catch (error) {
-          const errorMessage =
-            error instanceof Error ? error.message : String(error);
-          this.logger.error(
-            `Failed to store season ${seasonData.seasonNumber}: ${errorMessage}`,
-          );
-          seasonsFailed++;
+      try {
+        // Use bulk upsert for better performance (single transaction with parallel upserts)
+        await this.seasonService.bulkUpsertSeasons(trackerId, seasons);
+        seasonsScraped = seasons.length;
+        seasonsFailed = 0;
+      } catch (error) {
+        // Fallback to individual upserts if bulk operation fails
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        this.logger.warn(
+          `Bulk season upsert failed, falling back to individual upserts: ${errorMessage}`,
+        );
+
+        // Fallback: process seasons individually
+        for (const seasonData of seasons) {
+          try {
+            await this.seasonService.createOrUpdateSeason(trackerId, seasonData);
+            seasonsScraped++;
+          } catch (individualError) {
+            const individualErrorMessage =
+              individualError instanceof Error
+                ? individualError.message
+                : String(individualError);
+            this.logger.error(
+              `Failed to store season ${seasonData.seasonNumber}: ${individualErrorMessage}`,
+            );
+            seasonsFailed++;
+          }
         }
       }
 
@@ -278,17 +295,18 @@ export class TrackerScrapingProcessor extends WorkerHost {
 
       // Log failure to audit log
       if (tracker) {
-        // Get scraping attempts count before transaction (we just incremented it)
-        const trackerWithAttempts = await this.prisma.tracker.findUnique({
-          where: { id: trackerId },
-          select: { scrapingAttempts: true },
-        });
-        const scrapingAttempts = trackerWithAttempts?.scrapingAttempts || 0;
         const trackerUserId = tracker.userId;
         const trackerUrl = tracker.url;
 
         await this.prisma
           .$transaction(async (tx) => {
+            // Fetch scraping attempts count inside transaction to ensure consistency
+            const trackerWithAttempts = await tx.tracker.findUnique({
+              where: { id: trackerId },
+              select: { scrapingAttempts: true },
+            });
+            const scrapingAttempts = trackerWithAttempts?.scrapingAttempts || 0;
+
             await this.activityLogService.logActivity(
               tx,
               'tracker',
