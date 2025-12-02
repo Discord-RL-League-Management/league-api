@@ -22,6 +22,7 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
 import { httpModuleOptions } from '../common/config/http.config';
 import { cacheModuleOptions } from '../common/config/cache.config';
 import { PrismaModule } from '../prisma/prisma.module';
+import { MmrCalculationModule } from '../mmr-calculation/mmr-calculation.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     PermissionCheckModule,
     PrismaModule,
     InfrastructureModule,
+    MmrCalculationModule,
     HttpModule.register(httpModuleOptions),
     CacheModule.register(cacheModuleOptions),
   ],

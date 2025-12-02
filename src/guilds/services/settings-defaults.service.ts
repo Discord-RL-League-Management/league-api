@@ -38,6 +38,21 @@ export class SettingsDefaultsService {
         league_manager: [],
         tournament_manager: [],
       },
+      mmrCalculation: {
+        algorithm: 'WEIGHTED_AVERAGE',
+        weights: {
+          ones: 0.1,
+          twos: 0.3,
+          threes: 0.5,
+          fours: 0.1,
+        },
+        minGamesPlayed: {
+          ones: 50,
+          twos: 50,
+          threes: 50,
+          fours: 50,
+        },
+      },
     };
   }
 

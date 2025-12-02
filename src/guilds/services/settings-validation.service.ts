@@ -1,11 +1,17 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { DiscordBotService } from '../../discord/discord-bot.service';
 import { GuildSettingsDto } from '../dto/guild-settings.dto';
 import { MAX_CHANNEL_NAME_LENGTH } from '../constants/settings.constants';
+import { FormulaValidationService } from '../../mmr-calculation/services/formula-validation.service';
 
 @Injectable()
 export class SettingsValidationService {
-  constructor(private discordValidation: DiscordBotService) {}
+  private readonly logger = new Logger(SettingsValidationService.name);
+
+  constructor(
+    private discordValidation: DiscordBotService,
+    private formulaValidation: FormulaValidationService,
+  ) {}
 
   /**
    * Validate settings structure and values with Discord API verification
@@ -24,6 +30,10 @@ export class SettingsValidationService {
         settings.register_command_channels,
         guildId,
       );
+    }
+
+    if (settings.mmrCalculation) {
+      await this.validateMmrCalculation(settings.mmrCalculation);
     }
   }
 
@@ -128,6 +138,62 @@ export class SettingsValidationService {
             'Each bot_command_channel must be an object with id and name',
           );
         }
+      }
+    }
+  }
+
+  /**
+   * Validate MMR calculation configuration
+   * Single Responsibility: MMR config validation
+   */
+  private async validateMmrCalculation(config: any): Promise<void> {
+    if (!config.algorithm) {
+      throw new BadRequestException('MMR calculation algorithm is required');
+    }
+
+    const validAlgorithms = ['WEIGHTED_AVERAGE', 'PEAK_MMR', 'CUSTOM'];
+    if (!validAlgorithms.includes(config.algorithm)) {
+      throw new BadRequestException(
+        `Invalid algorithm. Must be one of: ${validAlgorithms.join(', ')}`,
+      );
+    }
+
+    if (config.algorithm === 'CUSTOM') {
+      if (!config.customFormula) {
+        throw new BadRequestException(
+          'Custom formula is required for CUSTOM algorithm',
+        );
+      }
+
+      // Validate formula syntax
+      const validation = this.formulaValidation.validateFormula(
+        config.customFormula,
+      );
+      if (!validation.valid) {
+        throw new BadRequestException(`Invalid formula: ${validation.error}`);
+      }
+    }
+
+    // Validate weights if using WEIGHTED_AVERAGE
+    if (config.algorithm === 'WEIGHTED_AVERAGE' && config.weights) {
+      const weights = config.weights;
+      const totalWeight =
+        (weights.ones || 0) +
+        (weights.twos || 0) +
+        (weights.threes || 0) +
+        (weights.fours || 0);
+
+      if (totalWeight === 0) {
+        throw new BadRequestException(
+          'At least one weight must be greater than 0',
+        );
+      }
+
+      // Warn if weights don't sum to 1 (but don't fail)
+      if (Math.abs(totalWeight - 1.0) > 0.01) {
+        this.logger.warn(
+          `Weights sum to ${totalWeight}, not 1.0. This may produce unexpected results.`,
+        );
       }
     }
   }
