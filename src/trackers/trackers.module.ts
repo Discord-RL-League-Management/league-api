@@ -22,11 +22,13 @@ import { TrackerScraperService } from './services/tracker-scraper.service';
 import { TrackerSeasonService } from './services/tracker-season.service';
 import { TrackerRefreshSchedulerService } from './services/tracker-refresh-scheduler.service';
 import { TrackerBatchRefreshService } from './services/tracker-batch-refresh.service';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
   imports: [
     PrismaModule,
     forwardRef(() => InfrastructureModule),
+    forwardRef(() => AuditModule),
     HttpModule,
     BullModule.forRootAsync({
       imports: [ConfigModule],

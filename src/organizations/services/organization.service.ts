@@ -4,6 +4,8 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { OrganizationRepository } from '../repositories/organization.repository';
 import { OrganizationMemberService } from './organization-member.service';
@@ -38,6 +40,7 @@ export class OrganizationService {
     private validationService: OrganizationValidationService,
     private playerService: PlayerService,
     private leagueRepository: LeagueRepository,
+    @Inject(forwardRef(() => LeagueSettingsService))
     private leagueSettingsService: LeagueSettingsService,
     private teamRepository: TeamRepository,
     private prisma: PrismaService,

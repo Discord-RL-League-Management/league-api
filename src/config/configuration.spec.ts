@@ -20,9 +20,6 @@ describe('Configuration', () => {
     delete process.env.FRONTEND_URL;
     delete process.env.THROTTLE_TTL;
     delete process.env.THROTTLE_LIMIT;
-    delete process.env.LOG_LEVEL;
-    delete process.env.LOG_FILE_ENABLED;
-    delete process.env.LOG_FILE_PATH;
   });
 
   describe('default values', () => {
@@ -34,9 +31,6 @@ describe('Configuration', () => {
       expect(config.auth.jwtExpiresIn).toBe('7d');
       expect(config.throttler.ttl).toBe(60000);
       expect(config.throttler.limit).toBe(100);
-      expect(config.logging.level).toBe('info');
-      expect(config.logging.fileEnabled).toBe(false);
-      expect(config.logging.filePath).toBe('logs');
     });
   });
 
@@ -82,13 +76,6 @@ describe('Configuration', () => {
       expect(config.throttler.limit).toBe(50);
     });
 
-    it('should parse boolean environment variables correctly', () => {
-      process.env.LOG_FILE_ENABLED = 'false';
-
-      config = configuration();
-
-      expect(config.logging.fileEnabled).toBe(false);
-    });
   });
 
   describe('configuration structure', () => {
@@ -103,7 +90,6 @@ describe('Configuration', () => {
       expect(config).toHaveProperty('discord');
       expect(config).toHaveProperty('frontend');
       expect(config).toHaveProperty('throttler');
-      expect(config).toHaveProperty('logging');
     });
 
     it('should have correct app configuration structure', () => {
@@ -127,12 +113,6 @@ describe('Configuration', () => {
     it('should have correct throttler configuration structure', () => {
       expect(config.throttler).toHaveProperty('ttl');
       expect(config.throttler).toHaveProperty('limit');
-    });
-
-    it('should have correct logging configuration structure', () => {
-      expect(config.logging).toHaveProperty('level');
-      expect(config.logging).toHaveProperty('fileEnabled');
-      expect(config.logging).toHaveProperty('filePath');
     });
   });
 });

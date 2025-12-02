@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ArgumentMetadata } from '@nestjs/common';
 import { ParseEnumPipe } from './parse-enum.pipe';
 
 enum TestEnum {
@@ -16,6 +16,11 @@ enum NumberEnum {
 
 describe('ParseEnumPipe', () => {
   let pipe: ParseEnumPipe<typeof TestEnum>;
+  const mockMetadata: ArgumentMetadata = {
+    type: 'query',
+    data: undefined,
+    metatype: String,
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -36,51 +41,51 @@ describe('ParseEnumPipe', () => {
 
   describe('transform', () => {
     it('should return valid enum value', () => {
-      const result = pipe.transform('VALUE1');
+      const result = pipe.transform('VALUE1', mockMetadata);
       expect(result).toBe(TestEnum.VALUE1);
     });
 
     it('should return valid enum value for different cases', () => {
-      const result1 = pipe.transform('VALUE2');
+      const result1 = pipe.transform('VALUE2', mockMetadata);
       expect(result1).toBe(TestEnum.VALUE2);
 
-      const result2 = pipe.transform('VALUE3');
+      const result2 = pipe.transform('VALUE3', mockMetadata);
       expect(result2).toBe(TestEnum.VALUE3);
     });
 
     it('should return undefined for undefined input', () => {
-      const result = pipe.transform(undefined);
+      const result = pipe.transform(undefined, mockMetadata);
       expect(result).toBeUndefined();
     });
 
     it('should return undefined for null input', () => {
-      const result = pipe.transform(null as any);
+      const result = pipe.transform(null as any, mockMetadata);
       expect(result).toBeUndefined();
     });
 
     it('should throw BadRequestException for invalid enum value', () => {
-      expect(() => pipe.transform('INVALID_VALUE')).toThrow(
+      expect(() => pipe.transform('INVALID_VALUE', mockMetadata)).toThrow(
         BadRequestException,
       );
-      expect(() => pipe.transform('INVALID_VALUE')).toThrow(
+      expect(() => pipe.transform('INVALID_VALUE', mockMetadata)).toThrow(
         'Invalid enum value: INVALID_VALUE',
       );
     });
 
     it('should throw BadRequestException for empty string', () => {
-      expect(() => pipe.transform('')).toThrow(BadRequestException);
-      expect(() => pipe.transform('')).toThrow('Invalid enum value: ');
+      expect(() => pipe.transform('', mockMetadata)).toThrow(BadRequestException);
+      expect(() => pipe.transform('', mockMetadata)).toThrow('Invalid enum value: ');
     });
 
     it('should work with different enum types', () => {
       const numberPipe = new ParseEnumPipe(NumberEnum);
-      const result = numberPipe.transform('1');
+      const result = numberPipe.transform('1', mockMetadata);
       expect(result).toBe(NumberEnum.ONE);
     });
 
     it('should handle case-sensitive enum values', () => {
-      expect(() => pipe.transform('value1')).toThrow(BadRequestException);
-      expect(() => pipe.transform('VALUE1')).not.toThrow();
+      expect(() => pipe.transform('value1', mockMetadata)).toThrow(BadRequestException);
+      expect(() => pipe.transform('VALUE1', mockMetadata)).not.toThrow();
     });
   });
 });
