@@ -39,6 +39,8 @@ export class TrackerService {
     username: string,
     userId: string,
     displayName?: string,
+    registrationChannelId?: string,
+    registrationInteractionToken?: string,
   ) {
     return this.trackerRepository.create({
       url,
@@ -47,6 +49,8 @@ export class TrackerService {
       username,
       userId,
       displayName,
+      registrationChannelId,
+      registrationInteractionToken,
     });
   }
 
@@ -169,6 +173,9 @@ export class TrackerService {
     userId: string,
     urls: string[],
     userData?: { username: string; globalName?: string; avatar?: string },
+    channelId?: string,
+    guildId?: string,
+    interactionToken?: string,
   ) {
     // Ensure user exists before creating trackers
     await this.ensureUserExists(userId, userData);
@@ -207,6 +214,9 @@ export class TrackerService {
         parsed.platform,
         parsed.username,
         userId,
+        undefined, // displayName
+        channelId, // registrationChannelId
+        interactionToken, // registrationInteractionToken
       );
       trackers.push(tracker);
 
@@ -244,6 +254,9 @@ export class TrackerService {
     userId: string,
     url: string,
     userData?: { username: string; globalName?: string; avatar?: string },
+    channelId?: string,
+    guildId?: string,
+    interactionToken?: string,
   ) {
     // Ensure user exists before creating tracker
     await this.ensureUserExists(userId, userData);
@@ -268,6 +281,9 @@ export class TrackerService {
       parsed.platform,
       parsed.username,
       userId,
+      undefined, // displayName
+      channelId, // registrationChannelId
+      interactionToken, // registrationInteractionToken
     );
 
     // Enqueue scraping job (async)

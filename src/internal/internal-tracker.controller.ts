@@ -23,6 +23,9 @@ export class InternalTrackerController {
       body.userId,
       body.urls,
       body.userData,
+      body.channelId,
+      body.guildId,
+      body.interactionToken,
     );
   }
 
@@ -30,6 +33,13 @@ export class InternalTrackerController {
   @ApiOperation({ summary: 'Add an additional tracker (Bot only)' })
   @ApiResponse({ status: 201, description: 'Tracker added successfully' })
   async addTracker(@Body() body: AddTrackerDto) {
-    return this.trackerService.addTracker(body.userId, body.url, body.userData);
+    return this.trackerService.addTracker(
+      body.userId,
+      body.url,
+      body.userData,
+      body.channelId,
+      body.guildId,
+      body.interactionToken,
+    );
   }
 }
