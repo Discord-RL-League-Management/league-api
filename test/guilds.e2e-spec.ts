@@ -28,7 +28,7 @@ describe('Guilds API (e2e)', () => {
   beforeEach(async () => {
     // Clean database before each test
     await prisma.guildMember.deleteMany();
-    await prisma.guildSettings.deleteMany();
+    await prisma.settings.deleteMany({ where: { ownerType: 'guild' } });
     await prisma.guild.deleteMany();
     await prisma.user.deleteMany();
   });
@@ -68,10 +68,19 @@ describe('Guilds API (e2e)', () => {
       // Verify guild was created in database
       const guild = await prisma.guild.findUnique({
         where: { id: guildData.id },
-        include: { settings: true },
       });
       expect(guild).toBeTruthy();
-      expect(guild.settings).toBeTruthy();
+      
+      // Verify settings were created (Settings model with ownerType='guild')
+      const settings = await prisma.settings.findUnique({
+        where: {
+          ownerType_ownerId: {
+            ownerType: 'guild',
+            ownerId: guildData.id,
+          },
+        },
+      });
+      expect(settings).toBeTruthy();
     });
 
     it('should reject request without API key', async () => {
@@ -168,11 +177,20 @@ describe('Guilds API (e2e)', () => {
       // Verify guild exists in database
       const guild = await prisma.guild.findUnique({
         where: { id: guildData.id },
-        include: { settings: true },
       });
       expect(guild).toBeTruthy();
-      expect(guild.isActive).toBe(true);
-      expect(guild.settings).toBeTruthy();
+      expect(guild?.isActive).toBe(true);
+      
+      // Verify settings were created (Settings model with ownerType='guild')
+      const settings = await prisma.settings.findUnique({
+        where: {
+          ownerType_ownerId: {
+            ownerType: 'guild',
+            ownerId: guildData.id,
+          },
+        },
+      });
+      expect(settings).toBeTruthy();
     });
 
     it('should return 200 and update guild when guild exists', async () => {
@@ -211,8 +229,9 @@ describe('Guilds API (e2e)', () => {
       const guild = await prisma.guild.findUnique({
         where: { id: existingGuild.id },
       });
-      expect(guild.name).toBe('Updated Guild');
-      expect(guild.memberCount).toBe(150);
+      expect(guild).toBeTruthy();
+      expect(guild?.name).toBe('Updated Guild');
+      expect(guild?.memberCount).toBe(150);
     });
 
     it('should return 200 and reactivate soft-deleted guild', async () => {
@@ -250,8 +269,9 @@ describe('Guilds API (e2e)', () => {
       const guild = await prisma.guild.findUnique({
         where: { id: deletedGuild.id },
       });
-      expect(guild.isActive).toBe(true);
-      expect(guild.leftAt).toBeNull();
+      expect(guild).toBeTruthy();
+      expect(guild?.isActive).toBe(true);
+      expect(guild?.leftAt).toBeNull();
     });
 
     it('should create settings when guild exists but has no settings', async () => {
@@ -279,11 +299,16 @@ describe('Guilds API (e2e)', () => {
         .expect(200);
 
       // Assert - Verify settings were created
-      const settings = await prisma.guildSettings.findUnique({
-        where: { guildId: guild.id },
+      const settings = await prisma.settings.findUnique({
+        where: {
+          ownerType_ownerId: {
+            ownerType: 'guild',
+            ownerId: guild.id,
+          },
+        },
       });
       expect(settings).toBeTruthy();
-      expect(settings.settings).toBeTruthy();
+      expect(settings?.settings).toBeTruthy();
     });
 
     it('should reject request without API key', async () => {
@@ -407,7 +432,8 @@ describe('Guilds API (e2e)', () => {
       const deletedGuild = await prisma.guild.findUnique({
         where: { id: guild.id },
       });
-      expect(deletedGuild.isActive).toBe(false);
+      expect(deletedGuild).toBeTruthy();
+      expect(deletedGuild?.isActive).toBe(false);
     });
 
     it('should return 404 when guild not found', async () => {
@@ -425,9 +451,10 @@ describe('Guilds API (e2e)', () => {
       const guild = await prisma.guild.create({
         data: { id: 'guild1', name: 'Test Guild', ownerId: 'owner1' },
       });
-      await prisma.guildSettings.create({
+      await prisma.settings.create({
         data: {
-          guildId: guild.id,
+          ownerType: 'guild',
+          ownerId: guild.id,
           settings: { features: { league_management: true } },
         },
       });
@@ -509,13 +536,24 @@ describe('Guilds API (e2e)', () => {
       // Verify guild was created in database
       const guild = await prisma.guild.findUnique({
         where: { id: guildId },
-        include: { members: true, settings: true },
+        include: { members: true },
       });
       expect(guild).toBeTruthy();
-      expect(guild.settings).toBeTruthy();
-      expect(guild.members).toHaveLength(2);
-      expect(guild.members[0].userId).toBe('user1');
-      expect(guild.members[1].userId).toBe('user2');
+      
+      // Verify settings were created
+      const settings = await prisma.settings.findUnique({
+        where: {
+          ownerType_ownerId: {
+            ownerType: 'guild',
+            ownerId: guildId,
+          },
+        },
+      });
+      expect(settings).toBeTruthy();
+      
+      expect(guild?.members).toHaveLength(2);
+      expect(guild?.members[0].userId).toBe('user1');
+      expect(guild?.members[1].userId).toBe('user2');
     });
 
     it('should verify transaction atomicity - guild and members created together', async () => {
@@ -548,7 +586,7 @@ describe('Guilds API (e2e)', () => {
         include: { members: true },
       });
       expect(guild).toBeTruthy();
-      expect(guild.members).toHaveLength(3);
+      expect(guild?.members).toHaveLength(3);
     });
 
     it('should verify rollback - no guild or members created if transaction fails', async () => {
@@ -682,7 +720,7 @@ describe('Guilds API (e2e)', () => {
         include: { members: true },
       });
       expect(guild).toBeTruthy();
-      expect(guild.members).toHaveLength(0);
+      expect(guild?.members).toHaveLength(0);
     });
 
     it('should reject request without API key', async () => {
@@ -801,8 +839,9 @@ describe('Guilds API (e2e)', () => {
         where: { id: guildId },
         include: { members: true },
       });
-      expect(guild.name).toBe('Updated Name');
-      expect(guild.members).toHaveLength(2);
+      expect(guild).toBeTruthy();
+      expect(guild?.name).toBe('Updated Name');
+      expect(guild?.members).toHaveLength(2);
     });
 
     it('should handle concurrent sync requests without race conditions', async () => {
@@ -856,7 +895,7 @@ describe('Guilds API (e2e)', () => {
       });
       expect(guild).toBeTruthy();
       // Members should be consistent - either 2 or 3, not mixed
-      expect([2, 3]).toContain(guild.members.length);
+      expect([2, 3]).toContain(guild?.members.length);
     });
 
     it('should complete sync in acceptable time for large guilds', async () => {

@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { Request, Response } from 'express';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { GuildsService } from '../../src/guilds/guilds.service';
 import { UsersService } from '../../src/users/users.service';
@@ -29,10 +30,13 @@ export const mockPrismaService = {
     update: jest.fn(),
     delete: jest.fn(),
   },
-  guildSettings: {
+  settings: {
     create: jest.fn(),
     findUnique: jest.fn(),
     upsert: jest.fn(),
+    findMany: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
   },
   guildMember: {
     upsert: jest.fn(),
@@ -46,7 +50,7 @@ export const mockPrismaService = {
   },
   $transaction: jest.fn(),
   $disconnect: jest.fn(),
-} as jest.Mocked<PrismaService>;
+} as unknown as jest.Mocked<PrismaService>;
 
 export const mockGuildsService = {
   exists: jest.fn(),
@@ -58,7 +62,7 @@ export const mockGuildsService = {
   findActiveGuildIds: jest.fn(),
   upsert: jest.fn(),
   syncGuildWithMembers: jest.fn(),
-} as jest.Mocked<GuildsService>;
+} as unknown as jest.Mocked<GuildsService>;
 
 export const mockUsersService = {
   exists: jest.fn(),
@@ -70,7 +74,7 @@ export const mockUsersService = {
   getUserTokens: jest.fn(),
   updateUserTokens: jest.fn(),
   getProfile: jest.fn(),
-} as jest.Mocked<UsersService>;
+} as unknown as jest.Mocked<UsersService>;
 
 export const mockGuildSettingsService = {
   getSettings: jest.fn(),
@@ -82,7 +86,7 @@ export const mockGuildSettingsService = {
   settingsDefaults: {} as any,
   settingsValidation: {} as any,
   cacheManager: {} as any,
-} as jest.Mocked<GuildSettingsService>;
+} as unknown as jest.Mocked<GuildSettingsService>;
 
 export const mockGuildMembersService = {
   create: jest.fn(),
@@ -97,7 +101,7 @@ export const mockGuildMembersService = {
   prisma: {} as any,
   guildsService: {} as any,
   usersService: {} as any,
-} as jest.Mocked<GuildMembersService>;
+} as unknown as jest.Mocked<GuildMembersService>;
 
 /**
  * Create a NestJS TestingModule with common providers
@@ -105,7 +109,7 @@ export const mockGuildMembersService = {
 export const createTestingModule = (
   providers: any[] = [],
   controllers: any[] = [],
-): TestingModule => {
+) => {
   return Test.createTestingModule({
     controllers: controllers,
     providers: [
@@ -131,7 +135,7 @@ export const createTestingModule = (
  */
 export const setupCommonMocks = (): void => {
   // Setup Prisma mocks
-  mockPrismaService.guild.findUnique.mockResolvedValue({
+  (mockPrismaService.guild.findUnique as jest.Mock).mockResolvedValue({
     id: '456',
     name: 'Test Guild',
     joinedAt: new Date(),
@@ -142,18 +146,23 @@ export const setupCommonMocks = (): void => {
     isActive: true,
   });
 
-  mockPrismaService.user.findUnique.mockResolvedValue({
+  (mockPrismaService.user.findUnique as jest.Mock).mockResolvedValue({
     id: '123',
     username: 'testuser',
+    discriminator: '1234',
     globalName: 'Test User',
     avatar: 'avatar_hash',
     email: 'test@example.com',
+    accessToken: null,
+    refreshToken: null,
+    isBanned: false,
+    isDeleted: false,
     createdAt: new Date(),
     updatedAt: new Date(),
     lastLoginAt: new Date(),
   });
 
-  mockPrismaService.guildMember.upsert.mockResolvedValue({
+  (mockPrismaService.guildMember.upsert as jest.Mock).mockResolvedValue({
     userId: '123',
     guildId: '456',
     username: 'testuser',
@@ -162,21 +171,21 @@ export const setupCommonMocks = (): void => {
     updatedAt: new Date(),
   });
 
-  mockPrismaService.guildMember.findMany.mockResolvedValue(
+  (mockPrismaService.guildMember.findMany as jest.Mock).mockResolvedValue(
     apiFixtures.createMemberList(5),
   );
-  mockPrismaService.guildMember.findUnique.mockResolvedValue(
-    apiFixtures.createMockGuildMember(),
+  (mockPrismaService.guildMember.findUnique as jest.Mock).mockResolvedValue(
+    apiFixtures.createMockMember(),
   );
-  mockPrismaService.guildMember.update.mockResolvedValue(
-    apiFixtures.createMockGuildMember(),
+  (mockPrismaService.guildMember.update as jest.Mock).mockResolvedValue(
+    apiFixtures.createMockMember(),
   );
-  mockPrismaService.guildMember.delete.mockResolvedValue(
-    apiFixtures.createMockGuildMember(),
+  (mockPrismaService.guildMember.delete as jest.Mock).mockResolvedValue(
+    apiFixtures.createMockMember(),
   );
-  mockPrismaService.guildMember.count.mockResolvedValue(100);
+  (mockPrismaService.guildMember.count as jest.Mock).mockResolvedValue(100);
 
-  mockPrismaService.guild.upsert.mockResolvedValue({
+  (mockPrismaService.guild.upsert as jest.Mock).mockResolvedValue({
     id: '456',
     name: 'Test Guild',
     joinedAt: new Date(),
@@ -187,10 +196,13 @@ export const setupCommonMocks = (): void => {
     isActive: true,
   });
 
-  mockPrismaService.guildSettings.upsert.mockResolvedValue({
+  (mockPrismaService.settings.upsert as jest.Mock).mockResolvedValue({
     id: 'settings-123',
-    guildId: '456',
+    ownerType: 'guild',
+    ownerId: '456',
     settings: { prefix: '!' },
+    schemaVersion: 1,
+    configVersion: '1.0.0',
     createdAt: new Date(),
     updatedAt: new Date(),
   });
@@ -249,9 +261,14 @@ export const setupCommonMocks = (): void => {
   mockUsersService.findOne.mockResolvedValue({
     id: '123',
     username: 'testuser',
+    discriminator: '1234',
     globalName: 'Test User',
     avatar: 'avatar_hash',
     email: 'test@example.com',
+    accessToken: null,
+    refreshToken: null,
+    isBanned: false,
+    isDeleted: false,
     createdAt: new Date(),
     updatedAt: new Date(),
     lastLoginAt: new Date(),
@@ -259,34 +276,40 @@ export const setupCommonMocks = (): void => {
 
   mockGuildSettingsService.getSettings.mockResolvedValue({
     id: 'settings-123',
-    guildId: '456',
+    ownerType: 'guild',
+    ownerId: '456',
     settings: { prefix: '!' },
+    schemaVersion: 1,
+    configVersion: '1.0.0',
     createdAt: new Date(),
     updatedAt: new Date(),
   });
   mockGuildSettingsService.updateSettings.mockResolvedValue({
     id: 'settings-123',
-    guildId: '456',
+    ownerType: 'guild',
+    ownerId: '456',
     settings: { prefix: '!' },
+    schemaVersion: 1,
+    configVersion: '1.0.0',
     createdAt: new Date(),
     updatedAt: new Date(),
   });
 
   mockGuildMembersService.create.mockResolvedValue(
-    apiFixtures.createMockGuildMember(),
+    apiFixtures.createMockMember(),
   );
   mockGuildMembersService.findAll.mockResolvedValue({
     members: apiFixtures.createMemberList(5),
     pagination: { page: 1, limit: 20, total: 5, pages: 1 },
   });
   mockGuildMembersService.findOne.mockResolvedValue(
-    apiFixtures.createMockGuildMember(),
+    apiFixtures.createMockMember(),
   );
   mockGuildMembersService.update.mockResolvedValue(
-    apiFixtures.createMockGuildMember(),
+    apiFixtures.createMockMember(),
   );
   mockGuildMembersService.remove.mockResolvedValue(
-    apiFixtures.createMockGuildMember(),
+    apiFixtures.createMockMember(),
   );
   mockGuildMembersService.searchMembers.mockResolvedValue({
     members: apiFixtures.createMemberList(2),
@@ -314,7 +337,7 @@ export const createMockGuildsService = (): jest.Mocked<GuildsService> => {
     findActiveGuildIds: jest.fn(),
     upsert: jest.fn(),
     syncGuildWithMembers: jest.fn(),
-  } as jest.Mocked<GuildsService>;
+  } as unknown as jest.Mocked<GuildsService>;
 };
 
 /**
@@ -333,7 +356,7 @@ export const createMockGuildSettingsService =
       settingsDefaults: {} as any,
       settingsValidation: {} as any,
       cacheManager: {} as any,
-    } as jest.Mocked<GuildSettingsService>;
+    } as unknown as jest.Mocked<GuildSettingsService>;
   };
 
 /**
@@ -355,8 +378,32 @@ export const createMockGuildMembersService =
       prisma: {} as any,
       guildsService: {} as any,
       usersService: {} as any,
-    } as jest.Mocked<GuildMembersService>;
+    } as unknown as jest.Mocked<GuildMembersService>;
   };
+
+/**
+ * Create a mock Express Request
+ */
+export const createMockRequest = (overrides: Partial<Request> = {}): Request => {
+  return {
+    method: 'GET',
+    path: '/test',
+    url: '/test',
+    headers: {},
+    ...overrides,
+  } as unknown as Request;
+};
+
+/**
+ * Create a mock Express Response
+ */
+export const createMockResponse = (): Response => {
+  return {
+    status: jest.fn().mockReturnThis(),
+    json: jest.fn().mockReturnThis(),
+    send: jest.fn().mockReturnThis(),
+  } as unknown as Response;
+};
 
 /**
  * Reset all mocks

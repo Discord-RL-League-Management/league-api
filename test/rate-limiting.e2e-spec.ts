@@ -3,7 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { bootstrapTestApp } from './helpers/create-test-app';
 
@@ -11,7 +11,12 @@ describe('Rate Limiting (e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
-    app = await bootstrapTestApp();
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    app = moduleFixture.createNestApplication();
+    await bootstrapTestApp(app);
   });
 
   afterAll(async () => {
