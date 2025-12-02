@@ -194,6 +194,105 @@ describe('AuditLogService', () => {
         expect.any(Error),
       );
     });
+
+    it('should not throw error when transaction fails', async () => {
+      // Arrange
+      const event = {
+        userId: '123456789012345678',
+        guildId: '987654321098765432',
+        action: AuditAction.ADMIN_CHECK,
+        resource: '/api/admin/test',
+        result: 'allowed' as const,
+      };
+      prismaService.$transaction.mockRejectedValueOnce(
+        new Error('Transaction failed'),
+      );
+      const loggerErrorSpy = jest.spyOn(Logger.prototype, 'error');
+
+      // Act & Assert - Should not throw
+      await expect(
+        service.logAdminAction(event, mockRequest),
+      ).resolves.not.toThrow();
+      expect(loggerErrorSpy).toHaveBeenCalledWith(
+        'Failed to log admin action:',
+        expect.any(Error),
+      );
+    });
+
+    it('should handle empty string resource', async () => {
+      // Arrange
+      const event = {
+        userId: '123456789012345678',
+        guildId: '987654321098765432',
+        action: AuditAction.ADMIN_CHECK,
+        resource: '',
+        result: 'allowed' as const,
+      };
+
+      // Act & Assert - Should complete without error
+      await expect(
+        service.logAdminAction(event, mockRequest),
+      ).resolves.not.toThrow();
+      expect(activityLogService.logActivity).toHaveBeenCalled();
+      const entityType = activityLogService.logActivity.mock.calls[0][1];
+      expect(entityType).toBe('admin'); // Should still use fixed value
+    });
+
+    it('should handle null resource', async () => {
+      // Arrange
+      const event = {
+        userId: '123456789012345678',
+        guildId: '987654321098765432',
+        action: AuditAction.ADMIN_CHECK,
+        resource: null as any,
+        result: 'allowed' as const,
+      };
+
+      // Act & Assert - Should complete without error
+      await expect(
+        service.logAdminAction(event, mockRequest),
+      ).resolves.not.toThrow();
+      expect(activityLogService.logActivity).toHaveBeenCalled();
+    });
+
+    it('should handle missing metadata gracefully', async () => {
+      // Arrange
+      const event = {
+        userId: '123456789012345678',
+        guildId: '987654321098765432',
+        action: AuditAction.ADMIN_CHECK,
+        resource: '/api/admin/test',
+        result: 'allowed' as const,
+        metadata: undefined,
+      };
+
+      // Act & Assert - Should complete without error
+      await expect(
+        service.logAdminAction(event, mockRequest),
+      ).resolves.not.toThrow();
+      expect(activityLogService.logActivity).toHaveBeenCalled();
+    });
+
+    it('should handle context service failures gracefully', async () => {
+      // Arrange
+      const event = {
+        userId: '123456789012345678',
+        guildId: '987654321098765432',
+        action: AuditAction.ADMIN_CHECK,
+        resource: '/api/admin/test',
+        result: 'allowed' as const,
+      };
+      contextService.getIpAddress.mockImplementationOnce(() => {
+        throw new Error('Context service error');
+      });
+      const loggerErrorSpy = jest.spyOn(Logger.prototype, 'error');
+
+      // Act & Assert - Should not throw (error should be caught and logged)
+      await expect(
+        service.logAdminAction(event, mockRequest),
+      ).resolves.not.toThrow();
+      expect(loggerErrorSpy).toHaveBeenCalled();
+    });
   });
 
   describe('logPermissionCheck', () => {
@@ -299,6 +398,105 @@ describe('AuditLogService', () => {
         expect.any(Error),
       );
     });
+
+    it('should not throw error when transaction fails', async () => {
+      // Arrange
+      const event = {
+        userId: '123456789012345678',
+        guildId: '987654321098765432',
+        action: AuditAction.MEMBER_PERMISSION_CHECK,
+        resource: '/api/permissions/test',
+        result: 'allowed' as const,
+      };
+      prismaService.$transaction.mockRejectedValueOnce(
+        new Error('Transaction failed'),
+      );
+      const loggerErrorSpy = jest.spyOn(Logger.prototype, 'error');
+
+      // Act & Assert - Should not throw
+      await expect(
+        service.logPermissionCheck(event, mockRequest),
+      ).resolves.not.toThrow();
+      expect(loggerErrorSpy).toHaveBeenCalledWith(
+        'Failed to log audit event:',
+        expect.any(Error),
+      );
+    });
+
+    it('should handle empty string resource', async () => {
+      // Arrange
+      const event = {
+        userId: '123456789012345678',
+        guildId: '987654321098765432',
+        action: AuditAction.MEMBER_PERMISSION_CHECK,
+        resource: '',
+        result: 'allowed' as const,
+      };
+
+      // Act & Assert - Should complete without error
+      await expect(
+        service.logPermissionCheck(event, mockRequest),
+      ).resolves.not.toThrow();
+      expect(activityLogService.logActivity).toHaveBeenCalled();
+      const entityType = activityLogService.logActivity.mock.calls[0][1];
+      expect(entityType).toBe('permission'); // Should still use fixed value
+    });
+
+    it('should handle null resource', async () => {
+      // Arrange
+      const event = {
+        userId: '123456789012345678',
+        guildId: '987654321098765432',
+        action: AuditAction.MEMBER_PERMISSION_CHECK,
+        resource: null as any,
+        result: 'denied' as const,
+      };
+
+      // Act & Assert - Should complete without error
+      await expect(
+        service.logPermissionCheck(event, mockRequest),
+      ).resolves.not.toThrow();
+      expect(activityLogService.logActivity).toHaveBeenCalled();
+    });
+
+    it('should handle missing metadata gracefully', async () => {
+      // Arrange
+      const event = {
+        userId: '123456789012345678',
+        guildId: '987654321098765432',
+        action: AuditAction.MEMBER_PERMISSION_CHECK,
+        resource: '/api/permissions/test',
+        result: 'allowed' as const,
+        metadata: undefined,
+      };
+
+      // Act & Assert - Should complete without error
+      await expect(
+        service.logPermissionCheck(event, mockRequest),
+      ).resolves.not.toThrow();
+      expect(activityLogService.logActivity).toHaveBeenCalled();
+    });
+
+    it('should handle context service failures gracefully', async () => {
+      // Arrange
+      const event = {
+        userId: '123456789012345678',
+        guildId: '987654321098765432',
+        action: AuditAction.MEMBER_PERMISSION_CHECK,
+        resource: '/api/permissions/test',
+        result: 'allowed' as const,
+      };
+      contextService.getIpAddress.mockImplementationOnce(() => {
+        throw new Error('Context service error');
+      });
+      const loggerErrorSpy = jest.spyOn(Logger.prototype, 'error');
+
+      // Act & Assert - Should not throw (error should be caught and logged)
+      await expect(
+        service.logPermissionCheck(event, mockRequest),
+      ).resolves.not.toThrow();
+      expect(loggerErrorSpy).toHaveBeenCalled();
+    });
   });
 
   describe('queryLogs', () => {
@@ -356,6 +554,37 @@ describe('AuditLogService', () => {
       // Assert - Verify default values in output
       expect(result.limit).toBe(50);
       expect(result.offset).toBe(0);
+    });
+
+    it('should propagate errors from findWithFilters', async () => {
+      // Arrange
+      const guildId = '987654321098765432';
+      const filters = { userId: '123' };
+      const error = new Error('Database query failed');
+      activityLogService.findWithFilters.mockRejectedValueOnce(error);
+
+      // Act & Assert - Should propagate the error
+      await expect(service.queryLogs(guildId, filters)).rejects.toThrow(
+        'Database query failed',
+      );
+    });
+
+    it('should handle empty results', async () => {
+      // Arrange
+      const guildId = '987654321098765432';
+      const filters = { userId: '123' };
+
+      activityLogService.findWithFilters.mockResolvedValueOnce({
+        logs: [],
+        total: 0,
+      });
+
+      // Act
+      const result = await service.queryLogs(guildId, filters);
+
+      // Assert - Should return empty array, not throw
+      expect(result.logs).toEqual([]);
+      expect(result.total).toBe(0);
     });
   });
 });
