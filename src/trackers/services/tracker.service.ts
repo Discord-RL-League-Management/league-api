@@ -7,7 +7,10 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TrackerRepository } from '../repositories/tracker.repository';
-import { TrackerValidationService } from './tracker-validation.service';
+import {
+  TrackerValidationService,
+  ParsedTrackerUrl,
+} from './tracker-validation.service';
 import { TrackerScrapingQueueService } from '../queues/tracker-scraping.queue';
 import { TrackerSeasonService } from './tracker-season.service';
 import {
@@ -39,6 +42,8 @@ export class TrackerService {
     username: string,
     userId: string,
     displayName?: string,
+    registrationChannelId?: string,
+    registrationInteractionToken?: string,
   ) {
     return this.trackerRepository.create({
       url,
@@ -47,6 +52,8 @@ export class TrackerService {
       username,
       userId,
       displayName,
+      registrationChannelId,
+      registrationInteractionToken,
     });
   }
 
@@ -169,6 +176,8 @@ export class TrackerService {
     userId: string,
     urls: string[],
     userData?: { username: string; globalName?: string; avatar?: string },
+    channelId?: string,
+    interactionToken?: string,
   ) {
     // Ensure user exists before creating trackers
     await this.ensureUserExists(userId, userData);
@@ -195,18 +204,59 @@ export class TrackerService {
       throw new BadRequestException('Duplicate URLs are not allowed');
     }
 
-    const trackers = [];
+    // Batch check URL uniqueness to avoid N+1 query problem
+    const urlUniquenessMap =
+      await this.validationService.batchCheckUrlUniqueness(uniqueUrls);
+    const duplicateUrls: string[] = [];
     for (const url of uniqueUrls) {
-      const parsed = await this.validationService.validateTrackerUrl(
-        url,
-        userId,
+      const isUnique = urlUniquenessMap.get(url);
+      if (isUnique === false) {
+        duplicateUrls.push(url);
+      }
+    }
+    if (duplicateUrls.length > 0) {
+      throw new BadRequestException(
+        `The following tracker URL(s) have already been registered: ${duplicateUrls.join(', ')}`,
       );
+    }
+
+    // Validate all URLs (format validation only, uniqueness already checked in batch)
+    const validationPromises = uniqueUrls.map((url) =>
+      this.validationService
+        .validateTrackerUrl(url, userId, undefined, true) // Skip uniqueness check
+        .catch((error) => {
+          // Re-throw validation errors
+          throw error;
+        }),
+    );
+
+    let parsedUrls: Array<{
+      url: string;
+      parsed: ParsedTrackerUrl;
+    }>;
+    try {
+      const parsedResults = await Promise.all(validationPromises);
+      parsedUrls = uniqueUrls.map((url, index) => ({
+        url,
+        parsed: parsedResults[index],
+      }));
+    } catch (error) {
+      // Re-throw validation errors
+      throw error;
+    }
+
+    // Create all trackers
+    const trackers = [];
+    for (const { url, parsed } of parsedUrls) {
       const tracker = await this.createTracker(
         url,
         parsed.game,
         parsed.platform,
         parsed.username,
         userId,
+        undefined, // displayName
+        channelId, // registrationChannelId
+        interactionToken, // registrationInteractionToken
       );
       trackers.push(tracker);
 
@@ -217,6 +267,7 @@ export class TrackerService {
         this.logger.error(
           `Failed to enqueue scraping job for tracker ${tracker.id}: ${errorMessage}`,
         );
+        // Update tracker status with proper error handling
         this.prisma.tracker
           .update({
             where: { id: tracker.id },
@@ -226,7 +277,11 @@ export class TrackerService {
               scrapingAttempts: 1,
             },
           })
-          .catch(() => {});
+          .catch((updateError) => {
+            this.logger.error(
+              `Failed to update tracker ${tracker.id} status after enqueue failure: ${updateError instanceof Error ? updateError.message : String(updateError)}`,
+            );
+          });
       });
     }
 
@@ -244,6 +299,8 @@ export class TrackerService {
     userId: string,
     url: string,
     userData?: { username: string; globalName?: string; avatar?: string },
+    channelId?: string,
+    interactionToken?: string,
   ) {
     // Ensure user exists before creating tracker
     await this.ensureUserExists(userId, userData);
@@ -268,6 +325,9 @@ export class TrackerService {
       parsed.platform,
       parsed.username,
       userId,
+      undefined, // displayName
+      channelId, // registrationChannelId
+      interactionToken, // registrationInteractionToken
     );
 
     // Enqueue scraping job (async)

@@ -77,7 +77,16 @@ describe('InternalGuildsController', () => {
         ],
       };
       const expectedResponse = {
-        guild: { id: guildId, name: 'Test Guild' },
+        guild: {
+          id: guildId,
+          name: 'Test Guild',
+          icon: null,
+          ownerId: 'owner123',
+          memberCount: 2,
+          joinedAt: new Date(),
+          leftAt: null,
+          isActive: true,
+        },
         membersSynced: 2,
       };
       guildsService.syncGuildWithMembers.mockResolvedValue(expectedResponse);
@@ -108,7 +117,16 @@ describe('InternalGuildsController', () => {
         members: [],
       };
       const expectedResponse = {
-        guild: { id: guildId, name: 'Test Guild' },
+        guild: {
+          id: guildId,
+          name: 'Test Guild',
+          icon: null,
+          ownerId: 'owner123',
+          memberCount: 0,
+          joinedAt: new Date(),
+          leftAt: null,
+          isActive: true,
+        },
         membersSynced: 0,
       };
       guildsService.syncGuildWithMembers.mockResolvedValue(expectedResponse);
@@ -164,7 +182,16 @@ describe('InternalGuildsController', () => {
         members: [{ userId: 'user1', username: 'User1', roles: [] }],
       };
       const expectedResponse = {
-        guild: { id: 'guild123' },
+        guild: {
+          id: 'guild123',
+          name: 'Test Guild',
+          icon: null,
+          ownerId: 'owner123',
+          memberCount: 1,
+          joinedAt: new Date(),
+          leftAt: null,
+          isActive: true,
+        },
         membersSynced: 1,
       };
       guildsService.syncGuildWithMembers.mockResolvedValue(expectedResponse);
@@ -199,7 +226,16 @@ describe('InternalGuildsController', () => {
         members: largeMembersArray,
       };
       const expectedResponse = {
-        guild: { id: guildId },
+        guild: {
+          id: guildId,
+          name: 'Large Guild',
+          icon: null,
+          ownerId: 'owner123',
+          memberCount: 1000,
+          joinedAt: new Date(),
+          leftAt: null,
+          isActive: true,
+        },
         membersSynced: 1000,
       };
       guildsService.syncGuildWithMembers.mockResolvedValue(expectedResponse);

@@ -57,3 +57,5 @@ export class TournamentRepository
     return (await this.prisma.tournament.count({ where: { id } })) > 0;
   }
 }
+
+

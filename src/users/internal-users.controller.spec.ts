@@ -67,18 +67,32 @@ describe('InternalUsersController', () => {
         {
           id: '123456789012345678',
           username: 'testuser1',
+          discriminator: null,
           globalName: 'Test User 1',
+          avatar: null,
           email: 'test1@example.com',
+          accessToken: null,
+          refreshToken: null,
+          isBanned: false,
+          isDeleted: false,
           createdAt: new Date(),
           updatedAt: new Date(),
+          lastLoginAt: new Date(),
         },
         {
           id: '987654321098765432',
           username: 'testuser2',
+          discriminator: null,
           globalName: 'Test User 2',
+          avatar: null,
           email: 'test2@example.com',
+          accessToken: null,
+          refreshToken: null,
+          isBanned: false,
+          isDeleted: false,
           createdAt: new Date(),
           updatedAt: new Date(),
+          lastLoginAt: new Date(),
         },
       ];
       usersService.findAll.mockResolvedValue(expectedUsers);
@@ -112,10 +126,17 @@ describe('InternalUsersController', () => {
       const expectedUser = {
         id: userId,
         username: 'testuser',
+        discriminator: null,
         globalName: 'Test User',
+        avatar: null,
         email: 'test@example.com',
+        accessToken: null,
+        refreshToken: null,
+        isBanned: false,
+        isDeleted: false,
         createdAt: new Date(),
         updatedAt: new Date(),
+        lastLoginAt: new Date(),
       };
       usersService.findOne.mockResolvedValue(expectedUser);
 
@@ -155,11 +176,17 @@ describe('InternalUsersController', () => {
       const expectedUser = {
         id: createUserDto.id,
         username: createUserDto.username,
-        globalName: createUserDto.globalName,
-        email: createUserDto.email,
-        avatar: createUserDto.avatar,
+        discriminator: null,
+        globalName: createUserDto.globalName || null,
+        avatar: createUserDto.avatar || null,
+        email: createUserDto.email || null,
+        accessToken: null,
+        refreshToken: null,
+        isBanned: false,
+        isDeleted: false,
         createdAt: new Date(),
         updatedAt: new Date(),
+        lastLoginAt: new Date(),
       };
       usersService.create.mockResolvedValue(expectedUser);
 
@@ -181,8 +208,17 @@ describe('InternalUsersController', () => {
       const expectedUser = {
         id: createUserDto.id,
         username: createUserDto.username,
+        discriminator: null,
+        globalName: null,
+        avatar: null,
+        email: null,
+        accessToken: null,
+        refreshToken: null,
+        isBanned: false,
+        isDeleted: false,
         createdAt: new Date(),
         updatedAt: new Date(),
+        lastLoginAt: new Date(),
       };
       usersService.create.mockResolvedValue(expectedUser);
 
@@ -222,11 +258,18 @@ describe('InternalUsersController', () => {
       };
       const expectedUser = {
         id: userId,
-        username: updateUserDto.username,
-        globalName: updateUserDto.globalName,
-        email: updateUserDto.email,
+        username: updateUserDto.username!,
+        discriminator: null,
+        globalName: updateUserDto.globalName || null,
+        avatar: null,
+        email: updateUserDto.email || null,
+        accessToken: null,
+        refreshToken: null,
+        isBanned: false,
+        isDeleted: false,
         createdAt: new Date(),
         updatedAt: new Date(),
+        lastLoginAt: new Date(),
       };
       usersService.update.mockResolvedValue(expectedUser);
 
@@ -248,9 +291,17 @@ describe('InternalUsersController', () => {
       const expectedUser = {
         id: userId,
         username: 'existinguser',
-        email: updateUserDto.email,
+        discriminator: null,
+        globalName: null,
+        avatar: null,
+        email: updateUserDto.email || null,
+        accessToken: null,
+        refreshToken: null,
+        isBanned: false,
+        isDeleted: false,
         createdAt: new Date(),
         updatedAt: new Date(),
+        lastLoginAt: new Date(),
       };
       usersService.update.mockResolvedValue(expectedUser);
 
@@ -286,8 +337,17 @@ describe('InternalUsersController', () => {
       const expectedUser = {
         id: userId,
         username: 'existinguser',
+        discriminator: null,
+        globalName: null,
+        avatar: null,
+        email: null,
+        accessToken: null,
+        refreshToken: null,
+        isBanned: false,
+        isDeleted: false,
         createdAt: new Date(),
         updatedAt: new Date(),
+        lastLoginAt: new Date(),
       };
       usersService.update.mockResolvedValue(expectedUser);
 
@@ -308,8 +368,17 @@ describe('InternalUsersController', () => {
       const expectedUser = {
         id: userId,
         username: 'deleteduser',
+        discriminator: null,
+        globalName: null,
+        avatar: null,
+        email: null,
+        accessToken: null,
+        refreshToken: null,
+        isBanned: false,
+        isDeleted: false,
         createdAt: new Date(),
         updatedAt: new Date(),
+        lastLoginAt: new Date(),
       };
       usersService.delete.mockResolvedValue(expectedUser);
 

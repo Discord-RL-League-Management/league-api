@@ -74,3 +74,5 @@ ALTER TABLE "match_participants" ADD CONSTRAINT "match_participants_teamId_fkey"
 ALTER TABLE "match_participants" ADD CONSTRAINT "match_participants_teamMemberId_fkey" FOREIGN KEY ("teamMemberId") REFERENCES "team_members"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 
+
+

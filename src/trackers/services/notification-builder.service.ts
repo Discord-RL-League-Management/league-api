@@ -103,6 +103,7 @@ export class NotificationBuilderService {
 
   /**
    * Build a Discord embed message for scraping failure notification
+   * User-friendly message that doesn't reveal backend implementation details
    */
   buildScrapingFailedEmbed(
     tracker: Tracker,
@@ -111,8 +112,8 @@ export class NotificationBuilderService {
     frontendUrl?: string,
   ): DiscordEmbed {
     const embed: DiscordEmbed = {
-      title: 'Tracker Scraping Failed',
-      description: `We encountered an error while collecting your tracker data.`,
+      title: 'Unable to Update Tracker Data',
+      description: `We were unable to collect updated data for your tracker at this time. This may be due to temporary issues with the tracker service or network connectivity.`,
       color: 0xff0000, // Red
       fields: [
         {
@@ -121,8 +122,9 @@ export class NotificationBuilderService {
           inline: false,
         },
         {
-          name: 'Error',
-          value: error.substring(0, 1000), // Limit error message length
+          name: 'What to do',
+          value:
+            'Please try again later. If the issue persists, verify that your tracker profile is publicly accessible.',
           inline: false,
         },
       ],

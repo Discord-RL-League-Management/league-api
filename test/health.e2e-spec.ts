@@ -1,13 +1,19 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
+import { AppModule } from '../src/app.module';
 import { bootstrapTestApp } from './helpers/create-test-app';
 
 describe('Health Endpoints (e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
-    app = await bootstrapTestApp();
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    app = moduleFixture.createNestApplication();
+    await bootstrapTestApp(app);
   });
 
   afterAll(async () => {
@@ -79,9 +85,9 @@ describe('Health Endpoints (e2e)', () => {
         .expect(200);
 
       // Check that each health indicator has a status
-      Object.values(response.body.info).forEach((indicator: any) => {
+      Object.values(response.body.info).forEach((indicator: unknown) => {
         expect(indicator).toHaveProperty('status');
-        expect(['up', 'down']).toContain(indicator.status);
+        expect(['up', 'down']).toContain((indicator as { status: string }).status);
       });
     });
 
@@ -116,7 +122,7 @@ describe('Health Endpoints (e2e)', () => {
       const responses = await Promise.all(promises);
 
       // All responses should be successful
-      responses.forEach((response) => {
+      responses.forEach((response: { body: { status: string } }) => {
         expect(response.body.status).toBe('ok');
       });
     });

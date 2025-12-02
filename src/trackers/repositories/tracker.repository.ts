@@ -13,6 +13,8 @@ export class TrackerRepository {
     username: string;
     userId: string;
     displayName?: string;
+    registrationChannelId?: string;
+    registrationInteractionToken?: string;
   }): Promise<Tracker> {
     return this.prisma.tracker.create({
       data,

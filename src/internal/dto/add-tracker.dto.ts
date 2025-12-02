@@ -50,4 +50,20 @@ export class AddTrackerDto {
   @ValidateNested()
   @Type(() => UserDataDto)
   userData?: UserDataDto;
+
+  @ApiPropertyOptional({
+    description: 'Discord channel ID where add-tracker command was called',
+    example: '123456789012345678',
+  })
+  @IsOptional()
+  @IsString()
+  channelId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Discord interaction token for ephemeral follow-up messages',
+    example: 'interaction_token_here',
+  })
+  @IsOptional()
+  @IsString()
+  interactionToken?: string;
 }

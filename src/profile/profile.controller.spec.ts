@@ -48,7 +48,10 @@ describe('ProfileController', () => {
         id: 'user123',
         username: 'testuser',
         email: 'test@example.com',
-      };
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
+      } as AuthenticatedUser;
       const expectedProfile = {
         id: 'user123',
         username: 'testuser',
@@ -76,6 +79,9 @@ describe('ProfileController', () => {
         id: 'different-user-id',
         username: 'anotheruser',
         email: 'another@example.com',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
       };
       const expectedProfile = {
         id: 'different-user-id',
@@ -107,7 +113,10 @@ describe('ProfileController', () => {
         id: 'user123',
         username: 'testuser',
         email: 'test@example.com',
-      };
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
+      } as AuthenticatedUser;
       const expectedStats = {
         totalMatches: 10,
         wins: 7,
@@ -132,6 +141,9 @@ describe('ProfileController', () => {
         id: 'stats-user-id',
         username: 'statsuser',
         email: 'stats@example.com',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
       };
       const expectedStats = {
         totalMatches: 0,
@@ -158,7 +170,10 @@ describe('ProfileController', () => {
         id: 'user123',
         username: 'testuser',
         email: 'test@example.com',
-      };
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
+      } as AuthenticatedUser;
       const inputSettings: UpdateUserSettingsDto = {
         theme: 'dark',
         notifications: {
@@ -207,6 +222,9 @@ describe('ProfileController', () => {
         id: 'settings-user-id',
         username: 'settingsuser',
         email: 'settings@example.com',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
       };
       const inputSettings: UpdateUserSettingsDto = {
         theme: 'light',
@@ -255,7 +273,10 @@ describe('ProfileController', () => {
         id: 'user123',
         username: 'testuser',
         email: 'test@example.com',
-      };
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
+      } as AuthenticatedUser;
       const inputSettings: UpdateUserSettingsDto = {
         theme: 'auto',
       };
@@ -299,7 +320,10 @@ describe('ProfileController', () => {
         id: 'user123',
         username: 'testuser',
         email: 'test@example.com',
-      };
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
+      } as AuthenticatedUser;
       const inputSettings: UpdateUserSettingsDto = {
         notifications: {
           email: false,

@@ -79,3 +79,5 @@ CREATE UNIQUE INDEX "organization_members_organizationId_playerId_key" ON "organ
 CREATE UNIQUE INDEX "organization_members_playerId_leagueId_key" ON "organization_members"("playerId", "leagueId");
 
 
+
+

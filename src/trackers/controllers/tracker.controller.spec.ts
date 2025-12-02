@@ -107,7 +107,7 @@ describe('TrackerController', () => {
 
       mockTrackerService.getTrackersByGuild.mockResolvedValue(guildTrackers);
 
-      const result = await controller.getTrackers(guildId, mockUser);
+      const result = await controller.getTrackers(mockUser, guildId);
 
       expect(result).toEqual(guildTrackers);
       expect(trackerService.getTrackersByGuild).toHaveBeenCalledWith(guildId);
@@ -118,7 +118,7 @@ describe('TrackerController', () => {
     it('should return user trackers when no guildId is provided', async () => {
       mockTrackerService.getTrackersByUserId.mockResolvedValue(mockTrackers);
 
-      const result = await controller.getTrackers(undefined, mockUser);
+      const result = await controller.getTrackers(mockUser, undefined);
 
       expect(result).toEqual(mockTrackers);
       expect(trackerService.getTrackersByUserId).toHaveBeenCalledWith(
@@ -151,7 +151,7 @@ describe('TrackerController', () => {
 
       mockTrackerService.getTrackersByUserId.mockResolvedValue(userTrackers);
 
-      const result = await controller.getTrackers(undefined, differentUser);
+      const result = await controller.getTrackers(differentUser, undefined);
 
       expect(result).toEqual(userTrackers);
       expect(trackerService.getTrackersByUserId).toHaveBeenCalledWith(

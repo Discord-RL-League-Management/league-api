@@ -31,7 +31,7 @@ describe('TrackerRefreshSchedulerService', () => {
       tracker: {
         findMany: jest.fn().mockResolvedValue([]),
       },
-    } as any;
+    } as unknown as jest.Mocked<PrismaService>;
 
     mockScrapingQueueService = {} as any;
 
@@ -88,8 +88,9 @@ describe('TrackerRefreshSchedulerService', () => {
     // Clean up any CronJob instances to prevent open handles
     if (service['cronJob']) {
       service['cronJob'].stop();
-      if (service['cronJob'].destroy) {
-        service['cronJob'].destroy();
+      const cronJob = service['cronJob'] as any;
+      if (cronJob.destroy) {
+        cronJob.destroy();
       }
       service['cronJob'] = null;
     }
@@ -129,8 +130,9 @@ describe('TrackerRefreshSchedulerService', () => {
       // Cleanup: Stop the cron job to prevent open handles
       if (service['cronJob']) {
         service['cronJob'].stop();
-        if (service['cronJob'].destroy) {
-          service['cronJob'].destroy();
+        const cronJob = service['cronJob'] as any;
+        if (cronJob.destroy) {
+          cronJob.destroy();
         }
         service['cronJob'] = null;
       }
@@ -184,8 +186,9 @@ describe('TrackerRefreshSchedulerService', () => {
       // Cleanup: Stop the cron job to prevent open handles
       if (customService['cronJob']) {
         customService['cronJob'].stop();
-        if (customService['cronJob'].destroy) {
-          customService['cronJob'].destroy();
+        const cronJob = customService['cronJob'] as any;
+        if (cronJob.destroy) {
+          cronJob.destroy();
         }
         customService['cronJob'] = null;
       }
@@ -232,7 +235,7 @@ describe('TrackerRefreshSchedulerService', () => {
     it('should refresh all trackers needing refresh when no trackerIds provided', async () => {
       // ARRANGE
       const trackersNeedingRefresh = ['tracker1', 'tracker2'];
-      mockPrismaService.tracker.findMany.mockResolvedValue([
+      (mockPrismaService.tracker.findMany as jest.Mock).mockResolvedValue([
         { id: 'tracker1' },
         { id: 'tracker2' },
       ] as any);
@@ -269,7 +272,7 @@ describe('TrackerRefreshSchedulerService', () => {
 
     it('should log message and return early when no trackers need refresh', async () => {
       // ARRANGE
-      mockPrismaService.tracker.findMany.mockResolvedValue([]);
+      (mockPrismaService.tracker.findMany as jest.Mock).mockResolvedValue([]);
       const logSpy = jest.spyOn(service['logger'], 'log');
 
       // ACT
@@ -305,7 +308,7 @@ describe('TrackerRefreshSchedulerService', () => {
     it('should throw error when getTrackersNeedingRefresh fails', async () => {
       // ARRANGE
       const error = new Error('Database query failed');
-      mockPrismaService.tracker.findMany.mockRejectedValue(error);
+      (mockPrismaService.tracker.findMany as jest.Mock).mockRejectedValue(error);
       const logSpy = jest.spyOn(service['logger'], 'error');
 
       // ACT & ASSERT
@@ -321,7 +324,7 @@ describe('TrackerRefreshSchedulerService', () => {
     it('should handle empty trackerIds array', async () => {
       // ARRANGE
       const trackerIds: string[] = [];
-      mockPrismaService.tracker.findMany.mockResolvedValue([]);
+      (mockPrismaService.tracker.findMany as jest.Mock).mockResolvedValue([]);
       const logSpy = jest.spyOn(service['logger'], 'log');
 
       // ACT

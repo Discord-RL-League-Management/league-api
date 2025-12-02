@@ -235,6 +235,9 @@ describe('AppModule', () => {
           },
         ];
 
+        if (!pipeOptions.exceptionFactory) {
+          throw new Error('exceptionFactory is not defined');
+        }
         const exception = pipeOptions.exceptionFactory(mockErrors);
 
         expect(exception).toBeInstanceOf(BadRequestException);
@@ -284,6 +287,9 @@ describe('AppModule', () => {
           },
         ];
 
+        if (!pipeOptions.exceptionFactory) {
+          throw new Error('exceptionFactory is not defined');
+        }
         const exception = pipeOptions.exceptionFactory(mockErrors);
 
         expect(exception).toBeInstanceOf(BadRequestException);
@@ -322,6 +328,9 @@ describe('AppModule', () => {
           },
         ];
 
+        if (!pipeOptions.exceptionFactory) {
+          throw new Error('exceptionFactory is not defined');
+        }
         const exception = pipeOptions.exceptionFactory(mockErrors);
         const response = exception.getResponse();
 

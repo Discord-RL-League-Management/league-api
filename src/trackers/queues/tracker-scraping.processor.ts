@@ -12,6 +12,7 @@ import { TrackerScraperService } from '../services/tracker-scraper.service';
 import { TrackerSeasonService } from '../services/tracker-season.service';
 import { TrackerService } from '../services/tracker.service';
 import { TrackerNotificationService } from '../services/tracker-notification.service';
+import { ActivityLogService } from '../../infrastructure/activity-log/services/activity-log.service';
 
 @Processor(TRACKER_SCRAPING_QUEUE)
 @Injectable()
@@ -24,6 +25,7 @@ export class TrackerScrapingProcessor extends WorkerHost {
     private readonly seasonService: TrackerSeasonService,
     private readonly trackerService: TrackerService,
     private readonly notificationService: TrackerNotificationService,
+    private readonly activityLogService: ActivityLogService,
   ) {
     super();
   }
@@ -97,6 +99,38 @@ export class TrackerScrapingProcessor extends WorkerHost {
           });
         }
 
+        // Log success to audit log (zero seasons is still a success)
+        // tracker is guaranteed to be non-null here due to check above
+        const trackerUserId = tracker.userId;
+        const trackerUrl = tracker.url;
+        await this.prisma
+          .$transaction(async (tx) => {
+            await this.activityLogService.logActivity(
+              tx,
+              'tracker',
+              trackerId,
+              'TRACKER_SCRAPING',
+              'scrape.success',
+              trackerUserId,
+              undefined, // No guildId for tracker scraping
+              {
+                seasonsScraped: 0,
+                seasonsFailed: 0,
+                totalSeasons: 0,
+              },
+              {
+                trackerUrl,
+                scrapingLogId,
+                note: 'No seasons found',
+              },
+            );
+          })
+          .catch((err) => {
+            this.logger.warn(
+              `Failed to log scraping success to audit log: ${err.message}`,
+            );
+          });
+
         // Send notification (non-blocking)
         this.notificationService
           .sendScrapingCompleteNotification(trackerId, tracker.userId, 0, 0)
@@ -115,21 +149,38 @@ export class TrackerScrapingProcessor extends WorkerHost {
         };
       }
 
-      // Store season data
+      // Store season data using bulk upsert to avoid N+1 query problem
       let seasonsScraped = 0;
       let seasonsFailed = 0;
 
-      for (const seasonData of seasons) {
-        try {
-          await this.seasonService.createOrUpdateSeason(trackerId, seasonData);
-          seasonsScraped++;
-        } catch (error) {
-          const errorMessage =
-            error instanceof Error ? error.message : String(error);
-          this.logger.error(
-            `Failed to store season ${seasonData.seasonNumber}: ${errorMessage}`,
-          );
-          seasonsFailed++;
+      try {
+        // Use bulk upsert for better performance (single transaction with parallel upserts)
+        await this.seasonService.bulkUpsertSeasons(trackerId, seasons);
+        seasonsScraped = seasons.length;
+        seasonsFailed = 0;
+      } catch (error) {
+        // Fallback to individual upserts if bulk operation fails
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        this.logger.warn(
+          `Bulk season upsert failed, falling back to individual upserts: ${errorMessage}`,
+        );
+
+        // Fallback: process seasons individually
+        for (const seasonData of seasons) {
+          try {
+            await this.seasonService.createOrUpdateSeason(trackerId, seasonData);
+            seasonsScraped++;
+          } catch (individualError) {
+            const individualErrorMessage =
+              individualError instanceof Error
+                ? individualError.message
+                : String(individualError);
+            this.logger.error(
+              `Failed to store season ${seasonData.seasonNumber}: ${individualErrorMessage}`,
+            );
+            seasonsFailed++;
+          }
         }
       }
 
@@ -158,6 +209,37 @@ export class TrackerScrapingProcessor extends WorkerHost {
       this.logger.log(
         `Successfully scraped tracker ${trackerId}: ${seasonsScraped} seasons scraped, ${seasonsFailed} failed`,
       );
+
+      // Log success to audit log
+      // tracker is guaranteed to be non-null here due to check above
+      const trackerUserId = tracker.userId;
+      const trackerUrl = tracker.url;
+      await this.prisma
+        .$transaction(async (tx) => {
+          await this.activityLogService.logActivity(
+            tx,
+            'tracker',
+            trackerId,
+            'TRACKER_SCRAPING',
+            'scrape.success',
+            trackerUserId,
+            undefined, // No guildId for tracker scraping
+            {
+              seasonsScraped,
+              seasonsFailed,
+              totalSeasons: seasonsScraped + seasonsFailed,
+            },
+            {
+              trackerUrl,
+              scrapingLogId,
+            },
+          );
+        })
+        .catch((err) => {
+          this.logger.warn(
+            `Failed to log scraping success to audit log: ${err.message}`,
+          );
+        });
 
       // Send success notification (non-blocking)
       this.notificationService
@@ -209,6 +291,45 @@ export class TrackerScrapingProcessor extends WorkerHost {
             completedAt: new Date(),
           },
         });
+      }
+
+      // Log failure to audit log
+      if (tracker) {
+        const trackerUserId = tracker.userId;
+        const trackerUrl = tracker.url;
+
+        await this.prisma
+          .$transaction(async (tx) => {
+            // Fetch scraping attempts count inside transaction to ensure consistency
+            const trackerWithAttempts = await tx.tracker.findUnique({
+              where: { id: trackerId },
+              select: { scrapingAttempts: true },
+            });
+            const scrapingAttempts = trackerWithAttempts?.scrapingAttempts || 0;
+
+            await this.activityLogService.logActivity(
+              tx,
+              'tracker',
+              trackerId,
+              'TRACKER_SCRAPING',
+              'scrape.failure',
+              trackerUserId,
+              undefined, // No guildId for tracker scraping
+              {
+                error: errorMessage.substring(0, 500), // Limit error length in audit log
+              },
+              {
+                trackerUrl,
+                scrapingLogId,
+                scrapingAttempts,
+              },
+            );
+          })
+          .catch((err) => {
+            this.logger.warn(
+              `Failed to log scraping failure to audit log: ${err.message}`,
+            );
+          });
       }
 
       // Send failure notification (non-blocking)

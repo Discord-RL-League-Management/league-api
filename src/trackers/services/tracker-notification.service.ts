@@ -89,7 +89,8 @@ export class TrackerNotificationService {
   }
 
   /**
-   * Send a DM to the user when scraping fails
+   * Send an ephemeral follow-up message when scraping fails
+   * Replaces DM notifications with channel-based ephemeral messages
    */
   async sendScrapingFailedNotification(
     trackerId: string,
@@ -97,17 +98,7 @@ export class TrackerNotificationService {
     error: string,
   ): Promise<void> {
     try {
-      // Get user info
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-      });
-
-      if (!user) {
-        this.logger.warn(`User ${userId} not found, cannot send notification`);
-        return;
-      }
-
-      // Get tracker info
+      // Get tracker info including channel context
       const tracker = await this.prisma.tracker.findUnique({
         where: { id: trackerId },
       });
@@ -119,7 +110,17 @@ export class TrackerNotificationService {
         return;
       }
 
-      // Build error embed
+      // Get user info for embed
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!user) {
+        this.logger.warn(`User ${userId} not found, cannot send notification`);
+        return;
+      }
+
+      // Build error embed (user-friendly, no backend details)
       const embed = this.notificationBuilderService.buildScrapingFailedEmbed(
         tracker,
         user,
@@ -127,14 +128,39 @@ export class TrackerNotificationService {
         this.frontendUrl,
       );
 
-      // Send DM to user via Discord API
-      await this.discordMessageService.sendDirectMessage(userId, {
-        embeds: [embed],
-      });
-
-      this.logger.log(
-        `Sent scraping failed notification to user ${userId} for tracker ${trackerId}`,
-      );
+      // Try ephemeral follow-up if we have an interaction token, otherwise fall back to DM
+      if (tracker.registrationInteractionToken) {
+        try {
+          await this.discordMessageService.sendEphemeralFollowUp(
+            tracker.registrationInteractionToken,
+            {
+              embeds: [embed],
+            },
+          );
+          this.logger.log(
+            `Sent scraping failed ephemeral follow-up for tracker ${trackerId}`,
+          );
+        } catch (ephemeralError) {
+          // If ephemeral fails (e.g., token expired), fall back to DM
+          this.logger.debug(
+            `Ephemeral follow-up failed for tracker ${trackerId}, falling back to DM`,
+          );
+          await this.discordMessageService.sendDirectMessage(userId, {
+            embeds: [embed],
+          });
+          this.logger.log(
+            `Sent scraping failed DM notification for tracker ${trackerId}`,
+          );
+        }
+      } else {
+        // No interaction token available, send DM instead
+        await this.discordMessageService.sendDirectMessage(userId, {
+          embeds: [embed],
+        });
+        this.logger.log(
+          `Sent scraping failed DM notification for tracker ${trackerId} (no interaction token)`,
+        );
+      }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);

@@ -64,7 +64,7 @@ describe('TrackerAdminController', () => {
     refreshScheduler = module.get<TrackerRefreshSchedulerService>(
       TrackerRefreshSchedulerService,
     ) as jest.Mocked<TrackerRefreshSchedulerService>;
-    prisma = module.get(PrismaService) as typeof mockPrismaService;
+    prisma = module.get(PrismaService);
   });
 
   afterEach(() => {

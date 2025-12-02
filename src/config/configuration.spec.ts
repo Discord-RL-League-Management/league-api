@@ -75,7 +75,6 @@ describe('Configuration', () => {
       expect(config.throttler.ttl).toBe(30000);
       expect(config.throttler.limit).toBe(50);
     });
-
   });
 
   describe('configuration structure', () => {

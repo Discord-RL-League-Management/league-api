@@ -44,7 +44,11 @@ export class NewRelicLoggerService implements LoggerService {
               resolver.setServers(['8.8.8.8', '8.8.4.4']);
               resolver.resolve4(hostname, (err2, addresses) => {
                 if (err2 || !addresses || addresses.length === 0) {
-                  callback(err || err2 || new Error('DNS resolution failed'), '', 4);
+                  callback(
+                    err || err2 || new Error('DNS resolution failed'),
+                    '',
+                    4,
+                  );
                 } else {
                   callback(null, addresses[0], 4);
                 }
@@ -99,18 +103,21 @@ export class NewRelicLoggerService implements LoggerService {
       // Only log once per error type to avoid spam
       const errorCode = error?.code || error?.response?.status;
       const errorKey = `_error_${errorCode}_logged`;
-      
+
       if (!(this as any)[errorKey]) {
         // Use console.error directly to avoid recursion (don't use this.error)
         console.error(
           `[NewRelicLogger] Failed to send log to New Relic: ${errorCode || 'unknown'} - ${error?.message || 'Unknown error'}`,
         );
         (this as any)[errorKey] = true;
-        
+
         // Reset error flag after 5 minutes to allow retry logging
-        setTimeout(() => {
-          (this as any)[errorKey] = false;
-        }, 5 * 60 * 1000);
+        setTimeout(
+          () => {
+            (this as any)[errorKey] = false;
+          },
+          5 * 60 * 1000,
+        );
       }
     }
   }
