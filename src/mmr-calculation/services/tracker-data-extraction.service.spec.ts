@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TrackerDataExtractionService } from './tracker-data-extraction.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { TrackerData } from './mmr-calculation.service';
 
 describe('TrackerDataExtractionService', () => {
   let service: TrackerDataExtractionService;

@@ -50,9 +50,11 @@ export class TrackerDataExtractionService {
         threesGamesPlayed: playlist3v3?.matchesPlayed ?? undefined,
         foursGamesPlayed: playlist4v4?.matchesPlayed ?? undefined,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(
-        `Failed to extract tracker data for tracker ${trackerId}: ${error.message}`,
+        `Failed to extract tracker data for tracker ${trackerId}: ${errorMessage}`,
         error,
       );
       return null;

@@ -57,7 +57,9 @@ export class MmrCalculationService {
       case 'CUSTOM':
         return this.calculateCustomFormula(trackerData, config);
       default:
-        throw new BadRequestException(`Unknown algorithm: ${config.algorithm}`);
+        throw new BadRequestException(
+          `Unknown algorithm: ${String(config.algorithm)}`,
+        );
     }
   }
 
@@ -222,13 +224,15 @@ export class MmrCalculationService {
       }
 
       return Math.round(result);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(
-        `Failed to evaluate custom formula: ${error.message}`,
+        `Failed to evaluate custom formula: ${errorMessage}`,
         error,
       );
       throw new BadRequestException(
-        `Formula evaluation failed: ${error.message}`,
+        `Formula evaluation failed: ${errorMessage}`,
       );
     }
   }
@@ -271,12 +275,14 @@ export class MmrCalculationService {
         testData: data,
         valid: true,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       return {
         result: 0,
         testData: data,
         valid: false,
-        error: error.message,
+        error: errorMessage,
       };
     }
   }

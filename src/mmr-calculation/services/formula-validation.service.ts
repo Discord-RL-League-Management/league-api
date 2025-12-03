@@ -1,5 +1,5 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
-import { create, all, MathJsStatic, MathJsInstance } from 'mathjs';
+import { Injectable } from '@nestjs/common';
+import { create, all, MathJsInstance } from 'mathjs';
 
 /**
  * FormulaValidationService - Single Responsibility: Formula validation
@@ -71,7 +71,7 @@ export class FormulaValidationService {
 
       // Test evaluation with sample data to ensure it works
       const testData = this.getTestData();
-      const result = expr.evaluate(testData);
+      const result = expr.evaluate(testData) as number;
 
       // Check if result is a valid number
       if (typeof result !== 'number' || !isFinite(result)) {
@@ -85,10 +85,12 @@ export class FormulaValidationService {
         valid: true,
         parsedExpression: expr,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Invalid formula syntax';
       return {
         valid: false,
-        error: error.message || 'Invalid formula syntax',
+        error: errorMessage,
       };
     }
   }
@@ -97,7 +99,7 @@ export class FormulaValidationService {
    * Extract variable names from parsed expression
    * Single Responsibility: Variable extraction
    */
-  private extractVariables(expr: any): string[] {
+  private extractVariables(expr: unknown): string[] {
     const variables = new Set<string>();
     // List of known mathjs function names to exclude from variable extraction
     const functionNames = new Set([
@@ -134,14 +136,21 @@ export class FormulaValidationService {
       'not',
     ]);
 
-    const traverse = (node: any) => {
-      if (!node || typeof node !== 'object') {
+    // Type guard for AST node with type property
+    const isAstNode = (
+      node: unknown,
+    ): node is { type?: string; name?: string; args?: unknown[] } => {
+      return typeof node === 'object' && node !== null;
+    };
+
+    const traverse = (node: unknown) => {
+      if (!isAstNode(node)) {
         return;
       }
 
       // math.js uses 'SymbolNode' for variables
       // Only add if it's not a function name and not in a FunctionNode context
-      if (node.type === 'SymbolNode' && node.name) {
+      if (node.type === 'SymbolNode' && typeof node.name === 'string') {
         // Check if parent is a FunctionNode - if so, it's a function call, not a variable
         // We'll check this by seeing if we're inside a FunctionNode's args
         // For now, just exclude known function names
@@ -151,17 +160,17 @@ export class FormulaValidationService {
       }
 
       // Traverse children
-      if (node.args && Array.isArray(node.args)) {
+      if (Array.isArray(node.args)) {
         node.args.forEach(traverse);
       }
 
       // Traverse other properties
       for (const key in node) {
-        if (node.hasOwnProperty(key) && key !== 'args') {
-          const value = node[key];
+        if (Object.prototype.hasOwnProperty.call(node, key) && key !== 'args') {
+          const value = (node as Record<string, unknown>)[key];
           if (Array.isArray(value)) {
             value.forEach(traverse);
-          } else if (value && typeof value === 'object') {
+          } else if (isAstNode(value)) {
             traverse(value);
           }
         }

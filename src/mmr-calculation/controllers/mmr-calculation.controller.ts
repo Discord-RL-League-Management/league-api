@@ -1,4 +1,12 @@
-import { Controller, Post, Body, UseGuards, Logger } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Logger,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -11,6 +19,13 @@ import { MmrCalculationService } from '../services/mmr-calculation.service';
 import { FormulaValidationService } from '../services/formula-validation.service';
 import { TestFormulaDto } from '../dto/test-formula.dto';
 import { ValidateFormulaDto } from '../dto/validate-formula.dto';
+import { CalculateMmrDto } from '../dto/calculate-mmr.dto';
+import { GuildSettingsService } from '../../guilds/guild-settings.service';
+import { SettingsDefaultsService } from '../../guilds/services/settings-defaults.service';
+import {
+  GuildSettings,
+  MmrCalculationConfig,
+} from '../../guilds/interfaces/settings.interface';
 
 /**
  * MmrCalculationController - Single Responsibility: MMR calculation API endpoints
@@ -28,6 +43,8 @@ export class MmrCalculationController {
   constructor(
     private readonly mmrService: MmrCalculationService,
     private readonly formulaValidation: FormulaValidationService,
+    private readonly guildSettingsService: GuildSettingsService,
+    private readonly settingsDefaults: SettingsDefaultsService,
   ) {}
 
   @Post('test-formula')
@@ -36,7 +53,7 @@ export class MmrCalculationController {
   })
   @ApiResponse({ status: 200, description: 'Formula test result' })
   @ApiResponse({ status: 400, description: 'Invalid formula or test data' })
-  async testFormula(@Body() body: TestFormulaDto) {
+  testFormula(@Body() body: TestFormulaDto) {
     return this.mmrService.testFormula(body.formula, body.testData);
   }
 
@@ -44,7 +61,74 @@ export class MmrCalculationController {
   @ApiOperation({ summary: 'Validate a custom MMR formula syntax' })
   @ApiResponse({ status: 200, description: 'Formula validation result' })
   @ApiResponse({ status: 400, description: 'Invalid formula' })
-  async validateFormula(@Body() body: ValidateFormulaDto) {
+  validateFormula(@Body() body: ValidateFormulaDto) {
     return this.formulaValidation.validateFormula(body.formula);
+  }
+
+  @Post('calculate-mmr')
+  @ApiOperation({
+    summary: 'Calculate MMR using guild configuration and tracker data',
+    description:
+      "Calculates internal MMR based on the guild's configured algorithm (WEIGHTED_AVERAGE, PEAK_MMR, or CUSTOM)",
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Calculated MMR result',
+    schema: {
+      type: 'object',
+      properties: {
+        result: { type: 'number', description: 'Calculated MMR value' },
+        algorithm: {
+          type: 'string',
+          description: 'Algorithm used for calculation',
+        },
+        config: {
+          type: 'object',
+          description: 'MMR calculation configuration used',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Invalid tracker data or config' })
+  @ApiResponse({ status: 404, description: 'Guild not found' })
+  async calculateMmr(@Body() body: CalculateMmrDto) {
+    try {
+      // Get guild settings
+      const settings = (await this.guildSettingsService.getSettings(
+        body.guildId,
+      )) as GuildSettings;
+      const mmrConfig: MmrCalculationConfig | undefined =
+        settings.mmrCalculation ||
+        this.settingsDefaults.getDefaults().mmrCalculation;
+
+      if (!mmrConfig) {
+        throw new BadRequestException(
+          'MMR calculation configuration not found for guild',
+        );
+      }
+
+      // Calculate MMR
+      const result = this.mmrService.calculateMmr(body.trackerData, mmrConfig);
+
+      return {
+        result,
+        algorithm: mmrConfig.algorithm,
+        config: mmrConfig,
+      };
+    } catch (error: unknown) {
+      this.logger.error(
+        `Error calculating MMR for guild ${body.guildId}:`,
+        error,
+      );
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      throw new BadRequestException(`Failed to calculate MMR: ${errorMessage}`);
+    }
   }
 }

@@ -1,10 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { MmrCalculationService } from './mmr-calculation.service';
+import { MmrCalculationService, TrackerData } from './mmr-calculation.service';
 import { TrackerDataExtractionService } from './tracker-data-extraction.service';
 import { SettingsDefaultsService } from '../../guilds/services/settings-defaults.service';
 import { GuildSettingsService } from '../../guilds/guild-settings.service';
-import { MmrCalculationConfig } from '../../guilds/interfaces/settings.interface';
+import {
+  MmrCalculationConfig,
+  GuildSettings,
+} from '../../guilds/interfaces/settings.interface';
 
 /**
  * MmrCalculationIntegrationService - Single Responsibility: MMR calculation orchestration
@@ -80,9 +83,11 @@ export class MmrCalculationIntegrationService {
           );
         }
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(
-        `Failed to calculate MMR for user ${userId}: ${error.message}`,
+        `Failed to calculate MMR for user ${userId}: ${errorMessage}`,
         error,
       );
       // Don't throw - we don't want to break the scraping process
@@ -101,18 +106,21 @@ export class MmrCalculationIntegrationService {
   private async calculateMmrForGuild(
     userId: string,
     guildId: string,
-    trackerData: any,
+    trackerData: TrackerData,
   ): Promise<number> {
     // Get guild settings (or use defaults)
     let mmrConfig: MmrCalculationConfig;
 
     try {
-      const settings = await this.guildSettingsService.getSettings(guildId);
-      const settingsTyped = settings as any;
-      mmrConfig = settingsTyped.mmrCalculation || this.getDefaultMmrConfig();
-    } catch (error: any) {
+      const settings = (await this.guildSettingsService.getSettings(
+        guildId,
+      )) as GuildSettings;
+      mmrConfig = settings.mmrCalculation || this.getDefaultMmrConfig();
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       this.logger.warn(
-        `Failed to get settings for guild ${guildId}, using defaults: ${error.message}`,
+        `Failed to get settings for guild ${guildId}, using defaults: ${errorMessage}`,
       );
       mmrConfig = this.getDefaultMmrConfig();
     }
