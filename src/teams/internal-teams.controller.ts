@@ -50,3 +50,4 @@ export class InternalTeamsController {
     return this.teamService.delete(id);
   }
 }
+

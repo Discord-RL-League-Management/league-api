@@ -6,8 +6,16 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
-import { firstValueFrom, timeout, retry, catchError, of } from 'rxjs';
-import { AxiosError } from 'axios';
+import {
+  firstValueFrom,
+  timeout,
+  catchError,
+  of,
+  timer,
+  throwError,
+} from 'rxjs';
+import { retryWhen, concatMap } from 'rxjs/operators';
+import { AxiosError, AxiosResponse } from 'axios';
 
 interface DiscordGuild {
   id: string;
@@ -59,19 +67,48 @@ export class DiscordApiService {
   }
 
   /**
+   * Create retry operator that conditionally retries based on error type
+   * Single Responsibility: Retry logic for Discord API calls
+   *
+   * - Does NOT retry on 429 (rate limit) or 401 (unauthorized) errors
+   * - Retries transient errors (5xx, timeouts) with exponential backoff
+   */
+  private createRetryOperator<T>(): import('rxjs').MonoTypeOperatorFunction<T> {
+    return retryWhen((errors) =>
+      errors.pipe(
+        concatMap((error: AxiosError, index) => {
+          // Don't retry on 429 (rate limit) or 401 (auth) errors
+          if (
+            error.response?.status === 429 ||
+            error.response?.status === 401
+          ) {
+            return throwError(() => error);
+          }
+          // Retry other errors with exponential backoff
+          if (index < this.retryAttempts) {
+            const delayMs = 1000 * Math.pow(2, index); // 1s, 2s, 4s
+            return timer(delayMs);
+          }
+          return throwError(() => error);
+        }),
+      ),
+    ) as import('rxjs').MonoTypeOperatorFunction<T>;
+  }
+
+  /**
    * Fetch user's guilds from Discord API with proper error handling
    * Single Responsibility: Discord API communication
    */
   async getUserGuilds(accessToken: string): Promise<DiscordGuild[]> {
     try {
-      const response = await firstValueFrom(
+      const response = (await firstValueFrom(
         this.httpService
           .get<DiscordGuild[]>(`${this.apiUrl}/users/@me/guilds`, {
             headers: { Authorization: `Bearer ${accessToken}` },
           })
           .pipe(
             timeout(this.requestTimeout),
-            retry(this.retryAttempts),
+            this.createRetryOperator<AxiosResponse<DiscordGuild[]>>(),
             catchError((error: AxiosError) => {
               this.logger.error(`Discord API error: ${error.message}`, {
                 status: error.response?.status,
@@ -92,7 +129,7 @@ export class DiscordApiService {
               }
             }),
           ),
-      );
+      )) as AxiosResponse<DiscordGuild[]>;
 
       this.logger.log(
         `Successfully fetched ${response.data.length} guilds from Discord API`,
@@ -110,20 +147,20 @@ export class DiscordApiService {
    */
   async getUserProfile(accessToken: string): Promise<DiscordUser> {
     try {
-      const response = await firstValueFrom(
+      const response = (await firstValueFrom(
         this.httpService
           .get<DiscordUser>(`${this.apiUrl}/users/@me`, {
             headers: { Authorization: `Bearer ${accessToken}` },
           })
           .pipe(
             timeout(this.requestTimeout),
-            retry(this.retryAttempts),
+            this.createRetryOperator<AxiosResponse<DiscordUser>>(),
             catchError((error: AxiosError) => {
               this.logger.error(`Discord profile API error: ${error.message}`);
               throw new ServiceUnavailableException('Discord API unavailable');
             }),
           ),
-      );
+      )) as AxiosResponse<DiscordUser>;
 
       return response.data;
     } catch (error) {
@@ -144,14 +181,14 @@ export class DiscordApiService {
     guildId: string,
   ): Promise<GuildPermissions> {
     try {
-      const response = await firstValueFrom(
+      const response = (await firstValueFrom(
         this.httpService
           .get<any>(`${this.apiUrl}/users/@me/guilds/${guildId}/member`, {
             headers: { Authorization: `Bearer ${accessToken}` },
           })
           .pipe(
             timeout(this.requestTimeout),
-            retry(this.retryAttempts),
+            this.createRetryOperator<AxiosResponse<any>>(),
             catchError((error: AxiosError) => {
               if (error.response?.status === 404) {
                 return of({ data: null } as any); // User not in guild
@@ -162,7 +199,7 @@ export class DiscordApiService {
               throw new ServiceUnavailableException('Discord API unavailable');
             }),
           ),
-      );
+      )) as AxiosResponse<any>;
 
       if (!response.data) {
         return { isMember: false, permissions: [], roles: [] };
@@ -215,14 +252,14 @@ export class DiscordApiService {
     guildId: string,
   ): Promise<{ roles: string[]; nick?: string } | null> {
     try {
-      const response = await firstValueFrom(
+      const response = await firstValueFrom<AxiosResponse<any>>(
         this.httpService
           .get<any>(`${this.apiUrl}/users/@me/guilds/${guildId}/member`, {
             headers: { Authorization: `Bearer ${accessToken}` },
           })
           .pipe(
             timeout(this.requestTimeout),
-            retry(this.retryAttempts),
+            this.createRetryOperator<AxiosResponse<any>>(),
             catchError((error: AxiosError) => {
               if (error.response?.status === 404) {
                 return of({ data: null } as any); // User not in guild

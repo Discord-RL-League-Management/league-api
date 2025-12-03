@@ -82,3 +82,4 @@ export class CreateTeamMemberDto {
   @IsString()
   notes?: string;
 }
+

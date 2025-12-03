@@ -125,16 +125,37 @@ export class MinGamesPlayedDto {
 }
 
 /**
+ * Ascendancy algorithm weights DTO
+ */
+export class AscendancyWeightsDto {
+  @ApiProperty({
+    description: 'Current MMR weight (Q) - typically 0.25',
+    example: 0.25,
+  })
+  @IsNumber()
+  @Min(0)
+  current!: number;
+
+  @ApiProperty({
+    description: 'Peak MMR weight (R) - typically 0.75',
+    example: 0.75,
+  })
+  @IsNumber()
+  @Min(0)
+  peak!: number;
+}
+
+/**
  * MMR calculation configuration DTO
  */
 export class MmrCalculationConfigDto {
   @ApiProperty({
     description: 'MMR calculation algorithm',
-    enum: ['WEIGHTED_AVERAGE', 'PEAK_MMR', 'CUSTOM'],
+    enum: ['WEIGHTED_AVERAGE', 'PEAK_MMR', 'CUSTOM', 'ASCENDANCY'],
     example: 'WEIGHTED_AVERAGE',
   })
-  @IsEnum(['WEIGHTED_AVERAGE', 'PEAK_MMR', 'CUSTOM'])
-  algorithm!: 'WEIGHTED_AVERAGE' | 'PEAK_MMR' | 'CUSTOM';
+  @IsEnum(['WEIGHTED_AVERAGE', 'PEAK_MMR', 'CUSTOM', 'ASCENDANCY'])
+  algorithm!: 'WEIGHTED_AVERAGE' | 'PEAK_MMR' | 'CUSTOM' | 'ASCENDANCY';
 
   @ApiPropertyOptional({ type: MmrWeightsDto })
   @IsOptional()
@@ -155,6 +176,16 @@ export class MmrCalculationConfigDto {
   @IsOptional()
   @IsString()
   customFormula?: string;
+
+  @ApiPropertyOptional({
+    type: AscendancyWeightsDto,
+    description:
+      'Ascendancy algorithm weights (defaults to current=0.25, peak=0.75 if not provided)',
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => AscendancyWeightsDto)
+  ascendancyWeights?: AscendancyWeightsDto;
 }
 
 /**
