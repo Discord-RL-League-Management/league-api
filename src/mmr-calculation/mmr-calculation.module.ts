@@ -1,5 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { MmrCalculationController } from './controllers/mmr-calculation.controller';
+import { MMRCalculatorDemoController } from './controllers/mmr-calculator-demo.controller';
 import { MmrCalculationService } from './services/mmr-calculation.service';
 import { FormulaValidationService } from './services/formula-validation.service';
 import { TrackerDataExtractionService } from './services/tracker-data-extraction.service';
@@ -40,7 +41,7 @@ import { TokenManagementModule } from '../auth/services/token-management.module'
     DiscordModule,
     TokenManagementModule,
   ],
-  controllers: [MmrCalculationController],
+  controllers: [MmrCalculationController, MMRCalculatorDemoController],
   providers: [
     MmrCalculationService,
     FormulaValidationService,
