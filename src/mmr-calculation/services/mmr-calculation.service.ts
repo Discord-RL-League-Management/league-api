@@ -56,6 +56,8 @@ export class MmrCalculationService {
         return this.calculatePeakMmr(trackerData, config);
       case 'CUSTOM':
         return this.calculateCustomFormula(trackerData, config);
+      case 'ASCENDANCY':
+        return this.calculateAscendancy(trackerData, config);
       default:
         throw new BadRequestException(
           `Unknown algorithm: ${String(config.algorithm)}`,
@@ -121,6 +123,69 @@ export class MmrCalculationService {
     }
 
     return Math.round(weightedSum / totalWeight);
+  }
+
+  /**
+   * Calculate Ascendancy MMR using 5-step process
+   * Single Responsibility: Ascendancy algorithm calculation
+   *
+   * Steps:
+   * 1. Calculate 2s Score = weighted average of Current and Peak (using Q and R)
+   * 2. Calculate 3s Score = weighted average of Current and Peak (using Q and R)
+   * 3. Calculate 2s% = percentage of games in 2s
+   * 4. Calculate 3s% = percentage of games in 3s
+   * 5. Final Score = weighted average of 2s Score and 3s Score (using percentages)
+   */
+  private calculateAscendancy(
+    trackerData: TrackerData,
+    config: MmrCalculationConfig,
+  ): number {
+    // Step 1: Get weights (Q and R) - defaults to 0.25 and 0.75
+    const weights = config.ascendancyWeights || { current: 0.25, peak: 0.75 };
+    const Q = weights.current;
+    const R = weights.peak;
+
+    // Step 2: Calculate 2s Score (L)
+    // Simplified: Use twos as both Current and Peak until Peak data is available
+    const twosCurrent = trackerData.twos || 0;
+    const twosPeak = trackerData.twos || 0; // TODO: Use actual peak when available
+    const twosScore =
+      Q + R > 0 ? (twosCurrent * Q + twosPeak * R) / (Q + R) : 0;
+
+    // Step 3: Calculate 3s Score (M)
+    // Simplified: Use threes as both Current and Peak until Peak data is available
+    const threesCurrent = trackerData.threes || 0;
+    const threesPeak = trackerData.threes || 0; // TODO: Use actual peak when available
+    const threesScore =
+      Q + R > 0 ? (threesCurrent * Q + threesPeak * R) / (Q + R) : 0;
+
+    // Step 4: Calculate total games
+    const totalGames =
+      (trackerData.onesGamesPlayed || 0) +
+      (trackerData.twosGamesPlayed || 0) +
+      (trackerData.threesGamesPlayed || 0) +
+      (trackerData.foursGamesPlayed || 0);
+
+    // Step 5: Calculate 2s% (N)
+    const twosPercent =
+      totalGames > 0 ? (trackerData.twosGamesPlayed || 0) / totalGames : 0;
+
+    // Step 6: Calculate 3s% (O)
+    const threesPercent =
+      totalGames > 0 ? (trackerData.threesGamesPlayed || 0) / totalGames : 0;
+
+    // Step 7: Calculate Final Score (P)
+    // Weighted average of 2s Score and 3s Score using percentages as weights
+    const totalPercent = twosPercent + threesPercent;
+    if (totalPercent === 0) {
+      // No games in 2s or 3s, return 0
+      return 0;
+    }
+
+    const finalScore =
+      (twosScore * twosPercent + threesScore * threesPercent) / totalPercent;
+
+    return Math.round(finalScore);
   }
 
   /**

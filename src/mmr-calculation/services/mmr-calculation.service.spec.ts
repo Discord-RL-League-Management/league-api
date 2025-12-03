@@ -126,6 +126,134 @@ describe('MmrCalculationService', () => {
     });
   });
 
+  describe('calculateMmr - ASCENDANCY', () => {
+    const trackerData: TrackerData = {
+      ones: 1200,
+      twos: 1400,
+      threes: 1600,
+      fours: 1000,
+      onesGamesPlayed: 150,
+      twosGamesPlayed: 300,
+      threesGamesPlayed: 500,
+      foursGamesPlayed: 50,
+    };
+
+    it('should calculate Ascendancy with default weights', () => {
+      const config: MmrCalculationConfig = {
+        algorithm: 'ASCENDANCY',
+      };
+
+      const result = service.calculateMmr(trackerData, config);
+      // 2s Score = (1400 * 0.25 + 1400 * 0.75) / 1.0 = 1400
+      // 3s Score = (1600 * 0.25 + 1600 * 0.75) / 1.0 = 1600
+      // Total games = 150 + 300 + 500 + 50 = 1000
+      // 2s% = 300 / 1000 = 0.3
+      // 3s% = 500 / 1000 = 0.5
+      // Final = (1400 * 0.3 + 1600 * 0.5) / 0.8 = (420 + 800) / 0.8 = 1525
+      expect(result).toBe(1525);
+    });
+
+    it('should calculate Ascendancy with custom weights', () => {
+      const config: MmrCalculationConfig = {
+        algorithm: 'ASCENDANCY',
+        ascendancyWeights: {
+          current: 0.5,
+          peak: 0.5,
+        },
+      };
+
+      const result = service.calculateMmr(trackerData, config);
+      // 2s Score = (1400 * 0.5 + 1400 * 0.5) / 1.0 = 1400
+      // 3s Score = (1600 * 0.5 + 1600 * 0.5) / 1.0 = 1600
+      // 2s% = 300 / 1000 = 0.3
+      // 3s% = 500 / 1000 = 0.5
+      // Final = (1400 * 0.3 + 1600 * 0.5) / 0.8 = 1525
+      expect(result).toBe(1525);
+    });
+
+    it('should handle missing 2s or 3s data', () => {
+      const trackerDataMissing: TrackerData = {
+        ones: 1200,
+        twos: undefined,
+        threes: 1600,
+        fours: 1000,
+        onesGamesPlayed: 150,
+        twosGamesPlayed: 0,
+        threesGamesPlayed: 500,
+        foursGamesPlayed: 50,
+      };
+
+      const config: MmrCalculationConfig = {
+        algorithm: 'ASCENDANCY',
+      };
+
+      const result = service.calculateMmr(trackerDataMissing, config);
+      // 2s Score = 0 (missing data)
+      // 3s Score = 1600
+      // Total games = 150 + 0 + 500 + 50 = 700
+      // 2s% = 0 / 700 = 0
+      // 3s% = 500 / 700 ≈ 0.714
+      // Final = (0 * 0 + 1600 * 0.714) / 0.714 = 1600
+      expect(result).toBe(1600);
+    });
+
+    it('should return 0 when no games in 2s or 3s', () => {
+      const trackerDataNoGames: TrackerData = {
+        ones: 1200,
+        twos: 1400,
+        threes: 1600,
+        fours: 1000,
+        onesGamesPlayed: 150,
+        twosGamesPlayed: 0,
+        threesGamesPlayed: 0,
+        foursGamesPlayed: 50,
+      };
+
+      const config: MmrCalculationConfig = {
+        algorithm: 'ASCENDANCY',
+      };
+
+      const result = service.calculateMmr(trackerDataNoGames, config);
+      expect(result).toBe(0);
+    });
+
+    it('should handle zero total games', () => {
+      const trackerDataZeroGames: TrackerData = {
+        ones: 1200,
+        twos: 1400,
+        threes: 1600,
+        fours: 1000,
+        onesGamesPlayed: 0,
+        twosGamesPlayed: 0,
+        threesGamesPlayed: 0,
+        foursGamesPlayed: 0,
+      };
+
+      const config: MmrCalculationConfig = {
+        algorithm: 'ASCENDANCY',
+      };
+
+      const result = service.calculateMmr(trackerDataZeroGames, config);
+      expect(result).toBe(0);
+    });
+
+    it('should handle weights that do not sum to 1.0', () => {
+      const config: MmrCalculationConfig = {
+        algorithm: 'ASCENDANCY',
+        ascendancyWeights: {
+          current: 0.3,
+          peak: 0.5, // Sum = 0.8, not 1.0
+        },
+      };
+
+      const result = service.calculateMmr(trackerData, config);
+      // Should still calculate: (1400 * 0.3 + 1400 * 0.5) / 0.8 = 1400
+      // 3s: (1600 * 0.3 + 1600 * 0.5) / 0.8 = 1600
+      // Final = (1400 * 0.3 + 1600 * 0.5) / 0.8 = 1525
+      expect(result).toBe(1525);
+    });
+  });
+
   describe('calculateMmr - CUSTOM', () => {
     const trackerData: TrackerData = {
       ones: 1200,

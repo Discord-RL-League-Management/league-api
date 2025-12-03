@@ -69,7 +69,7 @@ export class MmrCalculationController {
   @ApiOperation({
     summary: 'Calculate MMR using guild configuration and tracker data',
     description:
-      "Calculates internal MMR based on the guild's configured algorithm (WEIGHTED_AVERAGE, PEAK_MMR, or CUSTOM)",
+      "Calculates internal MMR based on the guild's configured algorithm (WEIGHTED_AVERAGE, PEAK_MMR, ASCENDANCY, or CUSTOM)",
   })
   @ApiResponse({
     status: 200,

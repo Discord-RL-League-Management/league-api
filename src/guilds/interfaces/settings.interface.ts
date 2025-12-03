@@ -45,13 +45,27 @@ export interface MinGamesPlayed {
 }
 
 /**
+ * Ascendancy algorithm weights configuration
+ */
+export interface AscendancyWeights {
+  /**
+   * Current MMR weight (Q) - typically 0.25
+   */
+  current: number;
+  /**
+   * Peak MMR weight (R) - typically 0.75
+   */
+  peak: number;
+}
+
+/**
  * MMR calculation configuration
  */
 export interface MmrCalculationConfig {
   /**
    * Algorithm type: PRESET uses built-in algorithms, CUSTOM uses formula
    */
-  algorithm: 'WEIGHTED_AVERAGE' | 'PEAK_MMR' | 'CUSTOM';
+  algorithm: 'WEIGHTED_AVERAGE' | 'PEAK_MMR' | 'CUSTOM' | 'ASCENDANCY';
 
   /**
    * For WEIGHTED_AVERAGE algorithm
@@ -74,6 +88,12 @@ export interface MmrCalculationConfig {
    * Example: "(ones * 0.2 + twos * 0.3 + threes * 0.4 + fours * 0.1) / (onesGames > 50 ? 1 : 0.5)"
    */
   customFormula?: string;
+
+  /**
+   * For ASCENDANCY algorithm - weights for Current vs Peak MMR
+   * Defaults to current=0.25, peak=0.75 if not provided
+   */
+  ascendancyWeights?: AscendancyWeights;
 
   /**
    * Formula validation result (stored after successful validation)

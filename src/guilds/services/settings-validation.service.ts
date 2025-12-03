@@ -151,7 +151,12 @@ export class SettingsValidationService {
       throw new BadRequestException('MMR calculation algorithm is required');
     }
 
-    const validAlgorithms = ['WEIGHTED_AVERAGE', 'PEAK_MMR', 'CUSTOM'];
+    const validAlgorithms = [
+      'WEIGHTED_AVERAGE',
+      'PEAK_MMR',
+      'CUSTOM',
+      'ASCENDANCY',
+    ];
     if (!validAlgorithms.includes(config.algorithm)) {
       throw new BadRequestException(
         `Invalid algorithm. Must be one of: ${validAlgorithms.join(', ')}`,
@@ -193,6 +198,33 @@ export class SettingsValidationService {
       if (Math.abs(totalWeight - 1.0) > 0.01) {
         this.logger.warn(
           `Weights sum to ${totalWeight}, not 1.0. This may produce unexpected results.`,
+        );
+      }
+    }
+
+    // Validate ascendancyWeights if using ASCENDANCY
+    if (config.algorithm === 'ASCENDANCY' && config.ascendancyWeights) {
+      const weights = config.ascendancyWeights;
+      if (
+        typeof weights.current !== 'number' ||
+        typeof weights.peak !== 'number'
+      ) {
+        throw new BadRequestException(
+          'ascendancyWeights.current and ascendancyWeights.peak must be numbers',
+        );
+      }
+
+      if (weights.current < 0 || weights.peak < 0) {
+        throw new BadRequestException(
+          'ascendancyWeights.current and ascendancyWeights.peak must be >= 0',
+        );
+      }
+
+      // Warn if weights don't sum to 1 (but don't fail)
+      const totalWeight = weights.current + weights.peak;
+      if (Math.abs(totalWeight - 1.0) > 0.01) {
+        this.logger.warn(
+          `Ascendancy weights sum to ${totalWeight}, not 1.0. This may produce unexpected results.`,
         );
       }
     }
