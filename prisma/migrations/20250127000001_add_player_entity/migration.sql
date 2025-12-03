@@ -37,3 +37,4 @@ ALTER TABLE "players" ADD CONSTRAINT "players_primaryTrackerId_fkey" FOREIGN KEY
 
 
 
+
