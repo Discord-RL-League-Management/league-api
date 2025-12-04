@@ -71,7 +71,6 @@ export class MMRCalculatorDemoController {
   @ApiResponse({ status: 404, description: 'Guild not found' })
   async calculate(@Body() body: CalculateMmrDto) {
     try {
-      // Get guild settings
       const settings = (await this.guildSettingsService.getSettings(
         body.guildId,
       )) as GuildSettings;

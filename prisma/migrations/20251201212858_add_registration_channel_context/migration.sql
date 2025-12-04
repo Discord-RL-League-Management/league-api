@@ -8,3 +8,5 @@ ALTER TABLE "trackers" ADD COLUMN IF NOT EXISTS "registrationInteractionToken" T
 
 
 
+
+

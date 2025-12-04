@@ -132,9 +132,6 @@ export class MmrCalculationIntegrationService {
       `Calculated MMR for user ${userId} in guild ${guildId}: ${calculatedMmr}`,
     );
 
-    // TODO: Store calculated MMR if needed (currently just logging)
-    // For now, we calculate on-demand. Storage can be added later if needed.
-
     return calculatedMmr;
   }
 

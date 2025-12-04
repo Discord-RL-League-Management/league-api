@@ -57,4 +57,3 @@ export class CreateLeagueMemberDto {
   @IsString()
   notes?: string;
 }
-

@@ -92,7 +92,7 @@ export class DiscordApiService {
           return throwError(() => error);
         }),
       ),
-    ) as import('rxjs').MonoTypeOperatorFunction<T>;
+    );
   }
 
   /**
@@ -101,7 +101,7 @@ export class DiscordApiService {
    */
   async getUserGuilds(accessToken: string): Promise<DiscordGuild[]> {
     try {
-      const response = (await firstValueFrom(
+      const response = await firstValueFrom(
         this.httpService
           .get<DiscordGuild[]>(`${this.apiUrl}/users/@me/guilds`, {
             headers: { Authorization: `Bearer ${accessToken}` },
@@ -129,7 +129,7 @@ export class DiscordApiService {
               }
             }),
           ),
-      )) as AxiosResponse<DiscordGuild[]>;
+      );
 
       this.logger.log(
         `Successfully fetched ${response.data.length} guilds from Discord API`,
@@ -147,7 +147,7 @@ export class DiscordApiService {
    */
   async getUserProfile(accessToken: string): Promise<DiscordUser> {
     try {
-      const response = (await firstValueFrom(
+      const response = await firstValueFrom(
         this.httpService
           .get<DiscordUser>(`${this.apiUrl}/users/@me`, {
             headers: { Authorization: `Bearer ${accessToken}` },
@@ -160,7 +160,7 @@ export class DiscordApiService {
               throw new ServiceUnavailableException('Discord API unavailable');
             }),
           ),
-      )) as AxiosResponse<DiscordUser>;
+      );
 
       return response.data;
     } catch (error) {

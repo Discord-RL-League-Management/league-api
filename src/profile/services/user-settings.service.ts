@@ -40,8 +40,6 @@ export class UserSettingsService {
    */
   async getSettings(userId: string): Promise<UserSettings> {
     try {
-      // TODO: When UserSettings table is created, fetch from database
-      // For now, return default settings
       return this.getDefaultSettings();
     } catch (error) {
       this.logger.error(`Failed to get settings for user ${userId}:`, error);
@@ -58,16 +56,11 @@ export class UserSettingsService {
     settings: Partial<UserSettings>,
   ): Promise<UserSettings> {
     try {
-      // TODO: When UserSettings table is created, persist to database
-      // For now, validate and return merged settings
       const currentSettings = await this.getSettings(userId);
       const mergedSettings = this.mergeSettings(currentSettings, settings);
 
       // Validate settings
       this.validateSettings(mergedSettings);
-
-      // TODO: Persist to database
-      // await this.userSettingsRepository.upsert(userId, mergedSettings);
 
       this.logger.log(`Updated settings for user ${userId}`);
       return mergedSettings;

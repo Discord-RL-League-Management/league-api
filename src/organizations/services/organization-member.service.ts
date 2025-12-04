@@ -200,8 +200,6 @@ export class OrganizationMemberService {
       return false;
     }
 
-    // Get all General Managers and check if any match the userId
-    // Note: findGeneralManagers already filters by ACTIVE status, so the status check here is redundant but safe
     const gms =
       await this.organizationRepository.findGeneralManagers(organizationId);
     const member = gms.find((m) => (m as any).player?.user?.id === userId);

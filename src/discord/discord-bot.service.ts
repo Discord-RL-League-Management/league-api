@@ -33,8 +33,6 @@ export class DiscordBotService {
       this.configService.get<number>('discord.timeout') || 10000;
     this.retryAttempts =
       this.configService.get<number>('discord.retryAttempts') || 3;
-
-    // Validation disabled for now - no bot token required
   }
 
   /**

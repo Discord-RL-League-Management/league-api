@@ -40,7 +40,6 @@ export class TrackerScrapingProcessor extends WorkerHost {
     let tracker: { id: string; url: string; userId: string } | null = null;
 
     try {
-      // Get tracker to find the URL
       tracker = await this.prisma.tracker.findUnique({
         where: { id: trackerId },
         select: { id: true, url: true, userId: true },
@@ -50,7 +49,6 @@ export class TrackerScrapingProcessor extends WorkerHost {
         throw new Error(`Tracker ${trackerId} not found`);
       }
 
-      // Create scraping log entry
       const scrapingLog = await this.prisma.trackerScrapingLog.create({
         data: {
           trackerId,
@@ -62,7 +60,6 @@ export class TrackerScrapingProcessor extends WorkerHost {
       });
       scrapingLogId = scrapingLog.id;
 
-      // Update tracker status to IN_PROGRESS
       await this.prisma.tracker.update({
         where: { id: trackerId },
         data: {
@@ -77,7 +74,6 @@ export class TrackerScrapingProcessor extends WorkerHost {
       // Handle case where no seasons were found
       if (!seasons || seasons.length === 0) {
         this.logger.warn(`No seasons found for tracker ${trackerId}`);
-        // Update tracker status to COMPLETED with 0 seasons
         await this.prisma.tracker.update({
           where: { id: trackerId },
           data: {
@@ -88,7 +84,6 @@ export class TrackerScrapingProcessor extends WorkerHost {
           },
         });
 
-        // Update scraping log
         if (scrapingLogId) {
           await this.prisma.trackerScrapingLog.update({
             where: { id: scrapingLogId },
@@ -189,7 +184,6 @@ export class TrackerScrapingProcessor extends WorkerHost {
         }
       }
 
-      // Update tracker status to COMPLETED
       await this.prisma.tracker.update({
         where: { id: trackerId },
         data: {
@@ -200,7 +194,6 @@ export class TrackerScrapingProcessor extends WorkerHost {
         },
       });
 
-      // Update scraping log
       await this.prisma.trackerScrapingLog.update({
         where: { id: scrapingLogId },
         data: {
@@ -288,7 +281,6 @@ export class TrackerScrapingProcessor extends WorkerHost {
         error,
       );
 
-      // Update tracker status to FAILED
       await this.prisma.tracker.update({
         where: { id: trackerId },
         data: {
@@ -300,7 +292,6 @@ export class TrackerScrapingProcessor extends WorkerHost {
         },
       });
 
-      // Update scraping log if it was created
       if (scrapingLogId) {
         await this.prisma.trackerScrapingLog.update({
           where: { id: scrapingLogId },

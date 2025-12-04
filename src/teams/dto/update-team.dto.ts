@@ -4,4 +4,3 @@ import { CreateTeamDto } from './create-team.dto';
 export class UpdateTeamDto extends PartialType(
   OmitType(CreateTeamDto, ['leagueId'] as const),
 ) {}
-

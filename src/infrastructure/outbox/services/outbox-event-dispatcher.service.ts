@@ -44,14 +44,6 @@ export class OutboxEventDispatcher {
       return;
     }
 
-    // Route events to appropriate handlers based on event type
-    // Add handlers here as new event types are implemented
-    // Example:
-    // if (event.eventType === 'SOME_EVENT_TYPE') {
-    //   await this.handleSomeEvent(event);
-    //   return;
-    // }
-
     // Unknown event types throw an error to trigger retry logic
     // After max retries, events are marked as FAILED and can be manually investigated
     // This ensures the outbox pattern's guarantee of eventual consistency
