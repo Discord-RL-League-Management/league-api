@@ -58,7 +58,7 @@ export class GuildMembersService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2003'
       ) {
-        const meta = error.meta as any;
+        const meta = error.meta as { field_name?: string } | undefined;
         if (
           meta?.field_name?.includes('userId') ||
           meta?.field_name?.includes('user')

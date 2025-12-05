@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Request } from 'express';
 import { RequestContextService } from '../../common/services/request-context.service';
-import { AuditEvent, AuditAction } from '../interfaces/audit-event.interface';
+import { AuditEvent } from '../interfaces/audit-event.interface';
 import { ActivityLogService } from '../../infrastructure/activity-log/services/activity-log.service';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -46,8 +46,8 @@ export class AuditLogService {
           },
         );
       });
-    } catch (error) {
-      this.logger.error('Failed to log audit event:', error);
+    } catch (_error) {
+      this.logger.error('Failed to log audit event:', _error);
       // Don't throw - audit logging failure shouldn't break the request
     }
   }
@@ -99,7 +99,7 @@ export class AuditLogService {
       offset?: number;
     },
   ): Promise<{
-    logs: any[];
+    logs: Array<Record<string, unknown>>;
     total: number;
     limit: number;
     offset: number;

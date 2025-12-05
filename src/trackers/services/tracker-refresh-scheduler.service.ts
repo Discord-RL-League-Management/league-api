@@ -29,7 +29,14 @@ export class TrackerRefreshSchedulerService
     private readonly configService: ConfigService,
     private readonly schedulerRegistry: SchedulerRegistry,
   ) {
-    const trackerConfig = this.configService.get('tracker');
+    const trackerConfig = this.configService.get<{
+      refreshIntervalHours: number;
+      batchSize: number;
+      refreshCron: string;
+    }>('tracker');
+    if (!trackerConfig) {
+      throw new Error('Tracker configuration is missing');
+    }
     this.refreshIntervalHours = trackerConfig.refreshIntervalHours;
     this.batchSize = trackerConfig.batchSize;
     this.cronExpression = trackerConfig.refreshCron;
@@ -44,7 +51,7 @@ export class TrackerRefreshSchedulerService
 
     const job = new CronJob(cronExpression, () => {
       // Prevents unhandled promise rejections from crashing the application when cron callback fails
-      this.scheduledRefresh().catch((error) => {
+      void this.scheduledRefresh().catch((error) => {
         const errorMessage =
           error instanceof Error ? error.message : String(error);
         this.logger.error(
@@ -126,8 +133,8 @@ export class TrackerRefreshSchedulerService
     this.logger.log(`Application shutting down: ${signal || 'unknown signal'}`);
 
     if (this.cronJob) {
-      this.cronJob.stop();
-      this.schedulerRegistry.deleteCronJob('tracker-refresh');
+      void this.cronJob.stop();
+      void this.schedulerRegistry.deleteCronJob('tracker-refresh');
       this.cronJob = null;
     }
 

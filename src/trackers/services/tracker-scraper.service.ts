@@ -7,8 +7,7 @@ import {
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom, timeout, retry, catchError, throwError } from 'rxjs';
-import { AxiosError, AxiosRequestConfig } from 'axios';
-import * as Joi from 'joi';
+import { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { TrackerUrlConverterService } from './tracker-url-converter.service';
 import {
   ScrapedTrackerData,
@@ -57,7 +56,18 @@ export class TrackerScraperService {
     private readonly configService: ConfigService,
     private readonly urlConverter: TrackerUrlConverterService,
   ) {
-    const zyteConfig = this.configService.get('zyte');
+    const zyteConfig = this.configService.get<{
+      apiKey: string;
+      proxyHost: string;
+      proxyPort: number;
+      timeoutMs: number;
+      retryAttempts: number;
+      retryDelayMs: number;
+      rateLimitPerMinute: number;
+    }>('zyte');
+    if (!zyteConfig) {
+      throw new Error('Zyte configuration is missing');
+    }
     this.zyteApiKey = zyteConfig.apiKey;
     this.zyteProxyHost = zyteConfig.proxyHost;
     this.zyteProxyPort = zyteConfig.proxyPort;
@@ -358,7 +368,7 @@ export class TrackerScraperService {
   /**
    * Make HTTP request through Zyte proxy
    */
-  private async makeProxyRequest(url: string): Promise<any> {
+  private async makeProxyRequest(url: string): Promise<AxiosResponse<unknown>> {
     // Enforce rate limiting
     await this.enforceRateLimit();
 
@@ -394,17 +404,29 @@ export class TrackerScraperService {
               headers['zyte-error-title'] || headers['Zyte-Error-Title'];
             const zyteErrorType =
               headers['zyte-error-type'] || headers['Zyte-Error-Type'];
-            const zyteRequestId =
-              headers['zyte-request-id'] || headers['Zyte-Request-ID'];
+            const zyteRequestId = (headers['zyte-request-id'] ||
+              headers['Zyte-Request-ID']) as string | undefined;
 
             if (zyteErrorTitle || zyteErrorType) {
+              const errorMsg =
+                typeof zyteErrorTitle === 'string'
+                  ? zyteErrorTitle
+                  : typeof zyteErrorType === 'string'
+                    ? zyteErrorType
+                    : '';
+              const requestId =
+                typeof zyteRequestId === 'string'
+                  ? zyteRequestId
+                  : zyteRequestId != null
+                    ? String(zyteRequestId)
+                    : 'unknown';
               this.logger.error(
-                `Zyte proxy error: ${zyteErrorTitle || zyteErrorType} (Request ID: ${zyteRequestId})`,
+                `Zyte proxy error: ${errorMsg} (Request ID: ${requestId})`,
               );
               return throwError(
                 () =>
                   new ServiceUnavailableException(
-                    `Zyte proxy error: ${zyteErrorTitle || zyteErrorType}`,
+                    `Zyte proxy error: ${errorMsg}`,
                   ),
               );
             }
@@ -450,34 +472,44 @@ export class TrackerScraperService {
       );
 
       // Check for Zyte error headers in successful responses (case-insensitive)
-      const responseHeaders = response.headers || {};
-      const zyteErrorTitle =
-        responseHeaders['zyte-error-title'] ||
-        responseHeaders['Zyte-Error-Title'];
-      const zyteErrorType =
-        responseHeaders['zyte-error-type'] ||
-        responseHeaders['Zyte-Error-Type'];
+      const responseHeaders = (response.headers || {}) as Record<
+        string,
+        unknown
+      >;
+      const zyteErrorTitle = (responseHeaders['zyte-error-title'] ||
+        responseHeaders['Zyte-Error-Title']) as string | undefined;
+      const zyteErrorType = (responseHeaders['zyte-error-type'] ||
+        responseHeaders['Zyte-Error-Type']) as string | undefined;
       if (zyteErrorTitle || zyteErrorType) {
-        const zyteRequestId =
-          responseHeaders['zyte-request-id'] ||
-          responseHeaders['Zyte-Request-ID'];
+        const zyteRequestId = (responseHeaders['zyte-request-id'] ||
+          responseHeaders['Zyte-Request-ID']) as string | undefined;
+        const errorMsg =
+          typeof zyteErrorTitle === 'string'
+            ? zyteErrorTitle
+            : typeof zyteErrorType === 'string'
+              ? zyteErrorType
+              : 'Unknown error';
+        const requestIdStr =
+          typeof zyteRequestId === 'string'
+            ? zyteRequestId
+            : zyteRequestId != null
+              ? String(zyteRequestId)
+              : 'unknown';
         this.logger.error(
-          `Zyte proxy error in response: ${zyteErrorTitle || zyteErrorType} (Request ID: ${zyteRequestId})`,
+          `Zyte proxy error in response: ${errorMsg} (Request ID: ${requestIdStr})`,
         );
-        throw new ServiceUnavailableException(
-          `Zyte proxy error: ${zyteErrorTitle || zyteErrorType}`,
-        );
+        throw new ServiceUnavailableException(`Zyte proxy error: ${errorMsg}`);
       }
 
       // Log Zyte request ID for debugging (case-insensitive)
       const zyteRequestId =
         responseHeaders['zyte-request-id'] ||
         responseHeaders['Zyte-Request-ID'];
-      if (zyteRequestId) {
+      if (zyteRequestId && typeof zyteRequestId === 'string') {
         this.logger.debug(`Zyte Request ID: ${zyteRequestId}`);
       }
 
-      return response.data;
+      return response;
     } catch (error) {
       if (
         error instanceof ServiceUnavailableException ||
@@ -498,35 +530,66 @@ export class TrackerScraperService {
    * Parse and validate API response
    * Response from tracker.gg API has structure: { data: { ... } }
    */
-  private parseApiResponse(response: any): ScrapedTrackerData {
+  private parseApiResponse(
+    response: AxiosResponse<unknown> | { data?: unknown },
+  ): ScrapedTrackerData {
     // Handle both direct response and nested data structure
-    let data = response;
-    if (response && response.data) {
-      data = response.data;
+    let data: unknown = response;
+    if (response && typeof response === 'object' && 'data' in response) {
+      data = (response as { data?: unknown }).data || response;
     }
 
-    if (!data) {
+    if (!data || typeof data !== 'object') {
       throw new BadRequestException('Invalid API response: missing data');
     }
 
-    if (!data.segments || !Array.isArray(data.segments)) {
+    const responseData = data as {
+      segments?: TrackerSegment[];
+      availableSegments?: Array<{
+        type: string;
+        attributes: { season: number };
+        metadata: { name: string };
+      }>;
+      platformInfo?: ScrapedTrackerData['platformInfo'];
+      userInfo?: ScrapedTrackerData['userInfo'];
+      metadata?: ScrapedTrackerData['metadata'];
+    };
+
+    if (!responseData.segments || !Array.isArray(responseData.segments)) {
       throw new BadRequestException(
         'Invalid API response: missing or invalid segments array',
       );
     }
 
-    if (!data.availableSegments || !Array.isArray(data.availableSegments)) {
+    if (
+      !responseData.availableSegments ||
+      !Array.isArray(responseData.availableSegments)
+    ) {
       throw new BadRequestException(
         'Invalid API response: missing or invalid availableSegments array',
       );
     }
 
     return {
-      platformInfo: data.platformInfo || {},
-      userInfo: data.userInfo || {},
-      metadata: data.metadata || {},
-      segments: data.segments,
-      availableSegments: data.availableSegments,
+      platformInfo:
+        responseData.platformInfo ||
+        ({
+          platformSlug: '',
+          platformUserId: '',
+          platformUserHandle: '',
+        } as ScrapedTrackerData['platformInfo']),
+      userInfo:
+        responseData.userInfo ||
+        ({ userId: 0, isPremium: false } as ScrapedTrackerData['userInfo']),
+      metadata:
+        responseData.metadata ||
+        ({
+          lastUpdated: '',
+          playerId: 0,
+          currentSeason: 0,
+        } as ScrapedTrackerData['metadata']),
+      segments: responseData.segments,
+      availableSegments: responseData.availableSegments,
     };
   }
 

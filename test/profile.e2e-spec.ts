@@ -52,7 +52,9 @@ describe('Profile API (e2e)', () => {
         .set('Authorization', `Bearer ${validToken}`)
         .expect(200);
 
-      expect(response.body).toMatchObject({
+      expect(
+        response.body as { id: string; username: string; globalName: string },
+      ).toMatchObject({
         id: userId,
         username: 'testuser',
         globalName: 'Test User',
@@ -71,10 +73,11 @@ describe('Profile API (e2e)', () => {
         .set('Authorization', `Bearer ${validToken}`)
         .expect(200);
 
-      expect(response.body).toHaveProperty('userId');
-      expect(response.body).toHaveProperty('gamesPlayed');
-      expect(response.body).toHaveProperty('wins');
-      expect(response.body).toHaveProperty('losses');
+      const body = response.body as Record<string, unknown>;
+      expect(body).toHaveProperty('userId');
+      expect(body).toHaveProperty('gamesPlayed');
+      expect(body).toHaveProperty('wins');
+      expect(body).toHaveProperty('losses');
     });
 
     it('should return 401 without JWT', async () => {
@@ -92,7 +95,9 @@ describe('Profile API (e2e)', () => {
         .send(settings)
         .expect(200);
 
-      expect(response.body.settings).toEqual(settings);
+      expect((response.body as { settings: unknown }).settings).toEqual(
+        settings,
+      );
     });
 
     it('should return 401 without JWT', async () => {

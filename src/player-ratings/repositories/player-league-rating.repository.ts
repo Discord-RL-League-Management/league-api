@@ -19,11 +19,16 @@ export class PlayerLeagueRatingRepository {
     tx?: Prisma.TransactionClient,
   ) {
     const client = tx || this.prisma;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { playerId: _, leagueId: __, ...updateData } = data;
     return client.playerLeagueRating.upsert({
       where: { playerId_leagueId: { playerId, leagueId } },
-      create: { playerId, leagueId, ...data } as any,
-      update: updateData as any,
+      create: {
+        playerId,
+        leagueId,
+        ...data,
+      } as unknown as Prisma.PlayerLeagueRatingCreateInput,
+      update: updateData as unknown as Prisma.PlayerLeagueRatingUpdateInput,
     });
   }
 

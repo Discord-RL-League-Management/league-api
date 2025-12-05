@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common';
 import { UsersService } from '../users.service';
 import { DiscordProfileDto } from '../../auth/dto/discord-profile.dto';
-import { UserNotFoundException } from '../exceptions/user.exceptions';
 import { User } from '@prisma/client';
 
 /**
@@ -26,11 +25,9 @@ export class UserOrchestratorService {
    */
   async upsertUserFromOAuth(discordData: DiscordProfileDto): Promise<User> {
     try {
-      // Try to find existing user
       const existing = await this.usersService.exists(discordData.discordId);
 
       if (existing) {
-        // Update existing user
         return await this.usersService.update(discordData.discordId, {
           username: discordData.username,
           discriminator: discordData.discriminator,
@@ -42,7 +39,6 @@ export class UserOrchestratorService {
           lastLoginAt: new Date(),
         });
       } else {
-        // Create new user
         return await this.usersService.create({
           id: discordData.discordId,
           username: discordData.username,

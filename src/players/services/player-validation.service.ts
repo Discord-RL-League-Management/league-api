@@ -82,7 +82,7 @@ export class PlayerValidationService {
   ): Promise<void> {
     try {
       await this.guildMembersService.findOne(userId, guildId);
-    } catch (error) {
+    } catch {
       throw new PlayerValidationException(
         `User ${userId} is not a member of guild ${guildId}`,
       );
@@ -147,5 +147,3 @@ export class PlayerValidationService {
     }
   }
 }
-
-

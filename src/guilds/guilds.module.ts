@@ -10,6 +10,8 @@ import { GuildAccessValidationService } from './services/guild-access-validation
 import { SettingsDefaultsService } from './services/settings-defaults.service';
 import { SettingsValidationService } from './services/settings-validation.service';
 import { ConfigMigrationService } from './services/config-migration.service';
+import { GuildSyncService } from './services/guild-sync.service';
+import { GuildErrorHandlerService } from './services/guild-error-handler.service';
 import { GuildRepository } from './repositories/guild.repository';
 import { GuildMembersModule } from '../guild-members/guild-members.module';
 import { InfrastructureModule } from '../infrastructure/infrastructure.module';
@@ -22,6 +24,8 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
 import { httpModuleOptions } from '../common/config/http.config';
 import { cacheModuleOptions } from '../common/config/cache.config';
 import { PrismaModule } from '../prisma/prisma.module';
+import { MmrCalculationModule } from '../mmr-calculation/mmr-calculation.module';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
@@ -34,6 +38,8 @@ import { PrismaModule } from '../prisma/prisma.module';
     PermissionCheckModule,
     PrismaModule,
     InfrastructureModule,
+    MmrCalculationModule,
+    UsersModule,
     HttpModule.register(httpModuleOptions),
     CacheModule.register(cacheModuleOptions),
   ],
@@ -49,6 +55,8 @@ import { PrismaModule } from '../prisma/prisma.module';
     SettingsDefaultsService,
     SettingsValidationService,
     ConfigMigrationService,
+    GuildSyncService,
+    GuildErrorHandlerService,
     GuildRepository,
   ],
   exports: [

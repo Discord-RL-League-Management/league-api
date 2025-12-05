@@ -24,13 +24,11 @@ export class OutboxEventDispatcher {
    * ensuring events are either processed successfully or explicitly marked as
    * FAILED for investigation, preventing silent data loss.
    */
-  async dispatchEvent(event: Outbox): Promise<void> {
+  dispatchEvent(event: Outbox): Promise<void> {
     this.logger.debug(
       `Dispatching event ${event.id} of type ${event.eventType}`,
     );
 
-    // Handle known deprecated event types (from removed systems)
-    // These are explicitly handled to prevent failures for legacy events
     const deprecatedEventTypes = [
       'TRACKER_REGISTRATION_CREATED', // Deprecated: Removed with tracker registration queue system
     ];
@@ -40,21 +38,9 @@ export class OutboxEventDispatcher {
         `Skipping deprecated event type: ${event.eventType} (event ${event.id}). ` +
           `This event type is no longer processed as the system has been removed.`,
       );
-      // Complete the event without processing (no-op for deprecated types)
-      return;
+      return Promise.resolve();
     }
 
-    // Route events to appropriate handlers based on event type
-    // Add handlers here as new event types are implemented
-    // Example:
-    // if (event.eventType === 'SOME_EVENT_TYPE') {
-    //   await this.handleSomeEvent(event);
-    //   return;
-    // }
-
-    // Unknown event types throw an error to trigger retry logic
-    // After max retries, events are marked as FAILED and can be manually investigated
-    // This ensures the outbox pattern's guarantee of eventual consistency
     throw new Error(
       `No handler implemented for event type: ${event.eventType} (event ${event.id}). ` +
         `Event will be retried and marked as FAILED after max retries. ` +

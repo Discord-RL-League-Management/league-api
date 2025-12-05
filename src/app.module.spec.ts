@@ -1,4 +1,4 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { APP_PIPE } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -21,14 +21,31 @@ function getValidationPipeOptions(pipe: ValidationPipe): {
   skipUndefinedProperties?: boolean;
   disableErrorMessages?: boolean;
 } {
-  return (pipe as any).options;
+  return (
+    pipe as unknown as {
+      options: {
+        whitelist?: boolean;
+        forbidNonWhitelisted?: boolean;
+        transform?: boolean;
+        transformOptions?: { enableImplicitConversion?: boolean };
+        exceptionFactory?: (errors: unknown[]) => unknown;
+        stopAtFirstError?: boolean;
+        skipMissingProperties?: boolean;
+        skipNullProperties?: boolean;
+        skipUndefinedProperties?: boolean;
+        disableErrorMessages?: boolean;
+      };
+    }
+  ).options;
 }
 
 describe('AppModule', () => {
   describe('ValidationPipe configuration', () => {
     it('should create ValidationPipe with whitelist enabled', async () => {
       const mockConfigService = {
-        get: jest.fn().mockReturnValue('development'),
+        get: jest
+          .fn<string, [string, unknown?]>()
+          .mockReturnValue('development'),
       };
 
       const module = await Test.createTestingModule({
@@ -47,7 +64,9 @@ describe('AppModule', () => {
 
     it('should create ValidationPipe with forbidNonWhitelisted enabled', async () => {
       const mockConfigService = {
-        get: jest.fn().mockReturnValue('development'),
+        get: jest
+          .fn<string, [string, unknown?]>()
+          .mockReturnValue('development'),
       };
 
       const module = await Test.createTestingModule({
@@ -66,7 +85,9 @@ describe('AppModule', () => {
 
     it('should create ValidationPipe with transform enabled', async () => {
       const mockConfigService = {
-        get: jest.fn().mockReturnValue('development'),
+        get: jest
+          .fn<string, [string, unknown?]>()
+          .mockReturnValue('development'),
       };
 
       const module = await Test.createTestingModule({
@@ -107,7 +128,9 @@ describe('AppModule', () => {
 
     it('should enable error messages in non-production environment', async () => {
       const mockConfigService = {
-        get: jest.fn().mockReturnValue('development'),
+        get: jest
+          .fn<string, [string, unknown?]>()
+          .mockReturnValue('development'),
       };
 
       const module = await Test.createTestingModule({
@@ -126,7 +149,9 @@ describe('AppModule', () => {
 
     it('should create ValidationPipe with enableImplicitConversion enabled', async () => {
       const mockConfigService = {
-        get: jest.fn().mockReturnValue('development'),
+        get: jest
+          .fn<string, [string, unknown?]>()
+          .mockReturnValue('development'),
       };
 
       const module = await Test.createTestingModule({
@@ -145,7 +170,9 @@ describe('AppModule', () => {
 
     it('should create ValidationPipe with stopAtFirstError enabled', async () => {
       const mockConfigService = {
-        get: jest.fn().mockReturnValue('development'),
+        get: jest
+          .fn<string, [string, unknown?]>()
+          .mockReturnValue('development'),
       };
 
       const module = await Test.createTestingModule({
@@ -164,7 +191,9 @@ describe('AppModule', () => {
 
     it('should create ValidationPipe with skip properties set to false', async () => {
       const mockConfigService = {
-        get: jest.fn().mockReturnValue('development'),
+        get: jest
+          .fn<string, [string, unknown?]>()
+          .mockReturnValue('development'),
       };
 
       const module = await Test.createTestingModule({
@@ -185,7 +214,9 @@ describe('AppModule', () => {
 
     it('should create ValidationPipe with custom exceptionFactory configured', async () => {
       const mockConfigService = {
-        get: jest.fn().mockReturnValue('development'),
+        get: jest
+          .fn<string, [string, unknown?]>()
+          .mockReturnValue('development'),
       };
 
       const module = await Test.createTestingModule({
@@ -238,10 +269,15 @@ describe('AppModule', () => {
         if (!pipeOptions.exceptionFactory) {
           throw new Error('exceptionFactory is not defined');
         }
-        const exception = pipeOptions.exceptionFactory(mockErrors);
+        const exception = pipeOptions.exceptionFactory(
+          mockErrors,
+        ) as BadRequestException;
 
         expect(exception).toBeInstanceOf(BadRequestException);
-        const response = exception.getResponse();
+        const response = exception.getResponse() as {
+          message: string;
+          errors: Array<{ property: string }>;
+        };
         expect(response.message).toBe(VALIDATION_FAILED_MESSAGE);
         expect(response.errors).toHaveLength(2);
         expect(response.errors[0]).toEqual({
@@ -290,11 +326,16 @@ describe('AppModule', () => {
         if (!pipeOptions.exceptionFactory) {
           throw new Error('exceptionFactory is not defined');
         }
-        const exception = pipeOptions.exceptionFactory(mockErrors);
+        const exception = pipeOptions.exceptionFactory(
+          mockErrors,
+        ) as BadRequestException;
 
         expect(exception).toBeInstanceOf(BadRequestException);
         expect(exception.getStatus()).toBe(400);
-        const response = exception.getResponse();
+        const response = exception.getResponse() as {
+          message: string;
+          errors?: unknown;
+        };
         expect(response).toHaveProperty('message');
         expect(response).toHaveProperty('errors');
         expect(Array.isArray(response.errors)).toBe(true);
@@ -331,8 +372,17 @@ describe('AppModule', () => {
         if (!pipeOptions.exceptionFactory) {
           throw new Error('exceptionFactory is not defined');
         }
-        const exception = pipeOptions.exceptionFactory(mockErrors);
-        const response = exception.getResponse();
+        const exception = pipeOptions.exceptionFactory(
+          mockErrors,
+        ) as BadRequestException;
+        const response = exception.getResponse() as {
+          message: string;
+          errors: Array<{
+            property: string;
+            constraints?: unknown;
+            value?: unknown;
+          }>;
+        };
 
         expect(response).toEqual({
           message: VALIDATION_FAILED_MESSAGE,
@@ -354,11 +404,11 @@ describe('AppModule', () => {
   });
 
   describe('Type conversion integration tests', () => {
-    let pipe: ValidationPipe;
-
     beforeAll(async () => {
       const mockConfigService = {
-        get: jest.fn().mockReturnValue('development'),
+        get: jest
+          .fn<string, [string, unknown?]>()
+          .mockReturnValue('development'),
       };
 
       const module = await Test.createTestingModule({
@@ -368,7 +418,6 @@ describe('AppModule', () => {
         .useValue(mockConfigService)
         .compile();
 
-      pipe = module.get<ValidationPipe>(APP_PIPE);
       await module.close();
     });
 

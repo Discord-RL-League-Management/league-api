@@ -28,7 +28,6 @@ export class UserStatisticsService {
     activeGuildsCount: number;
   }> {
     try {
-      // Get user's guild memberships
       const memberships = await this.guildMemberRepository.findByUserId(
         userId,
         {
@@ -36,20 +35,16 @@ export class UserStatisticsService {
         },
       );
 
-      // Type the result to include the guild relation
       type GuildMemberWithGuild = Prisma.GuildMemberGetPayload<{
         include: { guild: true };
       }>;
       const typedMemberships = memberships as GuildMemberWithGuild[];
 
-      // TODO: Implement actual game statistics when game data is available
-      // For now, return basic stats based on guild memberships
       const guildsCount = typedMemberships.length;
       const activeGuildsCount = typedMemberships.filter(
         (m) => m.guild && m.guild.isActive !== false,
       ).length;
 
-      // Placeholder stats - to be replaced with actual game data aggregation
       const gamesPlayed = 0;
       const wins = 0;
       const losses = 0;
@@ -66,7 +61,6 @@ export class UserStatisticsService {
       };
     } catch (error) {
       this.logger.error(`Failed to get stats for user ${userId}:`, error);
-      // Return default stats on error
       return {
         userId,
         gamesPlayed: 0,
@@ -109,7 +103,6 @@ export class UserStatisticsService {
         };
       }
 
-      // TODO: Implement actual game statistics when game data is available
       return {
         gamesPlayed: 0,
         wins: 0,

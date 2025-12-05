@@ -38,6 +38,21 @@ export class SettingsDefaultsService {
         league_manager: [],
         tournament_manager: [],
       },
+      mmrCalculation: {
+        algorithm: 'WEIGHTED_AVERAGE',
+        weights: {
+          ones: 0.1,
+          twos: 0.3,
+          threes: 0.5,
+          fours: 0.1,
+        },
+        minGamesPlayed: {
+          ones: 50,
+          twos: 50,
+          threes: 50,
+          fours: 50,
+        },
+      },
     };
   }
 
@@ -133,8 +148,8 @@ export class SettingsDefaultsService {
         !Array.isArray(sourceValue)
       ) {
         (result[keyTyped] as unknown) = this.deepMergeNested(
-          targetValue as any,
-          sourceValue as any,
+          (targetValue as Record<string, unknown>) || {},
+          sourceValue as Record<string, unknown>,
         );
         continue;
       }
@@ -149,7 +164,10 @@ export class SettingsDefaultsService {
   /**
    * Deep merge nested objects (for channels, roles, etc.)
    */
-  private deepMergeNested(target: any, source: any): any {
+  private deepMergeNested(
+    target: Record<string, unknown>,
+    source: Record<string, unknown>,
+  ): Record<string, unknown> {
     const result = { ...target };
 
     for (const key in source) {
@@ -171,7 +189,10 @@ export class SettingsDefaultsService {
         typeof sourceValue === 'object' &&
         !Array.isArray(sourceValue)
       ) {
-        result[key] = this.deepMergeNested(result[key] || {}, sourceValue);
+        result[key] = this.deepMergeNested(
+          (result[key] as Record<string, unknown>) || {},
+          sourceValue as Record<string, unknown>,
+        );
         continue;
       }
 

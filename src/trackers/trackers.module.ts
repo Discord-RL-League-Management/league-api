@@ -23,23 +23,30 @@ import { TrackerSeasonService } from './services/tracker-season.service';
 import { TrackerRefreshSchedulerService } from './services/tracker-refresh-scheduler.service';
 import { TrackerBatchRefreshService } from './services/tracker-batch-refresh.service';
 import { AuditModule } from '../audit/audit.module';
+import { MmrCalculationModule } from '../mmr-calculation/mmr-calculation.module';
 
 @Module({
   imports: [
     PrismaModule,
     forwardRef(() => InfrastructureModule),
     forwardRef(() => AuditModule),
+    MmrCalculationModule,
     HttpModule,
     BullModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
-        const redisConfig = configService.get('redis');
+        const redisConfig = configService.get<{
+          host?: string;
+          port?: number;
+          password?: string;
+          db?: number;
+        }>('redis');
         return {
           connection: {
-            host: redisConfig.host,
-            port: redisConfig.port,
-            password: redisConfig.password,
-            db: redisConfig.db,
+            host: redisConfig?.host || 'localhost',
+            port: redisConfig?.port || 6379,
+            password: redisConfig?.password,
+            db: redisConfig?.db || 0,
           },
         };
       },
@@ -49,7 +56,9 @@ import { AuditModule } from '../audit/audit.module';
       name: TRACKER_SCRAPING_QUEUE,
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
-        const queueConfig = configService.get('queue');
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const _queueConfig =
+          configService.get<Record<string, unknown>>('queue');
         return {
           defaultJobOptions: {
             removeOnComplete: 100,

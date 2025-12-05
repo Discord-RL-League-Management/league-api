@@ -4,7 +4,7 @@ import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 export class TrackerUrlConverterService {
   private readonly logger = new Logger(TrackerUrlConverterService.name);
   private readonly TRN_PROFILE_REGEX =
-    /^https:\/\/rocketleague\.tracker\.network\/rocket-league\/profile\/([^\/]+)\/([^\/]+)\/overview\/?$/i;
+    /^https:\/\/rocketleague\.tracker\.network\/rocket-league\/profile\/([^/]+)\/([^/]+)\/overview\/?$/i;
   private readonly TRACKER_GG_API_BASE =
     'https://api.tracker.gg/api/v2/rocket-league/standard/profile';
 

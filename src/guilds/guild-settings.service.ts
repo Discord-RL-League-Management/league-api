@@ -43,10 +43,10 @@ export class GuildSettingsService {
    * If settings don't exist, that's a bug - auto-create them immediately.
    * If creation fails, that's a system error - throw it.
    */
-  async getSettings(guildId: string) {
+  async getSettings(guildId: string): Promise<GuildSettings> {
     try {
       const cacheKey = `settings:${guildId}`;
-      const cached = await this.cacheManager.get(cacheKey);
+      const cached = await this.cacheManager.get<GuildSettings>(cacheKey);
       if (cached) {
         this.logger.log(`Settings cache hit for guild ${guildId}`);
         return cached;
@@ -67,7 +67,7 @@ export class GuildSettingsService {
         settings = await this.settingsService.upsertSettings(
           'guild',
           guildId,
-          defaultSettings as Record<string, any>,
+          defaultSettings as unknown as Prisma.InputJsonValue,
           this.configMigration.getSchemaVersion(defaultSettings),
         );
         this.logger.warn(
@@ -77,14 +77,19 @@ export class GuildSettingsService {
 
       // Migrate config to current schema version if needed
       let migratedConfig: GuildSettings;
-      if (this.configMigration.needsMigration(settings.settings as any)) {
+      const rawSettings = settings.settings as unknown;
+      if (
+        this.configMigration.needsMigration(
+          rawSettings as Record<string, unknown>,
+        )
+      ) {
         this.logger.log(
-          `Migrating settings for guild ${guildId} from schema version ${this.configMigration.getSchemaVersion(settings.settings as any)}`,
+          `Migrating settings for guild ${guildId} from schema version ${this.configMigration.getSchemaVersion(rawSettings as Record<string, unknown>)}`,
         );
 
         // Run migration
         migratedConfig = await this.configMigration.migrate(
-          settings.settings as any,
+          rawSettings as Record<string, unknown>,
         );
 
         // Validate migrated config structure
@@ -94,7 +99,7 @@ export class GuildSettingsService {
         settings = await this.settingsService.updateSettings(
           'guild',
           guildId,
-          migratedConfig as Record<string, any>,
+          migratedConfig as unknown as Prisma.InputJsonValue,
         );
 
         // Invalidate cache to ensure fresh data
@@ -105,8 +110,9 @@ export class GuildSettingsService {
         );
       } else {
         // No migration needed, just normalize structure
+        const rawSettings = settings.settings as unknown;
         migratedConfig = this.settingsDefaults.mergeWithDefaults(
-          settings.settings as any,
+          rawSettings as Record<string, unknown>,
         );
       }
 
@@ -166,7 +172,7 @@ export class GuildSettingsService {
           const updated = await this.settingsService.updateSettings(
             'guild',
             guildId,
-            mergedSettings as Record<string, any>,
+            mergedSettings as unknown as Prisma.InputJsonValue,
             tx,
           );
 
@@ -179,7 +185,7 @@ export class GuildSettingsService {
             'update',
             userId,
             guildId,
-            newSettings as unknown as Record<string, any>,
+            newSettings as unknown as Prisma.InputJsonValue,
             { action: 'update' },
           );
 
@@ -213,7 +219,7 @@ export class GuildSettingsService {
           const updated = await this.settingsService.updateSettings(
             'guild',
             guildId,
-            defaultSettings as Record<string, any>,
+            defaultSettings as unknown as Prisma.InputJsonValue,
             tx,
           );
 

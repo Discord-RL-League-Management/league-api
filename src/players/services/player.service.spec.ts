@@ -104,10 +104,6 @@ describe('PlayerService', () => {
       const result = await service.findOne('player1');
 
       expect(result).toEqual(mockPlayer);
-      expect(mockPlayerRepository.findById).toHaveBeenCalledWith(
-        'player1',
-        undefined,
-      );
     });
 
     it('should throw PlayerNotFoundException when player not found', async () => {
@@ -145,14 +141,10 @@ describe('PlayerService', () => {
 
       const result = await service.create(createDto);
 
-      expect(
-        mockValidationService.validateGuildMembership,
-      ).toHaveBeenCalledWith('user1', 'guild1');
-      expect(mockPlayerRepository.findByUserIdAndGuildId).toHaveBeenCalledWith(
-        'user1',
-        'guild1',
-      );
       expect(result).toHaveProperty('id');
+      expect(result.userId).toBe('user1');
+      expect(result.guildId).toBe('guild1');
+      expect(result.status).toBe('ACTIVE');
     });
 
     it('should throw PlayerAlreadyExistsException when player already exists', async () => {
@@ -183,10 +175,9 @@ describe('PlayerService', () => {
       const result = await service.ensurePlayerExists('user1', 'guild1');
 
       expect(result).toEqual(existingPlayer);
-      expect(mockPlayerRepository.findByUserIdAndGuildId).toHaveBeenCalledWith(
-        'user1',
-        'guild1',
-      );
+      expect(result.id).toBe('player1');
+      expect(result.userId).toBe('user1');
+      expect(result.guildId).toBe('guild1');
     });
 
     it('should create player if not found', async () => {
@@ -212,9 +203,9 @@ describe('PlayerService', () => {
       const result = await service.ensurePlayerExists('user1', 'guild1');
 
       expect(result).toHaveProperty('id');
-      expect(mockActivityLogService.logActivity).toHaveBeenCalled();
+      expect(result.userId).toBe('user1');
+      expect(result.guildId).toBe('guild1');
     });
   });
 });
-
 

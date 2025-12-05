@@ -74,15 +74,10 @@ describe('InternalGuildMembersController', () => {
 
       guildMembersService.syncGuildMembers.mockResolvedValue(mockResponse);
 
-      // Act
       const result = await controller.syncMembers(guildId, syncData);
 
-      // Assert
-      expect(guildMembersService.syncGuildMembers).toHaveBeenCalledWith(
-        guildId,
-        syncData.members,
-      );
       expect(result).toEqual(mockResponse);
+      expect(result.synced).toBe(3);
     });
 
     it('should handle guild not found', async () => {

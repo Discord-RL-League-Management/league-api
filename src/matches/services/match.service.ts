@@ -6,6 +6,7 @@ import { CreateMatchDto } from '../dto/create-match.dto';
 import { CreateMatchParticipantDto } from '../dto/create-match-participant.dto';
 import { PlayerLeagueStatsService } from '../../player-stats/services/player-league-stats.service';
 import { PlayerLeagueRatingService } from '../../player-ratings/services/player-league-rating.service';
+import { MatchStatus } from '@prisma/client';
 
 @Injectable()
 export class MatchService {
@@ -35,7 +36,9 @@ export class MatchService {
   }
 
   async updateStatus(id: string, status: string) {
-    return this.matchRepository.update(id, { status });
+    return this.matchRepository.update(id, {
+      status: status as MatchStatus,
+    });
   }
 
   // Completes match and updates player stats/ratings atomically to maintain data consistency.

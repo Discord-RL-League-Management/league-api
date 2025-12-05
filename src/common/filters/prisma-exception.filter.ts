@@ -47,7 +47,7 @@ export class PrismaExceptionFilter implements ExceptionFilter {
       status: HttpStatus;
       message: string;
       code: string;
-      details?: Record<string, any>;
+      details?: Record<string, unknown>;
     };
 
     // Handle PrismaClientKnownRequestError (database errors)
@@ -131,7 +131,7 @@ export class PrismaExceptionFilter implements ExceptionFilter {
     status: HttpStatus;
     message: string;
     code: string;
-    details?: Record<string, any>;
+    details?: Record<string, unknown>;
   } {
     // Map Prisma error codes to HTTP status and messages
     const errorMap: Record<

@@ -69,7 +69,7 @@ export class NewRelicLoggerService implements LoggerService {
     level: string,
     message: string,
     context?: string,
-    metadata?: any,
+    metadata?: Record<string, unknown>,
   ): Promise<void> {
     if (!this.enabled || !this.apiKey) {
       return;
@@ -77,7 +77,7 @@ export class NewRelicLoggerService implements LoggerService {
 
     try {
       const traceId = getTraceId();
-      const logEntry: any = {
+      const logEntry: Record<string, unknown> = {
         timestamp: Date.now(),
         level,
         message,
@@ -98,23 +98,29 @@ export class NewRelicLoggerService implements LoggerService {
           'Content-Type': 'application/json',
         },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Log error details for debugging, but don't throw to avoid disrupting application
       // Only log once per error type to avoid spam
-      const errorCode = error?.code || error?.response?.status;
+      const errorObj = error as {
+        code?: string | number;
+        response?: { status?: number };
+        message?: string;
+      };
+      const errorCode = errorObj?.code || errorObj?.response?.status;
       const errorKey = `_error_${errorCode}_logged`;
 
-      if (!(this as any)[errorKey]) {
+      const loggerInstance = this as unknown as Record<string, boolean>;
+      if (!loggerInstance[errorKey]) {
         // Use console.error directly to avoid recursion (don't use this.error)
         console.error(
-          `[NewRelicLogger] Failed to send log to New Relic: ${errorCode || 'unknown'} - ${error?.message || 'Unknown error'}`,
+          `[NewRelicLogger] Failed to send log to New Relic: ${errorCode || 'unknown'} - ${errorObj?.message || 'Unknown error'}`,
         );
-        (this as any)[errorKey] = true;
+        loggerInstance[errorKey] = true;
 
         // Reset error flag after 5 minutes to allow retry logging
         setTimeout(
           () => {
-            (this as any)[errorKey] = false;
+            loggerInstance[errorKey] = false;
           },
           5 * 60 * 1000,
         );

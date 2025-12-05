@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { User } from '@prisma/client';
+import { User, Prisma } from '@prisma/client';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { BaseRepository } from '../../common/repositories/base.repository.interface';
@@ -55,7 +55,9 @@ export class UserRepository
 
   async create(data: CreateUserDto): Promise<User> {
     const transformed = this.userTransformer.transformForStorage(data);
-    const user = await this.prisma.user.create({ data: transformed as any });
+    const user = await this.prisma.user.create({
+      data: transformed as unknown as Prisma.UserCreateInput,
+    });
     return this.userTransformer.transformForRetrieval(user)!;
   }
 
@@ -63,7 +65,7 @@ export class UserRepository
     const transformed = this.userTransformer.transformForStorage(data);
     const user = await this.prisma.user.update({
       where: { id },
-      data: transformed as any,
+      data: transformed as unknown as Prisma.UserUpdateInput,
     });
     return this.userTransformer.transformForRetrieval(user)!;
   }
@@ -79,6 +81,33 @@ export class UserRepository
       select: { id: true },
     });
     return !!user;
+  }
+
+  /**
+   * Upsert user (create or update) with optional transaction support
+   * Repository-specific method for user upsert within transactions
+   */
+  async upsert(
+    data: {
+      id: string;
+      username: string;
+      globalName?: string | null;
+      avatar?: string | null;
+    },
+    tx?: Prisma.TransactionClient,
+  ): Promise<User> {
+    const client = tx || this.prisma;
+    const transformed = this.userTransformer.transformForStorage(data);
+    const user = await client.user.upsert({
+      where: { id: data.id },
+      update: {
+        username: data.username,
+        globalName: data.globalName ?? null,
+        avatar: data.avatar ?? null,
+      },
+      create: transformed as unknown as Prisma.UserCreateInput,
+    });
+    return this.userTransformer.transformForRetrieval(user)!;
   }
 
   /**
@@ -98,7 +127,9 @@ export class UserRepository
       return { accessToken: null, refreshToken: null };
     }
 
-    const transformed = this.userTransformer.transformForRetrieval(user as any);
+    const transformed = this.userTransformer.transformForRetrieval(
+      user as User,
+    );
     return {
       accessToken: transformed?.accessToken ?? null,
       refreshToken: transformed?.refreshToken ?? null,
@@ -113,7 +144,11 @@ export class UserRepository
     userId: string,
     tokens: { accessToken?: string; refreshToken?: string },
   ): Promise<User> {
-    const data: any = { updatedAt: new Date() };
+    const data: {
+      updatedAt: Date;
+      accessToken?: string;
+      refreshToken?: string | null;
+    } = { updatedAt: new Date() };
 
     if (tokens.accessToken !== undefined) {
       data.accessToken = tokens.accessToken;

@@ -1,4 +1,5 @@
-import { Test, TestingModule } from '@nestjs/testing';
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+import { Test } from '@nestjs/testing';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -6,15 +7,10 @@ import { EncryptionService } from '../../common/encryption.service';
 import { TokenManagementService } from './token-management.service';
 import { of, throwError } from 'rxjs';
 import { AxiosError } from 'axios';
-import { UnauthorizedException } from '@nestjs/common';
 import { DiscordFactory } from '../../../test/factories/discord.factory';
 
 describe('TokenManagementService', () => {
   let service: TokenManagementService;
-  let httpService: HttpService;
-  let prismaService: PrismaService;
-  let encryptionService: EncryptionService;
-  let configService: ConfigService;
 
   const mockHttpService = {
     get: jest.fn(),
@@ -34,20 +30,22 @@ describe('TokenManagementService', () => {
   };
 
   const mockConfigService = {
-    get: jest.fn((key: string, defaultValue?: any) => {
-      const config: Record<string, any> = {
-        'discord.apiUrl': 'https://discord.com/api',
-        'discord.timeout': 10000,
-        'discord.retryAttempts': 3,
-        'discord.clientId': 'test-client-id',
-        'discord.clientSecret': 'test-client-secret',
-      };
-      return config[key] || defaultValue;
-    }),
+    get: jest.fn<unknown, [string, unknown?]>(
+      (key: string, defaultValue?: unknown) => {
+        const config: Record<string, unknown> = {
+          'discord.apiUrl': 'https://discord.com/api',
+          'discord.timeout': 10000,
+          'discord.retryAttempts': 3,
+          'discord.clientId': 'test-client-id',
+          'discord.clientSecret': 'test-client-secret',
+        };
+        return config[key] || defaultValue;
+      },
+    ),
   };
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    const module = await Test.createTestingModule({
       providers: [
         TokenManagementService,
         { provide: HttpService, useValue: mockHttpService },
@@ -58,10 +56,6 @@ describe('TokenManagementService', () => {
     }).compile();
 
     service = module.get<TokenManagementService>(TokenManagementService);
-    httpService = module.get<HttpService>(HttpService);
-    prismaService = module.get<PrismaService>(PrismaService);
-    encryptionService = module.get<EncryptionService>(EncryptionService);
-    configService = module.get<ConfigService>(ConfigService);
   });
 
   afterEach(() => {
@@ -96,6 +90,7 @@ describe('TokenManagementService', () => {
           statusText: 'Unauthorized',
           data: {},
           headers: {},
+
           config: {} as any,
         },
         message: 'Unauthorized',

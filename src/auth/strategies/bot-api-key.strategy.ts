@@ -27,7 +27,7 @@ export class BotApiKeyStrategy extends PassportStrategy(
     this.apiKeyHash = this.hashApiKey(botApiKey);
   }
 
-  async validate(req: Request): Promise<{ type: 'bot' }> {
+  validate(req: Request): { type: 'bot' } {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {

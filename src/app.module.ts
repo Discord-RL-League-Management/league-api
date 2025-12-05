@@ -33,6 +33,7 @@ import { PlayerStatsModule } from './player-stats/player-stats.module';
 import { PlayerRatingsModule } from './player-ratings/player-ratings.module';
 import { TournamentsModule } from './tournaments/tournaments.module';
 import { OrganizationsModule } from './organizations/organizations.module';
+import { MmrCalculationModule } from './mmr-calculation/mmr-calculation.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthLoggerMiddleware } from './common/middleware/auth-logger.middleware';
 import { RequestContextInterceptor } from './common/interceptors/request-context.interceptor';
@@ -77,6 +78,7 @@ export const VALIDATION_FAILED_MESSAGE = 'Validation failed';
     PlayerRatingsModule,
     TournamentsModule,
     OrganizationsModule,
+    MmrCalculationModule,
   ],
   providers: [
     {
@@ -103,14 +105,24 @@ export const VALIDATION_FAILED_MESSAGE = 'Validation failed';
           },
           // Format validation errors consistently for better API consumer experience
           exceptionFactory: (errors) => {
-            const formattedErrors = errors.map((error) => ({
+            const formattedErrors: Array<{
+              property: string;
+              constraints?: Record<string, string>;
+              value: unknown;
+            }> = errors.map((error) => ({
               property: error.property,
-              constraints: error.constraints,
-              value: error.value,
+              constraints: error.constraints as
+                | Record<string, string>
+                | undefined,
+              value: error.value as unknown,
             }));
             return new BadRequestException({
               message: VALIDATION_FAILED_MESSAGE,
-              errors: formattedErrors,
+              errors: formattedErrors as Array<{
+                property: string;
+                constraints?: Record<string, string>;
+                value: unknown;
+              }>,
             });
           },
           // Stop validation on first error to improve performance for invalid requests

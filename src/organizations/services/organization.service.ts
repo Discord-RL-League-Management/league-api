@@ -15,14 +15,12 @@ import { LeagueRepository } from '../../leagues/repositories/league.repository';
 import { LeagueSettingsService } from '../../leagues/league-settings.service';
 import { TeamRepository } from '../../teams/repositories/team.repository';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Prisma } from '@prisma/client';
 import { CreateOrganizationDto } from '../dto/create-organization.dto';
 import { UpdateOrganizationDto } from '../dto/update-organization.dto';
 import { OrganizationMemberRole } from '@prisma/client';
 import { LeagueConfiguration } from '../../leagues/interfaces/league-settings.interface';
 import {
   OrganizationNotFoundException,
-  OrganizationHasTeamsException,
   NotGeneralManagerException,
   OrganizationCapacityExceededException,
 } from '../exceptions/organization.exceptions';
@@ -78,7 +76,7 @@ export class OrganizationService {
     // Validate league organization capacity (use provided settings if available)
     await this.validationService.validateLeagueOrganizationCapacity(
       createDto.leagueId,
-      settings,
+      settings as LeagueConfiguration | undefined,
     );
 
     // Get league to get guildId
@@ -89,13 +87,13 @@ export class OrganizationService {
 
     // For system user, skip player creation and GM assignment
     // System-created organizations don't need a GM initially (can be added later)
-    let player = null;
+    let player: { id: string } | null = null;
     if (userId !== 'system') {
       // Ensure player exists (validates guild membership for real users)
-      player = await this.playerService.ensurePlayerExists(
+      player = (await this.playerService.ensurePlayerExists(
         userId,
         league.guildId,
-      );
+      )) as { id: string };
     }
 
     // Create organization
@@ -148,7 +146,7 @@ export class OrganizationService {
    */
   async delete(id: string, userId: string) {
     // Verify organization exists
-    const organization = await this.findOne(id);
+    await this.findOne(id);
 
     // Verify user is General Manager (or bot/system user for organizations with no GMs)
     const isGM = await this.organizationMemberService.isGeneralManager(

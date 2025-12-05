@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { MatchParticipant } from '@prisma/client';
+import { MatchParticipant, Prisma } from '@prisma/client';
 import { CreateMatchParticipantDto } from '../dto/create-match-participant.dto';
 import { BaseRepository } from '../../common/repositories/base.repository.interface';
 
@@ -50,7 +50,7 @@ export class MatchParticipantRepository
     });
   }
 
-  async update(id: string, data: any) {
+  async update(id: string, data: Prisma.MatchParticipantUpdateInput) {
     return this.prisma.matchParticipant.update({ where: { id }, data });
   }
 
@@ -62,5 +62,3 @@ export class MatchParticipantRepository
     return (await this.prisma.matchParticipant.count({ where: { id } })) > 0;
   }
 }
-
-

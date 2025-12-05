@@ -13,5 +13,3 @@ import { InternalTeamMembersController } from './internal-team-members.controlle
   exports: [TeamMemberService, TeamMemberRepository],
 })
 export class TeamMembersModule {}
-
-

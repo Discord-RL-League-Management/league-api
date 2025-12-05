@@ -1,9 +1,10 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import request from 'supertest';
 import { validApiKey } from '../fixtures/users.fixture';
 import { JwtService } from '@nestjs/jwt';
+import type { User } from '@prisma/client';
 
 /**
  * Test Helpers - Reusable test utilities to reduce boilerplate
@@ -20,7 +21,9 @@ export class TestHelpers {
   /**
    * Create a user in the test database
    */
-  async createUser(userData: any) {
+  async createUser(
+    userData: Parameters<PrismaService['user']['create']>[0]['data'],
+  ) {
     return this.prisma.user.create({ data: userData });
   }
 
@@ -58,7 +61,7 @@ export class TestHelpers {
   /**
    * Make an authenticated bot request
    */
-  async makeBotRequest(method: string, url: string, data?: any) {
+  async makeBotRequest(method: string, url: string, data?: unknown) {
     const headers = this.getBotAuthHeaders();
     const req = request(this.app.getHttpServer());
 
@@ -85,7 +88,7 @@ export class TestHelpers {
     method: string,
     url: string,
     jwtToken: string,
-    data?: any,
+    data?: unknown,
   ) {
     const headers = this.getUserAuthHeaders(jwtToken);
     const req = request(this.app.getHttpServer());
@@ -109,7 +112,11 @@ export class TestHelpers {
   /**
    * Make an unauthenticated request
    */
-  async makeUnauthenticatedRequest(method: string, url: string, data?: any) {
+  async makeUnauthenticatedRequest(
+    method: string,
+    url: string,
+    data?: unknown,
+  ) {
     const req = request(this.app.getHttpServer());
 
     switch (method.toLowerCase()) {
@@ -131,7 +138,10 @@ export class TestHelpers {
   /**
    * Create a testing module with mocked PrismaService
    */
-  static async createTestingModule(providers: any[], controllers: any[] = []) {
+  static async createTestingModule(
+    providers: unknown[],
+    controllers: unknown[] = [],
+  ) {
     const mockPrismaService = {
       user: {
         findUnique: jest.fn(),
@@ -142,7 +152,7 @@ export class TestHelpers {
       },
     };
 
-    const module: TestingModule = await Test.createTestingModule({
+    const module = await Test.createTestingModule({
       controllers,
       providers: [
         ...providers,
@@ -174,7 +184,7 @@ export class TestHelpers {
   /**
    * Mock Request object for middleware testing
    */
-  static createMockRequest(overrides: Partial<any> = {}) {
+  static createMockRequest(overrides: Partial<Record<string, unknown>> = {}) {
     return {
       method: 'GET',
       path: '/test',

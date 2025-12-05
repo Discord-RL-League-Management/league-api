@@ -22,7 +22,7 @@ describe('OutboxProcessorService', () => {
       dispatchEvent: jest.fn(),
     } as any;
     mockConfigService = {
-      get: jest.fn().mockReturnValue(5000),
+      get: jest.fn<number, [string, unknown?]>().mockReturnValue(5000),
     } as any;
 
     const module: TestingModule = await Test.createTestingModule({

@@ -120,7 +120,7 @@ export class GuildMemberQueryService {
   async findMemberWithGuildSettings(
     userId: string,
     guildId: string,
-  ): Promise<any | null> {
+  ): Promise<Record<string, unknown> | null> {
     try {
       return await this.guildMemberRepository.findWithGuildSettings(
         userId,

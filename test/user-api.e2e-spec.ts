@@ -51,7 +51,7 @@ describe('User API (e2e)', () => {
         .set('Authorization', `Bearer ${validToken}`)
         .expect(200);
 
-      expect(response.body.id).toBe(userId);
+      expect((response.body as { id: string }).id).toBe(userId);
     });
 
     it('should return 401 without JWT', async () => {
@@ -69,7 +69,9 @@ describe('User API (e2e)', () => {
         .send(updateData)
         .expect(200);
 
-      expect(response.body.username).toBe('newusername');
+      expect((response.body as { username: string }).username).toBe(
+        'newusername',
+      );
     });
   });
 
@@ -80,7 +82,7 @@ describe('User API (e2e)', () => {
         .set('Authorization', `Bearer ${validToken}`)
         .expect(200);
 
-      expect(response.body.id).toBe(userId);
+      expect((response.body as { id: string }).id).toBe(userId);
     });
 
     it('should return 403 when :id does not match JWT user', async () => {

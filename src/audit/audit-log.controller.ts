@@ -84,7 +84,14 @@ export class AuditLogController {
       `User ${user.id} requested audit logs for guild ${guildId}`,
     );
 
-    const filters: any = {};
+    const filters: {
+      userId?: string;
+      action?: string;
+      limit?: number;
+      offset?: number;
+      startDate?: Date;
+      endDate?: Date;
+    } = {};
 
     if (userId) filters.userId = userId;
     if (action) filters.action = action;

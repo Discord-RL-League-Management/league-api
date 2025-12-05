@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
 import { LeagueMemberRole } from '@prisma/client';
 import { LeagueRepository } from '../repositories/league.repository';
 import { LeagueAccessValidationService } from './league-access-validation.service';

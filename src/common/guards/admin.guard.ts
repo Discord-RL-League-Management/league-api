@@ -12,6 +12,14 @@ import { DiscordApiService } from '../../discord/discord-api.service';
 import { TokenManagementService } from '../../auth/services/token-management.service';
 import { GuildSettingsService } from '../../guilds/guild-settings.service';
 import { GuildMembersService } from '../../guild-members/guild-members.service';
+import { GuildSettings } from '../../guilds/interfaces/settings.interface';
+import type { AuthenticatedUser } from '../interfaces/user.interface';
+import type { Request } from 'express';
+
+interface RequestWithUser extends Request {
+  user: AuthenticatedUser | { type: 'bot'; id: string };
+  params: Record<string, string>;
+}
 
 @Injectable()
 export class AdminGuard implements CanActivate {
@@ -48,7 +56,7 @@ export class AdminGuard implements CanActivate {
    * Settings are independent of user validation - they exist regardless of who accesses them.
    */
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<RequestWithUser>();
     const user = request.user;
     const guildId = request.params.guildId || request.params.id;
 
@@ -109,7 +117,8 @@ export class AdminGuard implements CanActivate {
       const settings = await this.guildSettingsService.getSettings(guildId);
 
       // Check if any admin roles are configured
-      const adminRoles = (settings as any)?.roles?.admin || [];
+      const settingsTyped = settings;
+      const adminRoles = settingsTyped?.roles?.admin || [];
       const hasNoAdminRolesConfigured = !adminRoles || adminRoles.length === 0;
 
       // If no admin roles are configured, allow access for initial setup
@@ -153,7 +162,7 @@ export class AdminGuard implements CanActivate {
       const isAdmin = await this.permissionCheckService.checkAdminRoles(
         membership.roles,
         guildId,
-        settings,
+        settings as GuildSettings | Record<string, unknown>,
         true, // Validate with Discord for authorization
       );
 

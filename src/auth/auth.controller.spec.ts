@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -27,14 +28,6 @@ describe('AuthController', () => {
     createdAt: new Date(),
     updatedAt: new Date(),
     lastLoginAt: new Date(),
-  };
-
-  const mockJwtResponse = {
-    access_token: 'jwt_token_here',
-    user: {
-      id: mockUser.id,
-      username: mockUser.username,
-    },
   };
 
   beforeEach(async () => {
@@ -144,7 +137,7 @@ describe('AuthController', () => {
   });
 
   describe('discordCallback', () => {
-    it('should handle OAuth callback with code', async () => {
+    it('should handle OAuth callback with code', () => {
       // This test is complex and requires extensive mocking of OAuth flow
       // Skip for now as it tests integration, not unit functionality
       expect(true).toBe(true);
@@ -190,21 +183,21 @@ describe('AuthController', () => {
   });
 
   describe('getCurrentUser', () => {
-    it('should return authenticated user without guilds', async () => {
+    it('should return authenticated user without guilds', () => {
       // Act
-      const result = await controller.getCurrentUser(mockUser);
+      const result = controller.getCurrentUser(mockUser);
 
       // Assert
       expect(result).toEqual(mockUser);
       expect(authService.getUserAvailableGuilds).not.toHaveBeenCalled();
     });
 
-    it('should return user with different data', async () => {
+    it('should return user with different data', () => {
       // Arrange
       const differentUser = { ...mockUser, username: 'differentuser' };
 
       // Act
-      const result = await controller.getCurrentUser(differentUser);
+      const result = controller.getCurrentUser(differentUser);
 
       // Assert
       expect(result).toEqual(differentUser);

@@ -63,7 +63,7 @@ describe('Auth API (e2e)', () => {
         .set('Authorization', `Bearer ${token}`)
         .expect(200);
 
-      expect(response.body).toMatchObject({
+      expect(response.body as { id: string; username: string }).toMatchObject({
         id: user.id,
         username: user.username,
       });

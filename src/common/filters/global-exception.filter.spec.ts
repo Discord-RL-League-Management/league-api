@@ -1,4 +1,5 @@
-import { Test, TestingModule } from '@nestjs/testing';
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access */
+import { Test } from '@nestjs/testing';
 import {
   HttpException,
   HttpStatus,
@@ -12,20 +13,29 @@ import { ArgumentsHost } from '@nestjs/common';
 
 describe('GlobalExceptionFilter', () => {
   let filter: GlobalExceptionFilter;
-  let configService: ConfigService;
   let mockArgumentsHost: ArgumentsHost;
-  let mockResponse: any;
-  let mockRequest: any;
+  let mockResponse: {
+    status: jest.Mock;
+    json: jest.Mock;
+  };
+  let mockRequest: {
+    url: string;
+    method: string;
+    ip: string;
+    headers: Record<string, string>;
+  };
   let loggerErrorSpy: jest.SpyInstance;
   let loggerWarnSpy: jest.SpyInstance;
 
   beforeEach(async () => {
     // ARRANGE: Setup the testing module
     const mockConfigService = {
-      get: jest.fn().mockReturnValue('development'),
+      get: jest
+        .fn<unknown, [string, unknown?]>()
+        .mockReturnValue('development'),
     };
 
-    const module: TestingModule = await Test.createTestingModule({
+    const module = await Test.createTestingModule({
       providers: [
         GlobalExceptionFilter,
         {
@@ -36,7 +46,6 @@ describe('GlobalExceptionFilter', () => {
     }).compile();
 
     filter = module.get<GlobalExceptionFilter>(GlobalExceptionFilter);
-    configService = module.get<ConfigService>(ConfigService);
 
     // Mock request and response objects
     mockRequest = {
@@ -206,7 +215,10 @@ describe('GlobalExceptionFilter', () => {
 
     it('should handle HttpException with null response object', () => {
       // ARRANGE
-      const exception = new HttpException('Bad Request', HttpStatus.BAD_REQUEST);
+      const exception = new HttpException(
+        'Bad Request',
+        HttpStatus.BAD_REQUEST,
+      );
 
       // ACT
       filter.catch(exception, mockArgumentsHost);

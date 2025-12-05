@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, ArgumentMetadata } from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
 import { ParseEnumPipe } from './parse-enum.pipe';
 
 enum TestEnum {

@@ -26,21 +26,22 @@ describe('Health Endpoints (e2e)', () => {
         .get('/health')
         .expect(200);
 
-      expect(response.body).toHaveProperty('status', 'ok');
-      expect(response.body).toHaveProperty('timestamp');
-      expect(response.body).toHaveProperty('uptime');
-      expect(response.body).toHaveProperty('environment');
-      expect(response.body).toHaveProperty('version');
+      const body = response.body as Record<string, unknown>;
+      expect(body).toHaveProperty('status', 'ok');
+      expect(body).toHaveProperty('timestamp');
+      expect(body).toHaveProperty('uptime');
+      expect(body).toHaveProperty('environment');
+      expect(body).toHaveProperty('version');
 
       // Verify timestamp is valid ISO string
-      expect(new Date(response.body.timestamp)).toBeInstanceOf(Date);
-      expect(response.body.timestamp).toMatch(
+      expect(new Date(body.timestamp as string)).toBeInstanceOf(Date);
+      expect(body.timestamp).toMatch(
         /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
       );
 
       // Verify uptime is a number
-      expect(typeof response.body.uptime).toBe('number');
-      expect(response.body.uptime).toBeGreaterThan(0);
+      expect(typeof body.uptime).toBe('number');
+      expect(body.uptime).toBeGreaterThan(0);
     });
 
     it('should be accessible without authentication', async () => {
@@ -66,13 +67,17 @@ describe('Health Endpoints (e2e)', () => {
         .get('/health/detailed')
         .expect(200);
 
-      expect(response.body).toHaveProperty('status');
-      expect(response.body).toHaveProperty('info');
-      expect(response.body.info).toHaveProperty('database');
-      expect(response.body.info).toHaveProperty('memory_heap');
-      expect(response.body.info).toHaveProperty('memory_rss');
-      expect(response.body.info).toHaveProperty('storage');
-      expect(response.body.info).toHaveProperty('discord_api');
+      const body = response.body as {
+        status: string;
+        info: Record<string, { status: string }>;
+      };
+      expect(body).toHaveProperty('status');
+      expect(body).toHaveProperty('info');
+      expect(body.info).toHaveProperty('database');
+      expect(body.info).toHaveProperty('memory_heap');
+      expect(body.info).toHaveProperty('memory_rss');
+      expect(body.info).toHaveProperty('storage');
+      expect(body.info).toHaveProperty('discord_api');
     });
 
     it('should be accessible without authentication', async () => {
@@ -87,7 +92,9 @@ describe('Health Endpoints (e2e)', () => {
       // Check that each health indicator has a status
       Object.values(response.body.info).forEach((indicator: unknown) => {
         expect(indicator).toHaveProperty('status');
-        expect(['up', 'down']).toContain((indicator as { status: string }).status);
+        expect(['up', 'down']).toContain(
+          (indicator as { status: string }).status,
+        );
       });
     });
 
@@ -98,9 +105,10 @@ describe('Health Endpoints (e2e)', () => {
         .get('/health/detailed')
         .expect(200);
 
-      expect(response.body).toHaveProperty('status');
+      const body = response.body as { status: string };
+      expect(body).toHaveProperty('status');
       // Status should be 'ok' or 'error' but not undefined
-      expect(['ok', 'error']).toContain(response.body.status);
+      expect(['ok', 'error']).toContain(body.status);
     });
   });
 

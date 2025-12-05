@@ -15,6 +15,7 @@ import {
 } from '../exceptions/organization.exceptions';
 import { LeagueNotFoundException } from '../../leagues/exceptions/league.exceptions';
 import { OrganizationMemberRole } from '@prisma/client';
+import { LeagueConfiguration } from '../../leagues/interfaces/league-settings.interface';
 
 /**
  * OrganizationValidationService - Single Responsibility: Organization validation logic
@@ -117,7 +118,7 @@ export class OrganizationValidationService {
   async validateOrganizationCapacity(
     leagueId: string,
     organizationId?: string,
-    settings?: any,
+    settings?: LeagueConfiguration,
   ): Promise<void> {
     if (!organizationId) {
       return;
@@ -149,7 +150,7 @@ export class OrganizationValidationService {
    */
   async validateLeagueOrganizationCapacity(
     leagueId: string,
-    settings?: any,
+    settings?: LeagueConfiguration,
   ): Promise<void> {
     // Use provided settings or fetch from service (for cache-aware validation)
     const leagueSettings =

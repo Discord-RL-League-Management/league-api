@@ -14,7 +14,7 @@ export class TournamentService {
     return this.repository.create(createDto);
   }
 
-  async registerParticipant(
+  registerParticipant(
     tournamentId: string,
     playerId: string | null,
     teamId: string | null,
@@ -24,5 +24,3 @@ export class TournamentService {
     return { tournamentId, playerId, teamId, leagueId };
   }
 }
-
-

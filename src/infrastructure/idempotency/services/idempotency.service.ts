@@ -28,7 +28,7 @@ export class IdempotencyService {
     eventKey: string,
     entityType?: string,
     entityId?: string,
-    metadata?: Record<string, any>,
+    metadata?: Prisma.InputJsonValue,
   ): Promise<ProcessedEvent> {
     return tx.processedEvent.upsert({
       where: { eventKey },

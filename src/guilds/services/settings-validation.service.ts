@@ -1,11 +1,22 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { DiscordBotService } from '../../discord/discord-bot.service';
 import { GuildSettingsDto } from '../dto/guild-settings.dto';
 import { MAX_CHANNEL_NAME_LENGTH } from '../constants/settings.constants';
+import { FormulaValidationService } from '../../mmr-calculation/services/formula-validation.service';
+import {
+  ChannelConfig,
+  MmrCalculationConfig,
+  GuildSettings,
+} from '../interfaces/settings.interface';
 
 @Injectable()
 export class SettingsValidationService {
-  constructor(private discordValidation: DiscordBotService) {}
+  private readonly logger = new Logger(SettingsValidationService.name);
+
+  constructor(
+    private discordValidation: DiscordBotService,
+    private formulaValidation: FormulaValidationService,
+  ) {}
 
   /**
    * Validate settings structure and values with Discord API verification
@@ -25,6 +36,10 @@ export class SettingsValidationService {
         guildId,
       );
     }
+
+    if (settings.mmrCalculation) {
+      this.validateMmrCalculation(settings.mmrCalculation);
+    }
   }
 
   /**
@@ -32,7 +47,7 @@ export class SettingsValidationService {
    * Single Responsibility: Channel validation with Discord API
    */
   private async validateBotCommandChannels(
-    channels: any[],
+    channels: ChannelConfig[],
     guildId: string,
   ): Promise<void> {
     // Check for duplicate channel IDs
@@ -86,7 +101,7 @@ export class SettingsValidationService {
    * Single Responsibility: Channel validation with Discord API
    */
   private async validateRegisterCommandChannels(
-    channels: any[],
+    channels: ChannelConfig[],
     guildId: string,
   ): Promise<void> {
     // Reuse the same validation logic as bot_command_channels
@@ -103,7 +118,7 @@ export class SettingsValidationService {
    * @param config Configuration object to validate
    * @throws BadRequestException if structure is invalid
    */
-  validateStructure(config: any): void {
+  validateStructure(config: GuildSettings | Record<string, unknown>): void {
     // Validate that config is an object
     if (!config || typeof config !== 'object') {
       throw new BadRequestException('Configuration must be an object');
@@ -117,17 +132,114 @@ export class SettingsValidationService {
     }
 
     // Validate bot_command_channels structure
-    if (config.bot_command_channels) {
-      if (!Array.isArray(config.bot_command_channels)) {
+    const botCommandChannels =
+      'bot_command_channels' in config
+        ? config.bot_command_channels
+        : undefined;
+    if (botCommandChannels) {
+      if (!Array.isArray(botCommandChannels)) {
         throw new BadRequestException('bot_command_channels must be an array');
       }
 
-      for (const channel of config.bot_command_channels) {
-        if (typeof channel !== 'object' || !channel.id || !channel.name) {
+      for (const channel of botCommandChannels) {
+        if (
+          typeof channel !== 'object' ||
+          channel === null ||
+          !('id' in channel) ||
+          !('name' in channel)
+        ) {
           throw new BadRequestException(
             'Each bot_command_channel must be an object with id and name',
           );
         }
+      }
+    }
+  }
+
+  /**
+   * Validate MMR calculation configuration
+   * Single Responsibility: MMR config validation
+   */
+  private validateMmrCalculation(config: MmrCalculationConfig): void {
+    if (!config.algorithm) {
+      throw new BadRequestException('MMR calculation algorithm is required');
+    }
+
+    const validAlgorithms = [
+      'WEIGHTED_AVERAGE',
+      'PEAK_MMR',
+      'CUSTOM',
+      'ASCENDANCY',
+    ];
+    if (!validAlgorithms.includes(config.algorithm)) {
+      throw new BadRequestException(
+        `Invalid algorithm. Must be one of: ${validAlgorithms.join(', ')}`,
+      );
+    }
+
+    if (config.algorithm === 'CUSTOM') {
+      if (!config.customFormula) {
+        throw new BadRequestException(
+          'Custom formula is required for CUSTOM algorithm',
+        );
+      }
+
+      // Validate formula syntax
+      const validation = this.formulaValidation.validateFormula(
+        config.customFormula,
+      );
+      if (!validation.valid) {
+        throw new BadRequestException(`Invalid formula: ${validation.error}`);
+      }
+    }
+
+    // Validate weights if using WEIGHTED_AVERAGE
+    if (config.algorithm === 'WEIGHTED_AVERAGE' && config.weights) {
+      const weights = config.weights;
+      const totalWeight =
+        (weights.ones || 0) +
+        (weights.twos || 0) +
+        (weights.threes || 0) +
+        (weights.fours || 0);
+
+      if (totalWeight === 0) {
+        throw new BadRequestException(
+          'At least one weight must be greater than 0',
+        );
+      }
+
+      // Warn if weights don't sum to 1 (but don't fail)
+      if (Math.abs(totalWeight - 1.0) > 0.01) {
+        this.logger.warn(
+          `Weights sum to ${totalWeight}, not 1.0. This may produce unexpected results.`,
+        );
+      }
+    }
+
+    // Validate ascendancyWeights if using ASCENDANCY
+    if (config.algorithm === 'ASCENDANCY' && config.ascendancyWeights) {
+      const weights = config.ascendancyWeights;
+      if (
+        typeof weights.current !== 'number' ||
+        typeof weights.peak !== 'number'
+      ) {
+        throw new BadRequestException(
+          'ascendancyWeights.current and ascendancyWeights.peak must be numbers',
+        );
+      }
+
+      if (weights.current < 0 || weights.peak < 0) {
+        throw new BadRequestException(
+          'ascendancyWeights.current and ascendancyWeights.peak must be >= 0',
+        );
+      }
+
+      // Warn if weights don't sum to 1 (but don't fail)
+      const totalWeight = weights.current + weights.peak;
+      if (Math.abs(totalWeight - 1.0) > 0.01) {
+        this.logger.warn(
+          `Ascendancy weights sum to ${totalWeight}, not 1.0. This may produce unexpected results.`,
+        );
       }
     }
   }

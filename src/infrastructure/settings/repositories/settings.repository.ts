@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { Prisma, Settings, PrismaClient } from '@prisma/client';
+import { Prisma, Settings } from '@prisma/client';
 
 /**
  * SettingsRepository - Single Responsibility: Data access layer for Settings entity

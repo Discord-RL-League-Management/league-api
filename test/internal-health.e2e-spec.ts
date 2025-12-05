@@ -28,7 +28,7 @@ describe('Internal Health API (e2e)', () => {
         .set('Authorization', `Bearer ${validApiKey}`)
         .expect(200);
 
-      expect(response.body).toMatchObject({
+      expect(response.body as Record<string, unknown>).toMatchObject({
         status: 'ok',
         message: 'Bot authenticated successfully',
         timestamp: expect.any(String),

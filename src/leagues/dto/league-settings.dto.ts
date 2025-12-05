@@ -7,12 +7,10 @@ import {
   IsArray,
   ValidateNested,
   Min,
-  Max,
   Matches,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { PartialType } from '@nestjs/swagger';
 
 /**
  * Membership configuration DTO

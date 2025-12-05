@@ -1,8 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import {
-  GuildSettings,
-  ConfigMetadata,
-} from '../interfaces/settings.interface';
+import { GuildSettings } from '../interfaces/settings.interface';
 import {
   CURRENT_SCHEMA_VERSION,
   CURRENT_CONFIG_VERSION,
@@ -33,7 +30,7 @@ export class ConfigMigrationService {
    * @param config Configuration object (may be from any version)
    * @returns Migrated configuration matching current schema
    */
-  async migrate(config: any): Promise<GuildSettings> {
+  async migrate(config: unknown): Promise<GuildSettings> {
     const schemaVersion = this.getSchemaVersion(config);
 
     // If already at current version, just normalize structure
@@ -46,7 +43,7 @@ export class ConfigMigrationService {
     );
 
     // Apply migration chain
-    let migrated = config;
+    let migrated: unknown = config;
 
     // Migration chain: apply each migration in sequence
     if (schemaVersion < 1) {
@@ -73,10 +70,18 @@ export class ConfigMigrationService {
    * @param config Configuration object
    * @returns Schema version number (0 if not found/legacy)
    */
-  getSchemaVersion(config: any): number {
+  getSchemaVersion(config: unknown): number {
     // Check JSON metadata first
-    if (config?._metadata?.schemaVersion) {
-      return config._metadata.schemaVersion;
+    const configObj = config as Record<string, unknown>;
+    if (
+      configObj?._metadata &&
+      typeof configObj._metadata === 'object' &&
+      configObj._metadata !== null
+    ) {
+      const metadata = configObj._metadata as Record<string, unknown>;
+      if (typeof metadata.schemaVersion === 'number') {
+        return metadata.schemaVersion;
+      }
     }
 
     // Legacy configs without version info
@@ -90,8 +95,10 @@ export class ConfigMigrationService {
    * Ensures config has all required fields and correct structure.
    * Uses SettingsDefaultsService to merge with defaults.
    */
-  normalizeToCurrentSchema(config: any): GuildSettings {
-    return this.settingsDefaults.normalizeToCurrentSchema(config);
+  normalizeToCurrentSchema(config: unknown): GuildSettings {
+    return this.settingsDefaults.normalizeToCurrentSchema(
+      config as Record<string, unknown>,
+    );
   }
 
   /**
@@ -102,11 +109,13 @@ export class ConfigMigrationService {
    * Ensures all required fields exist and adds metadata.
    * Uses SettingsDefaultsService to merge with defaults.
    */
-  private async migrateToV1(config: any): Promise<any> {
+  private migrateToV1(config: unknown): unknown {
     this.logger.log('Applying migration: version 0 → version 1');
 
     // V1 migration: Merge with defaults to ensure all fields exist
-    const migrated = this.settingsDefaults.mergeWithDefaults(config);
+    const migrated = this.settingsDefaults.mergeWithDefaults(
+      config as Record<string, unknown>,
+    );
 
     // Ensure metadata is present with migration info
     if (!migrated._metadata) {
@@ -124,7 +133,7 @@ export class ConfigMigrationService {
       };
     }
 
-    return migrated;
+    return migrated as unknown;
   }
 
   /**
@@ -134,11 +143,12 @@ export class ConfigMigrationService {
    * Migrates from the old complex schema to the new minimal schema.
    * All old fields are dropped, only bot_command_channels remains.
    */
-  private async migrateToV2(config: any): Promise<any> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private migrateToV2(_config: unknown): unknown {
     this.logger.log('Applying migration: version 1 → version 2');
 
     // V2 migration: Strip to minimal schema
-    const migrated: any = {
+    const migrated: Record<string, unknown> = {
       _metadata: {
         version: CURRENT_CONFIG_VERSION,
         schemaVersion: 2,
@@ -157,7 +167,7 @@ export class ConfigMigrationService {
    * @param config Configuration object
    * @returns true if config needs migration
    */
-  needsMigration(config: any): boolean {
+  needsMigration(config: unknown): boolean {
     const schemaVersion = this.getSchemaVersion(config);
     return schemaVersion < CURRENT_SCHEMA_VERSION;
   }

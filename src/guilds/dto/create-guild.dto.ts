@@ -2,7 +2,6 @@ import {
   IsString,
   IsOptional,
   IsNumber,
-  IsBoolean,
   Matches,
   Length,
   Min,
@@ -70,6 +69,11 @@ export class CreateGuildDto {
   @IsNumber()
   @Min(0, { message: 'Member count cannot be negative' })
   @Max(1000000, { message: 'Member count cannot exceed 1,000,000' })
-  @Transform(({ value }) => parseInt(value, 10))
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return parseInt(value, 10);
+    }
+    return value as number | undefined;
+  })
   memberCount?: number;
 }

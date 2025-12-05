@@ -49,5 +49,3 @@ export const defaultLeagueMemberQueryOptions: Required<
   page: 1,
   limit: 50,
 };
-
-

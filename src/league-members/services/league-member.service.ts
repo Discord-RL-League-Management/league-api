@@ -6,9 +6,8 @@ import {
   Inject,
   forwardRef,
 } from '@nestjs/common';
-import { Prisma, LeagueMemberStatus } from '@prisma/client';
+import { Prisma, LeagueMemberStatus, Player } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateLeagueMemberDto } from '../dto/create-league-member.dto';
 import { UpdateLeagueMemberDto } from '../dto/update-league-member.dto';
 import { JoinLeagueDto } from '../dto/join-league.dto';
 import { LeagueMemberRepository } from '../repositories/league-member.repository';
@@ -63,7 +62,7 @@ export class LeagueMemberService {
     playerId: string,
     leagueId: string,
     options?: LeagueMemberQueryOptions,
-  ): Promise<any | null> {
+  ): Promise<Record<string, unknown> | null> {
     return this.leagueMemberRepository.findByPlayerAndLeague(
       playerId,
       leagueId,
@@ -114,20 +113,19 @@ export class LeagueMemberService {
       let player;
       try {
         player = await this.playerService.findOne(joinLeagueDto.playerId);
-      } catch (error) {
+      } catch {
         // If player doesn't exist, we'll create it below
         player = null;
       }
 
       // Ensure player exists for this guild (auto-create if needed)
       // If player doesn't exist, we need userId - for now, assume joinLeagueDto has userId
-      // TODO: Update JoinLeagueDto to include userId or handle player creation differently
-      let guildPlayer;
+      let guildPlayer: { id: string };
       if (player) {
-        guildPlayer = await this.playerService.ensurePlayerExists(
-          player.userId,
+        guildPlayer = (await this.playerService.ensurePlayerExists(
+          (player as Player & { userId: string }).userId,
           league.guildId,
-        );
+        )) as { id: string };
       } else {
         // Player doesn't exist - this shouldn't happen if playerId is provided
         // For now, throw error - we'll need to update the DTO to include userId
@@ -214,7 +212,7 @@ export class LeagueMemberService {
             ? 'LEAGUE_MEMBER_PENDING'
             : 'LEAGUE_MEMBER_JOINED',
           'create',
-          guildPlayer.userId,
+          (guildPlayer as Player & { userId: string }).userId,
           league.guildId,
           { status: initialStatus, leagueId },
         );
@@ -276,7 +274,10 @@ export class LeagueMemberService {
    * Leave league (handle cooldown)
    * Single Responsibility: League leave with cooldown tracking
    */
-  async leaveLeague(playerId: string, leagueId: string): Promise<any> {
+  async leaveLeague(
+    playerId: string,
+    leagueId: string,
+  ): Promise<{ id: string; status: string; leftAt: Date | null }> {
     const member = await this.leagueMemberRepository.findByPlayerAndLeague(
       playerId,
       leagueId,
@@ -346,7 +347,12 @@ export class LeagueMemberService {
   async update(
     id: string,
     updateLeagueMemberDto: UpdateLeagueMemberDto,
-  ): Promise<any> {
+  ): Promise<{
+    id: string;
+    status: string;
+    role: string;
+    notes: string | null;
+  }> {
     const member = await this.leagueMemberRepository.findById(id);
     if (!member) {
       throw new LeagueMemberNotFoundException(id);

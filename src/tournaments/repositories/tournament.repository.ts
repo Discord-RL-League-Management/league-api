@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Tournament } from '@prisma/client';
+import { Tournament, Prisma } from '@prisma/client';
 import { CreateTournamentDto } from '../dto/create-tournament.dto';
 import { BaseRepository } from '../../common/repositories/base.repository.interface';
 
@@ -45,7 +45,7 @@ export class TournamentRepository
     });
   }
 
-  async update(id: string, data: any) {
+  async update(id: string, data: Prisma.TournamentUpdateInput) {
     return this.prisma.tournament.update({ where: { id }, data });
   }
 
@@ -57,5 +57,3 @@ export class TournamentRepository
     return (await this.prisma.tournament.count({ where: { id } })) > 0;
   }
 }
-
-

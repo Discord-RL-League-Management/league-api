@@ -4,11 +4,7 @@ import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { TestHelpers } from './helpers/test-helpers';
-import {
-  validApiKey,
-  validUser,
-  validUserCreateDto,
-} from './fixtures/users.fixture';
+import { validUserCreateDto } from './fixtures/users.fixture';
 import { bootstrapTestApp } from './helpers/create-test-app';
 import { JwtService } from '@nestjs/jwt';
 
@@ -49,7 +45,9 @@ describe('Integration Tests - Both Auth Types (e2e)', () => {
         validUserCreateDto,
       );
       expect(createResponse.status).toBe(201);
-      expect(createResponse.body.id).toBe(validUserCreateDto.id);
+      expect((createResponse.body as { id: string }).id).toBe(
+        validUserCreateDto.id,
+      );
 
       // Step 2: Generate JWT token for the created user
       const jwtToken = testHelpers.generateJwtToken(
@@ -64,9 +62,13 @@ describe('Integration Tests - Both Auth Types (e2e)', () => {
         .expect(200);
 
       // Step 4: Verify user can see their data
-      expect(profileResponse.body).toHaveProperty('id');
-      expect(profileResponse.body.id).toBe(validUserCreateDto.id);
-      expect(profileResponse.body).toHaveProperty('username');
+      const profileBody = profileResponse.body as {
+        id: string;
+        username: string;
+      };
+      expect(profileBody).toHaveProperty('id');
+      expect(profileBody.id).toBe(validUserCreateDto.id);
+      expect(profileBody).toHaveProperty('username');
     });
 
     it('should allow bot to update user and user to see updated data', async () => {
@@ -302,7 +304,7 @@ describe('Integration Tests - Both Auth Types (e2e)', () => {
     });
 
     it('should handle user operations with invalid JWT', async () => {
-      const response = await request(app.getHttpServer())
+      await request(app.getHttpServer())
         .get('/api/profile')
         .set('Authorization', 'Bearer invalid-jwt-token')
         .expect(401);

@@ -25,5 +25,5 @@ export interface AuditEvent {
   resource: string;
   result: 'allowed' | 'denied';
   guildId?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }

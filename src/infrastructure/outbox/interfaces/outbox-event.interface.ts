@@ -8,7 +8,7 @@ export interface OutboxEvent {
   sourceType: string;
   sourceId: string;
   eventType: string;
-  payload: Record<string, any>;
+  payload: Record<string, unknown>;
   status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
   processedAt?: Date;
   errorMessage?: string;

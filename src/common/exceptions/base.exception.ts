@@ -9,7 +9,7 @@ export abstract class BaseException extends HttpException {
     message: string,
     status: HttpStatus,
     public readonly code?: string,
-    public readonly details?: Record<string, any>,
+    public readonly details?: Record<string, unknown>,
   ) {
     super({ message, code, details }, status);
   }
@@ -19,7 +19,7 @@ export abstract class BaseException extends HttpException {
  * ValidationException - For input validation errors
  */
 export class ValidationException extends BaseException {
-  constructor(message: string, details?: Record<string, any>) {
+  constructor(message: string, details?: Record<string, unknown>) {
     super(message, HttpStatus.BAD_REQUEST, 'VALIDATION_ERROR', details);
   }
 }
@@ -42,7 +42,7 @@ export class NotFoundException extends BaseException {
  * ConflictException - For resource conflict errors
  */
 export class ConflictException extends BaseException {
-  constructor(message: string, details?: Record<string, any>) {
+  constructor(message: string, details?: Record<string, unknown>) {
     super(message, HttpStatus.CONFLICT, 'CONFLICT', details);
   }
 }

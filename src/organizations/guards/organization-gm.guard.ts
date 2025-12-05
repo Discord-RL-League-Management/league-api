@@ -6,6 +6,13 @@ import {
   Logger,
 } from '@nestjs/common';
 import { OrganizationMemberService } from '../services/organization-member.service';
+import type { AuthenticatedUser } from '../../common/interfaces/user.interface';
+import type { Request } from 'express';
+
+interface RequestWithUser extends Request {
+  user: AuthenticatedUser | { type: 'bot'; id: string };
+  params: Record<string, string>;
+}
 
 /**
  * OrganizationGmGuard - Checks if user is General Manager of organization
@@ -18,7 +25,7 @@ export class OrganizationGmGuard implements CanActivate {
   constructor(private organizationMemberService: OrganizationMemberService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<RequestWithUser>();
     const user = request.user;
 
     if (!user) {
@@ -51,7 +58,7 @@ export class OrganizationGmGuard implements CanActivate {
           await this.organizationMemberService.hasGeneralManagers(
             organizationId,
           );
-        if (!hasGMs && user.type === 'bot') {
+        if (!hasGMs && 'type' in user && user.type === 'bot') {
           this.logger.log(
             `OrganizationGmGuard: Allowing bot user for organization ${organizationId} with no GMs`,
           );

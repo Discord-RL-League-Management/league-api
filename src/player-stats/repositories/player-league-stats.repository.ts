@@ -27,7 +27,12 @@ export class PlayerLeagueStatsRepository {
     const client = tx || this.prisma;
     return client.playerLeagueStats.upsert({
       where: { playerId_leagueId: { playerId, leagueId } },
-      create: { playerId, leagueId, ...data, winRate } as any,
+      create: {
+        playerId,
+        leagueId,
+        ...data,
+        winRate,
+      } as unknown as Prisma.PlayerLeagueStatsCreateInput,
       update: { ...data, winRate },
     });
   }

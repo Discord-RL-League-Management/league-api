@@ -19,10 +19,12 @@ export class DiscordApiHealthIndicator {
       const clientId = this.configService.get<string>('discord.clientId');
 
       if (!clientId) {
-        return indicator.down({
-          error: 'Client ID not configured',
-          status: 'down',
-        });
+        return Promise.resolve(
+          indicator.down({
+            error: 'Client ID not configured',
+            status: 'down',
+          }),
+        );
       }
 
       // In a real implementation, you would make an actual API call to Discord
@@ -30,23 +32,29 @@ export class DiscordApiHealthIndicator {
       const isHealthy = !!clientId;
 
       if (!isHealthy) {
-        return indicator.down({
-          error: 'Discord API configuration invalid',
-          status: 'down',
-        });
+        return Promise.resolve(
+          indicator.down({
+            error: 'Discord API configuration invalid',
+            status: 'down',
+          }),
+        );
       }
 
-      return indicator.up({
-        clientId: 'configured',
-        status: 'up',
-      });
+      return Promise.resolve(
+        indicator.up({
+          clientId: 'configured',
+          status: 'up',
+        }),
+      );
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
-      return indicator.down({
-        error: errorMessage,
-        status: 'down',
-      });
+      return Promise.resolve(
+        indicator.down({
+          error: errorMessage,
+          status: 'down',
+        }),
+      );
     }
   }
 }

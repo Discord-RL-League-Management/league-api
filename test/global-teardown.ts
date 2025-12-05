@@ -1,4 +1,4 @@
-export default async function globalTeardown() {
+export default function globalTeardown() {
   // Leave container running for faster subsequent test runs
   // Developers can manually stop with: docker compose down postgres_test
   console.log(

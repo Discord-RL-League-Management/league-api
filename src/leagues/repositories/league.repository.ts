@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { League, Prisma } from '@prisma/client';
+import { League, Prisma, LeagueStatus, Game } from '@prisma/client';
 import { CreateLeagueDto } from '../dto/create-league.dto';
 import { UpdateLeagueDto } from '../dto/update-league.dto';
 import { BaseRepository } from '../../common/repositories/base.repository.interface';
@@ -45,18 +45,18 @@ export class LeagueRepository
     }
 
     if (opts.includeMembers) {
-      (include as any).leagueMembers = {
+      (include as Record<string, unknown>).leagueMembers = {
         where: { status: 'ACTIVE' },
         include: { player: true },
       };
     }
     if (opts.includeTeams) {
-      (include as any).teams = {
+      (include as Record<string, unknown>).teams = {
         include: { members: { where: { status: 'ACTIVE' } } },
       };
     }
     if (opts.includeTournaments) {
-      (include as any).tournaments = true;
+      (include as Record<string, unknown>).tournaments = true;
     }
     // if (opts.includeSeries) {
     //   include.series = true;
@@ -97,17 +97,17 @@ export class LeagueRepository
 
     if (options?.status) {
       if (Array.isArray(options.status)) {
-        where.status = { in: options.status as any[] };
+        where.status = { in: options.status as LeagueStatus[] };
       } else {
-        where.status = options.status as any;
+        where.status = options.status as LeagueStatus;
       }
     }
 
     if (options?.game) {
       if (Array.isArray(options.game)) {
-        where.game = { in: options.game as any[] };
+        where.game = { in: options.game as Game[] };
       } else {
-        where.game = options.game as any;
+        where.game = options.game as Game;
       }
     }
 
@@ -206,7 +206,7 @@ export class LeagueRepository
    */
   async createWithSettings(
     leagueData: CreateLeagueDto & { createdBy: string },
-    settingsData: Record<string, any>,
+    settingsData: Prisma.InputJsonValue,
     tx?: Prisma.TransactionClient,
   ): Promise<League> {
     if (tx) {

@@ -8,6 +8,6 @@ export interface ProcessedEvent {
   eventKey: string;
   entityType?: string;
   entityId?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   processedAt: Date;
 }

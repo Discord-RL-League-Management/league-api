@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import { Public, IS_PUBLIC_KEY } from './public.decorator';
 import { Reflector } from '@nestjs/core';
 import 'reflect-metadata';

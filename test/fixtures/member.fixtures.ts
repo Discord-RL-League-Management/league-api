@@ -75,10 +75,10 @@ export const apiFixtures = {
       members.push(
         apiFixtures.createMockMember({
           id: `member_${i + 1}`,
-          userId: `${123456789012345678 + i}`,
+          userId: `${BigInt('123456789012345678') + BigInt(i)}`,
           username: `user${i + 1}`,
           user: {
-            id: `${123456789012345678 + i}`,
+            id: `${BigInt('123456789012345678') + BigInt(i)}`,
             username: `user${i + 1}`,
             globalName: `User ${i + 1}`,
             avatar: `avatar_${i + 1}`,
@@ -325,7 +325,7 @@ export const apiFixtures = {
    */
   createSyncMembersData: (count: number = 3): any => ({
     members: Array.from({ length: count }, (_, i) => ({
-      userId: `${123456789012345678 + i}`,
+      userId: `${BigInt('123456789012345678') + BigInt(i)}`,
       username: `user${i + 1}`,
       roles: [`11111111111111111${i}`],
     })),

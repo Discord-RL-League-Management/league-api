@@ -8,10 +8,7 @@ import { League, LeagueStatus } from '@prisma/client';
 import { CreateLeagueDto } from './dto/create-league.dto';
 import { UpdateLeagueDto } from './dto/update-league.dto';
 import { LeagueSettingsDefaultsService } from './services/league-settings-defaults.service';
-import {
-  LeagueQueryOptions,
-  defaultLeagueQueryOptions,
-} from './interfaces/league-query.options';
+import { LeagueQueryOptions } from './interfaces/league-query.options';
 import {
   LeagueNotFoundException,
   LeagueAlreadyExistsException,
@@ -61,7 +58,7 @@ export class LeaguesService {
 
       const league = await this.leagueRepository.createWithSettings(
         leagueData,
-        this.settingsDefaults.getDefaults() as Record<string, any>,
+        this.settingsDefaults.getDefaults() as unknown as Prisma.InputJsonValue,
       );
 
       this.logger.log(`Created league ${league.id} with default settings`);

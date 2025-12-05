@@ -4,7 +4,7 @@ import {
   NotFoundException,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { Prisma, PlayerStatus } from '@prisma/client';
+import { Prisma, PlayerStatus, Player } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreatePlayerDto } from '../dto/create-player.dto';
 import { UpdatePlayerDto } from '../dto/update-player.dto';
@@ -39,7 +39,7 @@ export class PlayerService {
   /**
    * Find player by ID
    */
-  async findOne(id: string, options?: PlayerQueryOptions): Promise<any> {
+  async findOne(id: string, options?: PlayerQueryOptions): Promise<Player> {
     const player = await this.playerRepository.findById(id, options);
     if (!player) {
       throw new PlayerNotFoundException(id);
@@ -54,7 +54,7 @@ export class PlayerService {
     userId: string,
     guildId: string,
     options?: PlayerQueryOptions,
-  ): Promise<any | null> {
+  ): Promise<Player | null> {
     return this.playerRepository.findByUserIdAndGuildId(
       userId,
       guildId,
@@ -68,7 +68,7 @@ export class PlayerService {
   async findByGuildId(
     guildId: string,
     options?: PlayerQueryOptions,
-  ): Promise<{ data: any[]; total: number; page: number; limit: number }> {
+  ): Promise<{ data: Player[]; total: number; page: number; limit: number }> {
     return this.playerRepository.findByGuildId(guildId, options);
   }
 
@@ -293,7 +293,7 @@ export class PlayerService {
           'update',
           player.userId,
           player.guildId,
-          updatePlayerDto as Record<string, any>,
+          updatePlayerDto as unknown as Prisma.InputJsonValue,
         );
 
         return updated;

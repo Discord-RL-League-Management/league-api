@@ -2,7 +2,7 @@ import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom, timeout, retry, catchError, of } from 'rxjs';
-import { AxiosError } from 'axios';
+import { AxiosError, AxiosResponse } from 'axios';
 import { UsersService } from '../../users/users.service';
 
 @Injectable()
@@ -99,7 +99,10 @@ export class TokenManagementService {
           ),
       );
 
-      const { access_token, refresh_token } = response.data;
+      const { access_token, refresh_token } = response.data as {
+        access_token: string;
+        refresh_token: string;
+      };
 
       // Update user tokens
       await this.usersService.updateUserTokens(userId, {
@@ -156,7 +159,7 @@ export class TokenManagementService {
         // Revoke token with Discord
         await firstValueFrom(
           this.httpService
-            .post('https://discord.com/api/oauth2/token/revoke', {
+            .post<unknown>('https://discord.com/api/oauth2/token/revoke', {
               client_id: this.configService.get<string>('discord.clientId'),
               client_secret: this.configService.get<string>(
                 'discord.clientSecret',
@@ -169,7 +172,7 @@ export class TokenManagementService {
                 this.logger.warn(
                   `Failed to revoke Discord token: ${error.message}`,
                 );
-                return of(null as any); // Don't throw, continue with cleanup
+                return of({ data: undefined } as AxiosResponse<unknown>); // Don't throw, continue with cleanup
               }),
             ),
         );

@@ -3,6 +3,7 @@ import { DiscordBotService } from '../../../discord/discord-bot.service';
 import { RoleParserService } from '../role-parser/role-parser.service';
 import { AccessInfo } from '../../interfaces/permission.interface';
 import { GuildMembersService } from '../../../guild-members/guild-members.service';
+import { GuildSettings } from '../../../guilds/interfaces/settings.interface';
 
 @Injectable()
 export class PermissionCheckService {
@@ -26,7 +27,7 @@ export class PermissionCheckService {
   async checkGuildAccess(
     userId: string,
     guildId: string,
-    guildSettings?: any,
+    guildSettings?: GuildSettings | Record<string, unknown>,
   ): Promise<AccessInfo> {
     try {
       const membership =
@@ -49,12 +50,13 @@ export class PermissionCheckService {
 
       const adminRoles =
         this.roleParser.getAdminRolesFromSettings(guildSettings);
+      const membershipRoles = (membership as { roles: string[] }).roles;
       const isAdmin = adminRoles.some((adminRole) =>
-        membership.roles.includes(adminRole.id),
+        membershipRoles.includes(adminRole.id),
       );
 
       const permissions = this.roleParser.calculatePermissions(
-        membership.roles,
+        membershipRoles,
         guildSettings,
       );
 
@@ -80,7 +82,7 @@ export class PermissionCheckService {
     userId: string,
     guildId: string,
     validateWithDiscord: boolean = true,
-    guildSettings?: any,
+    guildSettings?: GuildSettings | Record<string, unknown>,
   ): Promise<boolean> {
     try {
       const membership =
@@ -103,7 +105,7 @@ export class PermissionCheckService {
       }
 
       return this.checkAdminRoles(
-        membership.roles,
+        (membership as { roles: string[] }).roles,
         guildId,
         guildSettings,
         validateWithDiscord,
@@ -127,7 +129,7 @@ export class PermissionCheckService {
   async checkAdminRoles(
     userRoles: string[],
     guildId: string,
-    guildSettings: any,
+    guildSettings: GuildSettings | Record<string, unknown>,
     validateWithDiscord: boolean = true,
   ): Promise<boolean> {
     // Handle undefined/null settings gracefully

@@ -20,7 +20,7 @@ export class OutboxService {
     sourceType: string,
     sourceId: string,
     eventType: string,
-    payload: Record<string, any>,
+    payload: Prisma.InputJsonValue,
   ): Promise<Outbox> {
     return tx.outbox.create({
       data: {

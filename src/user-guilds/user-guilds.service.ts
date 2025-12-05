@@ -8,6 +8,7 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Inject } from '@nestjs/common';
 import type { Cache } from 'cache-manager';
 import { UserGuild } from './interfaces/user-guild.interface';
+import { GuildSettings } from '../guilds/interfaces/settings.interface';
 
 interface DiscordGuild {
   id: string;
@@ -48,7 +49,12 @@ export class UserGuildsService {
       const memberships =
         await this.guildMembersService.findMembersByUser(userId);
 
-      const membershipMap = new Map(memberships.map((m) => [m.guildId, m]));
+      const membershipMap = new Map(
+        memberships.map((m) => [
+          (m as { guildId: string }).guildId,
+          m as { guildId: string; roles: string[] },
+        ]),
+      );
 
       // Enrich guilds with permission information
       // Note: For performance, we pass undefined for settings and let the
@@ -60,7 +66,7 @@ export class UserGuildsService {
             ? await this.permissionCheckService.checkAdminRoles(
                 membership.roles,
                 guild.id,
-                undefined, // Settings will be fetched by permission service if needed
+                undefined as unknown as GuildSettings | Record<string, unknown>, // Settings will be fetched by permission service if needed
                 false, // Don't validate with Discord for listing (performance)
               )
             : false;
@@ -98,7 +104,7 @@ export class UserGuildsService {
         await this.guildMembersService.findMembersByUser(userId);
 
       const existingGuildIds = new Set(
-        existingMemberships.map((m) => m.guildId),
+        existingMemberships.map((m) => (m as { guildId: string }).guildId),
       );
 
       // Prepare bulk operations with roles from OAuth
