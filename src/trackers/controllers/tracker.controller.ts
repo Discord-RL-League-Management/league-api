@@ -24,7 +24,6 @@ import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { TrackerService } from '../services/tracker.service';
 import { TrackerSnapshotService } from '../services/tracker-snapshot.service';
 import {
-  CreateTrackerDto,
   UpdateTrackerDto,
   RegisterTrackersDto,
   AddTrackerDto,

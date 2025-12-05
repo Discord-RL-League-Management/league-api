@@ -1,8 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  LeagueConfiguration,
-  ConfigMetadata,
-} from '../interfaces/league-settings.interface';
+import { LeagueConfiguration } from '../interfaces/league-settings.interface';
 import {
   CURRENT_SCHEMA_VERSION,
   CURRENT_CONFIG_VERSION,
@@ -28,18 +25,25 @@ export class ConfigMigrationService {
    * @param config - Configuration to check
    * @returns true if migration is needed
    */
-  needsMigration(config: any): boolean {
-    if (!config) {
+  needsMigration(config: unknown): boolean {
+    if (!config || typeof config !== 'object' || config === null) {
       return true; // Missing config needs initialization
     }
 
+    const configObj = config as Record<string, unknown>;
     // Check if config has metadata
-    if (!config._metadata) {
+    if (
+      !configObj._metadata ||
+      typeof configObj._metadata !== 'object' ||
+      configObj._metadata === null
+    ) {
       return true; // Missing metadata needs initialization
     }
 
+    const metadata = configObj._metadata as Record<string, unknown>;
     // Check schema version
-    const schemaVersion = config._metadata.schemaVersion || 1;
+    const schemaVersion =
+      typeof metadata.schemaVersion === 'number' ? metadata.schemaVersion : 1;
     return schemaVersion < CURRENT_SCHEMA_VERSION;
   }
 
@@ -50,17 +54,25 @@ export class ConfigMigrationService {
    * @param config - Configuration to migrate
    * @returns Migrated configuration
    */
-  migrate(config: any): LeagueConfiguration {
-    if (!config) {
+  migrate(config: unknown): LeagueConfiguration {
+    if (!config || typeof config !== 'object' || config === null) {
       // No config - return defaults
       return this.settingsDefaults.getDefaults();
     }
 
+    const configObj = config as Record<string, unknown>;
     // Ensure config has metadata
-    if (!config._metadata) {
+    if (
+      !configObj._metadata ||
+      typeof configObj._metadata !== 'object' ||
+      configObj._metadata === null
+    ) {
       // Missing metadata - merge with defaults and update metadata
       const defaults = this.settingsDefaults.getDefaults();
-      const merged = this.settingsDefaults.mergeSettings(defaults, config);
+      const merged = this.settingsDefaults.mergeSettings(
+        defaults,
+        configObj as Partial<LeagueConfiguration>,
+      );
       merged._metadata = {
         version: CURRENT_CONFIG_VERSION,
         schemaVersion: CURRENT_SCHEMA_VERSION,
@@ -68,23 +80,29 @@ export class ConfigMigrationService {
       return merged;
     }
 
+    const metadata = configObj._metadata as Record<string, unknown>;
     // Get current schema version from config
-    const currentVersion = config._metadata.schemaVersion || 1;
+    const currentVersion =
+      typeof metadata.schemaVersion === 'number' ? metadata.schemaVersion : 1;
 
     // If already at current version, just ensure metadata is up to date
     if (currentVersion >= CURRENT_SCHEMA_VERSION) {
+      const version =
+        typeof metadata.version === 'string'
+          ? metadata.version
+          : CURRENT_CONFIG_VERSION;
       return {
-        ...config,
+        ...configObj,
         _metadata: {
-          ...config._metadata,
-          version: config._metadata.version || CURRENT_CONFIG_VERSION,
+          ...metadata,
+          version,
           schemaVersion: CURRENT_SCHEMA_VERSION,
         },
       } as LeagueConfiguration;
     }
 
     // Migrate from current version to CURRENT_SCHEMA_VERSION
-    let migrated = config;
+    let migrated: unknown = configObj;
     for (
       let version = currentVersion + 1;
       version <= CURRENT_SCHEMA_VERSION;
@@ -94,12 +112,13 @@ export class ConfigMigrationService {
     }
 
     // Update metadata
-    migrated._metadata = {
+    const migratedObj = migrated as Record<string, unknown>;
+    migratedObj._metadata = {
       version: CURRENT_CONFIG_VERSION,
       schemaVersion: CURRENT_SCHEMA_VERSION,
     };
 
-    return migrated as LeagueConfiguration;
+    return migratedObj as unknown as LeagueConfiguration;
   }
 
   /**
@@ -110,19 +129,28 @@ export class ConfigMigrationService {
    * @param targetVersion - Target schema version
    * @returns Migrated configuration
    */
-  private migrateToVersion(config: any, targetVersion: number): any {
+  private migrateToVersion(config: unknown, targetVersion: number): unknown {
     // For now, just merge with defaults to ensure all fields exist
     // Future versions can add specific migration logic here
+    const configObj = config as Record<string, unknown>;
     switch (targetVersion) {
-      case 1:
+      case 1: {
         // Version 1 is the initial version - merge with defaults
         const defaults = this.settingsDefaults.getDefaults();
-        return this.settingsDefaults.mergeSettings(defaults, config);
+        return this.settingsDefaults.mergeSettings(
+          defaults,
+          configObj as Partial<LeagueConfiguration>,
+        );
+      }
 
-      default:
+      default: {
         // Unknown version - merge with defaults for safety
         const safeDefaults = this.settingsDefaults.getDefaults();
-        return this.settingsDefaults.mergeSettings(safeDefaults, config);
+        return this.settingsDefaults.mergeSettings(
+          safeDefaults,
+          configObj as Partial<LeagueConfiguration>,
+        );
+      }
     }
   }
 
@@ -133,10 +161,22 @@ export class ConfigMigrationService {
    * @param config - Configuration to check
    * @returns Schema version (defaults to 1)
    */
-  getSchemaVersion(config: any): number {
-    if (!config || !config._metadata) {
+  getSchemaVersion(config: unknown): number {
+    if (!config || typeof config !== 'object' || config === null) {
       return 1;
     }
-    return config._metadata.schemaVersion || 1;
+    const configObj = config as Record<string, unknown>;
+    if (
+      !configObj._metadata ||
+      typeof configObj._metadata !== 'object' ||
+      configObj._metadata === null
+    ) {
+      return 1;
+    }
+    const metadata = configObj._metadata as Record<string, unknown>;
+    if (typeof metadata.schemaVersion === 'number') {
+      return metadata.schemaVersion;
+    }
+    return 1;
   }
 }

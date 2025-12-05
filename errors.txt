@@ -1,0 +1,13 @@
+
+> league-api@0.0.1 lint
+> eslint "{src,apps,libs}/**/*.ts" --fix
+
+
+/home/tawnyuh/documents/programming/rocket_league/projects/discord/League_Management/LeagueManagement_B/league-api/src/common/filters/global-exception.filter.ts
+  86:30  error  'errorData.message' will use Object's default stringification format ('[object Object]') when stringified  @typescript-eslint/no-base-to-string
+
+/home/tawnyuh/documents/programming/rocket_league/projects/discord/League_Management/LeagueManagement_B/league-api/src/trackers/services/tracker-refresh-scheduler.service.ts
+  136:7  warning  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+
+✖ 2 problems (1 error, 1 warning)
+

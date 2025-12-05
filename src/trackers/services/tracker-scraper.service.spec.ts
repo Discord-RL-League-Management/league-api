@@ -12,8 +12,8 @@ const mockHttpService = {
 };
 
 const mockConfigService = {
-  get: jest.fn((key: string) => {
-    const config: Record<string, any> = {
+  get: jest.fn<unknown, [string, unknown?]>((key: string) => {
+    const config: Record<string, unknown> = {
       zyte: {
         apiKey: 'test-api-key',
         proxyHost: 'proxy.test.com',

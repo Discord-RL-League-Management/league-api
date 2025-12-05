@@ -14,6 +14,7 @@ export class ParseEnumPipe<T extends object>
 
   transform(
     value: string | undefined,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _metadata: ArgumentMetadata,
   ): T[keyof T] | undefined {
     // Optional parameters may be undefined, so we allow them to pass through without validation

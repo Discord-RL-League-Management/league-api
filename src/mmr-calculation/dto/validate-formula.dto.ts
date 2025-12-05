@@ -12,3 +12,4 @@ export class ValidateFormulaDto {
   @IsString()
   formula!: string;
 }
+

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import { NotFoundException } from '@nestjs/common';
@@ -136,14 +137,14 @@ describe('AuthService', () => {
   });
 
   describe('generateJwt', () => {
-    it('should generate JWT token with correct payload and return token object', async () => {
+    it('should generate JWT token with correct payload and return token object', () => {
       // Arrange
       const user = { id: '123456789012345678', username: 'testuser' };
       const mockToken = 'jwt_token_here';
       jwtService.sign.mockReturnValue(mockToken);
 
       // Act
-      const result = await service.generateJwt(user);
+      const result = service.generateJwt(user);
 
       // Assert
       expect(result).toEqual({
@@ -155,14 +156,14 @@ describe('AuthService', () => {
       });
     });
 
-    it('should handle missing user data', async () => {
+    it('should handle missing user data', () => {
       // Arrange
       const invalidUser = { id: '', username: '' };
       const mockToken = 'jwt_token_here';
       jwtService.sign.mockReturnValue(mockToken);
 
       // Act
-      const result = await service.generateJwt(invalidUser);
+      const result = service.generateJwt(invalidUser);
 
       // Assert
       expect(result.access_token).toBeDefined();

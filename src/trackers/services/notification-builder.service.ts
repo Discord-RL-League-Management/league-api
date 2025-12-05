@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { User, Tracker } from '@prisma/client';
+import { User, Tracker, TrackerSeason } from '@prisma/client';
 
 export interface DiscordEmbed {
   title: string;
@@ -22,7 +22,7 @@ export class NotificationBuilderService {
    * Build a Discord embed message for scraping completion notification
    */
   buildScrapingCompleteEmbed(
-    tracker: Tracker & { seasons?: any[] },
+    tracker: Tracker & { seasons?: TrackerSeason[] },
     user: User,
     frontendUrl?: string,
     seasonsScraped?: number,

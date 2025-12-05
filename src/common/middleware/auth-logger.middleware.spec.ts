@@ -4,20 +4,6 @@ import { Request, Response } from 'express';
 import { AuthLoggerMiddleware } from './auth-logger.middleware';
 // Mock TestHelpers locally for unit tests
 const TestHelpers = {
-  createMockRequest: (overrides: Partial<any> = {}) =>
-    ({
-      method: 'GET',
-      path: '/test',
-      url: '/test',
-      headers: {},
-      ...overrides,
-    }) as unknown as Request,
-  createMockResponse: () =>
-    ({
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis(),
-      send: jest.fn().mockReturnThis(),
-    }) as unknown as Response<any, Record<string, any>>,
   createMockNextFunction: () => jest.fn(),
 };
 

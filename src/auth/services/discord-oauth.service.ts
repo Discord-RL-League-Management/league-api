@@ -79,7 +79,7 @@ export class DiscordOAuthService {
       );
 
       return response.data;
-    } catch (error: any) {
+    } catch {
       throw new HttpException(
         'Failed to exchange authorization code',
         HttpStatus.UNAUTHORIZED,

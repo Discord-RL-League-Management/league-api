@@ -84,7 +84,6 @@ export class MMRCalculatorDemoController {
         );
       }
 
-      // Calculate MMR
       const result = this.mmrService.calculateMmr(body.trackerData, mmrConfig);
 
       return {

@@ -23,8 +23,8 @@ export class ActivityLogService {
     action: string,
     userId?: string,
     guildId?: string,
-    changes?: Record<string, any>,
-    metadata?: Record<string, any>,
+    changes?: Prisma.InputJsonValue,
+    metadata?: Prisma.InputJsonValue,
   ): Promise<ActivityLog> {
     return tx.activityLog.create({
       data: {

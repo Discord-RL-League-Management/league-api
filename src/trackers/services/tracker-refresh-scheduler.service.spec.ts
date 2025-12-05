@@ -41,11 +41,20 @@ describe('TrackerRefreshSchedulerService', () => {
     } as any;
 
     mockConfigService = {
-      get: jest.fn().mockReturnValue({
-        refreshIntervalHours: 24,
-        batchSize: 10,
-        refreshCron: '0 2 * * *',
-      }),
+      get: jest
+        .fn<
+          {
+            refreshIntervalHours: number;
+            batchSize: number;
+            refreshCron: string;
+          },
+          [string, unknown?]
+        >()
+        .mockReturnValue({
+          refreshIntervalHours: 24,
+          batchSize: 10,
+          refreshCron: '0 2 * * *',
+        }),
     } as any;
 
     mockSchedulerRegistry = {
@@ -148,7 +157,7 @@ describe('TrackerRefreshSchedulerService', () => {
         }),
       } as any;
 
-      const customModule: TestingModule = await Test.createTestingModule({
+      const customModule = await Test.createTestingModule({
         providers: [
           TrackerRefreshSchedulerService,
           { provide: PrismaService, useValue: mockPrismaService },

@@ -1,6 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { ExtractJwt, Strategy } from 'passport-jwt';
+import { Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../../users/users.service';
 import { Request } from 'express';
@@ -12,7 +12,8 @@ import { Request } from 'express';
 const cookieExtractor = (req: Request): string | null => {
   let token: string | null = null;
   if (req && req.cookies) {
-    token = req.cookies['auth_token'];
+    token =
+      (req.cookies as Record<string, string | undefined>)['auth_token'] ?? null;
   }
 
   // Fallback to Authorization header for API clients

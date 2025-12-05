@@ -15,8 +15,6 @@ import { apiFixtures } from '../../test/fixtures/member.fixtures';
 
 describe('GuildMembersService', () => {
   let service: GuildMembersService;
-  let prisma: PrismaService;
-  let usersService: UsersService;
 
   const mockPrismaService = {
     guild: {

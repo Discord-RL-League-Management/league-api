@@ -12,6 +12,7 @@ import { PermissionCheckService } from './modules/permission-check/permission-ch
 import { GuildMembersService } from '../guild-members/guild-members.service';
 import { GuildSettingsService } from '../guilds/guild-settings.service';
 import type { AuthenticatedUser } from '../common/interfaces/user.interface';
+import { GuildSettings } from '../guilds/interfaces/settings.interface';
 
 /**
  * Permissions Controller - Single Responsibility: Handle HTTP requests for permission state
@@ -50,7 +51,7 @@ export class PermissionsController {
     const permissionState = await this.permissionCheckService.checkGuildAccess(
       user.id,
       guildId,
-      settings,
+      settings as GuildSettings | Record<string, unknown> | undefined,
     );
 
     // Get user roles from guild membership

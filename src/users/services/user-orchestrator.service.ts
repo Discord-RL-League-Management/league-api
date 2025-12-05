@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common';
 import { UsersService } from '../users.service';
 import { DiscordProfileDto } from '../../auth/dto/discord-profile.dto';
-import { UserNotFoundException } from '../exceptions/user.exceptions';
 import { User } from '@prisma/client';
 
 /**

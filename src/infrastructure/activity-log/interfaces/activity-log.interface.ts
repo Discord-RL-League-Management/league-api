@@ -11,7 +11,7 @@ export interface ActivityLog {
   action: string;
   userId?: string;
   guildId?: string;
-  changes?: Record<string, any>;
-  metadata?: Record<string, any>;
+  changes?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
   timestamp: Date;
 }

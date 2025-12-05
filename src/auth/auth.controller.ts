@@ -160,7 +160,7 @@ export class AuthController {
       }
 
       // Convert null to undefined because JWT payload uses optional properties that don't accept null
-      const jwt = await this.authService.generateJwt({
+      const jwt = this.authService.generateJwt({
         id: user.id,
         username: user.username,
         globalName: user.globalName ?? undefined,
@@ -237,7 +237,6 @@ export class AuthController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<unknown[]> {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return await this.authService.getUserAvailableGuilds(user.id);
     } catch (error) {
       this.logger.error(`Error getting user guilds for ${user.id}:`, error);
@@ -255,7 +254,7 @@ export class AuthController {
     try {
       res.clearCookie('auth_token', {
         httpOnly: true,
-        secure: this.configService.get('auth.cookieSecure', false),
+        secure: this.configService.get<boolean>('auth.cookieSecure', false),
         sameSite: this.configService.get<'strict' | 'lax' | 'none'>(
           'auth.cookieSameSite',
           'lax',

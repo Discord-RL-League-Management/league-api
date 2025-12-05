@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
 import { LeagueMemberRole } from '@prisma/client';
 import { LeagueRepository } from '../repositories/league.repository';
 import { LeagueAccessValidationService } from './league-access-validation.service';
@@ -12,6 +7,7 @@ import { LeagueMemberRepository } from '../../league-members/repositories/league
 import { PermissionCheckService } from '../../permissions/modules/permission-check/permission-check.service';
 import { GuildSettingsService } from '../../guilds/guild-settings.service';
 import { LeagueNotFoundException } from '../exceptions/league.exceptions';
+import { GuildSettings } from '../../guilds/interfaces/settings.interface';
 
 /**
  * LeaguePermissionService - Single Responsibility: League-level permission checking

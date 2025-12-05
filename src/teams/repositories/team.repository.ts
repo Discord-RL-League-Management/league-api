@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Team, Prisma } from '@prisma/client';
+import { Team } from '@prisma/client';
 import { CreateTeamDto } from '../dto/create-team.dto';
 import { UpdateTeamDto } from '../dto/update-team.dto';
 import { BaseRepository } from '../../common/repositories/base.repository.interface';

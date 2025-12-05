@@ -73,7 +73,7 @@ export class TeamValidationService {
   /**
    * Validate league organization requirement change
    */
-  async validateLeagueOrganizationRequirementChange(
+  validateLeagueOrganizationRequirementChange(
     leagueId: string,
     newRequireOrg: boolean,
   ): Promise<void> {
@@ -84,5 +84,7 @@ export class TeamValidationService {
         `League ${leagueId} is changing to require organizations. Teams without organizations will be auto-assigned.`,
       );
     }
+    return Promise.resolve();
   }
 }
+

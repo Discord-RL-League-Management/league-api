@@ -6,18 +6,25 @@ import {
 } from '@nestjs/common';
 import { AuditLogService } from '../../audit/services/audit-log.service';
 import { AuditAction } from '../../audit/interfaces/audit-event.interface';
+import type { AuthenticatedUser } from '../interfaces/user.interface';
+import type { Request } from 'express';
+
+interface RequestWithUser extends Request {
+  user: AuthenticatedUser | { type: 'bot'; id: string };
+  params: Record<string, string>;
+}
 
 @Injectable()
 export class ResourceOwnershipGuard implements CanActivate {
   constructor(private auditLogService: AuditLogService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<RequestWithUser>();
     const user = request.user;
     const resourceUserId = request.params.userId || request.params.id;
 
     // If authenticated via bot, allow everything
-    if (user.type === 'bot') {
+    if ('type' in user && user.type === 'bot') {
       return true;
     }
 

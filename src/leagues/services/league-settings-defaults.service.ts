@@ -194,8 +194,8 @@ export class LeagueSettingsDefaultsService {
         !Array.isArray(targetValue)
       ) {
         (result[keyTyped] as unknown) = this.deepMergeNested(
-          targetValue as any,
-          sourceValue as any,
+          targetValue as Record<string, unknown>,
+          sourceValue as Record<string, unknown>,
         );
         continue;
       }
@@ -210,7 +210,10 @@ export class LeagueSettingsDefaultsService {
   /**
    * Deep merge nested objects (for membership, game, skill, etc.)
    */
-  private deepMergeNested(target: any, source: any): any {
+  private deepMergeNested(
+    target: Record<string, unknown>,
+    source: Record<string, unknown>,
+  ): Record<string, unknown> {
     const result = { ...target };
 
     for (const key in source) {
@@ -231,7 +234,10 @@ export class LeagueSettingsDefaultsService {
         typeof target[key] === 'object' &&
         !Array.isArray(target[key])
       ) {
-        result[key] = this.deepMergeNested(target[key], source[key]);
+        result[key] = this.deepMergeNested(
+          target[key] as Record<string, unknown>,
+          source[key] as Record<string, unknown>,
+        );
         continue;
       }
 

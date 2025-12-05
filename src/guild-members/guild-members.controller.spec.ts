@@ -2,11 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { GuildMembersController } from './guild-members.controller';
 import { GuildMembersService } from './guild-members.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import {
-  createMockGuildMembersService,
-  createMockRequest,
-  createMockResponse,
-} from '../../test/setup/test-helpers';
+import { createMockGuildMembersService } from '../../test/setup/test-helpers';
 import { apiFixtures } from '../../test/fixtures/member.fixtures';
 
 describe('GuildMembersController', () => {

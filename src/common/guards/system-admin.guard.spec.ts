@@ -29,7 +29,7 @@ describe('SystemAdminGuard', () => {
 
   beforeEach(async () => {
     const mockConfigService = {
-      get: jest.fn(),
+      get: jest.fn<unknown, [string, unknown?]>(),
     };
 
     const mockAuditLogService = {
@@ -229,7 +229,7 @@ describe('SystemAdminGuard', () => {
       // Act
       try {
         await guard.canActivate(mockExecutionContext);
-      } catch (error) {
+      } catch {
         // Expected to throw
       }
 
@@ -297,3 +297,4 @@ describe('SystemAdminGuard', () => {
     });
   });
 });
+

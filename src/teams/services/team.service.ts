@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { TeamRepository } from '../repositories/team.repository';
 import { TeamValidationService } from './team-validation.service';
 import { CreateTeamDto } from '../dto/create-team.dto';

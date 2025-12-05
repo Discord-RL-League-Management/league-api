@@ -16,9 +16,9 @@ export class UserTransformer {
   /**
    * Transform user entity for database storage (encrypt sensitive fields)
    */
-  transformForStorage(user: Partial<User>): Record<string, any> {
+  transformForStorage(user: Partial<User>): Record<string, unknown> {
     if (!user) {
-      return user as Record<string, any>;
+      return user as Record<string, unknown>;
     }
 
     const transformed = { ...user };
@@ -30,7 +30,7 @@ export class UserTransformer {
       );
     }
 
-    return transformed as Record<string, any>;
+    return transformed as Record<string, unknown>;
   }
 
   /**

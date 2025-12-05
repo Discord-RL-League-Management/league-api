@@ -110,7 +110,7 @@ export class UserFactory {
   ): User[] {
     return Array.from({ length: count }, (_, index) =>
       this.createMockUser({
-        id: `${123456789012345678 + index}`,
+        id: `${BigInt('123456789012345678') + BigInt(index)}`,
         username: `testuser${index}`,
         globalName: `Test User ${index}`,
         ...baseOverrides,

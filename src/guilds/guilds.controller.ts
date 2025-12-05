@@ -15,6 +15,7 @@ import { PermissionCheckService } from '../permissions/modules/permission-check/
 import { GuildSettingsService } from './guild-settings.service';
 import { UserGuildsService } from '../user-guilds/user-guilds.service';
 import { DiscordBotService } from '../discord/discord-bot.service';
+import { GuildSettings } from './interfaces/settings.interface';
 import {
   ApiTags,
   ApiOperation,
@@ -93,18 +94,11 @@ export class GuildsController {
     // This auto-creates settings if they don't exist
     const settings = await this.guildSettingsService.getSettings(id);
 
-    // Get guild for admin check
-    const guild = await this.guildsService.findOne(id, {
-      includeSettings: false, // We already have settings above
-      includeMembers: false,
-      includeCount: false,
-    });
-
     // Use persisted settings for permission check
     const isAdmin = await this.permissionCheckService.checkAdminRoles(
       membership.roles,
       id,
-      settings,
+      settings as GuildSettings | Record<string, unknown>,
       true, // Validate with Discord for authorization
     );
 

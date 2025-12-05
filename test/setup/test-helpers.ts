@@ -1,11 +1,9 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { Request, Response } from 'express';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { GuildsService } from '../../src/guilds/guilds.service';
 import { UsersService } from '../../src/users/users.service';
 import { GuildMembersService } from '../../src/guild-members/guild-members.service';
-import { GuildMembersController } from '../../src/guild-members/guild-members.controller';
-import { InternalGuildsController } from '../../src/guilds/internal-guilds.controller';
 import { GuildSettingsService } from '../../src/guilds/guild-settings.service';
 import { apiFixtures } from '../fixtures/member.fixtures';
 

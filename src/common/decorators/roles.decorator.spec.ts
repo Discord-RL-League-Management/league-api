@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import { Roles, ROLES_KEY } from './roles.decorator';
 import { Reflector } from '@nestjs/core';
 import 'reflect-metadata';

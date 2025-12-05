@@ -16,6 +16,7 @@ import { LeagueConfiguration } from './interfaces/league-settings.interface';
 import { LeagueNotFoundException } from './exceptions/league.exceptions';
 import { LeagueSettingsDto } from './dto/league-settings.dto';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import { OrganizationService } from '../organizations/services/organization.service';
 import { TeamRepository } from '../teams/repositories/team.repository';
 
@@ -66,20 +67,17 @@ export class LeagueSettingsService {
 
       let settings = await this.settingsService.getSettings('league', leagueId);
 
-      // If settings don't exist, ensure league exists first, then auto-create and persist settings
       if (!settings) {
-        // Verify league exists (defense-in-depth)
         const leagueExists = await this.leagueRepository.exists(leagueId);
         if (!leagueExists) {
           throw new LeagueNotFoundException(leagueId);
         }
 
-        // Auto-create and persist default settings using existing upsert method
         const defaultSettings = this.settingsDefaults.getDefaults();
         settings = await this.settingsService.upsertSettings(
           'league',
           leagueId,
-          defaultSettings as Record<string, any>,
+          defaultSettings as unknown as Prisma.InputJsonValue,
           1, // schemaVersion
           undefined, // configVersion
         );
@@ -88,19 +86,24 @@ export class LeagueSettingsService {
         );
       }
 
-      // Migrate config to current schema version if needed
       let migratedConfig: LeagueConfiguration;
-      if (this.configMigration.needsMigration(settings.settings as any)) {
+      const rawSettings = settings.settings as unknown;
+      if (
+        this.configMigration.needsMigration(
+          rawSettings as Record<string, unknown>,
+        )
+      ) {
         this.logger.log(
-          `Migrating league ${leagueId} settings from schema version ${this.configMigration.getSchemaVersion(settings.settings as any)} to ${1}`,
+          `Migrating league ${leagueId} settings from schema version ${this.configMigration.getSchemaVersion(rawSettings as Record<string, unknown>)} to ${1}`,
         );
-        migratedConfig = this.configMigration.migrate(settings.settings as any);
+        migratedConfig = this.configMigration.migrate(
+          rawSettings as Record<string, unknown>,
+        );
 
-        // Persist migrated config
         await this.settingsService.updateSettings(
           'league',
           leagueId,
-          migratedConfig as Record<string, any>,
+          migratedConfig as unknown as Prisma.InputJsonValue,
         );
         this.logger.log(
           `Successfully migrated settings for league ${leagueId}`,
@@ -109,13 +112,11 @@ export class LeagueSettingsService {
         migratedConfig = settings.settings as unknown as LeagueConfiguration;
       }
 
-      // Ensure config structure is normalized (merge with defaults to ensure all fields exist)
       const normalized = this.settingsDefaults.mergeSettings(
         this.settingsDefaults.getDefaults(),
         migratedConfig,
       );
 
-      // Cache the result
       await this.cacheManager.set(cacheKey, normalized, this.cacheTtl * 1000);
 
       return normalized;
@@ -143,25 +144,19 @@ export class LeagueSettingsService {
     newSettings: Partial<LeagueSettingsDto>,
   ): Promise<LeagueConfiguration> {
     try {
-      // Verify league exists
       const leagueExists = await this.leagueRepository.exists(leagueId);
       if (!leagueExists) {
         throw new LeagueNotFoundException(leagueId);
       }
 
-      // Get current settings
       const currentSettings = await this.getSettings(leagueId);
 
-      // Merge new settings with current settings
       const mergedSettings = this.settingsDefaults.mergeSettings(
         currentSettings,
         newSettings as Partial<LeagueConfiguration>,
       );
 
-      // Validate merged settings
       this.settingsValidation.validate(mergedSettings);
-
-      // Handle requireOrganization change: auto-assign teams to organizations
       const previousRequireOrg = currentSettings.membership.requireOrganization;
       const newRequireOrg = mergedSettings.membership.requireOrganization;
 
@@ -178,7 +173,7 @@ export class LeagueSettingsService {
         await this.settingsService.updateSettings(
           'league',
           leagueId,
-          mergedSettings as Record<string, any>,
+          mergedSettings as unknown as Prisma.InputJsonValue,
         );
 
         // Invalidate cache after successful update
@@ -191,14 +186,12 @@ export class LeagueSettingsService {
         return mergedSettings;
       }
 
-      // For non-requireOrganization changes, just update settings normally
       await this.settingsService.updateSettings(
         'league',
         leagueId,
-        mergedSettings as Record<string, any>,
+        mergedSettings as unknown as Prisma.InputJsonValue,
       );
 
-      // Invalidate cache
       const cacheKey = `league:${leagueId}:settings`;
       await this.cacheManager.del(cacheKey);
 
@@ -228,7 +221,6 @@ export class LeagueSettingsService {
       `League ${leagueId} is changing to require organizations. Auto-assigning teams...`,
     );
 
-    // Find all teams without organizations
     const teamsWithoutOrg =
       await this.teamRepository.findTeamsWithoutOrganization(leagueId);
 
@@ -237,7 +229,6 @@ export class LeagueSettingsService {
       return;
     }
 
-    // Get or create organizations in league
     const organizations =
       await this.organizationService.findByLeagueId(leagueId);
 

@@ -29,3 +29,4 @@ export class UpdateOrganizationMemberDto {
   @IsString()
   notes?: string;
 }
+

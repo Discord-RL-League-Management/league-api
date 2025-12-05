@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import {
   NotFoundException,
-  ConflictException,
   InternalServerErrorException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
@@ -12,7 +11,6 @@ import { GuildRepository } from './repositories/guild.repository';
 
 describe('GuildsService', () => {
   let service: GuildsService;
-  let prisma: PrismaService;
 
   const mockPrismaService = {
     guild: {

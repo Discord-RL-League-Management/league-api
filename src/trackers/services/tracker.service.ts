@@ -2,15 +2,11 @@ import {
   Injectable,
   Logger,
   NotFoundException,
-  ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TrackerRepository } from '../repositories/tracker.repository';
-import {
-  TrackerValidationService,
-  ParsedTrackerUrl,
-} from './tracker-validation.service';
+import { TrackerValidationService } from './tracker-validation.service';
 import { TrackerScrapingQueueService } from '../queues/tracker-scraping.queue';
 import { TrackerSeasonService } from './tracker-season.service';
 import {
@@ -18,6 +14,7 @@ import {
   Game,
   TrackerScrapingStatus,
   TrackerSeason,
+  Prisma,
 } from '@prisma/client';
 
 @Injectable()
@@ -112,9 +109,9 @@ export class TrackerService {
    * Update tracker metadata
    */
   async updateTracker(id: string, displayName?: string, isActive?: boolean) {
-    const tracker = await this.getTrackerById(id);
+    await this.getTrackerById(id);
 
-    const updateData: any = {};
+    const updateData: Prisma.TrackerUpdateInput = {};
     if (displayName !== undefined) {
       updateData.displayName = displayName;
     }
@@ -129,7 +126,7 @@ export class TrackerService {
    * Soft delete a tracker
    */
   async deleteTracker(id: string) {
-    const tracker = await this.getTrackerById(id);
+    await this.getTrackerById(id);
     return this.trackerRepository.softDelete(id);
   }
 
@@ -230,20 +227,11 @@ export class TrackerService {
         }),
     );
 
-    let parsedUrls: Array<{
-      url: string;
-      parsed: ParsedTrackerUrl;
-    }>;
-    try {
-      const parsedResults = await Promise.all(validationPromises);
-      parsedUrls = uniqueUrls.map((url, index) => ({
-        url,
-        parsed: parsedResults[index],
-      }));
-    } catch (error) {
-      // Re-throw validation errors
-      throw error;
-    }
+    const parsedResults = await Promise.all(validationPromises);
+    const parsedUrls = uniqueUrls.map((url, index) => ({
+      url,
+      parsed: parsedResults[index],
+    }));
 
     // Create all trackers
     const trackers = [];

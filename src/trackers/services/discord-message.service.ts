@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
+import { AxiosError } from 'axios';
 
 @Injectable()
 export class DiscordMessageService {
@@ -25,7 +26,10 @@ export class DiscordMessageService {
       this.configService.get<string>('discord.apiUrl') ||
       'https://discord.com/api/v10';
 
-    const circuitBreakerConfig = this.configService.get('circuitBreaker');
+    const circuitBreakerConfig = this.configService.get<{
+      threshold?: number;
+      timeout?: number;
+    }>('circuitBreaker');
     this.circuitBreakerThreshold = circuitBreakerConfig?.threshold || 5;
     this.circuitBreakerTimeout = circuitBreakerConfig?.timeout || 60000;
   }
@@ -62,10 +66,13 @@ export class DiscordMessageService {
             },
           },
         ),
-      ).catch((error: any) => {
+      ).catch((error: unknown) => {
         this.recordFailure();
+        const axiosError = error as AxiosError<{ message?: string }>;
         const errorMessage =
-          error.response?.data?.message || error.message || 'Unknown error';
+          axiosError.response?.data?.message ||
+          axiosError.message ||
+          'Unknown error';
         this.logger.error(
           `Failed to create DM channel for user ${userId}: ${errorMessage}`,
           error,
@@ -73,17 +80,20 @@ export class DiscordMessageService {
         throw error;
       });
 
-      const channelId = dmChannelResponse.data.id;
+      const channelId = (dmChannelResponse.data as { id: string }).id;
 
       // Then send the message to the DM channel
       await this.sendMessage(channelId, payload);
 
       this.logger.debug(`Sent DM to user ${userId}`);
       this.recordSuccess();
-    } catch (error: any) {
+    } catch (error: unknown) {
       this.recordFailure();
+      const axiosError = error as AxiosError<{ message?: string }>;
       const errorMessage =
-        error.response?.data?.message || error.message || 'Unknown error';
+        axiosError.response?.data?.message ||
+        axiosError.message ||
+        'Unknown error';
       this.logger.error(
         `Failed to send DM to user ${userId}: ${errorMessage}`,
         error,
@@ -124,8 +134,8 @@ export class DiscordMessageService {
     try {
       // Discord API endpoint for follow-up messages
       // Using @me as application_id works with bot tokens
-      const followUpPayload = {
-        ...payload,
+      const followUpPayload: Record<string, unknown> = {
+        ...(payload as Record<string, unknown>),
         flags: 64, // EPHEMERAL flag
       };
 
@@ -151,9 +161,10 @@ export class DiscordMessageService {
         `Sent ephemeral follow-up with interaction token ${tokenPrefix}...`,
       );
       this.recordSuccess();
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Handle token expiration gracefully (Discord returns 404 or 400)
-      const statusCode = error.response?.status;
+      const axiosError = error as AxiosError<{ message?: string }>;
+      const statusCode = axiosError.response?.status;
       if (statusCode === 404 || statusCode === 400) {
         this.logger.warn(
           `Interaction token expired or invalid, skipping ephemeral follow-up`,
@@ -165,7 +176,9 @@ export class DiscordMessageService {
 
       // For other errors, log and throw to trigger fallback
       const errorMessage =
-        error.response?.data?.message || error.message || 'Unknown error';
+        axiosError.response?.data?.message ||
+        axiosError.message ||
+        'Unknown error';
       this.logger.error(
         `Failed to send ephemeral follow-up: ${errorMessage}`,
         error,
@@ -214,9 +227,11 @@ export class DiscordMessageService {
 
       // Record success
       this.recordSuccess();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       this.logger.error(
-        `Failed to send Discord message to channel ${channelId}: ${error.message}`,
+        `Failed to send Discord message to channel ${channelId}: ${errorMessage}`,
       );
 
       // Record failure

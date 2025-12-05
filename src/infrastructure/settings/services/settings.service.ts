@@ -28,7 +28,7 @@ export class SettingsService {
   async upsertSettings(
     ownerType: string,
     ownerId: string,
-    settings: Record<string, any>,
+    settings: Prisma.InputJsonValue,
     schemaVersion = 1,
     configVersion?: string,
     tx?: Prisma.TransactionClient,
@@ -53,7 +53,7 @@ export class SettingsService {
   async updateSettings(
     ownerType: string,
     ownerId: string,
-    settings: Record<string, any>,
+    settings: Prisma.InputJsonValue,
     tx?: Prisma.TransactionClient,
   ): Promise<Settings> {
     return this.repository.update(

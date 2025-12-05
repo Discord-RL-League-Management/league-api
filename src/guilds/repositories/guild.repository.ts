@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Guild } from '@prisma/client';
+import { Guild, Prisma } from '@prisma/client';
 import { CreateGuildDto } from '../dto/create-guild.dto';
 import { UpdateGuildDto } from '../dto/update-guild.dto';
 import { BaseRepository } from '../../common/repositories/base.repository.interface';
@@ -30,7 +30,7 @@ export class GuildRepository
   ): Promise<Guild | null> {
     const opts = { ...defaultGuildQueryOptions, ...options };
 
-    const include: any = {};
+    const include: Prisma.GuildInclude = {};
 
     // Note: Settings are NOT a Prisma relation and cannot be included in queries.
     // Settings must be fetched separately using GuildSettingsService.getSettings(guildId).
@@ -157,7 +157,7 @@ export class GuildRepository
    */
   async createWithSettings(
     guildData: CreateGuildDto,
-    defaultSettings: any,
+    defaultSettings: Record<string, unknown>,
   ): Promise<Guild> {
     return this.prisma.$transaction(async (tx) => {
       // Create guild
@@ -170,7 +170,9 @@ export class GuildRepository
         data: {
           ownerType: 'guild',
           ownerId: guild.id,
-          settings: JSON.parse(JSON.stringify(defaultSettings)),
+          settings: JSON.parse(
+            JSON.stringify(defaultSettings),
+          ) as Prisma.InputJsonValue,
         },
       });
 
@@ -212,7 +214,7 @@ export class GuildRepository
    */
   async upsertWithSettings(
     guildData: CreateGuildDto,
-    defaultSettings: any,
+    defaultSettings: Record<string, unknown>,
   ): Promise<Guild> {
     return this.prisma.$transaction(async (tx) => {
       // Upsert guild using Prisma's built-in upsert (cleaner than manual check/update/create)
@@ -242,7 +244,9 @@ export class GuildRepository
         create: {
           ownerType: 'guild',
           ownerId: guild.id,
-          settings: JSON.parse(JSON.stringify(defaultSettings)),
+          settings: JSON.parse(
+            JSON.stringify(defaultSettings),
+          ) as Prisma.InputJsonValue,
         },
       });
 

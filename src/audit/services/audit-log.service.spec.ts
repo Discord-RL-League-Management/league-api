@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method, @typescript-eslint/no-unsafe-assignment */
 import { Test, TestingModule } from '@nestjs/testing';
 import { Logger } from '@nestjs/common';
 import { Request } from 'express';
@@ -50,7 +51,10 @@ describe('AuditLogService', () => {
     };
 
     const mockPrismaService = {
-      $transaction: jest.fn((callback) => {
+      $transaction: jest.fn<
+        Promise<unknown>,
+        [(client: Prisma.TransactionClient) => Promise<unknown>]
+      >((callback) => {
         return callback(mockTransactionClient);
       }),
     };
@@ -244,6 +248,7 @@ describe('AuditLogService', () => {
         userId: '123456789012345678',
         guildId: '987654321098765432',
         action: AuditAction.ADMIN_CHECK,
+
         resource: null as any,
         result: 'allowed' as const,
       };
@@ -448,6 +453,7 @@ describe('AuditLogService', () => {
         userId: '123456789012345678',
         guildId: '987654321098765432',
         action: AuditAction.MEMBER_PERMISSION_CHECK,
+
         resource: null as any,
         result: 'denied' as const,
       };

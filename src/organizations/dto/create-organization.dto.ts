@@ -37,3 +37,4 @@ export class CreateOrganizationDto {
   @IsString()
   description?: string;
 }
+

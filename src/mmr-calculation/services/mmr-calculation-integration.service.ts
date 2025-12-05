@@ -35,7 +35,6 @@ export class MmrCalculationIntegrationService {
    */
   async calculateMmrForUser(userId: string, trackerId: string): Promise<void> {
     try {
-      // Extract tracker data
       const trackerData =
         await this.trackerDataExtraction.extractTrackerData(trackerId);
       if (!trackerData) {
@@ -45,7 +44,6 @@ export class MmrCalculationIntegrationService {
         return;
       }
 
-      // Get user's guild memberships
       const guildMemberships = await this.prisma.guildMember.findMany({
         where: { userId },
         select: { guildId: true },
@@ -58,14 +56,12 @@ export class MmrCalculationIntegrationService {
         return;
       }
 
-      // Calculate MMR for each guild
       const calculations = await Promise.allSettled(
         guildMemberships.map((membership) =>
           this.calculateMmrForGuild(userId, membership.guildId, trackerData),
         ),
       );
 
-      // Log results
       const successful = calculations.filter(
         (r) => r.status === 'fulfilled',
       ).length;
@@ -75,7 +71,6 @@ export class MmrCalculationIntegrationService {
         `MMR calculation completed for user ${userId}: ${successful} successful, ${failed} failed`,
       );
 
-      // Log failures
       calculations.forEach((result, index) => {
         if (result.status === 'rejected') {
           this.logger.warn(
@@ -90,7 +85,6 @@ export class MmrCalculationIntegrationService {
         `Failed to calculate MMR for user ${userId}: ${errorMessage}`,
         error,
       );
-      // Don't throw - we don't want to break the scraping process
     }
   }
 
@@ -108,7 +102,6 @@ export class MmrCalculationIntegrationService {
     guildId: string,
     trackerData: TrackerData,
   ): Promise<number> {
-    // Get guild settings (or use defaults)
     let mmrConfig: MmrCalculationConfig;
 
     try {
@@ -125,7 +118,6 @@ export class MmrCalculationIntegrationService {
       mmrConfig = this.getDefaultMmrConfig();
     }
 
-    // Calculate MMR
     const calculatedMmr = this.mmrService.calculateMmr(trackerData, mmrConfig);
 
     this.logger.debug(

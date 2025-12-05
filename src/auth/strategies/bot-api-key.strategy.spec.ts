@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
 import { Test, TestingModule } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -92,7 +93,9 @@ describe('BotApiKeyStrategy', () => {
       const key = 'test-key';
 
       // Act
+
       const hash1 = (strategy as any).hashApiKey(key);
+
       const hash2 = (strategy as any).hashApiKey(key);
 
       // Assert
@@ -110,7 +113,7 @@ describe('BotApiKeyStrategy', () => {
       const configService1 = createMockConfigService(validBotApiKey, salt1);
       const configService2 = createMockConfigService(validBotApiKey, salt2);
 
-      const module1: TestingModule = await Test.createTestingModule({
+      const module1 = await Test.createTestingModule({
         providers: [
           BotApiKeyStrategy,
           {
@@ -120,7 +123,7 @@ describe('BotApiKeyStrategy', () => {
         ],
       }).compile();
 
-      const module2: TestingModule = await Test.createTestingModule({
+      const module2 = await Test.createTestingModule({
         providers: [
           BotApiKeyStrategy,
           {
@@ -134,7 +137,9 @@ describe('BotApiKeyStrategy', () => {
       const strategy2 = module2.get<BotApiKeyStrategy>(BotApiKeyStrategy);
 
       // Act
+
       const hash1 = (strategy1 as any).hashApiKey(key);
+
       const hash2 = (strategy2 as any).hashApiKey(key);
 
       // Assert

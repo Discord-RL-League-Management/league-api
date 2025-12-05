@@ -23,7 +23,7 @@ describe('ThrottlerConfig', () => {
   describe('throttlerConfig', () => {
     it('should return throttler configuration with default values', () => {
       (configService.get as jest.Mock).mockImplementation((key: string) => {
-        const values: Record<string, any> = {
+        const values: Record<string, unknown> = {
           'throttler.ttl': 60000,
           'throttler.limit': 100,
         };
@@ -44,7 +44,7 @@ describe('ThrottlerConfig', () => {
 
     it('should return throttler configuration with custom values', () => {
       (configService.get as jest.Mock).mockImplementation((key: string) => {
-        const values: Record<string, any> = {
+        const values: Record<string, unknown> = {
           'throttler.ttl': 30000,
           'throttler.limit': 50,
         };
@@ -65,7 +65,7 @@ describe('ThrottlerConfig', () => {
 
     it('should handle undefined values by using defaults', () => {
       (configService.get as jest.Mock).mockImplementation((key: string) => {
-        const values: Record<string, any> = {
+        const values: Record<string, unknown> = {
           'throttler.ttl': undefined,
           'throttler.limit': undefined,
         };

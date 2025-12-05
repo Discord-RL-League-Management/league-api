@@ -38,7 +38,7 @@ export class FormulaValidationService {
   validateFormula(formula: string): {
     valid: boolean;
     error?: string;
-    parsedExpression?: any;
+    parsedExpression?: unknown;
   } {
     if (
       !formula ||

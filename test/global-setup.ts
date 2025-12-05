@@ -19,7 +19,7 @@ async function waitForDatabase(maxRetries = 30, delayMs = 1000): Promise<void> {
       await prisma.$disconnect();
       console.log('✅ Test database connection successful');
       return;
-    } catch (error) {
+    } catch (_error) {
       if (i === maxRetries - 1) {
         throw new Error(
           `Failed to connect to test database after ${maxRetries} attempts`,

@@ -10,7 +10,6 @@ import { GamePlatform, Game, TrackerScrapingStatus } from '@prisma/client';
 
 describe('TrackerService', () => {
   let service: TrackerService;
-  let prisma: PrismaService;
 
   const mockPrismaService = {
     user: {

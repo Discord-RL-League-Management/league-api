@@ -11,6 +11,18 @@ import { Inject } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 
+export interface DiscordRole {
+  id: string;
+  name: string;
+}
+
+interface DiscordChannel {
+  id: string;
+  name: string;
+  type: number;
+  parent_id?: string;
+}
+
 @Injectable()
 export class DiscordBotService {
   private readonly logger = new Logger(DiscordBotService.name);
@@ -51,12 +63,10 @@ export class DiscordBotService {
     }
 
     try {
-      // Get all roles (with cache)
       const roles = await this.getGuildRoles(guildId);
 
-      // Validate each role ID
       for (const roleId of roleIds) {
-        const exists = roles.some((role: any) => role.id === roleId);
+        const exists = roles.some((role) => role.id === roleId);
         result.set(roleId, exists);
       }
 
@@ -69,7 +79,6 @@ export class DiscordBotService {
         `Failed to batch validate roles for guild ${guildId}:`,
         error,
       );
-      // Return all false on error
       for (const roleId of roleIds) {
         result.set(roleId, false);
       }
@@ -93,14 +102,10 @@ export class DiscordBotService {
     }
 
     try {
-      // Get all channels (with cache)
       const channels = await this.getGuildChannels(guildId);
 
-      // Validate each channel ID
       for (const channelId of channelIds) {
-        const exists = channels.some(
-          (channel: any) => channel.id === channelId,
-        );
+        const exists = channels.some((channel) => channel.id === channelId);
         result.set(channelId, exists);
       }
 
@@ -113,7 +118,6 @@ export class DiscordBotService {
         `Failed to batch validate channels for guild ${guildId}:`,
         error,
       );
-      // Return all false on error
       for (const channelId of channelIds) {
         result.set(channelId, false);
       }
@@ -131,7 +135,7 @@ export class DiscordBotService {
     try {
       const response = await firstValueFrom(
         this.httpService
-          .get(`${this.apiUrl}/guilds/${guildId}/roles`, {
+          .get<DiscordRole[]>(`${this.apiUrl}/guilds/${guildId}/roles`, {
             headers: { Authorization: `Bot ${this.botToken}` },
           })
           .pipe(
@@ -142,7 +146,7 @@ export class DiscordBotService {
       );
 
       const roles = response.data;
-      const roleExists = roles.some((role: any) => role.id === roleId);
+      const roleExists = roles.some((role) => role.id === roleId);
 
       this.logger.log(
         `Role validation for ${roleId} in guild ${guildId}: ${roleExists ? 'valid' : 'invalid'}`,
@@ -170,7 +174,7 @@ export class DiscordBotService {
     try {
       const response = await firstValueFrom(
         this.httpService
-          .get(`${this.apiUrl}/guilds/${guildId}/channels`, {
+          .get<DiscordChannel[]>(`${this.apiUrl}/guilds/${guildId}/channels`, {
             headers: { Authorization: `Bot ${this.botToken}` },
           })
           .pipe(
@@ -182,7 +186,7 @@ export class DiscordBotService {
 
       const channels = response.data;
       const channelExists = channels.some(
-        (channel: any) => channel.id === channelId,
+        (channel) => channel.id === channelId,
       );
 
       this.logger.log(
@@ -203,9 +207,7 @@ export class DiscordBotService {
    * Single Responsibility: Fetch guild roles for validation
    * Returns simplified role objects with only id and name
    */
-  async getGuildRoles(
-    guildId: string,
-  ): Promise<Array<{ id: string; name: string }>> {
+  async getGuildRoles(guildId: string): Promise<DiscordRole[]> {
     if (!this.botToken) {
       this.logger.error('Discord bot token is not configured');
       throw new ServiceUnavailableException(
@@ -215,10 +217,7 @@ export class DiscordBotService {
 
     try {
       const cacheKey = `discord:roles:${guildId}`;
-      const cached =
-        await this.cacheManager.get<Array<{ id: string; name: string }>>(
-          cacheKey,
-        );
+      const cached = await this.cacheManager.get<DiscordRole[]>(cacheKey);
 
       if (cached) {
         this.logger.debug(`Roles cache hit for guild ${guildId}`);
@@ -227,9 +226,12 @@ export class DiscordBotService {
 
       const response = await firstValueFrom(
         this.httpService
-          .get<any[]>(`${this.apiUrl}/guilds/${guildId}/roles`, {
-            headers: { Authorization: `Bot ${this.botToken}` },
-          })
+          .get<Array<{ id: string | number; name: string }>>(
+            `${this.apiUrl}/guilds/${guildId}/roles`,
+            {
+              headers: { Authorization: `Bot ${this.botToken}` },
+            },
+          )
           .pipe(
             timeout(this.requestTimeout),
             retry({ count: this.retryAttempts }),
@@ -237,10 +239,15 @@ export class DiscordBotService {
           ),
       );
 
-      // Transform Discord API response to simplified format
       const roles = (response.data || [])
-        .filter((role: any) => role?.id && role?.name)
-        .map((role: any) => ({
+        .filter(
+          (role): role is DiscordRole =>
+            typeof role === 'object' &&
+            role !== null &&
+            'id' in role &&
+            'name' in role,
+        )
+        .map((role) => ({
           id: String(role.id),
           name: String(role.name),
         }));
@@ -290,7 +297,7 @@ export class DiscordBotService {
 
       const response = await firstValueFrom(
         this.httpService
-          .get<any[]>(`${this.apiUrl}/guilds/${guildId}/channels`, {
+          .get<DiscordChannel[]>(`${this.apiUrl}/guilds/${guildId}/channels`, {
             headers: { Authorization: `Bot ${this.botToken}` },
           })
           .pipe(
@@ -300,11 +307,15 @@ export class DiscordBotService {
           ),
       );
 
-      // Transform Discord API response to simplified format
-      // Filter out channels without names (some voice channels, categories, etc.)
-      const channels = (response.data || [])
-        .filter((channel: any) => channel?.id && channel?.name)
-        .map((channel: any) => ({
+      const channels = ((response.data as unknown[]) || [])
+        .filter(
+          (channel): channel is DiscordChannel =>
+            typeof channel === 'object' &&
+            channel !== null &&
+            'id' in channel &&
+            'name' in channel,
+        )
+        .map((channel) => ({
           id: String(channel.id),
           name: String(channel.name),
           type: Number(channel.type),

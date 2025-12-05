@@ -62,7 +62,10 @@ export class LeagueMembersController {
       user.id,
       joinLeagueDto.playerId,
     );
-    return this.leagueMemberService.joinLeague(leagueId, joinLeagueDto);
+    return this.leagueMemberService.joinLeague(
+      leagueId,
+      joinLeagueDto,
+    ) as Promise<unknown>;
   }
 
   @Get()
@@ -144,6 +147,6 @@ export class LeagueMembersController {
       }
     }
 
-    return this.leagueMemberService.update(member.id, updateDto);
+    return this.leagueMemberService.update(member.id as string, updateDto);
   }
 }

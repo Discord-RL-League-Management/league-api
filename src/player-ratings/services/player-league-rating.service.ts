@@ -3,6 +3,18 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PlayerLeagueRatingRepository } from '../repositories/player-league-rating.repository';
 
+interface RatingUpdateInput {
+  ratingSystem?: string;
+  currentRating?: number;
+  initialRating?: number;
+  ratingData?: Prisma.InputJsonValue;
+  matchesPlayed?: number;
+  wins?: number;
+  losses?: number;
+  draws?: number;
+  lastMatchId?: string | null;
+}
+
 @Injectable()
 export class PlayerLeagueRatingService {
   constructor(
@@ -21,7 +33,7 @@ export class PlayerLeagueRatingService {
   async updateRating(
     playerId: string,
     leagueId: string,
-    rating: any,
+    rating: RatingUpdateInput,
     tx?: Prisma.TransactionClient,
   ) {
     const client = tx || this.prisma;

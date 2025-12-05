@@ -19,6 +19,7 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { PlayerService } from './services/player.service';
+import { Player } from '@prisma/client';
 import { GuildAccessValidationService } from '../guilds/services/guild-access-validation.service';
 import { UpdatePlayerDto } from './dto/update-player.dto';
 import type { AuthenticatedUser } from '../common/interfaces/user.interface';
@@ -98,7 +99,7 @@ export class PlayersController {
     });
 
     // Enforce player ownership to prevent unauthorized access to user data
-    if (player.userId !== user.id) {
+    if ((player as Player & { userId: string }).userId !== user.id) {
       throw new ForbiddenException('You can only view your own players');
     }
 
@@ -120,10 +121,10 @@ export class PlayersController {
     const player = await this.playerService.findOne(id);
 
     // Enforce player ownership to prevent unauthorized modifications
-    if (player.userId !== user.id) {
+    if ((player as Player & { userId: string }).userId !== user.id) {
       throw new ForbiddenException('You can only update your own players');
     }
 
-    return this.playerService.update(id, updatePlayerDto);
+    return this.playerService.update(id, updatePlayerDto) as Promise<unknown>;
   }
 }

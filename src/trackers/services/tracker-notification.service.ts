@@ -140,7 +140,7 @@ export class TrackerNotificationService {
           this.logger.log(
             `Sent scraping failed ephemeral follow-up for tracker ${trackerId}`,
           );
-        } catch (ephemeralError) {
+        } catch {
           // If ephemeral fails (e.g., token expired), fall back to DM
           this.logger.debug(
             `Ephemeral follow-up failed for tracker ${trackerId}, falling back to DM`,
@@ -175,18 +175,15 @@ export class TrackerNotificationService {
   /**
    * Send a progress notification during multi-season scraping
    */
-  async sendScrapingProgressNotification(
+  sendScrapingProgressNotification(
     trackerId: string,
     userId: string,
     progress: { current: number; total: number },
-  ): Promise<void> {
+  ): void {
     try {
-      // For now, we'll just log progress
-      // In a full implementation, you could send periodic updates
       this.logger.debug(
         `Scraping progress for tracker ${trackerId}: ${progress.current}/${progress.total} seasons`,
       );
-      // TODO: Implement progress notifications if needed
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);

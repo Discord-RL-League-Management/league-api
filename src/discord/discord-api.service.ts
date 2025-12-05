@@ -77,15 +77,13 @@ export class DiscordApiService {
     return retryWhen((errors) =>
       errors.pipe(
         concatMap((error: AxiosError, index) => {
-          // Don't retry on 429 (rate limit) or 401 (auth) errors
-          if (
-            error.response?.status === 429 ||
-            error.response?.status === 401
-          ) {
-            return throwError(() => error);
-          }
-          // Retry other errors with exponential backoff
-          if (index < this.retryAttempts) {
+      if (
+        error.response?.status === 429 ||
+        error.response?.status === 401
+      ) {
+        return throwError(() => error);
+      }
+      if (index < this.retryAttempts) {
             const delayMs = 1000 * Math.pow(2, index); // 1s, 2s, 4s
             return timer(delayMs);
           }
@@ -188,10 +186,16 @@ export class DiscordApiService {
           })
           .pipe(
             timeout(this.requestTimeout),
-            this.createRetryOperator<AxiosResponse<any>>(),
+            this.createRetryOperator<
+              AxiosResponse<{ permissions?: string[]; roles?: string[] } | null>
+            >(),
             catchError((error: AxiosError) => {
               if (error.response?.status === 404) {
-                return of({ data: null } as any); // User not in guild
+                return of({ data: null } as AxiosResponse<{
+                  id: string;
+                  username: string;
+                  discriminator: string;
+                } | null>); // User not in guild
               }
               this.logger.error(
                 `Guild permission check error: ${error.message}`,
@@ -199,7 +203,7 @@ export class DiscordApiService {
               throw new ServiceUnavailableException('Discord API unavailable');
             }),
           ),
-      )) as AxiosResponse<any>;
+      )) as AxiosResponse<{ permissions?: string[]; roles?: string[] } | null>;
 
       if (!response.data) {
         return { isMember: false, permissions: [], roles: [] };
@@ -214,10 +218,6 @@ export class DiscordApiService {
       const permissions = memberData?.permissions || [];
       const roles = memberData?.roles || [];
 
-      // Check for Administrator permission
-      // Discord returns permissions as strings (e.g., "ADMINISTRATOR") or integers
-      // ADMINISTRATOR permission flag is 0x8 = 8, but when all permissions are granted
-      // it's typically represented as 2147483648 (0x80000000)
       const hasAdministratorPermission =
         this.checkAdministratorPermission(permissions);
 
@@ -252,23 +252,33 @@ export class DiscordApiService {
     guildId: string,
   ): Promise<{ roles: string[]; nick?: string } | null> {
     try {
-      const response = await firstValueFrom<AxiosResponse<any>>(
+      const response = (await firstValueFrom<
+        AxiosResponse<{ roles?: string[]; nick?: string } | null>
+      >(
         this.httpService
-          .get<any>(`${this.apiUrl}/users/@me/guilds/${guildId}/member`, {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          })
+          .get<{ roles?: string[]; nick?: string } | null>(
+            `${this.apiUrl}/users/@me/guilds/${guildId}/member`,
+            {
+              headers: { Authorization: `Bearer ${accessToken}` },
+            },
+          )
           .pipe(
             timeout(this.requestTimeout),
-            this.createRetryOperator<AxiosResponse<any>>(),
+            this.createRetryOperator<
+              AxiosResponse<{ roles?: string[]; nick?: string } | null>
+            >(),
             catchError((error: AxiosError) => {
               if (error.response?.status === 404) {
-                return of({ data: null } as any); // User not in guild
+                return of({ data: null } as AxiosResponse<{
+                  roles?: string[];
+                  nick?: string;
+                } | null>); // User not in guild
               }
               this.logger.error(`Guild member fetch error: ${error.message}`);
               throw new ServiceUnavailableException('Discord API unavailable');
             }),
           ),
-      );
+      )) as AxiosResponse<{ roles?: string[]; nick?: string } | null>;
 
       if (!response.data) {
         return null;
@@ -310,20 +320,14 @@ export class DiscordApiService {
     }
 
     for (const permission of permissions) {
-      // Check for "ADMINISTRATOR" string
       if (permission === 'ADMINISTRATOR') {
         return true;
       }
 
-      // Check for permission integer
-      // Try parsing as integer
       const permissionInt = parseInt(permission, 10);
       if (!isNaN(permissionInt)) {
-        // ADMINISTRATOR permission is 0x8 = 8
-        // If all permissions are granted, it's 2147483648 (0x80000000)
-        // Check if bit 0x8 is set
-        const ADMINISTRATOR_FLAG = 0x8; // 8 in decimal
-        const ALL_PERMISSIONS_FLAG = 0x80000000; // 2147483648 in decimal
+        const ADMINISTRATOR_FLAG = 0x8;
+        const ALL_PERMISSIONS_FLAG = 0x80000000;
 
         if (
           permissionInt === ALL_PERMISSIONS_FLAG ||

@@ -8,6 +8,16 @@ import { DiscordProfileDto } from './dto/discord-profile.dto';
 import { UserGuildsService } from '../user-guilds/user-guilds.service';
 import { UserOrchestratorService } from '../users/services/user-orchestrator.service';
 import { User } from '@prisma/client';
+import type { UserGuild } from '../user-guilds/interfaces/user-guild.interface';
+
+interface DiscordGuild {
+  id: string;
+  name: string;
+  icon?: string;
+  owner: boolean;
+  permissions: string;
+  roles?: string[];
+}
 
 /**
  * AuthService - Orchestrates authentication flows
@@ -36,13 +46,13 @@ export class AuthService {
     return user;
   }
 
-  async generateJwt(user: {
+  generateJwt(user: {
     id: string;
     username: string;
     globalName?: string;
     avatar?: string;
     email?: string;
-    guilds?: any[];
+    guilds?: Array<{ id: string }>;
   }) {
     const payload = {
       sub: user.id,
@@ -70,7 +80,7 @@ export class AuthService {
    * Get user's available guilds with proper error handling
    * Single Responsibility: Guild data retrieval
    */
-  async getUserAvailableGuilds(userId: string): Promise<any[]> {
+  async getUserAvailableGuilds(userId: string): Promise<UserGuild[]> {
     try {
       return await this.userGuildsService.getUserAvailableGuildsWithPermissions(
         userId,
@@ -88,7 +98,10 @@ export class AuthService {
    * Complete OAuth flow with guild synchronization
    * Single Responsibility: OAuth completion orchestration
    */
-  async completeOAuthFlow(userId: string, userGuilds: any[]): Promise<any[]> {
+  async completeOAuthFlow(
+    userId: string,
+    userGuilds: Array<DiscordGuild & { roles?: string[] }>,
+  ): Promise<UserGuild[]> {
     try {
       return await this.userGuildsService.completeOAuthFlow(userId, userGuilds);
     } catch (error) {

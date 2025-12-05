@@ -1,6 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { LeagueMember, Prisma } from '@prisma/client';
+import {
+  LeagueMember,
+  Prisma,
+  LeagueMemberStatus,
+  LeagueMemberRole,
+} from '@prisma/client';
 import { CreateLeagueMemberDto } from '../dto/create-league-member.dto';
 import { UpdateLeagueMemberDto } from '../dto/update-league-member.dto';
 import { BaseRepository } from '../../common/repositories/base.repository.interface';
@@ -133,17 +138,17 @@ export class LeagueMemberRepository
 
     if (opts.status) {
       if (Array.isArray(opts.status)) {
-        where.status = { in: opts.status as any[] };
+        where.status = { in: opts.status as LeagueMemberStatus[] };
       } else {
-        where.status = opts.status as any;
+        where.status = opts.status as LeagueMemberStatus;
       }
     }
 
     if (opts.role) {
       if (Array.isArray(opts.role)) {
-        where.role = { in: opts.role as any[] };
+        where.role = { in: opts.role as LeagueMemberRole[] };
       } else {
-        where.role = opts.role as any;
+        where.role = opts.role as LeagueMemberRole;
       }
     }
 
@@ -205,9 +210,9 @@ export class LeagueMemberRepository
 
     if (opts.status) {
       if (Array.isArray(opts.status)) {
-        where.status = { in: opts.status as any[] };
+        where.status = { in: opts.status as LeagueMemberStatus[] };
       } else {
-        where.status = opts.status as any;
+        where.status = opts.status as LeagueMemberStatus;
       }
     }
 

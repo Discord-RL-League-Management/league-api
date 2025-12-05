@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Player, Prisma } from '@prisma/client';
+import { Player, Prisma, PlayerStatus } from '@prisma/client';
 import { CreatePlayerDto } from '../dto/create-player.dto';
 import { UpdatePlayerDto } from '../dto/update-player.dto';
 import { BaseRepository } from '../../common/repositories/base.repository.interface';
@@ -131,9 +131,9 @@ export class PlayerRepository
 
     if (opts.status) {
       if (Array.isArray(opts.status)) {
-        where.status = { in: opts.status as any[] };
+        where.status = { in: opts.status as PlayerStatus[] };
       } else {
-        where.status = opts.status as any;
+        where.status = opts.status as PlayerStatus;
       }
     }
 
@@ -193,9 +193,9 @@ export class PlayerRepository
 
     if (opts.status) {
       if (Array.isArray(opts.status)) {
-        where.status = { in: opts.status as any[] };
+        where.status = { in: opts.status as PlayerStatus[] };
       } else {
-        where.status = opts.status as any;
+        where.status = opts.status as PlayerStatus;
       }
     }
 
@@ -301,3 +301,4 @@ export class PlayerRepository
     });
   }
 }
+

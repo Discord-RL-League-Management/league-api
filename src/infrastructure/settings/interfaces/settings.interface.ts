@@ -7,7 +7,7 @@ export interface Settings {
   id: string;
   ownerType: string;
   ownerId: string;
-  settings: Record<string, any>;
+  settings: Record<string, unknown>;
   schemaVersion: number;
   configVersion?: string;
   createdAt: Date;

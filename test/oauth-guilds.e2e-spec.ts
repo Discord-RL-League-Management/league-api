@@ -7,14 +7,11 @@ import { HttpService } from '@nestjs/axios';
 import { JwtService } from '@nestjs/jwt';
 import { bootstrapTestApp } from './helpers/create-test-app';
 import { of } from 'rxjs';
-import { AxiosResponse, AxiosError } from 'axios';
-import { DiscordFactory } from './factories/discord.factory';
-import { GuildFactory } from './factories/guild.factory';
+import { AxiosResponse } from 'axios';
 
 describe('OAuth Guilds Integration (E2E)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
-  let httpService: HttpService;
   let jwtService: JwtService;
 
   const mockHttpService = {
@@ -33,7 +30,6 @@ describe('OAuth Guilds Integration (E2E)', () => {
     app = moduleFixture.createNestApplication();
     await bootstrapTestApp(app);
     prisma = app.get(PrismaService);
-    httpService = app.get<HttpService>(HttpService);
     jwtService = app.get<JwtService>(JwtService);
   });
 
@@ -103,8 +99,9 @@ describe('OAuth Guilds Integration (E2E)', () => {
         .expect(200);
 
       // Assert
-      expect(response.body).toHaveLength(1);
-      expect(response.body[0].id).toBe('guild123');
+      const body = response.body as Array<{ id: string }>;
+      expect(body).toHaveLength(1);
+      expect(body[0].id).toBe('guild123');
     });
 
     it('should return 401 for unauthenticated request', async () => {
@@ -149,10 +146,15 @@ describe('OAuth Guilds Integration (E2E)', () => {
         .expect(200);
 
       // Assert
-      expect(response.body).toHaveProperty('id', user.id);
-      expect(response.body).toHaveProperty('username', user.username);
+      const body = response.body as {
+        id: string;
+        username: string;
+        guilds?: unknown;
+      };
+      expect(body).toHaveProperty('id', user.id);
+      expect(body).toHaveProperty('username', user.username);
       // Verify guilds are NOT included in response
-      expect(response.body).not.toHaveProperty('guilds');
+      expect(body).not.toHaveProperty('guilds');
     });
 
     it('should return 401 for invalid token', async () => {
@@ -193,7 +195,7 @@ describe('OAuth Guilds Integration (E2E)', () => {
         .expect(200);
 
       // Assert
-      expect(response.body).toHaveProperty(
+      expect(response.body as { message: string }).toHaveProperty(
         'message',
         'Logged out successfully',
       );

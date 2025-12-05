@@ -130,7 +130,7 @@ export class TrackerSnapshotService {
    * Add guild visibility to a snapshot
    */
   async addGuildVisibility(snapshotId: string, guildId: string) {
-    const snapshot = await this.getSnapshotById(snapshotId);
+    await this.getSnapshotById(snapshotId);
     await this.visibilityService.addVisibility(
       'tracker_snapshot',
       snapshotId,
@@ -146,7 +146,7 @@ export class TrackerSnapshotService {
    * Remove guild visibility from a snapshot
    */
   async removeGuildVisibility(snapshotId: string, guildId: string) {
-    const snapshot = await this.getSnapshotById(snapshotId);
+    await this.getSnapshotById(snapshotId);
     await this.visibilityService.removeVisibility(
       'tracker_snapshot',
       snapshotId,

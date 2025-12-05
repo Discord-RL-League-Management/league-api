@@ -1,4 +1,3 @@
-import * as Joi from 'joi';
 import { trackerSegmentStatsSchema } from './tracker-segment.schema';
 
 describe('trackerSegmentStatsSchema', () => {

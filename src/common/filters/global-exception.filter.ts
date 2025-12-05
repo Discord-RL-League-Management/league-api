@@ -16,7 +16,7 @@ interface ErrorResponse {
   method: string;
   message: string;
   code?: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
   stack?: string;
 }
 
@@ -63,17 +63,36 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       const isObjectResponse =
         typeof exceptionResponse === 'object' && exceptionResponse !== null;
       const errorData = isObjectResponse
-        ? (exceptionResponse as any)
-        : { message: exceptionResponse };
+        ? (exceptionResponse as Record<string, unknown>)
+        : { message: String(exceptionResponse) };
 
       return {
         statusCode: status,
         timestamp,
         path,
         method,
-        message: errorData.message || 'Unknown error',
-        code: errorData.code,
-        details: errorData.details,
+        message:
+          typeof errorData.message === 'string'
+            ? errorData.message
+            : typeof errorData.message === 'object' &&
+                errorData.message !== null
+              ? JSON.stringify(errorData.message)
+              : errorData.message != null
+                ? typeof errorData.message === 'object' &&
+                  errorData.message !== null
+                  ? JSON.stringify(errorData.message)
+                  : typeof errorData.message === 'string'
+                    ? errorData.message
+                    : typeof errorData.message === 'number' ||
+                        typeof errorData.message === 'boolean'
+                      ? String(errorData.message)
+                      : 'Unknown error'
+                : 'Unknown error',
+        code: typeof errorData.code === 'string' ? errorData.code : undefined,
+        details:
+          typeof errorData.details === 'object' && errorData.details !== null
+            ? (errorData.details as Record<string, unknown>)
+            : undefined,
         stack: this.isDevelopment ? exception.stack : undefined,
       };
     }

@@ -17,7 +17,17 @@ export class PlayerLeagueStatsService {
   async updateStats(
     playerId: string,
     leagueId: string,
-    stats: any,
+    stats: Partial<{
+      matchesPlayed: number;
+      wins: number;
+      losses: number;
+      draws: number;
+      totalGoals: number;
+      totalAssists: number;
+      totalSaves: number;
+      totalShots: number;
+      lastMatchAt: Date | null;
+    }>,
     tx?: Prisma.TransactionClient,
   ) {
     return this.repository.upsert(playerId, leagueId, stats, tx);

@@ -1,4 +1,4 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { DiscordApiService } from './discord-api.service';
@@ -12,25 +12,26 @@ import { DiscordFactory } from '../../test/factories/discord.factory';
 
 describe('DiscordApiService', () => {
   let service: DiscordApiService;
-  let httpService: HttpService;
 
   const mockHttpService = {
     get: jest.fn(),
   };
 
   const mockConfigService = {
-    get: jest.fn((key: string, defaultValue?: any) => {
-      const config: Record<string, any> = {
-        'discord.apiUrl': 'https://discord.com/api',
-        'discord.timeout': 10000,
-        'discord.retryAttempts': 3,
-      };
-      return config[key] || defaultValue;
-    }),
+    get: jest.fn<unknown, [string, unknown?]>(
+      (key: string, defaultValue?: unknown) => {
+        const config: Record<string, unknown> = {
+          'discord.apiUrl': 'https://discord.com/api',
+          'discord.timeout': 10000,
+          'discord.retryAttempts': 3,
+        };
+        return config[key] || defaultValue;
+      },
+    ),
   };
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    const module = await Test.createTestingModule({
       providers: [
         DiscordApiService,
         { provide: HttpService, useValue: mockHttpService },
@@ -39,7 +40,6 @@ describe('DiscordApiService', () => {
     }).compile();
 
     service = module.get<DiscordApiService>(DiscordApiService);
-    httpService = module.get<HttpService>(HttpService);
   });
 
   afterEach(() => {
@@ -308,7 +308,7 @@ describe('DiscordApiService', () => {
       // Input: High retry attempts config
       const highRetryConfigService = {
         get: jest.fn((key: string, defaultValue?: any) => {
-          const config: Record<string, any> = {
+          const config: Record<string, unknown> = {
             'discord.apiUrl': 'https://discord.com/api',
             'discord.timeout': 10000,
             'discord.retryAttempts': 10, // High retry count
@@ -318,7 +318,7 @@ describe('DiscordApiService', () => {
       };
 
       // Recreate service with new config
-      const module: TestingModule = await Test.createTestingModule({
+      const module = await Test.createTestingModule({
         providers: [
           DiscordApiService,
           { provide: HttpService, useValue: mockHttpService },
@@ -356,7 +356,7 @@ describe('DiscordApiService', () => {
       // Input: High retry attempts config
       const highRetryConfigService = {
         get: jest.fn((key: string, defaultValue?: any) => {
-          const config: Record<string, any> = {
+          const config: Record<string, unknown> = {
             'discord.apiUrl': 'https://discord.com/api',
             'discord.timeout': 10000,
             'discord.retryAttempts': 10,
@@ -366,7 +366,7 @@ describe('DiscordApiService', () => {
       };
 
       // Recreate service with new config
-      const module: TestingModule = await Test.createTestingModule({
+      const module = await Test.createTestingModule({
         providers: [
           DiscordApiService,
           { provide: HttpService, useValue: mockHttpService },

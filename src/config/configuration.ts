@@ -48,7 +48,10 @@ export default () => ({
   queue: {
     concurrency: parseInt(process.env.QUEUE_CONCURRENCY || '5', 10),
     defaultJobOptions: process.env.QUEUE_DEFAULT_JOB_OPTIONS
-      ? JSON.parse(process.env.QUEUE_DEFAULT_JOB_OPTIONS)
+      ? (JSON.parse(process.env.QUEUE_DEFAULT_JOB_OPTIONS) as Record<
+          string,
+          unknown
+        >)
       : {
           removeOnComplete: 100,
           removeOnFail: 50,

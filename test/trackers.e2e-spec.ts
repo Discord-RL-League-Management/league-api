@@ -71,9 +71,15 @@ describe('Trackers API (e2e)', () => {
       expect(user?.avatar).toBe('avatar_hash');
 
       // Assert - Verify tracker was created
-      expect(response.body).toBeInstanceOf(Array);
-      expect(response.body.length).toBe(1);
-      expect(response.body[0]).toMatchObject({
+      const body = response.body as Array<{
+        url: string;
+        userId: string;
+        platform: string;
+        username: string;
+      }>;
+      expect(body).toBeInstanceOf(Array);
+      expect(body.length).toBe(1);
+      expect(body[0]).toMatchObject({
         url: validTrackerUrl,
         userId,
         platform: 'STEAM',
@@ -125,8 +131,9 @@ describe('Trackers API (e2e)', () => {
       expect(user?.avatar).toBe('new_avatar');
 
       // Assert - Verify tracker was created
-      expect(response.body).toBeInstanceOf(Array);
-      expect(response.body.length).toBe(1);
+      const body = response.body as Array<unknown>;
+      expect(body).toBeInstanceOf(Array);
+      expect(body.length).toBe(1);
     });
 
     it('should create minimal user when userData is not provided', async () => {
@@ -199,9 +206,10 @@ describe('Trackers API (e2e)', () => {
         .expect(201);
 
       // Assert - Verify tracker was created
-      expect(response.body).toBeInstanceOf(Array);
-      expect(response.body.length).toBe(1);
-      expect(response.body[0]).toMatchObject({
+      const body = response.body as Array<{ url: string; userId: string }>;
+      expect(body).toBeInstanceOf(Array);
+      expect(body.length).toBe(1);
+      expect(body[0]).toMatchObject({
         url: validTrackerUrl,
         userId,
       });
@@ -255,7 +263,7 @@ describe('Trackers API (e2e)', () => {
         .expect(201);
 
       // Assert - Verify tracker was created
-      expect(response.body).toMatchObject({
+      expect(response.body as { url: string; userId: string }).toMatchObject({
         url: validTrackerUrl,
         userId,
       });

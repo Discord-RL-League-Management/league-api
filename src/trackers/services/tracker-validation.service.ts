@@ -15,7 +15,7 @@ export class TrackerValidationService {
   private readonly logger = new Logger(TrackerValidationService.name);
   private readonly TRN_BASE_URL = 'https://rocketleague.tracker.network';
   private readonly TRN_PROFILE_REGEX =
-    /^https:\/\/rocketleague\.tracker\.network\/rocket-league\/profile\/([^\/]+)\/([^\/]+)\/overview\/?$/i;
+    /^https:\/\/rocketleague\.tracker\.network\/rocket-league\/profile\/([^/]+)\/([^/]+)\/overview\/?$/i;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -244,7 +244,7 @@ export class TrackerValidationService {
   /**
    * Extract platform and username from URL (public helper)
    */
-  async extractTrackerInfo(url: string): Promise<{
+  extractTrackerInfo(url: string): Promise<{
     platform: GamePlatform;
     username: string;
   }> {
@@ -253,9 +253,9 @@ export class TrackerValidationService {
       throw new BadRequestException('Failed to parse tracker URL');
     }
 
-    return {
+    return Promise.resolve({
       platform: this.mapPlatformToEnum(parsed.platform),
       username: parsed.username,
-    };
+    });
   }
 }

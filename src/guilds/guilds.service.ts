@@ -9,10 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateGuildDto } from './dto/create-guild.dto';
 import { UpdateGuildDto } from './dto/update-guild.dto';
 import { SettingsDefaultsService } from './services/settings-defaults.service';
-import {
-  GuildQueryOptions,
-  defaultGuildQueryOptions,
-} from './interfaces/guild-query.options';
+import { GuildQueryOptions } from './interfaces/guild-query.options';
 import {
   GuildNotFoundException,
   GuildAlreadyExistsException,
@@ -20,6 +17,7 @@ import {
 import { ConflictException } from '../common/exceptions/base.exception';
 import { GuildRepository } from './repositories/guild.repository';
 import { Guild } from '@prisma/client';
+import { GuildSettings } from './interfaces/settings.interface';
 
 /**
  * GuildsService - Business logic layer for Guild operations
@@ -56,7 +54,7 @@ export class GuildsService {
       // Create guild with settings in transaction (handled by repository)
       const guild = await this.guildRepository.createWithSettings(
         createGuildDto,
-        this.settingsDefaults.getDefaults(),
+        this.settingsDefaults.getDefaults() as unknown as Record<string, unknown>,
       );
 
       this.logger.log(`Created guild ${guild.id} with default settings`);
@@ -206,7 +204,7 @@ export class GuildsService {
       // Upsert guild with settings in transaction (handled by repository)
       const guild = await this.guildRepository.upsertWithSettings(
         createGuildDto,
-        this.settingsDefaults.getDefaults(),
+        this.settingsDefaults.getDefaults() as unknown as Record<string, unknown>,
       );
 
       this.logger.log(`Upserted guild ${guild.id} (created or updated)`);
@@ -324,18 +322,23 @@ export class GuildsService {
             rolesData?.admin && rolesData.admin.length > 0
               ? {
                   settings: {
-                    ...((existingSettings?.settings as any) || defaultSettings),
+                    ...((existingSettings?.settings as unknown as GuildSettings) ||
+                      defaultSettings),
                     roles: {
-                      ...((existingSettings?.settings as any)?.roles || {}),
+                      ...((
+                        existingSettings?.settings as unknown as GuildSettings
+                      )?.roles || {}),
                       admin: rolesData.admin,
                     },
-                  },
+                  } as unknown as Prisma.InputJsonValue,
                 }
               : {},
           create: {
             ownerType: 'guild',
             ownerId: guild.id,
-            settings: JSON.parse(JSON.stringify(settingsToSave)),
+            settings: JSON.parse(
+              JSON.stringify(settingsToSave),
+            ) as Prisma.InputJsonValue,
           },
         });
 
@@ -411,7 +414,7 @@ export class GuildsService {
         );
 
         // Check metadata to determine which FK failed
-        const meta = error.meta as any;
+        const meta = error.meta as { field_name?: string } | undefined;
         if (meta?.field_name) {
           if (
             meta.field_name.includes('userId') ||
@@ -469,8 +472,9 @@ export class GuildsService {
    */
   private extractErrorInfo(
     error: unknown,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     guildId: string,
-  ): { message: string; code?: string; details?: Record<string, any> } {
+  ): { message: string; code?: string; details?: Record<string, unknown> } {
     // Handle Prisma known request errors
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       return {

@@ -54,10 +54,11 @@ describe('MMR Calculation API (e2e)', () => {
         })
         .expect(200);
 
-      expect(response.body).toMatchObject({
+      const body = response.body as { valid: boolean; error?: string };
+      expect(body).toMatchObject({
         valid: true,
       });
-      expect(response.body.error).toBeUndefined();
+      expect(body.error).toBeUndefined();
     });
 
     // INPUT: Invalid formula
@@ -68,10 +69,11 @@ describe('MMR Calculation API (e2e)', () => {
         .send({ formula: 'ones + + twos' })
         .expect(200);
 
-      expect(response.body).toMatchObject({
+      const body = response.body as { valid: boolean; error?: string };
+      expect(body).toMatchObject({
         valid: false,
       });
-      expect(response.body.error).toBeDefined();
+      expect(body.error).toBeDefined();
     });
 
     // PROTECTION: Reject empty formula
@@ -82,10 +84,11 @@ describe('MMR Calculation API (e2e)', () => {
         .send({ formula: '' })
         .expect(200);
 
-      expect(response.body).toMatchObject({
+      const body = response.body as { valid: boolean; error?: string };
+      expect(body).toMatchObject({
         valid: false,
       });
-      expect(response.body.error).toContain('cannot be empty');
+      expect(body.error).toContain('cannot be empty');
     });
 
     // PROTECTION: Reject disallowed variables
@@ -96,10 +99,11 @@ describe('MMR Calculation API (e2e)', () => {
         .send({ formula: 'ones + maliciousVar' })
         .expect(200);
 
-      expect(response.body).toMatchObject({
+      const body = response.body as { valid: boolean; error?: string };
+      expect(body).toMatchObject({
         valid: false,
       });
-      expect(response.body.error).toContain('Disallowed variables');
+      expect(body.error).toContain('Disallowed variables');
     });
 
     // INPUT: Missing formula field

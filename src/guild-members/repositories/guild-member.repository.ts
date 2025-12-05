@@ -38,7 +38,7 @@ export class GuildMemberRepository
           guildId,
         },
       },
-      include: include as any,
+      include: include as Prisma.GuildMemberInclude | undefined,
     });
 
     return member;
@@ -104,7 +104,7 @@ export class GuildMemberRepository
     const skip = (page - 1) * limit;
     const maxLimit = Math.min(limit, 100);
 
-    const include: any = {};
+    const include: Prisma.GuildMemberInclude = {};
     if (options?.includeUser) {
       include.user = {
         select: {
@@ -155,7 +155,7 @@ export class GuildMemberRepository
   ): Promise<GuildMember[]> {
     return this.prisma.guildMember.findMany({
       where: { userId },
-      include: include as any,
+      include: include as Prisma.GuildMemberInclude | undefined,
       orderBy: { joinedAt: 'desc' },
     });
   }
@@ -399,7 +399,7 @@ export class GuildMemberRepository
     const limit = options?.limit ?? 20;
     const skip = (page - 1) * limit;
 
-    const include: any = {};
+    const include: Prisma.GuildMemberInclude = {};
     if (options?.includeUser) {
       include.user = {
         select: {

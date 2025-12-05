@@ -55,7 +55,7 @@ describe('Guilds API (e2e)', () => {
         .expect(201);
 
       // Assert
-      expect(response.body).toMatchObject({
+      expect(response.body as Record<string, unknown>).toMatchObject({
         id: guildData.id,
         name: guildData.name,
         ownerId: guildData.ownerId,
@@ -164,7 +164,7 @@ describe('Guilds API (e2e)', () => {
         .expect(201);
 
       // Assert
-      expect(response.body).toMatchObject({
+      expect(response.body as Record<string, unknown>).toMatchObject({
         id: guildData.id,
         name: guildData.name,
         ownerId: guildData.ownerId,
@@ -219,7 +219,7 @@ describe('Guilds API (e2e)', () => {
         .expect(200);
 
       // Assert
-      expect(response.body).toMatchObject({
+      expect(response.body as Record<string, unknown>).toMatchObject({
         id: existingGuild.id,
         name: 'Updated Guild',
         memberCount: 150,
@@ -394,7 +394,7 @@ describe('Guilds API (e2e)', () => {
         .expect(200);
 
       // Assert
-      expect(response.body).toMatchObject({
+      expect(response.body as Record<string, unknown>).toMatchObject({
         id: guild.id,
         name: guild.name,
         ownerId: guild.ownerId,
@@ -524,7 +524,7 @@ describe('Guilds API (e2e)', () => {
         .expect(200);
 
       // Assert
-      expect(response.body).toMatchObject({
+      expect(response.body as Record<string, unknown>).toMatchObject({
         guild: expect.objectContaining({
           id: guildId,
           name: 'Atomic Test Guild',
@@ -957,7 +957,7 @@ describe('Guilds API (e2e)', () => {
         .expect(200); // Or 201 if created
 
       // Assert
-      expect(response.body).toMatchObject({
+      expect(response.body as Record<string, unknown>).toMatchObject({
         id: guildData.id,
         name: guildData.name,
         ownerId: guildData.ownerId,
@@ -996,7 +996,7 @@ describe('Guilds API (e2e)', () => {
         .expect(200);
 
       // Assert
-      expect(response.body).toMatchObject({
+      expect(response.body as Record<string, unknown>).toMatchObject({
         synced: 2,
       });
 

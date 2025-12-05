@@ -50,3 +50,4 @@ export const defaultPlayerQueryOptions: Required<
   page: 1,
   limit: 50,
 };
+

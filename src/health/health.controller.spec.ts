@@ -6,7 +6,6 @@ import {
   HealthIndicatorService,
 } from '@nestjs/terminus';
 import { PrismaHealthIndicator } from '@nestjs/terminus';
-import { ConfigService } from '@nestjs/config';
 import { HealthController } from './health.controller';
 import { DiscordApiHealthIndicator } from './indicators/discord-api.health';
 import { PrismaService } from '../prisma/prisma.service';

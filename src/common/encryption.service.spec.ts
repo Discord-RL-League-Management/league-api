@@ -1,14 +1,14 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { EncryptionService } from './encryption.service';
 
 describe('EncryptionService', () => {
   let service: EncryptionService;
-  let configService: ConfigService;
 
   const mockConfigService = {
     get: jest
-      .fn()
+      .fn<string, [string, unknown?]>()
       .mockReturnValue(
         '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
       ),
@@ -26,7 +26,6 @@ describe('EncryptionService', () => {
     }).compile();
 
     service = module.get<EncryptionService>(EncryptionService);
-    configService = module.get<ConfigService>(ConfigService);
   });
 
   describe('encrypt', () => {
@@ -78,8 +77,8 @@ describe('EncryptionService', () => {
 
     it('should return empty string for empty input', () => {
       expect(service.decrypt('')).toBe('');
-      expect(service.decrypt(null as any)).toBeNull();
-      expect(service.decrypt(undefined as any)).toBeUndefined();
+      expect(service.decrypt(null as unknown as string)).toBeNull();
+      expect(service.decrypt(undefined as unknown as string)).toBeUndefined();
     });
 
     it('should throw error for invalid encrypted data', () => {

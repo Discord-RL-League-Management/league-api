@@ -3,6 +3,11 @@ import { DiscordBotService } from '../../discord/discord-bot.service';
 import { GuildSettingsDto } from '../dto/guild-settings.dto';
 import { MAX_CHANNEL_NAME_LENGTH } from '../constants/settings.constants';
 import { FormulaValidationService } from '../../mmr-calculation/services/formula-validation.service';
+import {
+  ChannelConfig,
+  MmrCalculationConfig,
+  GuildSettings,
+} from '../interfaces/settings.interface';
 
 @Injectable()
 export class SettingsValidationService {
@@ -33,7 +38,7 @@ export class SettingsValidationService {
     }
 
     if (settings.mmrCalculation) {
-      await this.validateMmrCalculation(settings.mmrCalculation);
+      this.validateMmrCalculation(settings.mmrCalculation);
     }
   }
 
@@ -42,7 +47,7 @@ export class SettingsValidationService {
    * Single Responsibility: Channel validation with Discord API
    */
   private async validateBotCommandChannels(
-    channels: any[],
+    channels: ChannelConfig[],
     guildId: string,
   ): Promise<void> {
     // Check for duplicate channel IDs
@@ -96,7 +101,7 @@ export class SettingsValidationService {
    * Single Responsibility: Channel validation with Discord API
    */
   private async validateRegisterCommandChannels(
-    channels: any[],
+    channels: ChannelConfig[],
     guildId: string,
   ): Promise<void> {
     // Reuse the same validation logic as bot_command_channels
@@ -113,7 +118,7 @@ export class SettingsValidationService {
    * @param config Configuration object to validate
    * @throws BadRequestException if structure is invalid
    */
-  validateStructure(config: any): void {
+  validateStructure(config: GuildSettings | Record<string, unknown>): void {
     // Validate that config is an object
     if (!config || typeof config !== 'object') {
       throw new BadRequestException('Configuration must be an object');
@@ -127,13 +132,22 @@ export class SettingsValidationService {
     }
 
     // Validate bot_command_channels structure
-    if (config.bot_command_channels) {
-      if (!Array.isArray(config.bot_command_channels)) {
+    const botCommandChannels =
+      'bot_command_channels' in config
+        ? config.bot_command_channels
+        : undefined;
+    if (botCommandChannels) {
+      if (!Array.isArray(botCommandChannels)) {
         throw new BadRequestException('bot_command_channels must be an array');
       }
 
-      for (const channel of config.bot_command_channels) {
-        if (typeof channel !== 'object' || !channel.id || !channel.name) {
+      for (const channel of botCommandChannels) {
+        if (
+          typeof channel !== 'object' ||
+          channel === null ||
+          !('id' in channel) ||
+          !('name' in channel)
+        ) {
           throw new BadRequestException(
             'Each bot_command_channel must be an object with id and name',
           );
@@ -146,7 +160,7 @@ export class SettingsValidationService {
    * Validate MMR calculation configuration
    * Single Responsibility: MMR config validation
    */
-  private async validateMmrCalculation(config: any): Promise<void> {
+  private validateMmrCalculation(config: MmrCalculationConfig): void {
     if (!config.algorithm) {
       throw new BadRequestException('MMR calculation algorithm is required');
     }

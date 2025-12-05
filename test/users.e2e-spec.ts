@@ -50,7 +50,7 @@ describe('Users API (e2e)', () => {
         .send(userData)
         .expect(201);
 
-      expect(response.body).toMatchObject({
+      expect(response.body as Record<string, unknown>).toMatchObject({
         id: userData.id,
         username: userData.username,
         globalName: userData.globalName,
@@ -128,8 +128,14 @@ describe('Users API (e2e)', () => {
         .set('Authorization', `Bearer ${validApiKey}`)
         .expect(200);
 
-      expect(response.body).toHaveLength(2);
-      expect(response.body[0]).toMatchObject({
+      const body = response.body as Array<{
+        id: string;
+        username: string;
+        globalName: string;
+        createdAt: string;
+      }>;
+      expect(body).toHaveLength(2);
+      expect(body[0]).toMatchObject({
         id: expect.any(String),
         username: expect.any(String),
         globalName: expect.any(String),
@@ -143,8 +149,9 @@ describe('Users API (e2e)', () => {
         .set('Authorization', `Bearer ${validApiKey}`)
         .expect(200);
 
-      expect(response.body[0].id).toBe('user2'); // More recent
-      expect(response.body[1].id).toBe('user1'); // Older
+      const body = response.body as Array<{ id: string }>;
+      expect(body[0].id).toBe('user2'); // More recent
+      expect(body[1].id).toBe('user1'); // Older
     });
 
     it('should reject request without API key', async () => {
@@ -169,7 +176,7 @@ describe('Users API (e2e)', () => {
         .set('Authorization', `Bearer ${validApiKey}`)
         .expect(200);
 
-      expect(response.body).toMatchObject({
+      expect(response.body as Record<string, unknown>).toMatchObject({
         id: 'user123',
         username: 'testuser',
         globalName: 'Test User',
@@ -213,7 +220,7 @@ describe('Users API (e2e)', () => {
         .send(updateData)
         .expect(200);
 
-      expect(response.body).toMatchObject({
+      expect(response.body as Record<string, unknown>).toMatchObject({
         id: 'user123',
         username: 'updateduser',
         globalName: 'Updated User',

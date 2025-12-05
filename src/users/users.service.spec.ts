@@ -7,7 +7,6 @@ import { EncryptionService } from '../common/encryption.service';
 describe('UsersService', () => {
   let service: UsersService;
   let prisma: PrismaService;
-  let encryptionService: EncryptionService;
 
   const mockPrismaService = {
     user: {

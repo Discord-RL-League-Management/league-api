@@ -6,11 +6,9 @@ import { PlayerService } from '../../players/services/player.service';
 import { PlayerValidationService } from '../../players/services/player-validation.service';
 import { GuildMembersService } from '../../guild-members/guild-members.service';
 import { TrackerService } from '../../trackers/services/tracker.service';
-import {
-  LeagueJoinValidationException,
-  LeagueCooldownException,
-} from '../exceptions/league-member.exceptions';
-import { LeagueConfiguration } from '../../leagues/interfaces/league-settings.interface';
+import { LeagueJoinValidationException } from '../exceptions/league-member.exceptions';
+import { PlaylistData } from '../../trackers/interfaces/scraper.interfaces';
+import { Player, PlayerStatus } from '@prisma/client';
 
 /**
  * LeagueJoinValidationService - Single Responsibility: League join validation logic
@@ -42,24 +40,27 @@ export class LeagueJoinValidationService {
     const membershipConfig = settings.membership;
     const skillConfig = settings.skill;
 
-    // Get player
-    const player = await this.playerService.findOne(playerId, {
+    const player = (await this.playerService.findOne(playerId, {
       includeUser: true,
       includeGuild: true,
       includePrimaryTracker: true,
-    });
+    })) as Player & {
+      userId: string;
+      guildId: string;
+      status: string;
+      primaryTrackerId: string | null;
+    };
 
-    // 1. Check requireGuildMembership
     if (membershipConfig.requireGuildMembership) {
-      await this.guildMembersService.findOne(player.userId, player.guildId);
+      await this.guildMembersService.findOne(player.userId, player.guildId      );
     }
 
-    // 2. Check requirePlayerStatus
     if (membershipConfig.requirePlayerStatus) {
-      this.playerValidationService.validatePlayerStatus(player.status);
+      this.playerValidationService.validatePlayerStatus(
+        player.status as PlayerStatus,
+      );
     }
 
-    // 3. Check requireTracker
     if (skillConfig.requireTracker) {
       if (!player.primaryTrackerId) {
         throw new LeagueJoinValidationException(
@@ -72,7 +73,6 @@ export class LeagueJoinValidationService {
       );
     }
 
-    // 4. Check skillRequirements
     if (membershipConfig.skillRequirements) {
       await this.validateSkillRequirements(
         player,
@@ -80,13 +80,10 @@ export class LeagueJoinValidationService {
       );
     }
 
-    // 5. Check registration window
     this.validateRegistrationWindow(membershipConfig);
 
-    // 6. Check capacity limits
     await this.validateCapacity(leagueId, membershipConfig);
 
-    // 7. Check allowMultipleLeagues
     if (!membershipConfig.allowMultipleLeagues) {
       const existingMemberships =
         await this.leagueMemberRepository.findByPlayerId(playerId, {
@@ -99,7 +96,6 @@ export class LeagueJoinValidationService {
       }
     }
 
-    // 8. Check cooldownAfterLeave
     if (
       membershipConfig.cooldownAfterLeave &&
       membershipConfig.cooldownAfterLeave > 0
@@ -110,7 +106,6 @@ export class LeagueJoinValidationService {
       );
     }
 
-    // 9. Check joinMethod and requiresApproval
     if (
       membershipConfig.joinMethod === 'INVITE_ONLY' ||
       membershipConfig.joinMethod === 'APPLICATION'
@@ -128,7 +123,7 @@ export class LeagueJoinValidationService {
    * Single Responsibility: Skill validation
    */
   private async validateSkillRequirements(
-    player: any,
+    player: { primaryTrackerId: string | null },
     skillRequirements: {
       minSkill?: number;
       maxSkill?: number;
@@ -141,12 +136,10 @@ export class LeagueJoinValidationService {
       );
     }
 
-    // Get latest tracker snapshot
     const tracker = await this.trackerService.getTrackerById(
       player.primaryTrackerId,
     );
 
-    // Get latest season data
     const latestSeason = tracker.seasons?.[0];
     if (!latestSeason) {
       throw new LeagueJoinValidationException(
@@ -154,24 +147,20 @@ export class LeagueJoinValidationService {
       );
     }
 
-    // Extract skill value based on metric
     let skillValue: number | null = null;
 
-    const playlist2v2 = latestSeason.playlist2v2 as any;
+    const playlist2v2 = latestSeason.playlist2v2 as PlaylistData | null;
     switch (skillRequirements.skillMetric) {
       case 'MMR':
-        // Use 2v2 MMR as default (most common)
-        skillValue = playlist2v2?.['mmr'] as number | null;
+        skillValue = playlist2v2?.rating ?? null;
         break;
       case 'RANK':
-        // Extract rank value from season data
-        skillValue = playlist2v2?.['rank'] as number | null;
+        skillValue = playlist2v2?.rankValue ?? null;
         break;
       case 'ELO':
-        skillValue = playlist2v2?.['elo'] as number | null;
+        skillValue = null;
         break;
       case 'CUSTOM':
-        // Custom metric - would need league-specific logic
         throw new LeagueJoinValidationException(
           'Custom skill metric validation not yet implemented',
         );
@@ -183,7 +172,6 @@ export class LeagueJoinValidationService {
       );
     }
 
-    // Validate min/max skill
     if (
       skillRequirements.minSkill !== undefined &&
       skillValue < skillRequirements.minSkill
@@ -207,7 +195,11 @@ export class LeagueJoinValidationService {
    * Validate registration window
    * Single Responsibility: Registration window validation
    */
-  private validateRegistrationWindow(membershipConfig: any): void {
+  private validateRegistrationWindow(membershipConfig: {
+    registrationOpen: boolean;
+    registrationStartDate?: Date | string | null;
+    registrationEndDate?: Date | string | null;
+  }): void {
     if (!membershipConfig.registrationOpen) {
       throw new LeagueJoinValidationException(
         'League registration is currently closed',
@@ -241,7 +233,7 @@ export class LeagueJoinValidationService {
    */
   private async validateCapacity(
     leagueId: string,
-    membershipConfig: any,
+    membershipConfig: { maxPlayers?: number | null; autoCloseOnFull: boolean },
   ): Promise<void> {
     if (membershipConfig.maxPlayers) {
       const activeCount =

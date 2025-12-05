@@ -26,9 +26,8 @@ export class UserStatisticsService {
     winRate: number;
     guildsCount: number;
     activeGuildsCount: number;
-  }> {
+    }> {
     try {
-      // Get user's guild memberships
       const memberships = await this.guildMemberRepository.findByUserId(
         userId,
         {
@@ -36,7 +35,6 @@ export class UserStatisticsService {
         },
       );
 
-      // Type the result to include the guild relation
       type GuildMemberWithGuild = Prisma.GuildMemberGetPayload<{
         include: { guild: true };
       }>;
@@ -63,7 +61,6 @@ export class UserStatisticsService {
       };
     } catch (error) {
       this.logger.error(`Failed to get stats for user ${userId}:`, error);
-      // Return default stats on error
       return {
         userId,
         gamesPlayed: 0,

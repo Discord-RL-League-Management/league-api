@@ -22,7 +22,9 @@ export const CURRENT_CONFIG_VERSION = '1.0.0';
  * Registry of migration functions by version
  * Each entry migrates from (version - 1) to version
  */
-export type MigrationFunction = (config: any) => Promise<any> | any;
+export type MigrationFunction = (
+  config: Record<string, unknown>,
+) => Promise<Record<string, unknown>> | Record<string, unknown>;
 
 export interface MigrationRegistry {
   [version: number]: MigrationFunction;
