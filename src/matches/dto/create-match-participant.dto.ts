@@ -70,4 +70,3 @@ export class CreateMatchParticipantDto {
   @IsString()
   substituteReason?: string;
 }
-

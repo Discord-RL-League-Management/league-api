@@ -228,8 +228,8 @@ export class TrackerScrapingProcessor extends WorkerHost {
           const errorMessage = err instanceof Error ? err.message : String(err);
           this.logger.warn(
             `Failed to log scraping success to audit log: ${errorMessage}`,
-            );
-          });
+          );
+        });
 
       this.notificationService
         .sendScrapingCompleteNotification(

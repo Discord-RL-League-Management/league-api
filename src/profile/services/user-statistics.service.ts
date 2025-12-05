@@ -26,7 +26,7 @@ export class UserStatisticsService {
     winRate: number;
     guildsCount: number;
     activeGuildsCount: number;
-    }> {
+  }> {
     try {
       const memberships = await this.guildMemberRepository.findByUserId(
         userId,

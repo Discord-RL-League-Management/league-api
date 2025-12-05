@@ -52,7 +52,7 @@ export class LeagueJoinValidationService {
     };
 
     if (membershipConfig.requireGuildMembership) {
-      await this.guildMembersService.findOne(player.userId, player.guildId      );
+      await this.guildMembersService.findOne(player.userId, player.guildId);
     }
 
     if (membershipConfig.requirePlayerStatus) {

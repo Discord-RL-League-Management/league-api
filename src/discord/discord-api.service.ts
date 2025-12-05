@@ -77,13 +77,13 @@ export class DiscordApiService {
     return retryWhen((errors) =>
       errors.pipe(
         concatMap((error: AxiosError, index) => {
-      if (
-        error.response?.status === 429 ||
-        error.response?.status === 401
-      ) {
-        return throwError(() => error);
-      }
-      if (index < this.retryAttempts) {
+          if (
+            error.response?.status === 429 ||
+            error.response?.status === 401
+          ) {
+            return throwError(() => error);
+          }
+          if (index < this.retryAttempts) {
             const delayMs = 1000 * Math.pow(2, index); // 1s, 2s, 4s
             return timer(delayMs);
           }

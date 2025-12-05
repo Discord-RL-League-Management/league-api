@@ -117,7 +117,7 @@ export class AdminGuard implements CanActivate {
       const settings = await this.guildSettingsService.getSettings(guildId);
 
       // Check if any admin roles are configured
-      const settingsTyped = settings as GuildSettings;
+      const settingsTyped = settings;
       const adminRoles = settingsTyped?.roles?.admin || [];
       const hasNoAdminRolesConfigured = !adminRoles || adminRoles.length === 0;
 

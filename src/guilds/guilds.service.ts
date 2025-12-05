@@ -49,7 +49,10 @@ export class GuildsService {
 
       const guild = await this.guildRepository.createWithSettings(
         createGuildDto,
-        this.settingsDefaults.getDefaults() as unknown as Record<string, unknown>,
+        this.settingsDefaults.getDefaults() as unknown as Record<
+          string,
+          unknown
+        >,
       );
 
       this.logger.log(`Created guild ${guild.id} with default settings`);
@@ -195,13 +198,19 @@ export class GuildsService {
     try {
       const guild = await this.guildRepository.upsertWithSettings(
         createGuildDto,
-        this.settingsDefaults.getDefaults() as unknown as Record<string, unknown>,
+        this.settingsDefaults.getDefaults() as unknown as Record<
+          string,
+          unknown
+        >,
       );
 
       this.logger.log(`Upserted guild ${guild.id} (created or updated)`);
       return guild;
     } catch (error) {
-      const errorInfo = this.errorHandler.extractErrorInfo(error, createGuildDto.id);
+      const errorInfo = this.errorHandler.extractErrorInfo(
+        error,
+        createGuildDto.id,
+      );
 
       this.logger.error(
         `Failed to upsert guild ${createGuildDto.id} (${createGuildDto.name}):`,
@@ -226,5 +235,4 @@ export class GuildsService {
       });
     }
   }
-
 }

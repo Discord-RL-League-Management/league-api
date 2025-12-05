@@ -87,4 +87,3 @@ export class TeamValidationService {
     return Promise.resolve();
   }
 }
-
