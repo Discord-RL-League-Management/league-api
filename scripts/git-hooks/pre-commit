@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# Pre-commit hook to prevent commits directly to main/master branch
+# This protects the main branch from accidental direct commits
+
+# Get the current branch name
+current_branch=$(git symbolic-ref --short HEAD 2>/dev/null)
+
+# Check if we're on main or master
+if [ "$current_branch" = "main" ] || [ "$current_branch" = "master" ]; then
+  echo "❌ ERROR: Direct commits to '$current_branch' branch are not allowed!"
+  echo ""
+  echo "Please create a feature branch first:"
+  echo "  git checkout -b feature/your-feature-name"
+  echo ""
+  echo "Or if you really need to commit to main (e.g., hotfix), use:"
+  echo "  git commit --no-verify"
+  echo ""
+  echo "⚠️  Note: Using --no-verify bypasses this safety check."
+  exit 1
+fi
+
+exit 0
+
