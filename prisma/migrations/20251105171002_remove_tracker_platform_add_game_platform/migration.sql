@@ -6,11 +6,21 @@
   - Changed the type of `platform` on the `trackers` table. No cast exists, the column would be dropped and recreated, which cannot be done if there is data, since the column is required.
 
 */
--- CreateEnum
-CREATE TYPE "GamePlatform" AS ENUM ('STEAM', 'EPIC', 'XBL', 'PSN', 'SWITCH');
+-- CreateEnum (only if doesn't exist - Game enum may already exist from earlier migration)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'GamePlatform') THEN
+        CREATE TYPE "GamePlatform" AS ENUM ('STEAM', 'EPIC', 'XBL', 'PSN', 'SWITCH');
+    END IF;
+END $$;
 
--- CreateEnum
-CREATE TYPE "Game" AS ENUM ('ROCKET_LEAGUE');
+-- CreateEnum (only if doesn't exist - Game enum may already exist from 20250127000000_add_league)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'Game') THEN
+        CREATE TYPE "Game" AS ENUM ('ROCKET_LEAGUE');
+    END IF;
+END $$;
 
 -- AlterTable
 ALTER TABLE "tracker_registrations" ADD COLUMN     "game" "Game" NOT NULL DEFAULT 'ROCKET_LEAGUE',

@@ -49,6 +49,7 @@ CREATE INDEX "leagues_guildId_game_idx" ON "leagues"("guildId", "game");
 -- CreateIndex
 CREATE INDEX "leagues_guildId_status_idx" ON "leagues"("guildId", "status");
 
--- AddForeignKey
-ALTER TABLE "leagues" ADD CONSTRAINT "leagues_guildId_fkey" FOREIGN KEY ("guildId") REFERENCES "guilds"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+-- AddForeignKey - Deferred: guilds table doesn't exist yet
+-- This foreign key will be added in migration 20251026014512_add_deferred_foreign_keys
+-- after the guilds table is created in 20251026014511_add_guild_management
 
