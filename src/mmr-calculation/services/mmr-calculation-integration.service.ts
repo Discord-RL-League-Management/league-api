@@ -4,10 +4,7 @@ import { MmrCalculationService, TrackerData } from './mmr-calculation.service';
 import { TrackerDataExtractionService } from './tracker-data-extraction.service';
 import { SettingsDefaultsService } from '../../guilds/services/settings-defaults.service';
 import { GuildSettingsService } from '../../guilds/guild-settings.service';
-import {
-  MmrCalculationConfig,
-  GuildSettings,
-} from '../../guilds/interfaces/settings.interface';
+import { MmrCalculationConfig } from '../../guilds/interfaces/settings.interface';
 
 /**
  * MmrCalculationIntegrationService - Single Responsibility: MMR calculation orchestration
@@ -105,9 +102,7 @@ export class MmrCalculationIntegrationService {
     let mmrConfig: MmrCalculationConfig;
 
     try {
-      const settings = (await this.guildSettingsService.getSettings(
-        guildId,
-      )) as GuildSettings;
+      const settings = await this.guildSettingsService.getSettings(guildId);
       mmrConfig = settings.mmrCalculation || this.getDefaultMmrConfig();
     } catch (error: unknown) {
       const errorMessage =

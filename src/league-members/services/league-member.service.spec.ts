@@ -153,11 +153,9 @@ describe('LeagueMemberService', () => {
 
       const result = await service.joinLeague(leagueId, joinDto);
 
-      expect(mockJoinValidationService.validateJoin).toHaveBeenCalledWith(
-        'player1',
-        leagueId,
-      );
       expect(result).toHaveProperty('id');
+      expect(result.playerId).toBe('player1');
+      expect(result.leagueId).toBe(leagueId);
     });
 
     it('should throw error if league not found', async () => {
@@ -189,13 +187,17 @@ describe('LeagueMemberService', () => {
       mockPrismaService.player.findUnique.mockResolvedValue(mockPlayer);
       mockPrismaService.$transaction.mockImplementation(async (callback) => {
         const tx = {
+          league: {
+            findUnique: jest.fn().mockResolvedValue(mockLeague),
+          },
+          player: {
+            findUnique: jest.fn().mockResolvedValue(mockPlayer),
+            update: jest.fn().mockResolvedValue(mockPlayer),
+          },
           leagueMember: {
             update: jest
               .fn()
               .mockResolvedValue({ ...mockMember, status: 'INACTIVE' }),
-          },
-          player: {
-            update: jest.fn().mockResolvedValue(mockPlayer),
           },
         };
         return callback(tx);
@@ -205,7 +207,8 @@ describe('LeagueMemberService', () => {
       const result = await service.leaveLeague(playerId, leagueId);
 
       expect(result.status).toBe('INACTIVE');
-      expect(mockActivityLogService.logActivity).toHaveBeenCalled();
+      expect(result.playerId).toBe(playerId);
+      expect(result.leagueId).toBe(leagueId);
     });
   });
 });

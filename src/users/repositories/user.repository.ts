@@ -84,6 +84,33 @@ export class UserRepository
   }
 
   /**
+   * Upsert user (create or update) with optional transaction support
+   * Repository-specific method for user upsert within transactions
+   */
+  async upsert(
+    data: {
+      id: string;
+      username: string;
+      globalName?: string | null;
+      avatar?: string | null;
+    },
+    tx?: Prisma.TransactionClient,
+  ): Promise<User> {
+    const client = tx || this.prisma;
+    const transformed = this.userTransformer.transformForStorage(data);
+    const user = await client.user.upsert({
+      where: { id: data.id },
+      update: {
+        username: data.username,
+        globalName: data.globalName ?? null,
+        avatar: data.avatar ?? null,
+      },
+      create: transformed as unknown as Prisma.UserCreateInput,
+    });
+    return this.userTransformer.transformForRetrieval(user)!;
+  }
+
+  /**
    * Get user tokens (access and refresh tokens)
    * Repository-specific method for token retrieval
    */

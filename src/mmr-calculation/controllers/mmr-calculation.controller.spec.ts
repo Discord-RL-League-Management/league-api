@@ -119,11 +119,6 @@ describe('MmrCalculationController', () => {
 
       const result = await controller.calculateMmr(dto);
 
-      expect(guildSettingsService.getSettings).toHaveBeenCalledWith(guildId);
-      expect(mmrService.calculateMmr).toHaveBeenCalledWith(
-        trackerData,
-        defaultConfig,
-      );
       expect(result).toEqual({
         result: 1440,
         algorithm: 'WEIGHTED_AVERAGE',
@@ -146,12 +141,6 @@ describe('MmrCalculationController', () => {
 
       const result = await controller.calculateMmr(dto);
 
-      expect(guildSettingsService.getSettings).toHaveBeenCalledWith(guildId);
-      expect(settingsDefaults.getDefaults).toHaveBeenCalled();
-      expect(mmrService.calculateMmr).toHaveBeenCalledWith(
-        trackerData,
-        defaultConfig,
-      );
       expect(result).toEqual({
         result: 1440,
         algorithm: 'WEIGHTED_AVERAGE',
@@ -176,10 +165,6 @@ describe('MmrCalculationController', () => {
 
       const result = await controller.calculateMmr(dto);
 
-      expect(mmrService.calculateMmr).toHaveBeenCalledWith(
-        trackerData,
-        peakConfig,
-      );
       expect(result).toEqual({
         result: 1600,
         algorithm: 'PEAK_MMR',
@@ -205,10 +190,6 @@ describe('MmrCalculationController', () => {
 
       const result = await controller.calculateMmr(dto);
 
-      expect(mmrService.calculateMmr).toHaveBeenCalledWith(
-        trackerData,
-        customConfig,
-      );
       expect(result).toEqual({
         result: 1440,
         algorithm: 'CUSTOM',

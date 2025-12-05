@@ -17,6 +17,7 @@ import { SkipThrottle } from '@nestjs/throttler';
 import { BotAuthGuard } from '../auth/guards/bot-auth.guard';
 import { GuildsService } from './guilds.service';
 import { GuildSettingsService } from './guild-settings.service';
+import { GuildSyncService } from './services/guild-sync.service';
 import { CreateGuildDto } from './dto/create-guild.dto';
 import { UpdateGuildDto } from './dto/update-guild.dto';
 import { GuildSettingsDto } from './dto/guild-settings.dto';
@@ -39,6 +40,7 @@ export class InternalGuildsController {
   constructor(
     private guildsService: GuildsService,
     private guildSettingsService: GuildSettingsService,
+    private guildSyncService: GuildSyncService,
   ) {}
 
   @Get()
@@ -83,7 +85,6 @@ export class InternalGuildsController {
     const exists = await this.guildsService.exists(createGuildDto.id);
     const guild = await this.guildsService.upsert(createGuildDto);
 
-    // Return appropriate HTTP status to distinguish create vs update operations
     const statusCode = exists ? HttpStatus.OK : HttpStatus.CREATED;
     return res.status(statusCode).json(guild);
   }
@@ -118,7 +119,7 @@ export class InternalGuildsController {
     this.logger.log(
       `Bot syncing guild ${guildId} with ${syncData.members.length} members`,
     );
-    return this.guildsService.syncGuildWithMembers(
+    return this.guildSyncService.syncGuildWithMembers(
       guildId,
       syncData.guild,
       syncData.members,

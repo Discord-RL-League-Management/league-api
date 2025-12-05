@@ -509,7 +509,7 @@ export class TrackerScraperService {
         this.logger.debug(`Zyte Request ID: ${zyteRequestId}`);
       }
 
-      return response.data;
+      return response;
     } catch (error) {
       if (
         error instanceof ServiceUnavailableException ||

@@ -18,10 +18,7 @@ import { MmrCalculationService } from '../services/mmr-calculation.service';
 import { CalculateMmrDto } from '../dto/calculate-mmr.dto';
 import { GuildSettingsService } from '../../guilds/guild-settings.service';
 import { SettingsDefaultsService } from '../../guilds/services/settings-defaults.service';
-import {
-  GuildSettings,
-  MmrCalculationConfig,
-} from '../../guilds/interfaces/settings.interface';
+import { MmrCalculationConfig } from '../../guilds/interfaces/settings.interface';
 
 /**
  * CalculatorController - Single Responsibility: Public calculator endpoint
@@ -70,9 +67,9 @@ export class CalculatorController {
   @ApiResponse({ status: 404, description: 'Guild not found' })
   async calculate(@Body() body: CalculateMmrDto) {
     try {
-      const settings = (await this.guildSettingsService.getSettings(
+      const settings = await this.guildSettingsService.getSettings(
         body.guildId,
-      )) as GuildSettings;
+      );
       const mmrConfig: MmrCalculationConfig | undefined =
         settings.mmrCalculation ||
         this.settingsDefaults.getDefaults().mmrCalculation;
