@@ -1,15 +1,18 @@
 /**
  * Auth API Integration Tests
- * 
+ *
  * Demonstrates contract verification using Axios.
  * Focus: API contracts, stateless tests, synthetic data.
- * 
+ *
  * Aligned with ISO/IEC/IEEE 29119 standards.
  */
 
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
 import { apiClient, API_BASE_URL } from '../setup/api-setup';
-import { createTestUserWithToken, cleanupTestUser } from '../utils/test-helpers';
+import {
+  createTestUserWithToken,
+  cleanupTestUser,
+} from '../utils/test-helpers';
 import { createInvalidJwtToken } from '../factories/token.factory';
 
 // Check if API server is available before running tests
@@ -28,7 +31,7 @@ beforeAll(async () => {
 });
 
 describe.skipIf(!isServerAvailable)('Auth API - Contract Verification', () => {
-  let testUser: { id?: string } | null = null;
+  let testUser: { id: string; username: string; email: string } | null = null;
   let testToken: string = '';
 
   beforeEach(async () => {
@@ -63,9 +66,10 @@ describe.skipIf(!isServerAvailable)('Auth API - Contract Verification', () => {
 
       // ASSERT: Verify API contract (status, response structure)
       expect(response.status).toBe(200);
-      expect(response.data).toHaveProperty('id', testUser.id);
-      expect(response.data).toHaveProperty('username', testUser.username);
-      expect(response.data).toHaveProperty('email', testUser.email);
+      expect(testUser).not.toBeNull();
+      expect(response.data).toHaveProperty('id', testUser!.id);
+      expect(response.data).toHaveProperty('username', testUser!.username);
+      expect(response.data).toHaveProperty('email', testUser!.email);
     });
 
     it('should_return_401_when_authentication_is_missing', async () => {
@@ -215,4 +219,3 @@ describe.skipIf(!isServerAvailable)('Auth API - Contract Verification', () => {
     });
   });
 });
-
