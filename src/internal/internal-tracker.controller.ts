@@ -3,8 +3,8 @@ import { SkipThrottle } from '@nestjs/throttler';
 import { BotAuthGuard } from '../auth/guards/bot-auth.guard';
 import { TrackerService } from '../trackers/services/tracker.service';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { RegisterTrackersDto } from './dto/register-trackers.dto';
-import { AddTrackerDto } from './dto/add-tracker.dto';
+import { InternalRegisterTrackersDto } from './dto/register-trackers.dto';
+import { InternalAddTrackerDto } from './dto/add-tracker.dto';
 
 @ApiTags('Internal - Trackers')
 @Controller('internal/trackers')
@@ -18,7 +18,7 @@ export class InternalTrackerController {
   @Post('register-multiple')
   @ApiOperation({ summary: 'Register multiple trackers (Bot only)' })
   @ApiResponse({ status: 201, description: 'Trackers registered successfully' })
-  async registerTrackers(@Body() body: RegisterTrackersDto) {
+  async registerTrackers(@Body() body: InternalRegisterTrackersDto) {
     return this.trackerService.registerTrackers(
       body.userId,
       body.urls,
@@ -31,7 +31,7 @@ export class InternalTrackerController {
   @Post('add')
   @ApiOperation({ summary: 'Add an additional tracker (Bot only)' })
   @ApiResponse({ status: 201, description: 'Tracker added successfully' })
-  async addTracker(@Body() body: AddTrackerDto) {
+  async addTracker(@Body() body: InternalAddTrackerDto) {
     return this.trackerService.addTracker(
       body.userId,
       body.url,

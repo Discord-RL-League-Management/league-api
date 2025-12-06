@@ -27,7 +27,7 @@ class UserDataDto {
   avatar?: string;
 }
 
-export class RegisterTrackersDto {
+export class InternalRegisterTrackersDto {
   @ApiProperty({
     description: 'Discord user ID (snowflake)',
     example: '123456789012345678',
