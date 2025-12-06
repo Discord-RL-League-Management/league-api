@@ -25,7 +25,19 @@ else
   exit 1
 fi
 
+# Install commit-msg hook
+if [ -f "$HOOKS_DIR/commit-msg" ]; then
+  ln -sf "../../scripts/git-hooks/commit-msg" "$GIT_HOOKS_DIR/commit-msg"
+  chmod +x "$GIT_HOOKS_DIR/commit-msg"
+  echo "✅ Installed commit-msg hook"
+else
+  echo "❌ Error: commit-msg hook not found at $HOOKS_DIR/commit-msg"
+  exit 1
+fi
+
 echo "✨ Git hooks setup complete!"
 echo ""
-echo "The pre-commit hook will now prevent direct commits to main/master branches."
+echo "Installed hooks:"
+echo "  • pre-commit: Prevents direct commits to main/master, runs linter and tests"
+echo "  • commit-msg: Validates conventional commit message format"
 

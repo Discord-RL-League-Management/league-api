@@ -1,7 +1,11 @@
 #!/bin/bash
 
-# Pre-commit hook to prevent commits directly to main/master branch
-# This protects the main branch from accidental direct commits
+# Pre-commit hook to:
+# 1. Prevent commits directly to main/master branch
+# 2. Run linter
+# 3. Run test suite
+
+set -e
 
 # Get the current branch name
 current_branch=$(git symbolic-ref --short HEAD 2>/dev/null)
@@ -19,6 +23,27 @@ if [ "$current_branch" = "main" ] || [ "$current_branch" = "master" ]; then
   echo "⚠️  Note: Using --no-verify bypasses this safety check."
   exit 1
 fi
+
+echo "🔍 Running linter (includes complexity check)..."
+npm run lint
+if [ $? -ne 0 ]; then
+  echo "❌ Linter failed. Please fix linting errors before committing."
+  echo "   Note: ESLint includes cyclomatic complexity checking (max: 30)"
+  exit 1
+fi
+
+echo "✅ Linter passed (complexity check included)"
+echo ""
+echo "🧪 Running test suite..."
+npm test
+if [ $? -ne 0 ]; then
+  echo "❌ Tests failed. Please fix failing tests before committing."
+  exit 1
+fi
+
+echo "✅ All tests passed"
+echo ""
+echo "✨ Pre-commit checks passed!"
 
 exit 0
 

@@ -53,6 +53,9 @@ export class SettingsDefaultsService {
           fours: 50,
         },
       },
+      trackerProcessing: {
+        enabled: true,
+      },
     };
   }
 

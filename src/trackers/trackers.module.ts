@@ -24,6 +24,8 @@ import { TrackerRefreshSchedulerService } from './services/tracker-refresh-sched
 import { TrackerBatchRefreshService } from './services/tracker-batch-refresh.service';
 import { AuditModule } from '../audit/audit.module';
 import { MmrCalculationModule } from '../mmr-calculation/mmr-calculation.module';
+import { GuildsModule } from '../guilds/guilds.module';
+import { TrackerProcessingGuardService } from './services/tracker-processing-guard.service';
 
 @Module({
   imports: [
@@ -31,6 +33,7 @@ import { MmrCalculationModule } from '../mmr-calculation/mmr-calculation.module'
     forwardRef(() => InfrastructureModule),
     forwardRef(() => AuditModule),
     MmrCalculationModule,
+    GuildsModule,
     HttpModule,
     BullModule.forRootAsync({
       imports: [ConfigModule],
@@ -88,6 +91,7 @@ import { MmrCalculationModule } from '../mmr-calculation/mmr-calculation.module'
     TrackerScrapingProcessor,
     TrackerRefreshSchedulerService,
     TrackerBatchRefreshService,
+    TrackerProcessingGuardService,
     TrackerRepository,
     TrackerSnapshotRepository,
     DiscordMessageService,

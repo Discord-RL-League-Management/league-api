@@ -37,6 +37,9 @@ describe('Trackers API (e2e)', () => {
   beforeEach(async () => {
     // Clean database before each test
     await prisma.tracker.deleteMany();
+    await prisma.guildMember.deleteMany();
+    await prisma.settings.deleteMany({ where: { ownerType: 'guild' } });
+    await prisma.guild.deleteMany();
     await prisma.user.deleteMany();
   });
 
@@ -284,6 +287,420 @@ describe('Trackers API (e2e)', () => {
         .post('/api/trackers/add')
         .send(requestBody)
         .expect(401);
+    });
+  });
+
+  describe('Tracker Processing Guard (Guild Settings)', () => {
+    it('should create tracker but skip processing when guild has processing disabled', async () => {
+      // Arrange - Create guild with processing disabled
+      const guildId = '987654321098765432';
+      const userId = '123456789012345690';
+      const username = 'guildtestuser';
+
+      // Create guild
+      await prisma.guild.create({
+        data: {
+          id: guildId,
+          name: 'Test Guild',
+          ownerId: '111111111111111111',
+          memberCount: 1,
+        },
+      });
+
+      // Create guild settings with processing disabled
+      await prisma.settings.create({
+        data: {
+          ownerType: 'guild',
+          ownerId: guildId,
+          settings: {
+            bot_command_channels: [],
+            trackerProcessing: {
+              enabled: false,
+            },
+          },
+          schemaVersion: 1,
+        },
+      });
+
+      // Create user and guild membership
+      await prisma.user.create({
+        data: {
+          id: userId,
+          username,
+        },
+      });
+
+      await prisma.guildMember.create({
+        data: {
+          userId,
+          guildId,
+          username,
+          roles: [],
+        },
+      });
+
+      // Generate JWT token
+      const token = jwtService.sign({ sub: userId, username });
+
+      const requestBody = {
+        urls: [validTrackerUrl],
+      };
+
+      // Act
+      const response = await request(app.getHttpServer())
+        .post('/api/trackers/register')
+        .set('Authorization', `Bearer ${token}`)
+        .send(requestBody)
+        .expect(201);
+
+      // Assert - Verify tracker was created
+      const body = response.body as Array<{ id: string; url: string }>;
+      expect(body).toBeInstanceOf(Array);
+      expect(body.length).toBe(1);
+
+      // Verify tracker exists in database
+      const tracker = await prisma.tracker.findUnique({
+        where: { id: body[0].id },
+      });
+      expect(tracker).toBeTruthy();
+
+      // Verify tracker status is FAILED with appropriate error message
+      expect(tracker?.scrapingStatus).toBe('FAILED');
+      expect(tracker?.scrapingError).toBe(
+        'Tracker processing disabled by guild settings',
+      );
+    });
+
+    it('should process tracker when guild has processing enabled', async () => {
+      // Arrange - Create guild with processing enabled (default)
+      const guildId = '987654321098765433';
+      const userId = '123456789012345691';
+      const username = 'guildtestuser2';
+
+      // Create guild
+      await prisma.guild.create({
+        data: {
+          id: guildId,
+          name: 'Test Guild 2',
+          ownerId: '111111111111111112',
+          memberCount: 1,
+        },
+      });
+
+      // Create guild settings with processing enabled (default)
+      await prisma.settings.create({
+        data: {
+          ownerType: 'guild',
+          ownerId: guildId,
+          settings: {
+            bot_command_channels: [],
+            trackerProcessing: {
+              enabled: true,
+            },
+          },
+          schemaVersion: 1,
+        },
+      });
+
+      // Create user and guild membership
+      await prisma.user.create({
+        data: {
+          id: userId,
+          username,
+        },
+      });
+
+      await prisma.guildMember.create({
+        data: {
+          userId,
+          guildId,
+          username,
+          roles: [],
+        },
+      });
+
+      // Generate JWT token
+      const token = jwtService.sign({ sub: userId, username });
+
+      const requestBody = {
+        urls: [validTrackerUrl],
+      };
+
+      // Act
+      const response = await request(app.getHttpServer())
+        .post('/api/trackers/register')
+        .set('Authorization', `Bearer ${token}`)
+        .send(requestBody)
+        .expect(201);
+
+      // Assert - Verify tracker was created
+      const body = response.body as Array<{ id: string; url: string }>;
+      expect(body).toBeInstanceOf(Array);
+      expect(body.length).toBe(1);
+
+      // Verify tracker exists in database
+      const tracker = await prisma.tracker.findUnique({
+        where: { id: body[0].id },
+      });
+      expect(tracker).toBeTruthy();
+
+      // Verify tracker is not in FAILED state due to processing guard
+      // (it may be PENDING or have other status, but not FAILED with processing disabled message)
+      expect(tracker?.scrapingError).not.toBe(
+        'Tracker processing disabled by guild settings',
+      );
+    });
+
+    it('should throw ForbiddenException on manual refresh when processing disabled', async () => {
+      // Arrange - Create guild with processing disabled
+      const guildId = '987654321098765434';
+      const userId = '123456789012345692';
+      const username = 'guildtestuser3';
+
+      // Create guild
+      await prisma.guild.create({
+        data: {
+          id: guildId,
+          name: 'Test Guild 3',
+          ownerId: '111111111111111113',
+          memberCount: 1,
+        },
+      });
+
+      // Create guild settings with processing disabled
+      await prisma.settings.create({
+        data: {
+          ownerType: 'guild',
+          ownerId: guildId,
+          settings: {
+            bot_command_channels: [],
+            trackerProcessing: {
+              enabled: false,
+            },
+          },
+          schemaVersion: 1,
+        },
+      });
+
+      // Create user and guild membership
+      await prisma.user.create({
+        data: {
+          id: userId,
+          username,
+        },
+      });
+
+      await prisma.guildMember.create({
+        data: {
+          userId,
+          guildId,
+          username,
+          roles: [],
+        },
+      });
+
+      // Create tracker
+      const tracker = await prisma.tracker.create({
+        data: {
+          url: validTrackerUrl,
+          game: 'ROCKET_LEAGUE',
+          platform: 'STEAM',
+          username: 'testuser123',
+          userId,
+        },
+      });
+
+      // Generate JWT token
+      const token = jwtService.sign({ sub: userId, username });
+
+      // Act & Assert - Manual refresh should throw ForbiddenException
+      await request(app.getHttpServer())
+        .post(`/api/trackers/${tracker.id}/refresh`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(403)
+        .expect((res) => {
+          expect(res.body.message).toBe(
+            'Tracker processing is disabled by guild settings',
+          );
+        });
+    });
+
+    it('should allow manual refresh when processing enabled', async () => {
+      // Arrange - Create guild with processing enabled
+      const guildId = '987654321098765435';
+      const userId = '123456789012345693';
+      const username = 'guildtestuser4';
+
+      // Create guild
+      await prisma.guild.create({
+        data: {
+          id: guildId,
+          name: 'Test Guild 4',
+          ownerId: '111111111111111114',
+          memberCount: 1,
+        },
+      });
+
+      // Create guild settings with processing enabled
+      await prisma.settings.create({
+        data: {
+          ownerType: 'guild',
+          ownerId: guildId,
+          settings: {
+            bot_command_channels: [],
+            trackerProcessing: {
+              enabled: true,
+            },
+          },
+          schemaVersion: 1,
+        },
+      });
+
+      // Create user and guild membership
+      await prisma.user.create({
+        data: {
+          id: userId,
+          username,
+        },
+      });
+
+      await prisma.guildMember.create({
+        data: {
+          userId,
+          guildId,
+          username,
+          roles: [],
+        },
+      });
+
+      // Create tracker
+      const tracker = await prisma.tracker.create({
+        data: {
+          url: validTrackerUrl,
+          game: 'ROCKET_LEAGUE',
+          platform: 'STEAM',
+          username: 'testuser123',
+          userId,
+        },
+      });
+
+      // Generate JWT token
+      const token = jwtService.sign({ sub: userId, username });
+
+      // Act & Assert - Manual refresh should succeed
+      await request(app.getHttpServer())
+        .post(`/api/trackers/${tracker.id}/refresh`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+    });
+
+    it('should process tracker when user has multiple guilds and at least one has processing enabled', async () => {
+      // Arrange - Create two guilds, one with processing disabled, one enabled
+      const guildId1 = '987654321098765436';
+      const guildId2 = '987654321098765437';
+      const userId = '123456789012345694';
+      const username = 'guildtestuser5';
+
+      // Create guilds
+      await prisma.guild.createMany({
+        data: [
+          {
+            id: guildId1,
+            name: 'Test Guild 5a',
+            ownerId: '111111111111111115',
+            memberCount: 1,
+          },
+          {
+            id: guildId2,
+            name: 'Test Guild 5b',
+            ownerId: '111111111111111116',
+            memberCount: 1,
+          },
+        ],
+      });
+
+      // Create guild settings - first disabled, second enabled
+      await prisma.settings.createMany({
+        data: [
+          {
+            ownerType: 'guild',
+            ownerId: guildId1,
+            settings: {
+              bot_command_channels: [],
+              trackerProcessing: {
+                enabled: false,
+              },
+            },
+            schemaVersion: 1,
+          },
+          {
+            ownerType: 'guild',
+            ownerId: guildId2,
+            settings: {
+              bot_command_channels: [],
+              trackerProcessing: {
+                enabled: true,
+              },
+            },
+            schemaVersion: 1,
+          },
+        ],
+      });
+
+      // Create user and guild memberships
+      await prisma.user.create({
+        data: {
+          id: userId,
+          username,
+        },
+      });
+
+      await prisma.guildMember.createMany({
+        data: [
+          {
+            userId,
+            guildId: guildId1,
+            username,
+            roles: [],
+          },
+          {
+            userId,
+            guildId: guildId2,
+            username,
+            roles: [],
+          },
+        ],
+      });
+
+      // Generate JWT token
+      const token = jwtService.sign({ sub: userId, username });
+
+      const requestBody = {
+        urls: [validTrackerUrl],
+      };
+
+      // Act
+      const response = await request(app.getHttpServer())
+        .post('/api/trackers/register')
+        .set('Authorization', `Bearer ${token}`)
+        .send(requestBody)
+        .expect(201);
+
+      // Assert - Verify tracker was created
+      const body = response.body as Array<{ id: string; url: string }>;
+      expect(body).toBeInstanceOf(Array);
+      expect(body.length).toBe(1);
+
+      // Verify tracker exists in database
+      const tracker = await prisma.tracker.findUnique({
+        where: { id: body[0].id },
+      });
+      expect(tracker).toBeTruthy();
+
+      // Verify tracker is not in FAILED state (processing should be allowed)
+      expect(tracker?.scrapingError).not.toBe(
+        'Tracker processing disabled by guild settings',
+      );
     });
   });
 });
