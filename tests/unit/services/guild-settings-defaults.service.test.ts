@@ -62,11 +62,11 @@ describe('SettingsDefaultsService (Guilds)', () => {
 
       // ASSERT
       expect(result.roles).toBeDefined();
-      expect(result.roles.admin).toEqual([]);
-      expect(result.roles.moderator).toEqual([]);
-      expect(result.roles.member).toEqual([]);
-      expect(result.roles.league_manager).toEqual([]);
-      expect(result.roles.tournament_manager).toEqual([]);
+      expect(result.roles!.admin).toEqual([]);
+      expect(result.roles!.moderator).toEqual([]);
+      expect(result.roles!.member).toEqual([]);
+      expect(result.roles!.league_manager).toEqual([]);
+      expect(result.roles!.tournament_manager).toEqual([]);
     });
 
     it('should_have_default_mmr_calculation_config', () => {
@@ -75,9 +75,9 @@ describe('SettingsDefaultsService (Guilds)', () => {
 
       // ASSERT
       expect(result.mmrCalculation).toBeDefined();
-      expect(result.mmrCalculation.algorithm).toBe('WEIGHTED_AVERAGE');
-      expect(result.mmrCalculation.weights).toBeDefined();
-      expect(result.mmrCalculation.minGamesPlayed).toBeDefined();
+      expect(result.mmrCalculation!.algorithm).toBe('WEIGHTED_AVERAGE');
+      expect(result.mmrCalculation!.weights).toBeDefined();
+      expect(result.mmrCalculation!.minGamesPlayed).toBeDefined();
     });
 
     it('should_have_default_tracker_processing_config', () => {
@@ -86,7 +86,7 @@ describe('SettingsDefaultsService (Guilds)', () => {
 
       // ASSERT
       expect(result.trackerProcessing).toBeDefined();
-      expect(result.trackerProcessing.enabled).toBe(true);
+      expect(result.trackerProcessing!.enabled).toBe(true);
     });
   });
 
@@ -102,8 +102,8 @@ describe('SettingsDefaultsService (Guilds)', () => {
 
       // ASSERT
       expect(result._metadata).toBeDefined();
-      expect(result._metadata.version).toBeDefined();
-      expect(result._metadata.schemaVersion).toBeDefined();
+      expect(result._metadata!.version).toBeDefined();
+      expect(result._metadata!.schemaVersion).toBeDefined();
     });
 
     it('should_merge_with_defaults', () => {
@@ -136,8 +136,8 @@ describe('SettingsDefaultsService (Guilds)', () => {
       const result = service.normalizeToCurrentSchema(config);
 
       // ASSERT
-      expect(result._metadata.version).toBe('2.0.0');
-      expect(result._metadata.schemaVersion).toBe(2);
+      expect(result._metadata!.version).toBe('2.0.0');
+      expect(result._metadata!.schemaVersion).toBe(2);
     });
   });
 });

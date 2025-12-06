@@ -21,7 +21,7 @@ import { ConfigMigrationService } from '@/guilds/services/config-migration.servi
 import { SettingsService } from '@/infrastructure/settings/services/settings.service';
 import { ActivityLogService } from '@/infrastructure/activity-log/services/activity-log.service';
 import { PrismaService } from '@/prisma/prisma.service';
-import { Settings } from '@prisma/client';
+import { Settings, Prisma } from '@prisma/client';
 import { GuildSettings } from '@/guilds/interfaces/settings.interface';
 import { GuildSettingsDto } from '@/guilds/dto/guild-settings.dto';
 import type { Cache } from 'cache-manager';
@@ -42,8 +42,8 @@ describe('GuildSettingsService', () => {
 
   const mockDefaultSettings: GuildSettings = {
     _metadata: {
-      schemaVersion: '1.0.0',
-      configVersion: 1,
+      version: '2.0.0',
+      schemaVersion: 1,
     },
     bot_command_channels: [],
   };
@@ -52,7 +52,7 @@ describe('GuildSettingsService', () => {
     id: 'settings-id-1',
     ownerType: 'guild',
     ownerId: guildId,
-    settings: mockDefaultSettings as unknown as Record<string, unknown>,
+    settings: mockDefaultSettings as unknown as Prisma.JsonValue,
     schemaVersion: 1,
     configVersion: '1.0.0',
     createdAt: new Date(),
@@ -195,11 +195,11 @@ describe('GuildSettingsService', () => {
       };
       const migratedSettings: GuildSettings = {
         ...mockDefaultSettings,
-        _metadata: { schemaVersion: '1.0.0', configVersion: 1 },
+        _metadata: { version: '2.0.0', schemaVersion: 1 },
       };
       const oldSettingsRecord: Settings = {
         ...mockSettingsRecord,
-        settings: oldSettings as unknown as Record<string, unknown>,
+        settings: oldSettings as Prisma.JsonValue,
       };
 
       vi.mocked(mockCacheManager.get).mockResolvedValue(null);
@@ -207,11 +207,11 @@ describe('GuildSettingsService', () => {
         oldSettingsRecord,
       );
       vi.mocked(mockConfigMigration.needsMigration).mockReturnValue(true);
-      vi.mocked(mockConfigMigration.getSchemaVersion).mockReturnValue('0.9.0');
-      vi.mocked(mockConfigMigration.migrate).mockReturnValue(migratedSettings);
+      vi.mocked(mockConfigMigration.getSchemaVersion).mockReturnValue(1);
+      vi.mocked(mockConfigMigration.migrate).mockResolvedValue(migratedSettings);
       vi.mocked(mockSettingsService.updateSettings).mockResolvedValue({
         ...mockSettingsRecord,
-        settings: migratedSettings as unknown as Record<string, unknown>,
+        settings: migratedSettings as unknown as Prisma.JsonValue,
       });
 
       // ACT
@@ -219,7 +219,7 @@ describe('GuildSettingsService', () => {
 
       // ASSERT: Verify migrated settings returned
       expect(result).toBeDefined();
-      expect(result._metadata?.schemaVersion).toBe('1.0.0');
+      expect(result._metadata?.schemaVersion).toBe(1);
     });
 
     it('should_throw_InternalServerErrorException_when_auto_creation_fails', async () => {
@@ -278,7 +278,7 @@ describe('GuildSettingsService', () => {
       };
       const updatedRecord: Settings = {
         ...mockSettingsRecord,
-        settings: mergedSettings as unknown as Record<string, unknown>,
+        settings: mergedSettings as unknown as Prisma.JsonValue,
       };
 
       vi.mocked(mockSettingsService.getSettings).mockResolvedValue(
@@ -316,7 +316,7 @@ describe('GuildSettingsService', () => {
       };
       const updatedRecord: Settings = {
         ...mockSettingsRecord,
-        settings: mergedSettings as unknown as Record<string, unknown>,
+        settings: mergedSettings as unknown as Prisma.JsonValue,
       };
 
       vi.mocked(mockSettingsService.getSettings).mockResolvedValue(null);
@@ -439,7 +439,7 @@ describe('GuildSettingsService', () => {
       // ARRANGE
       const resetRecord: Settings = {
         ...mockSettingsRecord,
-        settings: mockDefaultSettings as unknown as Record<string, unknown>,
+        settings: mockDefaultSettings as unknown as Prisma.JsonValue,
       };
 
       vi.mocked(mockPrisma.$transaction).mockImplementation(
@@ -521,7 +521,12 @@ describe('GuildSettingsService', () => {
             entityType: 'guild_settings',
             entityId: guildId,
             eventType: 'SETTINGS_UPDATED',
-            createdAt: new Date(),
+            action: 'UPDATE',
+            userId: null,
+            guildId: guildId,
+            changes: null,
+            metadata: null,
+            timestamp: new Date(),
           },
         ],
         total: 1,

@@ -35,8 +35,8 @@ describe('GuildsService', () => {
     ownerId: '987654321098765432',
     memberCount: 100,
     isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    joinedAt: new Date(),
+    leftAt: null,
   };
 
   const mockDefaultSettings = {
@@ -147,10 +147,10 @@ describe('GuildsService', () => {
       };
 
       // Import ConflictException from the same module the service uses
-      const { ConflictException: BaseConflictException } = await import(
-        '@/common/exceptions/base.exception'
+      const { ConflictException } = await import(
+        '@/common/exceptions/base.exception.js'
       );
-      const conflictError = new BaseConflictException('Conflict');
+      const conflictError = new ConflictException('Conflict');
 
       vi.mocked(mockGuildRepository.exists).mockResolvedValue(false);
       vi.mocked(mockGuildRepository.createWithSettings).mockRejectedValue(
@@ -159,7 +159,7 @@ describe('GuildsService', () => {
 
       // ACT & ASSERT
       await expect(service.create(createDto)).rejects.toThrow(
-        BaseConflictException as unknown as Error,
+        ConflictException as unknown as Error,
       );
     });
   });

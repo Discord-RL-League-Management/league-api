@@ -138,9 +138,22 @@ export class TrackerRefreshSchedulerService
     this.logger.log(`Application shutting down: ${signal || 'unknown signal'}`);
 
     if (this.cronJob) {
-      void this.cronJob.stop();
-      void this.schedulerRegistry.deleteCronJob('tracker-refresh');
+      try {
+        this.cronJob.stop();
+      } catch (error) {
+        this.logger.warn(
+          `Error stopping cron job: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
       this.cronJob = null;
+    }
+
+    // Check if cron job exists before attempting to delete (official NestJS approach)
+    if (this.schedulerRegistry.doesExist('cron', 'tracker-refresh')) {
+      this.schedulerRegistry.deleteCronJob('tracker-refresh');
+      this.logger.debug('Tracker refresh cron job deleted from registry');
+    } else {
+      this.logger.debug('Tracker refresh cron job not found in registry (may not have been registered)');
     }
 
     this.logger.log('✅ Tracker refresh scheduler stopped');

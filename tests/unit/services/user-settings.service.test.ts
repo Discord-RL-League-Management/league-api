@@ -60,6 +60,8 @@ describe('UserSettingsService', () => {
         theme: 'dark' as const,
         notifications: {
           email: false,
+          discord: true,
+          gameReminders: true,
         },
       };
 
@@ -78,6 +80,8 @@ describe('UserSettingsService', () => {
       const updates = {
         privacy: {
           showStats: false,
+          showGuilds: true,
+          showGames: true,
         },
       };
 
@@ -109,6 +113,8 @@ describe('UserSettingsService', () => {
       const updates = {
         notifications: {
           email: 'not a boolean' as any,
+          discord: true,
+          gameReminders: true,
         },
       };
 
@@ -124,6 +130,8 @@ describe('UserSettingsService', () => {
       const updates = {
         privacy: {
           showStats: 'not a boolean' as any,
+          showGuilds: true,
+          showGames: true,
         },
       };
 

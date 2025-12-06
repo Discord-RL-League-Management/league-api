@@ -45,6 +45,8 @@ describe('AuthService', () => {
     lastLoginAt: new Date(),
     createdAt: new Date(),
     updatedAt: new Date(),
+    isBanned: false,
+    isDeleted: false,
   };
 
   const mockDiscordProfile: DiscordProfileDto = {

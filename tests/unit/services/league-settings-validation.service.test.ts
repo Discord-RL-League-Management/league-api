@@ -22,6 +22,15 @@ describe('SettingsValidationService (Leagues)', () => {
       // ARRANGE
       const config = {
         membership: {
+          joinMethod: 'OPEN' as const,
+          requiresApproval: false,
+          allowSelfRegistration: true,
+          registrationOpen: true,
+          autoCloseOnFull: false,
+          requireGuildMembership: false,
+          requirePlayerStatus: false,
+          allowMultipleLeagues: true,
+          requireOrganization: false,
           minPlayers: 1,
           maxPlayers: 100,
           registrationStartDate: new Date('2024-01-01'),
@@ -32,9 +41,10 @@ describe('SettingsValidationService (Leagues)', () => {
         },
         skill: {
           isSkillBased: true,
+          requireTracker: false,
           minSkillLevel: 1000,
           maxSkillLevel: 2000,
-          skillMetric: 'MMR',
+          skillMetric: 'MMR' as const,
         },
       };
 
@@ -49,6 +59,15 @@ describe('SettingsValidationService (Leagues)', () => {
       // ARRANGE
       const config = {
         membership: {
+          joinMethod: 'OPEN' as const,
+          requiresApproval: false,
+          allowSelfRegistration: true,
+          registrationOpen: true,
+          autoCloseOnFull: false,
+          requireGuildMembership: false,
+          requirePlayerStatus: false,
+          allowMultipleLeagues: true,
+          requireOrganization: false,
           minPlayers: 0,
         },
       };
@@ -62,6 +81,15 @@ describe('SettingsValidationService (Leagues)', () => {
       // ARRANGE
       const config = {
         membership: {
+          joinMethod: 'OPEN' as const,
+          requiresApproval: false,
+          allowSelfRegistration: true,
+          registrationOpen: true,
+          autoCloseOnFull: false,
+          requireGuildMembership: false,
+          requirePlayerStatus: false,
+          allowMultipleLeagues: true,
+          requireOrganization: false,
           minPlayers: 10,
           maxPlayers: 5,
         },
@@ -78,6 +106,15 @@ describe('SettingsValidationService (Leagues)', () => {
       // ARRANGE
       const config = {
         membership: {
+          joinMethod: 'OPEN' as const,
+          requiresApproval: false,
+          allowSelfRegistration: true,
+          registrationOpen: true,
+          autoCloseOnFull: false,
+          requireGuildMembership: false,
+          requirePlayerStatus: false,
+          allowMultipleLeagues: true,
+          requireOrganization: false,
           registrationStartDate: new Date('2024-12-31'),
           registrationEndDate: new Date('2024-01-01'),
         },
@@ -94,6 +131,15 @@ describe('SettingsValidationService (Leagues)', () => {
       // ARRANGE
       const config = {
         membership: {
+          joinMethod: 'OPEN' as const,
+          requiresApproval: false,
+          allowSelfRegistration: true,
+          registrationOpen: true,
+          autoCloseOnFull: false,
+          requireGuildMembership: false,
+          requirePlayerStatus: false,
+          allowMultipleLeagues: true,
+          requireOrganization: false,
           cooldownAfterLeave: -1,
         },
       };
@@ -109,6 +155,15 @@ describe('SettingsValidationService (Leagues)', () => {
       // ARRANGE
       const config = {
         membership: {
+          joinMethod: 'OPEN' as const,
+          requiresApproval: false,
+          allowSelfRegistration: true,
+          registrationOpen: true,
+          autoCloseOnFull: false,
+          requireGuildMembership: false,
+          requirePlayerStatus: false,
+          allowMultipleLeagues: true,
+          requireOrganization: false,
           maxOrganizations: 0,
         },
       };
@@ -124,6 +179,15 @@ describe('SettingsValidationService (Leagues)', () => {
       // ARRANGE
       const config = {
         membership: {
+          joinMethod: 'OPEN' as const,
+          requiresApproval: false,
+          allowSelfRegistration: true,
+          registrationOpen: true,
+          autoCloseOnFull: false,
+          requireGuildMembership: false,
+          requirePlayerStatus: false,
+          allowMultipleLeagues: true,
+          requireOrganization: false,
           maxTeamsPerOrganization: 0,
         },
       };
@@ -139,10 +203,19 @@ describe('SettingsValidationService (Leagues)', () => {
       // ARRANGE
       const config = {
         membership: {
+          joinMethod: 'OPEN' as const,
+          requiresApproval: false,
+          allowSelfRegistration: true,
+          registrationOpen: true,
+          autoCloseOnFull: false,
+          requireGuildMembership: false,
+          requirePlayerStatus: false,
+          allowMultipleLeagues: true,
+          requireOrganization: false,
           skillRequirements: {
             minSkill: 2000,
             maxSkill: 1000,
-            skillMetric: 'MMR',
+            skillMetric: 'MMR' as const,
           },
         },
       };
@@ -158,10 +231,19 @@ describe('SettingsValidationService (Leagues)', () => {
       // ARRANGE
       const config = {
         membership: {
+          joinMethod: 'OPEN' as const,
+          requiresApproval: false,
+          allowSelfRegistration: true,
+          registrationOpen: true,
+          autoCloseOnFull: false,
+          requireGuildMembership: false,
+          requirePlayerStatus: false,
+          allowMultipleLeagues: true,
+          requireOrganization: false,
           skillRequirements: {
             minSkill: 1000,
             maxSkill: 2000,
-            skillMetric: 'INVALID',
+            skillMetric: 'INVALID' as any,
           },
         },
       };
@@ -178,6 +260,7 @@ describe('SettingsValidationService (Leagues)', () => {
       const config = {
         skill: {
           isSkillBased: true,
+          requireTracker: false,
           minSkillLevel: -1,
         },
       };
@@ -194,6 +277,7 @@ describe('SettingsValidationService (Leagues)', () => {
       const config = {
         skill: {
           isSkillBased: true,
+          requireTracker: false,
           minSkillLevel: 2000,
           maxSkillLevel: 1000,
         },
@@ -211,6 +295,7 @@ describe('SettingsValidationService (Leagues)', () => {
       const config = {
         skill: {
           isSkillBased: true,
+          requireTracker: false,
         },
       };
 

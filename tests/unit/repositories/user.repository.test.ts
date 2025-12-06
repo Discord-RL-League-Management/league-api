@@ -169,7 +169,7 @@ describe('UserRepository', () => {
         id: 'user123',
         username: 'testuser',
         globalName: 'Test User',
-        avatar: null,
+        avatar: undefined,
       };
       const createdUser: User = {
         id: 'user123',

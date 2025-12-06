@@ -41,7 +41,7 @@ describe('SettingsValidationService (Guilds)', () => {
           { id: '123456789012345678', name: 'commands' },
         ],
         mmrCalculation: {
-          algorithm: 'WEIGHTED_AVERAGE',
+          algorithm: 'WEIGHTED_AVERAGE' as const,
           weights: { ones: 0.2, twos: 0.3, threes: 0.5 },
         },
       };
@@ -84,7 +84,7 @@ describe('SettingsValidationService (Guilds)', () => {
       // ARRANGE
       const guildId = 'guild123';
       const settings = {
-        bot_command_channels: [{ name: 'commands' }],
+        bot_command_channels: [{ id: '', name: 'commands' }],
       };
 
       // ACT & ASSERT
@@ -187,7 +187,7 @@ describe('SettingsValidationService (Guilds)', () => {
       const guildId = 'guild123';
       const settings = {
         mmrCalculation: {
-          algorithm: 'WEIGHTED_AVERAGE',
+          algorithm: 'WEIGHTED_AVERAGE' as const,
           weights: { ones: 0.2, twos: 0.3, threes: 0.5 },
         },
       };
@@ -204,6 +204,7 @@ describe('SettingsValidationService (Guilds)', () => {
       const guildId = 'guild123';
       const settings = {
         mmrCalculation: {
+          algorithm: undefined as any,
           weights: { ones: 0.2, twos: 0.3, threes: 0.5 },
         },
       };
@@ -222,7 +223,7 @@ describe('SettingsValidationService (Guilds)', () => {
       const guildId = 'guild123';
       const settings = {
         mmrCalculation: {
-          algorithm: 'CUSTOM',
+          algorithm: 'CUSTOM' as const,
         },
       };
 
@@ -240,7 +241,7 @@ describe('SettingsValidationService (Guilds)', () => {
       const guildId = 'guild123';
       const settings = {
         mmrCalculation: {
-          algorithm: 'CUSTOM',
+          algorithm: 'CUSTOM' as const,
           customFormula: '(ones + twos) / 2',
         },
       };
@@ -263,7 +264,7 @@ describe('SettingsValidationService (Guilds)', () => {
       const guildId = 'guild123';
       const settings = {
         mmrCalculation: {
-          algorithm: 'CUSTOM',
+          algorithm: 'CUSTOM' as const,
           customFormula: 'invalid formula',
         },
       };

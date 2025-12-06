@@ -140,13 +140,12 @@ describe('PrismaExceptionFilter', () => {
 
     it('should_handle_initialization_error', () => {
       // ARRANGE
-      const exception = new Prisma.PrismaClientInitializationError(
-        'Connection error',
-        {
-          errorCode: 'P1001',
-          clientVersion: '6.18.0',
-        },
-      );
+      const exception = {
+        message: 'Connection error',
+        errorCode: 'P1001',
+        clientVersion: '6.18.0',
+        name: 'PrismaClientInitializationError',
+      } as Prisma.PrismaClientInitializationError;
 
       // ACT
       filter.catch(exception, mockArgumentsHost);
@@ -166,12 +165,11 @@ describe('PrismaExceptionFilter', () => {
 
     it('should_handle_rust_panic_error', () => {
       // ARRANGE
-      const exception = new Prisma.PrismaClientRustPanicError(
-        'Rust panic',
-        {
-          clientVersion: '6.18.0',
-        },
-      );
+      const exception = {
+        message: 'Rust panic',
+        clientVersion: '6.18.0',
+        name: 'PrismaClientRustPanicError',
+      } as Prisma.PrismaClientRustPanicError;
 
       // ACT
       filter.catch(exception, mockArgumentsHost);

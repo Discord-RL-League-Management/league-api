@@ -26,7 +26,7 @@ import {
 } from '@/league-members/exceptions/league-member.exceptions';
 import { JoinLeagueDto } from '@/league-members/dto/join-league.dto';
 import { UpdateLeagueMemberDto } from '@/league-members/dto/update-league-member.dto';
-import { LeagueMemberStatus } from '@prisma/client';
+import { LeagueMemberStatus, LeagueMemberRole, LeagueStatus, Game, PlayerStatus } from '@prisma/client';
 
 describe('LeagueMemberService', () => {
   let service: LeagueMemberService;
@@ -43,7 +43,11 @@ describe('LeagueMemberService', () => {
     playerId: 'player_123',
     leagueId: 'league_123',
     status: LeagueMemberStatus.ACTIVE,
-    role: 'MEMBER',
+    role: 'MEMBER' as const,
+    joinedAt: new Date(),
+    leftAt: null,
+    approvedBy: null,
+    approvedAt: null,
     notes: null,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -53,12 +57,24 @@ describe('LeagueMemberService', () => {
     id: 'league_123',
     guildId: 'guild_123',
     name: 'Test League',
+    description: null,
+    game: null,
+    status: LeagueStatus.ACTIVE,
+    createdBy: 'user_123',
+    createdAt: new Date(),
+    updatedAt: new Date(),
   };
 
   const mockPlayer = {
     id: 'player_123',
     userId: 'user_123',
     guildId: 'guild_123',
+    status: PlayerStatus.ACTIVE,
+    lastLeftLeagueAt: null,
+    lastLeftLeagueId: null,
+    primaryTrackerId: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   };
 
   beforeEach(() => {
@@ -214,7 +230,11 @@ describe('LeagueMemberService', () => {
       const updateDto: UpdateLeagueMemberDto = {
         notes: 'Updated notes',
       };
-      const updatedMember = { ...mockLeagueMember, ...updateDto };
+      const updatedMember = { 
+        ...mockLeagueMember, 
+        ...updateDto,
+        leftAt: updateDto.leftAt ? new Date(updateDto.leftAt) : null,
+      };
 
       vi.mocked(mockRepository.findById).mockResolvedValue(mockLeagueMember);
       vi.mocked(mockRepository.update).mockResolvedValue(updatedMember);
@@ -300,7 +320,7 @@ describe('LeagueMemberService', () => {
             findUnique: vi.fn().mockResolvedValue(mockLeague),
           },
         };
-        return callback(tx);
+        return callback(tx as any);
       });
 
       // ACT
@@ -457,13 +477,37 @@ describe('LeagueMemberService', () => {
             create: vi.fn().mockResolvedValue(newMember),
           },
         };
-        const result = await callback(tx);
+        const result = await callback(tx as any);
         return result;
       });
       
       // Mock activity log and rating service to be called within transaction
-      vi.mocked(mockActivityLog.logActivity).mockResolvedValue(undefined);
-      vi.mocked(mockRatingService.updateRating).mockResolvedValue(undefined);
+      vi.mocked(mockActivityLog.logActivity).mockResolvedValue({
+        id: 'log-1',
+        entityType: 'league_member',
+        entityId: 'member_123',
+        eventType: 'MEMBER_JOINED',
+        action: 'CREATE',
+        userId: 'user_123',
+        guildId: 'guild_123',
+        changes: null,
+        metadata: null,
+        timestamp: new Date(),
+      } as any);
+      vi.mocked(mockRatingService.updateRating).mockResolvedValue({
+        id: 'rating-1',
+        playerId: 'player_123',
+        leagueId: 'league_123',
+        ratingSystem: 'MMR',
+        currentRating: {} as any,
+        ratingData: null,
+        matchesPlayed: 0,
+        wins: 0,
+        losses: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastUpdatedAt: new Date(),
+      } as any);
 
       // ACT
       const result = await service.joinLeague(leagueId, joinDto);
@@ -545,7 +589,7 @@ describe('LeagueMemberService', () => {
             update: vi.fn().mockResolvedValue(inactiveMember),
           },
         };
-        return callback(tx);
+        return callback(tx as any);
       });
 
       // ACT

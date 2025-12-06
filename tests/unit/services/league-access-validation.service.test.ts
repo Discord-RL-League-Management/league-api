@@ -72,7 +72,7 @@ describe('LeagueAccessValidationService', () => {
       const userId = 'user123';
       const guildId = 'guild123';
 
-      vi.mocked(mockGuildsService.findOne).mockResolvedValue(null);
+      vi.mocked(mockGuildsService.findOne).mockResolvedValue(null as any);
 
       // ACT & ASSERT
       await expect(

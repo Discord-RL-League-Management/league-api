@@ -61,8 +61,8 @@ export async function createTestUserWithToken(
   apiClient: any,
   userData: any = {},
 ): Promise<{ user: any; token: string }> {
-  const { createUserData } = await import('../factories/user.factory');
-  const { generateJwtToken, createAuthData } = await import('../factories/auth.factory');
+  const { createUserData } = await import('../factories/user.factory.js');
+  const { generateJwtToken, createAuthData } = await import('../factories/auth.factory.js');
   
   const testUserData = createUserData(userData);
   
@@ -110,7 +110,7 @@ export async function generateJwtTokenForUser(
     guilds?: Array<{ id: string }>;
   } = {},
 ): Promise<string> {
-  const { generateJwtToken } = await import('../factories/auth.factory');
+  const { generateJwtToken } = await import('../factories/auth.factory.js');
   
   return generateJwtToken(
     {

@@ -30,7 +30,7 @@ import {
   NotGeneralManagerException,
   OrganizationCapacityExceededException,
 } from '@/organizations/exceptions/organization.exceptions';
-import { Organization, OrganizationMemberRole } from '@prisma/client';
+import { Organization, OrganizationMemberRole, LeagueStatus, Game } from '@prisma/client';
 
 describe('OrganizationService', () => {
   let service: OrganizationService;
@@ -63,7 +63,10 @@ describe('OrganizationService', () => {
     id: leagueId,
     guildId,
     name: 'Test League',
-    isActive: true,
+    description: null,
+    game: null,
+    status: LeagueStatus.ACTIVE,
+    createdBy: userId,
     createdAt: new Date(),
     updatedAt: new Date(),
   };

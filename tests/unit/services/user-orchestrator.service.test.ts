@@ -44,9 +44,11 @@ describe('UserOrchestratorService', () => {
     email: 'test@example.com',
     accessToken: mockEncryptedTokens.accessToken,
     refreshToken: mockEncryptedTokens.refreshToken,
-    lastLoginAt: null,
+    lastLoginAt: new Date(),
     createdAt: new Date(),
     updatedAt: new Date(),
+    isBanned: false,
+    isDeleted: false,
   };
 
   const mockUpdatedUser: User = {

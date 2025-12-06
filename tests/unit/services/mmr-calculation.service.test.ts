@@ -185,7 +185,7 @@ describe('MmrCalculationService', () => {
       const trackerData: TrackerData = { ones: 1200 };
       const config = {
         algorithm: 'UNKNOWN_ALGORITHM',
-      } as MmrCalculationConfig;
+      } as unknown as MmrCalculationConfig;
 
       // ACT & ASSERT
       expect(() => service.calculateMmr(trackerData, config)).toThrow(

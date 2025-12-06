@@ -21,7 +21,8 @@ import { GuildErrorHandlerService } from '@/guilds/services/guild-error-handler.
 import { UserRepository } from '@/users/repositories/user.repository';
 import { SettingsService } from '@/infrastructure/settings/services/settings.service';
 import { CreateGuildDto } from '@/guilds/dto/create-guild.dto';
-import { Guild, GuildSettings } from '@prisma/client';
+import { Guild } from '@prisma/client';
+import { GuildSettings } from '@/guilds/interfaces/settings.interface';
 
 describe('GuildSyncService', () => {
   let service: GuildSyncService;
@@ -51,8 +52,7 @@ describe('GuildSyncService', () => {
     memberCount: 100,
     isActive: true,
     leftAt: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    joinedAt: new Date(),
   };
 
   const mockDefaultSettings: GuildSettings = {
@@ -77,7 +77,7 @@ describe('GuildSyncService', () => {
       username: 'user2',
       globalName: 'User 2',
       avatar: 'avatar2',
-      nickname: null,
+      nickname: undefined,
       roles: ['role-2'],
     },
   ];

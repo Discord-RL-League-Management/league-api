@@ -7,10 +7,10 @@
  * Aligned with ISO/IEC/IEEE 29119 standards.
  */
 
-import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
 import { apiClient, API_BASE_URL } from '../setup/api-setup';
-import { createUserData } from '../factories/user.factory';
-import { generateTestId, createTestUserWithToken, cleanupTestUser } from '../utils/test-helpers';
+import { createTestUserWithToken, cleanupTestUser } from '../utils/test-helpers';
+import { createInvalidJwtToken } from '../factories/token.factory';
 
 // Check if API server is available before running tests
 let isServerAvailable = false;
@@ -19,7 +19,7 @@ beforeAll(async () => {
   try {
     await apiClient.get('/health');
     isServerAvailable = true;
-  } catch (error) {
+  } catch {
     console.warn(
       `API server not available at ${API_BASE_URL}. API tests will be skipped.`,
     );
@@ -28,8 +28,7 @@ beforeAll(async () => {
 });
 
 describe.skipIf(!isServerAvailable)('Auth API - Contract Verification', () => {
-  const testId = generateTestId();
-  let testUser: any = null;
+  let testUser: { id?: string } | null = null;
   let testToken: string = '';
 
   beforeEach(async () => {
@@ -42,8 +41,10 @@ describe.skipIf(!isServerAvailable)('Auth API - Contract Verification', () => {
   afterEach(async () => {
     // Clean up test user - always attempt, catch errors
     try {
-      await cleanupTestUser(apiClient, testUser?.id);
-    } catch (error) {
+      if (testUser?.id) {
+        await cleanupTestUser(apiClient, testUser.id);
+      }
+    } catch {
       // Ignore cleanup errors (resource may not exist or already deleted)
     }
     testUser = null;
