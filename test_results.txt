@@ -1,0 +1,126 @@
+
+> league-api@0.0.1 test
+> vitest run
+
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api
+
+[32m[Nest] 13684  - [39m12/05/2025, 10:12:52 PM [32m    LOG[39m [38;5;3m[GuildsService] [39m[32mCreated guild 123456789012345678 with default settings[39m
+[31m[Nest] 13684  - [39m12/05/2025, 10:12:52 PM [31m  ERROR[39m [38;5;3m[GuildsService] [39m[31mFailed to create guild 123456789012345678:[39m
+[32m[Nest] 13684  - [39m12/05/2025, 10:12:52 PM [32m    LOG[39m [38;5;3m[GuildsService] [39m[32mSoft deleted guild 123456789012345678[39m
+[32m[Nest] 13684  - [39m12/05/2025, 10:12:52 PM [32m    LOG[39m [38;5;3m[GuildsService] [39m[32mUpserted guild 123456789012345678 (created or updated)[39m
+[32m[Nest] 13684  - [39m12/05/2025, 10:12:52 PM [32m    LOG[39m [38;5;3m[GuildsService] [39m[32mUpserted guild 123456789012345678 (created or updated)[39m
+[31m[Nest] 13684  - [39m12/05/2025, 10:12:52 PM [31m  ERROR[39m [38;5;3m[GuildsService] [39mError: Database error
+    at [90m/Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mtests/unit/services/guilds.service.test.ts:136:9
+    at [90mfile:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:146:14
+    at [90mfile:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:533:11
+    at runWithTimeout [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1056:17[90m)[39m
+    at runSuite [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runFiles [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1262:5[90m)[39m
+    at startTests [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1271:3[90m)[39m
+[31m[Nest] 13684  - [39m12/05/2025, 10:12:52 PM [31m  ERROR[39m [38;5;3m[GuildsService] [39m[31mFailed to fetch guilds:[39m
+[31m[Nest] 13684  - [39m12/05/2025, 10:12:52 PM [31m  ERROR[39m [38;5;3m[GuildsService] [39mError: Database error
+    at [90m/Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mtests/unit/services/guilds.service.test.ts:227:9
+    at [90mfile:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:146:14
+    at [90mfile:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:533:11
+    at runWithTimeout [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1056:17[90m)[39m
+    at runSuite [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runFiles [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1262:5[90m)[39m
+    at startTests [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1271:3[90m)[39m
+[31m[Nest] 13684  - [39m12/05/2025, 10:12:52 PM [31m  ERROR[39m [38;5;3m[GuildsService] [39m[31mFailed to fetch guild 123456789012345678:[39m
+[31m[Nest] 13684  - [39m12/05/2025, 10:12:52 PM [31m  ERROR[39m [38;5;3m[GuildsService] [39mError: Database error
+    at [90m/Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mtests/unit/services/guilds.service.test.ts:266:9
+    at [90mfile:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:146:14
+    at [90mfile:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:533:11
+    at runWithTimeout [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1056:17[90m)[39m
+    at runSuite [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runFiles [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1262:5[90m)[39m
+    at startTests [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1271:3[90m)[39m
+[31m[Nest] 13684  - [39m12/05/2025, 10:12:52 PM [31m  ERROR[39m [38;5;3m[GuildsService] [39m[31mFailed to update guild 123456789012345678:[39m
+[31m[Nest] 13684  - [39m12/05/2025, 10:12:52 PM [31m  ERROR[39m [38;5;3m[GuildsService] [39mError: Database error
+    at [90m/Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mtests/unit/services/guilds.service.test.ts:330:9
+    at [90mfile:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:146:14
+    at [90mfile:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:533:11
+    at runWithTimeout [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1056:17[90m)[39m
+    at runSuite [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runFiles [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1262:5[90m)[39m
+    at startTests [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1271:3[90m)[39m
+[31m[Nest] 13684  - [39m12/05/2025, 10:12:52 PM [31m  ERROR[39m [38;5;3m[GuildsService] [39m[31mFailed to remove guild 123456789012345678:[39m
+[31m[Nest] 13684  - [39m12/05/2025, 10:12:52 PM [31m  ERROR[39m [38;5;3m[GuildsService] [39mError: Database error
+    at [90m/Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mtests/unit/services/guilds.service.test.ts:377:9
+    at [90mfile:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:146:14
+    at [90mfile:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:533:11
+    at runWithTimeout [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1056:17[90m)[39m
+    at runSuite [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runFiles [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1262:5[90m)[39m
+    at startTests [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1271:3[90m)[39m
+[31m[Nest] 13684  - [39m12/05/2025, 10:12:52 PM [31m  ERROR[39m [38;5;3m[GuildsService] [39m[31mFailed to fetch active guild IDs:[39m
+[31m[Nest] 13684  - [39m12/05/2025, 10:12:52 PM [31m  ERROR[39m [38;5;3m[GuildsService] [39mError: Database error
+    at [90m/Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mtests/unit/services/guilds.service.test.ts:424:9
+    at [90mfile:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:146:14
+    at [90mfile:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:533:11
+    at runWithTimeout [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1056:17[90m)[39m
+    at runSuite [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runFiles [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1262:5[90m)[39m
+    at startTests [90m(file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1271:3[90m)[39m
+[31m[Nest] 13684  - [39m12/05/2025, 10:12:52 PM [31m  ERROR[39m [38;5;3m[GuildsService] [39m[31mFailed to upsert guild 123456789012345678 (Test Guild):[39m
+[31m[Nest] 13684  - [39m12/05/2025, 10:12:52 PM [31m  ERROR[39m [38;5;3m[GuildsService] [39mObject(5) {
+  error: [32m'Failed to upsert guild'[39m,
+  code: [32m'GUILD_UPSERT_ERROR'[39m,
+  details: {
+    constraint: [32m'unique_guild_id'[39m
+  },
+  stack: [32m'Error: Database constraint violation\n    at /Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/tests/unit/services/guilds.service.test.ts:510:23\n    at file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/node_modules/@vitest/runner/dist/index.js:146:14\n    at file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/node_modules/@vitest/runner/dist/index.js:533:11\n    at runWithTimeout (file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/node_modules/@vitest/runner/dist/index.js:39:7)\n    at runTest (file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/node_modules/@vitest/runner/dist/index.js:1056:17)\n    at runSuite (file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/node_modules/@vitest/runner/dist/index.js:1205:15)\n    at runSuite (file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/node_modules/@vitest/runner/dist/index.js:1205:15)\n    at runSuite (file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/node_modules/@vitest/runner/dist/index.js:1205:15)\n    at runFiles (file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/node_modules/@vitest/runner/dist/index.js:1262:5)\n    at startTests (file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/node_modules/@vitest/runner/dist/index.js:1271:3)'[39m,
+  guildData: {
+    id: [32m'123456789012345678'[39m,
+    name: [32m'Test Guild'[39m,
+    ownerId: [32m'987654321098765432'[39m,
+    memberCount: [90mundefined[39m
+  }
+}
+[31m[Nest] 13684  - [39m12/05/2025, 10:12:52 PM [31m  ERROR[39m [38;5;3m[GuildsService] [39m[31mFailed to upsert guild 123456789012345678 (Test Guild):[39m
+[31m[Nest] 13684  - [39m12/05/2025, 10:12:52 PM [31m  ERROR[39m [38;5;3m[GuildsService] [39mObject(5) {
+  error: [32m'Failed to upsert guild'[39m,
+  code: [32m'GUILD_UPSERT_ERROR'[39m,
+  details: {
+    constraint: [32m'unique_guild_id'[39m
+  },
+  stack: [32m'Error: Database constraint violation\n    at /Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/tests/unit/services/guilds.service.test.ts:510:23\n    at file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/node_modules/@vitest/runner/dist/index.js:146:14\n    at file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/node_modules/@vitest/runner/dist/index.js:533:11\n    at runWithTimeout (file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/node_modules/@vitest/runner/dist/index.js:39:7)\n    at runTest (file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/node_modules/@vitest/runner/dist/index.js:1056:17)\n    at runSuite (file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/node_modules/@vitest/runner/dist/index.js:1205:15)\n    at runSuite (file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/node_modules/@vitest/runner/dist/index.js:1205:15)\n    at runSuite (file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/node_modules/@vitest/runner/dist/index.js:1205:15)\n    at runFiles (file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/node_modules/@vitest/runner/dist/index.js:1262:5)\n    at startTests (file:///Users/kylereilly/Documents/Programming/Discord/LeagueManagement/league-api/node_modules/@vitest/runner/dist/index.js:1271:3)'[39m,
+  guildData: {
+    id: [32m'123456789012345678'[39m,
+    name: [32m'Test Guild'[39m,
+    ownerId: [32m'987654321098765432'[39m,
+    memberCount: [90mundefined[39m
+  }
+}
+ ✓ tests/unit/services/guilds.service.test.ts (25 tests) 14ms
+[32m[Nest] 13684  - [39m12/05/2025, 10:12:52 PM [32m    LOG[39m [38;5;3m[TrackerService] [39m[32mRegistered 2 tracker(s) for user user_123[39m
+[32m[Nest] 13684  - [39m12/05/2025, 10:12:52 PM [32m    LOG[39m [38;5;3m[TrackerService] [39m[32mAdded tracker tracker_123 for user user_123 (1/4)[39m
+ ✓ tests/unit/services/tracker.service.test.ts (23 tests) 12ms
+ ✓ tests/unit/services/league-member.service.test.ts (23 tests) 9ms
+ ✓ tests/unit/services/mmr-calculation.service.test.ts (7 tests) 37ms
+
+ Test Files  4 passed (4)
+      Tests  78 passed (78)
+   Start at  22:12:52
+   Duration  705ms (transform 237ms, setup 58ms, collect 1.27s, tests 72ms, environment 0ms, prepare 149ms)
+

@@ -40,9 +40,7 @@ export class IdempotencyRepository {
     return this.prisma.processedEvent.upsert({
       where: { eventKey },
       create: data,
-      update: {
-        // Idempotent - no change if already exists
-      },
+      update: {},
     });
   }
 }

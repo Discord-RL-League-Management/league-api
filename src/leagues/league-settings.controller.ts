@@ -57,7 +57,6 @@ export class LeagueSettingsController {
         leagueId,
       );
 
-      // Settings contain sensitive configuration, restricted to admins and moderators
       await this.leaguePermissionService.checkLeagueAdminOrModeratorAccess(
         user.id,
         leagueId,
@@ -94,7 +93,6 @@ export class LeagueSettingsController {
         leagueId,
       );
 
-      // Only admins can modify settings to prevent unauthorized configuration changes
       await this.leaguePermissionService.checkLeagueAdminAccess(
         user.id,
         leagueId,

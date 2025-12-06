@@ -145,7 +145,6 @@ export class TrackerController {
     @Param('id', ParseCUIDPipe) id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    // Prevent unauthorized users from triggering expensive scraping jobs
     const tracker = await this.trackerService.getTrackerById(id);
     if (tracker.userId !== user.id) {
       throw new ForbiddenException('You can only refresh your own tracker');

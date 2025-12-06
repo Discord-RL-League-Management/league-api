@@ -38,9 +38,7 @@ export class IdempotencyService {
         entityId,
         metadata,
       },
-      update: {
-        // Idempotent - no change if already exists
-      },
+      update: {},
     });
   }
 }

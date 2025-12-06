@@ -179,7 +179,6 @@ export class TrackerService {
     channelId?: string,
     interactionToken?: string,
   ) {
-    // Ensure user exists before creating trackers
     await this.ensureUserExists(userId, userData);
 
     if (urls.length === 0 || urls.length > 4) {
@@ -188,7 +187,6 @@ export class TrackerService {
       );
     }
 
-    // Check if user already has trackers
     const existingTrackers = await this.getTrackersByUserId(userId);
     const activeTrackers = existingTrackers.filter((t) => !t.isDeleted);
 
@@ -198,7 +196,6 @@ export class TrackerService {
       );
     }
 
-    // Validate all URLs and check for duplicates
     const uniqueUrls = Array.from(new Set(urls));
     if (uniqueUrls.length !== urls.length) {
       throw new BadRequestException('Duplicate URLs are not allowed');
@@ -220,12 +217,11 @@ export class TrackerService {
       );
     }
 
-    // Validate all URLs (format validation only, uniqueness already checked in batch)
+    // Format validation only, uniqueness already checked in batch
     const validationPromises = uniqueUrls.map((url) =>
       this.validationService
-        .validateTrackerUrl(url, userId, undefined, true) // Skip uniqueness check
+        .validateTrackerUrl(url, userId, undefined, true)
         .catch((error) => {
-          // Re-throw validation errors
           throw error;
         }),
     );
@@ -236,7 +232,6 @@ export class TrackerService {
       parsed: parsedResults[index],
     }));
 
-    // Create all trackers
     const trackers = [];
     for (const { url, parsed } of parsedUrls) {
       const tracker = await this.createTracker(
@@ -251,13 +246,11 @@ export class TrackerService {
       );
       trackers.push(tracker);
 
-      // Check if processing is allowed before enqueueing
       const canProcess = await this.processingGuard.canProcessTracker(
         tracker.id,
       );
 
       if (!canProcess) {
-        // Set tracker status to FAILED with appropriate error message
         await this.prisma.tracker
           .update({
             where: { id: tracker.id },
@@ -285,7 +278,6 @@ export class TrackerService {
         this.logger.error(
           `Failed to enqueue scraping job for tracker ${tracker.id}: ${errorMessage}`,
         );
-        // Update tracker status with proper error handling
         this.prisma.tracker
           .update({
             where: { id: tracker.id },
@@ -333,10 +325,8 @@ export class TrackerService {
       );
     }
 
-    // Validate tracker URL format and uniqueness
     const parsed = await this.validationService.validateTrackerUrl(url, userId);
 
-    // Create new tracker
     const tracker = await this.createTracker(
       url,
       parsed.game,
@@ -348,11 +338,9 @@ export class TrackerService {
       interactionToken, // registrationInteractionToken
     );
 
-    // Check if processing is allowed before enqueueing
     const canProcess = await this.processingGuard.canProcessTracker(tracker.id);
 
     if (!canProcess) {
-      // Set tracker status to FAILED with appropriate error message
       await this.prisma.tracker
         .update({
           where: { id: tracker.id },
@@ -409,7 +397,6 @@ export class TrackerService {
       throw new NotFoundException('Tracker not found');
     }
 
-    // Check if processing is allowed
     const canProcess = await this.processingGuard.canProcessTracker(trackerId);
     if (!canProcess) {
       throw new ForbiddenException(
@@ -417,7 +404,6 @@ export class TrackerService {
       );
     }
 
-    // Update status to PENDING
     await this.prisma.tracker.update({
       where: { id: trackerId },
       data: {
@@ -426,7 +412,6 @@ export class TrackerService {
       },
     });
 
-    // Enqueue scraping job
     await this.scrapingQueueService.addScrapingJob(trackerId);
 
     this.logger.log(`Enqueued refresh job for tracker ${trackerId}`);

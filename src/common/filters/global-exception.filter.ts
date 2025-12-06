@@ -97,13 +97,25 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       };
     }
 
+    // Handle null or undefined exceptions
+    if (exception === null || exception === undefined) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        timestamp,
+        path,
+        method,
+        message: 'Internal server error',
+        stack: undefined,
+      };
+    }
+
     return {
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       timestamp,
       path,
       method,
       message: 'Internal server error',
-      stack: this.isDevelopment ? (exception as Error).stack : undefined,
+      stack: this.isDevelopment ? (exception as Error)?.stack : undefined,
     };
   }
 

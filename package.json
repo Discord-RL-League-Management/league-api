@@ -11,21 +11,49 @@
   },
   "scripts": {
     "build": "nest build --webpack",
-    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "NODE_ENV=production node dist/main",
     "migrate:prod": "NODE_ENV=production npx prisma migrate deploy",
     "lint": "eslint \"{src,apps,libs}/**/*.ts\" --fix",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:cov": "jest --coverage",
-    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "NODE_ENV=test jest --config ./test/jest-e2e.json",
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
+    "test:unit:coverage": "vitest run --coverage",
+    "test:api": "vitest run --config vitest.api.config.mts",
+    "test:api:watch": "vitest --config vitest.api.config.mts",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:all": "npm run test:unit && npm run test:api && npm run test:e2e",
+    "test:ci": "vitest run --coverage && playwright test",
     "debt:check": "ts-node -r tsconfig-paths/register scripts/debt-marker-check.ts",
     "debt:fix": "ts-node -r tsconfig-paths/register scripts/debt-marker-fix.ts",
-    "setup:hooks": "bash scripts/setup-git-hooks.sh"
+    "setup:hooks": "bash scripts/setup-git-hooks.sh",
+    "prepare": "husky install"
+  },
+  "lint-staged": {
+    "*.{ts,js}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "tests/**/*.{ts,js}": [
+      "eslint --fix --max-warnings 0",
+      "prettier --write"
+    ],
+    "tests/unit/**/*.{ts,js}": [
+      "eslint --fix --max-warnings 0",
+      "prettier --write"
+    ],
+    "tests/api/**/*.{ts,js}": [
+      "eslint --fix --max-warnings 0",
+      "prettier --write"
+    ],
+    "tests/e2e/**/*.{ts,js}": [
+      "eslint --fix --max-warnings 0",
+      "prettier --write"
+    ]
   },
   "dependencies": {
     "@bull-board/api": "^6.14.0",
@@ -71,46 +99,30 @@
     "@nestjs/testing": "^11.0.1",
     "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.0",
-    "@types/jest": "^30.0.0",
+    "@playwright/test": "^1.48.0",
+    "@vitest/coverage-v8": "^2.1.8",
+    "@vitest/ui": "^2.1.8",
     "@types/node": "^22.10.7",
     "@types/passport": "^1.0.17",
     "@types/passport-jwt": "^4.0.1",
-    "@types/supertest": "^6.0.3",
     "@types/uuid": "^10.0.0",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",
+    "eslint-plugin-vitest": "^0.5.4",
+    "eslint-plugin-playwright": "^2.4.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.11",
     "globals": "^16.0.0",
-    "jest": "^30.0.0",
+    "playwright": "^1.48.0",
+    "vitest": "^2.1.8",
     "prettier": "^3.4.2",
     "prisma": "^6.18.0",
     "source-map-support": "^0.5.21",
-    "supertest": "^7.1.4",
-    "ts-jest": "^29.2.5",
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.20.0"
-  },
-  "jest": {
-    "moduleFileExtensions": [
-      "js",
-      "json",
-      "ts"
-    ],
-    "rootDir": "src",
-    "testRegex": ".*\\.spec\\.ts$",
-    "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
-    },
-    "collectCoverageFrom": [
-      "**/*.(t|j)s"
-    ],
-    "coverageDirectory": "../coverage",
-    "testEnvironment": "node",
-    "setupFilesAfterEnv": [
-      "<rootDir>/jest.setup.ts"
-    ]
   }
 }

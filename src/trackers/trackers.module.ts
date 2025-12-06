@@ -33,7 +33,7 @@ import { TrackerProcessingGuardService } from './services/tracker-processing-gua
     forwardRef(() => InfrastructureModule),
     forwardRef(() => AuditModule),
     MmrCalculationModule,
-    GuildsModule,
+    forwardRef(() => GuildsModule),
     HttpModule,
     BullModule.forRootAsync({
       imports: [ConfigModule],

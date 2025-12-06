@@ -29,7 +29,6 @@ export class TrackerProcessingGuardService {
    */
   async canProcessTracker(trackerId: string): Promise<boolean> {
     try {
-      // Get tracker to extract userId
       const tracker = await this.prisma.tracker.findUnique({
         where: { id: trackerId },
         select: { userId: true },
@@ -61,7 +60,6 @@ export class TrackerProcessingGuardService {
    */
   async canProcessTrackerForUser(userId: string): Promise<boolean> {
     try {
-      // Get user's guild memberships
       const guildMemberships = await this.prisma.guildMember.findMany({
         where: {
           userId,
@@ -81,7 +79,6 @@ export class TrackerProcessingGuardService {
         return true;
       }
 
-      // Check if ANY guild has processing enabled
       for (const membership of guildMemberships) {
         const settings = await this.guildSettingsService.getSettings(
           membership.guildId,
@@ -130,7 +127,6 @@ export class TrackerProcessingGuardService {
         },
       });
 
-      // Group trackers by userId to avoid duplicate guild checks
       const trackersByUserId = new Map<string, string[]>();
       for (const tracker of trackers) {
         const userTrackers = trackersByUserId.get(tracker.userId) || [];
@@ -138,12 +134,10 @@ export class TrackerProcessingGuardService {
         trackersByUserId.set(tracker.userId, userTrackers);
       }
 
-      // Check each user once and collect processable tracker IDs
       const processableTrackerIds: string[] = [];
       const userProcessingCache = new Map<string, boolean>();
 
       for (const [userId, userTrackerIds] of trackersByUserId.entries()) {
-        // Check cache first
         let canProcess: boolean;
         if (userProcessingCache.has(userId)) {
           canProcess = userProcessingCache.get(userId)!;

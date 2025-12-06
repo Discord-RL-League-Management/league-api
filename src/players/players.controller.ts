@@ -98,7 +98,6 @@ export class PlayersController {
       includePrimaryTracker: true,
     });
 
-    // Enforce player ownership to prevent unauthorized access to user data
     if ((player as Player & { userId: string }).userId !== user.id) {
       throw new ForbiddenException('You can only view your own players');
     }
@@ -120,7 +119,6 @@ export class PlayersController {
   ) {
     const player = await this.playerService.findOne(id);
 
-    // Enforce player ownership to prevent unauthorized modifications
     if ((player as Player & { userId: string }).userId !== user.id) {
       throw new ForbiddenException('You can only update your own players');
     }

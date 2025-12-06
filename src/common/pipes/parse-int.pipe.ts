@@ -5,7 +5,7 @@ export class ParseIntPipeWithError extends ParseIntPipe {
   constructor() {
     super({
       exceptionFactory: (error) => {
-        throw new BadRequestException(`Invalid integer: ${error}`);
+        return new BadRequestException(`Invalid integer: ${error}`);
       },
     });
   }
