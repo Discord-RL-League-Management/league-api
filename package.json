@@ -30,6 +30,7 @@
     "test:ci": "vitest run --coverage && playwright test",
     "debt:check": "ts-node -r tsconfig-paths/register scripts/debt-marker-check.ts",
     "debt:fix": "ts-node -r tsconfig-paths/register scripts/debt-marker-fix.ts",
+    "test:decodo": "ts-node -r tsconfig-paths/register scripts/test-decodo-scraper.ts",
     "setup:hooks": "bash scripts/setup-git-hooks.sh",
     "prepare": "husky install"
   },

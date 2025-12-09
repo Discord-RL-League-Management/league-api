@@ -63,14 +63,21 @@ export const configurationSchema = Joi.object({
   CIRCUIT_BREAKER_THRESHOLD: Joi.number().default(5),
   CIRCUIT_BREAKER_TIMEOUT: Joi.number().default(60000),
 
-  // Zyte API Configuration
-  ZYTE_API_KEY: Joi.string().required(),
-  ZYTE_PROXY_HOST: Joi.string().default('api.zyte.com'),
-  ZYTE_PROXY_PORT: Joi.number().default(8011),
-  ZYTE_RATE_LIMIT_PER_MINUTE: Joi.number().default(60),
-  ZYTE_TIMEOUT_MS: Joi.number().default(30000),
-  ZYTE_RETRY_ATTEMPTS: Joi.number().default(3),
-  ZYTE_RETRY_DELAY_MS: Joi.number().default(1000),
+  // Decodo Scraper API Configuration
+  DECODO_API_KEY: Joi.string().required(),
+  DECODO_API_URL: Joi.string().default(
+    'https://scraper-api.decodo.com/v2/scrape',
+  ),
+  DECODO_PROXY_URL: Joi.string().default('http://gate.decodo.com:7000'),
+  DECODO_PROXY_USERNAME: Joi.string().required(),
+  DECODO_PROXY_PASSWORD: Joi.string().required(),
+  DECODO_RATE_LIMIT_PER_MINUTE: Joi.number().default(60),
+  DECODO_TIMEOUT_MS: Joi.number().default(30000),
+  DECODO_RETRY_ATTEMPTS: Joi.number().default(3),
+  DECODO_RETRY_DELAY_MS: Joi.number().default(1000),
+
+  // FlareSolverr Configuration
+  FLARESOLVERR_URL: Joi.string().default('http://flaresolverr:8191'),
 
   // Tracker Refresh Configuration
   TRACKER_REFRESH_INTERVAL_HOURS: Joi.number().default(24),

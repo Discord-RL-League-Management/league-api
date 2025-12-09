@@ -49,6 +49,27 @@ services:
     networks:
       - default
 
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: league_flaresolverr
+    ports:
+      - "8191:8191"
+    environment:
+      LOG_LEVEL: info
+      PROXY_URL: ${DECODO_PROXY_URL}
+      PROXY_USERNAME: ${DECODO_PROXY_USERNAME}
+      PROXY_PASSWORD: ${DECODO_PROXY_PASSWORD}
+    shm_size: 2gb
+    security_opt:
+      - seccomp=unconfined
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8191/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - default
+
 volumes:
   postgres_data:
   postgres_test_data:
