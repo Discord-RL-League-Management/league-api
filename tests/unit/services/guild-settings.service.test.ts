@@ -67,14 +67,20 @@ describe('GuildSettingsService', () => {
 
     mockSettingsDefaults = {
       getDefaults: vi.fn().mockReturnValue(mockDefaultSettings),
-      mergeSettings: vi.fn().mockImplementation((current, newSettings) => ({
-        ...current,
-        ...newSettings,
-      })),
-      mergeWithDefaults: vi.fn().mockImplementation((settings) => ({
-        ...mockDefaultSettings,
-        ...settings,
-      })),
+      mergeSettings: vi.fn().mockImplementation(
+        (current, newSettings) =>
+          ({
+            ...current,
+            ...newSettings,
+          }) as GuildSettings,
+      ),
+      mergeWithDefaults: vi.fn().mockImplementation(
+        (settings) =>
+          ({
+            ...mockDefaultSettings,
+            ...settings,
+          }) as GuildSettings,
+      ),
     } as unknown as SettingsDefaultsService;
 
     mockSettingsValidation = {
@@ -85,7 +91,9 @@ describe('GuildSettingsService', () => {
     mockConfigMigration = {
       needsMigration: vi.fn().mockReturnValue(false),
       getSchemaVersion: vi.fn().mockReturnValue('1.0.0'),
-      migrate: vi.fn().mockImplementation((settings) => settings),
+      migrate: vi
+        .fn()
+        .mockImplementation((settings) => settings as GuildSettings),
     } as unknown as ConfigMigrationService;
 
     mockSettingsService = {
@@ -101,15 +109,19 @@ describe('GuildSettingsService', () => {
 
     mockPrisma = {
       $transaction: vi.fn().mockImplementation(async (callback) => {
-        const mockTx = {} as any;
-        return callback(mockTx);
+        const mockTx = {} as Prisma.TransactionClient;
+        return await callback(mockTx);
       }),
     } as unknown as PrismaService;
 
+    const mockGet = vi.fn<[string], Promise<unknown>>();
+    mockGet.mockResolvedValue(undefined as unknown);
+    const mockSet = vi.fn().mockResolvedValue(undefined);
+    const mockDel = vi.fn().mockResolvedValue(undefined);
     mockCacheManager = {
-      get: vi.fn(),
-      set: vi.fn().mockResolvedValue(undefined),
-      del: vi.fn().mockResolvedValue(undefined),
+      get: mockGet as (key: string) => Promise<unknown>,
+      set: mockSet,
+      del: mockDel,
     } as unknown as Cache;
 
     service = new GuildSettingsService(
@@ -208,7 +220,9 @@ describe('GuildSettingsService', () => {
       );
       vi.mocked(mockConfigMigration.needsMigration).mockReturnValue(true);
       vi.mocked(mockConfigMigration.getSchemaVersion).mockReturnValue(1);
-      vi.mocked(mockConfigMigration.migrate).mockResolvedValue(migratedSettings);
+      vi.mocked(mockConfigMigration.migrate).mockResolvedValue(
+        migratedSettings,
+      );
       vi.mocked(mockSettingsService.updateSettings).mockResolvedValue({
         ...mockSettingsRecord,
         settings: migratedSettings as unknown as Prisma.JsonValue,
@@ -275,7 +289,7 @@ describe('GuildSettingsService', () => {
       const mergedSettings: GuildSettings = {
         ...mockDefaultSettings,
         ...updateDto,
-      };
+      } as unknown as GuildSettings;
       const updatedRecord: Settings = {
         ...mockSettingsRecord,
         settings: mergedSettings as unknown as Prisma.JsonValue,
@@ -289,7 +303,7 @@ describe('GuildSettingsService', () => {
       );
       vi.mocked(mockPrisma.$transaction).mockImplementation(
         async (callback) => {
-          const mockTx = {} as any;
+          const mockTx = {} as Prisma.TransactionClient;
           vi.mocked(mockSettingsService.updateSettings).mockResolvedValue(
             updatedRecord,
           );
@@ -313,7 +327,7 @@ describe('GuildSettingsService', () => {
       const mergedSettings: GuildSettings = {
         ...mockDefaultSettings,
         ...updateDto,
-      };
+      } as unknown as GuildSettings;
       const updatedRecord: Settings = {
         ...mockSettingsRecord,
         settings: mergedSettings as unknown as Prisma.JsonValue,
@@ -325,7 +339,7 @@ describe('GuildSettingsService', () => {
       );
       vi.mocked(mockPrisma.$transaction).mockImplementation(
         async (callback) => {
-          const mockTx = {} as any;
+          const mockTx = {} as Prisma.TransactionClient;
           vi.mocked(mockSettingsService.updateSettings).mockResolvedValue(
             updatedRecord,
           );
@@ -369,7 +383,7 @@ describe('GuildSettingsService', () => {
       );
       vi.mocked(mockPrisma.$transaction).mockImplementation(
         async (callback) => {
-          const mockTx = {} as any;
+          const mockTx = {} as Prisma.TransactionClient;
           vi.mocked(mockSettingsService.updateSettings).mockResolvedValue(
             mockSettingsRecord,
           );
@@ -397,7 +411,7 @@ describe('GuildSettingsService', () => {
       );
       vi.mocked(mockPrisma.$transaction).mockImplementation(
         async (callback) => {
-          const mockTx = {} as any;
+          const mockTx = {} as Prisma.TransactionClient;
           vi.mocked(mockSettingsService.updateSettings).mockResolvedValue(
             mockSettingsRecord,
           );
@@ -444,7 +458,7 @@ describe('GuildSettingsService', () => {
 
       vi.mocked(mockPrisma.$transaction).mockImplementation(
         async (callback) => {
-          const mockTx = {} as any;
+          const mockTx = {} as Prisma.TransactionClient;
           vi.mocked(mockSettingsService.updateSettings).mockResolvedValue(
             resetRecord,
           );
@@ -464,7 +478,7 @@ describe('GuildSettingsService', () => {
       // ARRANGE
       vi.mocked(mockPrisma.$transaction).mockImplementation(
         async (callback) => {
-          const mockTx = {} as any;
+          const mockTx = {} as Prisma.TransactionClient;
           vi.mocked(mockSettingsService.updateSettings).mockResolvedValue(
             mockSettingsRecord,
           );
@@ -483,7 +497,7 @@ describe('GuildSettingsService', () => {
       // ARRANGE
       vi.mocked(mockPrisma.$transaction).mockImplementation(
         async (callback) => {
-          const mockTx = {} as any;
+          const mockTx = {} as Prisma.TransactionClient;
           vi.mocked(mockSettingsService.updateSettings).mockResolvedValue(
             mockSettingsRecord,
           );
@@ -599,4 +613,3 @@ describe('GuildSettingsService', () => {
     });
   });
 });
-

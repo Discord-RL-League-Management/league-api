@@ -147,7 +147,8 @@ export default tseslint.config(
       // ============================================
       '@typescript-eslint/no-explicit-any': 'off', // Common in mocks
       '@typescript-eslint/no-floating-promises': 'error', // Critical for async tests
-      '@typescript-eslint/no-unsafe-argument': 'warn',
+      '@typescript-eslint/no-unsafe-argument': 'off', // Common in mocks with type assertions
+      '@typescript-eslint/no-unsafe-return': 'off', // Common in mocks with type assertions
       '@typescript-eslint/no-unsafe-assignment': 'off', // Common in mocks
       '@typescript-eslint/no-unsafe-call': 'off', // Common in mocks
       '@typescript-eslint/no-unsafe-member-access': 'off', // Common in mocks
@@ -244,7 +245,8 @@ export default tseslint.config(
       // TypeScript Rules for E2E Tests
       // ============================================
       '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-unsafe-argument': 'warn',
+      '@typescript-eslint/no-unsafe-argument': 'off', // Common in mocks with type assertions
+      '@typescript-eslint/no-unsafe-return': 'off', // Common in mocks with type assertions
       '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-unsafe-call': 'off',
       '@typescript-eslint/no-unsafe-member-access': 'off',

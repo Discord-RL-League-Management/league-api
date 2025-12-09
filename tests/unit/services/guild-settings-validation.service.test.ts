@@ -1,6 +1,6 @@
 /**
  * GuildSettingsValidationService Unit Tests
- * 
+ *
  * Demonstrates TDD methodology with Vitest.
  * Focus: Functional core, state verification, fast execution.
  */
@@ -37,9 +37,7 @@ describe('SettingsValidationService (Guilds)', () => {
       // ARRANGE
       const guildId = 'guild123';
       const settings = {
-        bot_command_channels: [
-          { id: '123456789012345678', name: 'commands' },
-        ],
+        bot_command_channels: [{ id: '123456789012345678', name: 'commands' }],
         mmrCalculation: {
           algorithm: 'WEIGHTED_AVERAGE' as const,
           weights: { ones: 0.2, twos: 0.3, threes: 0.5 },
@@ -61,9 +59,7 @@ describe('SettingsValidationService (Guilds)', () => {
       // ARRANGE
       const guildId = 'guild123';
       const settings = {
-        bot_command_channels: [
-          { id: '123456789012345678', name: 'commands' },
-        ],
+        bot_command_channels: [{ id: '123456789012345678', name: 'commands' }],
       };
 
       vi.mocked(mockDiscordValidation.validateChannelId).mockResolvedValue(
@@ -141,9 +137,7 @@ describe('SettingsValidationService (Guilds)', () => {
       // ARRANGE
       const guildId = 'guild123';
       const settings = {
-        bot_command_channels: [
-          { id: '123456789012345678', name: 'commands' },
-        ],
+        bot_command_channels: [{ id: '123456789012345678', name: 'commands' }],
       };
 
       vi.mocked(mockDiscordValidation.validateChannelId).mockResolvedValue(
@@ -164,9 +158,7 @@ describe('SettingsValidationService (Guilds)', () => {
       const guildId = 'guild123';
       const longName = 'a'.repeat(101);
       const settings = {
-        bot_command_channels: [
-          { id: '123456789012345678', name: longName },
-        ],
+        bot_command_channels: [{ id: '123456789012345678', name: longName }],
       };
 
       vi.mocked(mockDiscordValidation.validateChannelId).mockResolvedValue(
@@ -196,7 +188,7 @@ describe('SettingsValidationService (Guilds)', () => {
       await service.validate(settings, guildId);
 
       // ASSERT
-      // Should not throw
+      expect(settings.mmrCalculation.algorithm).toBe('WEIGHTED_AVERAGE');
     });
 
     it('should_throw_BadRequestException_when_mmr_algorithm_missing', async () => {
@@ -282,6 +274,68 @@ describe('SettingsValidationService (Guilds)', () => {
         'Invalid formula',
       );
     });
+
+    it('should_validate_tracker_processing_config', async () => {
+      // ARRANGE
+      const guildId = 'guild123';
+      const settings = {
+        trackerProcessing: {
+          enabled: true,
+        },
+      };
+
+      // ACT
+      await service.validate(settings, guildId);
+
+      // ASSERT
+      expect(settings.trackerProcessing.enabled).toBe(true);
+    });
+
+    it('should_validate_tracker_processing_config_when_enabled_false', async () => {
+      // ARRANGE
+      const guildId = 'guild123';
+      const settings = {
+        trackerProcessing: {
+          enabled: false,
+        },
+      };
+
+      // ACT
+      await service.validate(settings, guildId);
+
+      // ASSERT
+      expect(settings.trackerProcessing.enabled).toBe(false);
+    });
+
+    it('should_pass_when_tracker_processing_omitted', async () => {
+      // ARRANGE
+      const guildId = 'guild123';
+      const settings = {};
+
+      // ACT
+      await service.validate(settings, guildId);
+
+      // ASSERT
+      expect(settings).not.toHaveProperty('trackerProcessing');
+    });
+
+    it('should_throw_BadRequestException_when_tracker_processing_enabled_not_boolean', async () => {
+      // ARRANGE
+      const guildId = 'guild123';
+      const settings = {
+        trackerProcessing: {
+          enabled: 'not a boolean' as any,
+        },
+      };
+
+      // ACT & ASSERT
+      await expect(service.validate(settings, guildId)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.validate(settings, guildId)).rejects.toThrow(
+        'trackerProcessing.enabled must be a boolean',
+      );
+    });
   });
 
   describe('validateStructure', () => {
@@ -295,7 +349,7 @@ describe('SettingsValidationService (Guilds)', () => {
       service.validateStructure(config);
 
       // ASSERT
-      // Should not throw
+      expect(config.bot_command_channels).toHaveLength(1);
     });
 
     it('should_throw_BadRequestException_when_config_is_not_object', () => {
@@ -303,10 +357,11 @@ describe('SettingsValidationService (Guilds)', () => {
       const config = null;
 
       // ACT & ASSERT
-      expect(() => service.validateStructure(config as any)).toThrow(
+      const configAsUnknown = config as unknown as Record<string, unknown>;
+      expect(() => service.validateStructure(configAsUnknown)).toThrow(
         BadRequestException,
       );
-      expect(() => service.validateStructure(config as any)).toThrow(
+      expect(() => service.validateStructure(configAsUnknown)).toThrow(
         'Configuration must be an object',
       );
     });
@@ -340,4 +395,3 @@ describe('SettingsValidationService (Guilds)', () => {
     });
   });
 });
-

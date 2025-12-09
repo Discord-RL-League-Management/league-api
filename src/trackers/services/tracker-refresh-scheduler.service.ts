@@ -134,12 +134,12 @@ export class TrackerRefreshSchedulerService
     return this.processingGuard.filterProcessableTrackers(trackerIds);
   }
 
-  onApplicationShutdown(signal?: string) {
+  async onApplicationShutdown(signal?: string) {
     this.logger.log(`Application shutting down: ${signal || 'unknown signal'}`);
 
     if (this.cronJob) {
       try {
-        this.cronJob.stop();
+        await this.cronJob.stop();
       } catch (error) {
         this.logger.warn(
           `Error stopping cron job: ${error instanceof Error ? error.message : String(error)}`,
@@ -153,7 +153,9 @@ export class TrackerRefreshSchedulerService
       this.schedulerRegistry.deleteCronJob('tracker-refresh');
       this.logger.debug('Tracker refresh cron job deleted from registry');
     } else {
-      this.logger.debug('Tracker refresh cron job not found in registry (may not have been registered)');
+      this.logger.debug(
+        'Tracker refresh cron job not found in registry (may not have been registered)',
+      );
     }
 
     this.logger.log('✅ Tracker refresh scheduler stopped');

@@ -9,6 +9,7 @@ import {
   IsNumber,
   Min,
   Max,
+  IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional, ApiProperty } from '@nestjs/swagger';
@@ -146,6 +147,20 @@ export class AscendancyWeightsDto {
 }
 
 /**
+ * Tracker processing configuration DTO
+ */
+export class TrackerProcessingConfigDto {
+  @ApiPropertyOptional({
+    description: 'Enable or disable tracker processing for this guild',
+    example: true,
+    default: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  enabled?: boolean;
+}
+
+/**
  * MMR calculation configuration DTO
  */
 export class MmrCalculationConfigDto {
@@ -219,4 +234,10 @@ export class GuildSettingsDto {
   @ValidateNested()
   @Type(() => MmrCalculationConfigDto)
   mmrCalculation?: MmrCalculationConfigDto;
+
+  @ApiPropertyOptional({ type: TrackerProcessingConfigDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => TrackerProcessingConfigDto)
+  trackerProcessing?: TrackerProcessingConfigDto;
 }

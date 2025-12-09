@@ -7,20 +7,10 @@
  * Aligned with ISO/IEC/IEEE 29119 standards.
  */
 
-import {
-  describe,
-  it,
-  expect,
-  beforeAll,
-  afterAll,
-  beforeEach,
-  afterEach,
-} from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
 import { apiClient, API_BASE_URL } from '../setup/api-setup';
 import { createGuildData } from '../factories/guild.factory';
-import { createUserData } from '../factories/user.factory';
 import {
-  generateTestId,
   createTestUserWithToken,
   cleanupTestUser,
 } from '../utils/test-helpers';
@@ -32,7 +22,7 @@ beforeAll(async () => {
   try {
     await apiClient.get('/health');
     isServerAvailable = true;
-  } catch (error) {
+  } catch {
     console.warn(
       `API server not available at ${API_BASE_URL}. API tests will be skipped.`,
     );
@@ -43,10 +33,8 @@ beforeAll(async () => {
 describe.skipIf(!isServerAvailable)(
   'Guilds API - Contract Verification',
   () => {
-    const testId = generateTestId();
     let testUser: any = null;
     let testToken: string = '';
-    let testGuild: any = null;
     let testGuildId: string = '';
 
     beforeEach(async () => {
@@ -61,16 +49,11 @@ describe.skipIf(!isServerAvailable)(
       });
       testGuildId = guildData.id!;
 
-      const guildResponse = await apiClient.post(
-        '/internal/guilds',
-        guildData,
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
-          },
+      await apiClient.post('/internal/guilds', guildData, {
+        headers: {
+          Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
         },
-      );
-      testGuild = guildResponse.data;
+      });
     });
 
     afterEach(async () => {
@@ -81,14 +64,15 @@ describe.skipIf(!isServerAvailable)(
             Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
           },
         });
-      } catch (error) {
+      } catch {
         // Ignore cleanup errors (resource may not exist or already deleted)
       }
 
       // Clean up test user - always attempt, catch errors
       try {
-        await cleanupTestUser(apiClient, testUser?.id);
-      } catch (error) {
+        const userId = testUser?.id as string | undefined;
+        await cleanupTestUser(apiClient, userId ?? null);
+      } catch {
         // Ignore cleanup errors (resource may not exist or already deleted)
       }
 
@@ -133,7 +117,8 @@ describe.skipIf(!isServerAvailable)(
         expect(response.status).toBe(403);
 
         // Cleanup
-        await cleanupTestUser(apiClient, otherUserResult.user.id);
+        const otherUserId = otherUserResult.user.id as string | undefined;
+        await cleanupTestUser(apiClient, otherUserId ?? null);
       });
 
       it('should_return_401_when_authentication_is_missing', async () => {
@@ -276,6 +261,137 @@ describe.skipIf(!isServerAvailable)(
 
         // ASSERT: Verify authentication contract
         expect(response.status).toBe(401);
+      });
+    });
+
+    describe('PATCH /internal/guilds/:id/settings - Update Tracker Processing', () => {
+      it('should_update_tracker_processing_enabled_to_false', async () => {
+        // ARRANGE: Test guild already created in beforeEach
+        const botApiKey = process.env.BOT_API_KEY || '';
+
+        // ACT: Update tracker processing via internal API
+        const updateResponse = await apiClient.patch(
+          `/internal/guilds/${testGuildId}/settings`,
+          {
+            trackerProcessing: {
+              enabled: false,
+            },
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${botApiKey}`,
+            },
+            validateStatus: (status) => status < 500,
+          },
+        );
+
+        // ASSERT: Verify update succeeded
+        expect(updateResponse.status).toBe(200);
+
+        // ACT: Get settings to verify update
+        const getResponse = await apiClient.get(
+          `/internal/guilds/${testGuildId}/settings`,
+          {
+            headers: {
+              Authorization: `Bearer ${botApiKey}`,
+            },
+            validateStatus: (status) => status < 500,
+          },
+        );
+
+        // ASSERT: Verify trackerProcessing was updated
+        expect(getResponse.status).toBe(200);
+        expect(getResponse.data).toHaveProperty('trackerProcessing');
+        expect(getResponse.data.trackerProcessing).toHaveProperty('enabled');
+        expect(getResponse.data.trackerProcessing.enabled).toBe(false);
+      });
+
+      it('should_update_tracker_processing_enabled_to_true', async () => {
+        // ARRANGE: Test guild already created in beforeEach
+        const botApiKey = process.env.BOT_API_KEY || '';
+
+        // ACT: Update tracker processing via internal API
+        const updateResponse = await apiClient.patch(
+          `/internal/guilds/${testGuildId}/settings`,
+          {
+            trackerProcessing: {
+              enabled: true,
+            },
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${botApiKey}`,
+            },
+            validateStatus: (status) => status < 500,
+          },
+        );
+
+        // ASSERT: Verify update succeeded
+        expect(updateResponse.status).toBe(200);
+
+        // ACT: Get settings to verify update
+        const getResponse = await apiClient.get(
+          `/internal/guilds/${testGuildId}/settings`,
+          {
+            headers: {
+              Authorization: `Bearer ${botApiKey}`,
+            },
+            validateStatus: (status) => status < 500,
+          },
+        );
+
+        // ASSERT: Verify trackerProcessing was updated
+        expect(getResponse.status).toBe(200);
+        expect(getResponse.data).toHaveProperty('trackerProcessing');
+        expect(getResponse.data.trackerProcessing).toHaveProperty('enabled');
+        expect(getResponse.data.trackerProcessing.enabled).toBe(true);
+      });
+
+      it('should_return_tracker_processing_in_get_settings', async () => {
+        // ARRANGE: Test guild already created in beforeEach
+        const botApiKey = process.env.BOT_API_KEY || '';
+
+        // ACT: Get settings
+        const response = await apiClient.get(
+          `/internal/guilds/${testGuildId}/settings`,
+          {
+            headers: {
+              Authorization: `Bearer ${botApiKey}`,
+            },
+            validateStatus: (status) => status < 500,
+          },
+        );
+
+        // ASSERT: Verify trackerProcessing is present in response
+        expect(response.status).toBe(200);
+        expect(response.data).toHaveProperty('trackerProcessing');
+        expect(response.data.trackerProcessing).toBeDefined();
+        expect(response.data.trackerProcessing).toHaveProperty('enabled');
+        expect(typeof response.data.trackerProcessing.enabled).toBe('boolean');
+      });
+
+      it('should_validate_tracker_processing_enabled_must_be_boolean', async () => {
+        // ARRANGE: Test guild already created in beforeEach
+        const botApiKey = process.env.BOT_API_KEY || '';
+
+        // ACT: Try to update with invalid type
+        const response = await apiClient.patch(
+          `/internal/guilds/${testGuildId}/settings`,
+          {
+            trackerProcessing: {
+              enabled: 'not a boolean' as any,
+            },
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${botApiKey}`,
+            },
+            validateStatus: (status) => status < 500,
+          },
+        );
+
+        // ASSERT: Verify validation error
+        expect(response.status).toBe(400);
       });
     });
   },
