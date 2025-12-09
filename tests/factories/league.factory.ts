@@ -1,6 +1,6 @@
 /**
  * League Factory
- * 
+ *
  * Synthetic data factory for creating test league data.
  * Aligned with ISO/IEC/IEEE 29119 standards for Test Data Management.
  */
@@ -19,14 +19,16 @@ export interface LeagueFactoryData {
 
 /**
  * Creates synthetic league data for testing
- * 
+ *
  * @param overrides - Optional overrides for default values
  * @returns League data object
  */
-export function createLeagueData(overrides: LeagueFactoryData = {}): LeagueFactoryData {
+export function createLeagueData(
+  overrides: LeagueFactoryData = {},
+): LeagueFactoryData {
   const timestamp = Date.now();
   const randomSuffix = Math.floor(Math.random() * 10000);
-  
+
   return {
     id: `league_${timestamp}_${randomSuffix}`,
     name: `Test League ${randomSuffix}`,
@@ -41,11 +43,10 @@ export function createLeagueData(overrides: LeagueFactoryData = {}): LeagueFacto
 
 /**
  * Creates multiple synthetic leagues
- * 
+ *
  * @param count - Number of leagues to create
  * @returns Array of league data objects
  */
 export function createMultipleLeagues(count: number): LeagueFactoryData[] {
   return Array.from({ length: count }, () => createLeagueData());
 }
-

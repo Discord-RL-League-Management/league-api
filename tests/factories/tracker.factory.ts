@@ -1,6 +1,6 @@
 /**
  * Tracker Factory
- * 
+ *
  * Synthetic data factory for creating test tracker data.
  * Aligned with ISO/IEC/IEEE 29119 standards for Test Data Management.
  */
@@ -21,15 +21,17 @@ export interface TrackerFactoryData {
 
 /**
  * Creates synthetic tracker data for testing
- * 
+ *
  * @param overrides - Optional overrides for default values
  * @returns Tracker data object
  */
-export function createTrackerData(overrides: TrackerFactoryData = {}): TrackerFactoryData {
+export function createTrackerData(
+  overrides: TrackerFactoryData = {},
+): TrackerFactoryData {
   const timestamp = Date.now();
   const randomSuffix = Math.floor(Math.random() * 10000);
   const username = `testuser${randomSuffix}`;
-  
+
   return {
     id: `tracker_${timestamp}_${randomSuffix}`,
     url: `https://rocketleague.tracker.network/rocket-league/profile/steam/${username}/overview`,
@@ -45,11 +47,10 @@ export function createTrackerData(overrides: TrackerFactoryData = {}): TrackerFa
 
 /**
  * Creates multiple synthetic trackers
- * 
+ *
  * @param count - Number of trackers to create
  * @returns Array of tracker data objects
  */
 export function createMultipleTrackers(count: number): TrackerFactoryData[] {
   return Array.from({ length: count }, () => createTrackerData());
 }
-

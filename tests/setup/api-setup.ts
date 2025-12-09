@@ -1,6 +1,6 @@
 /**
  * API Test Setup
- * 
+ *
  * Setup for API/Integration tests using Axios.
  * Ensures stateless, parallel-executable tests.
  */
@@ -18,4 +18,3 @@ export const apiClient = axios.create({
 
 // Test environment setup
 process.env.NODE_ENV = 'test';
-

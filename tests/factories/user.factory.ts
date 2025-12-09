@@ -1,6 +1,6 @@
 /**
  * User Factory
- * 
+ *
  * Synthetic data factory for creating test user data.
  * Aligned with ISO/IEC/IEEE 29119 standards for Test Data Management.
  */
@@ -18,14 +18,16 @@ export interface UserFactoryData {
 
 /**
  * Creates synthetic user data for testing
- * 
+ *
  * @param overrides - Optional overrides for default values
  * @returns User data object
  */
-export function createUserData(overrides: UserFactoryData = {}): UserFactoryData {
+export function createUserData(
+  overrides: UserFactoryData = {},
+): UserFactoryData {
   const timestamp = Date.now();
   const randomSuffix = Math.floor(Math.random() * 10000);
-  
+
   return {
     id: `user_${timestamp}_${randomSuffix}`,
     username: `testuser_${randomSuffix}`,
@@ -41,11 +43,10 @@ export function createUserData(overrides: UserFactoryData = {}): UserFactoryData
 
 /**
  * Creates multiple synthetic users
- * 
+ *
  * @param count - Number of users to create
  * @returns Array of user data objects
  */
 export function createMultipleUsers(count: number): UserFactoryData[] {
   return Array.from({ length: count }, () => createUserData());
 }
-

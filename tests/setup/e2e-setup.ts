@@ -1,6 +1,6 @@
 /**
  * E2E Test Setup
- * 
+ *
  * Setup for Playwright E2E tests.
  * Implements BDD patterns and ensures test isolation.
  */
@@ -12,4 +12,3 @@
 // - Global fixtures
 
 export const E2E_BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:3000';
-

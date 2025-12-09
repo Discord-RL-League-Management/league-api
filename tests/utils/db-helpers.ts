@@ -1,6 +1,6 @@
 /**
  * Database Test Helpers
- * 
+ *
  * Utilities for database operations in API tests.
  * Ensures stateless, isolated test execution.
  */
@@ -9,7 +9,7 @@ import { PrismaClient } from '@prisma/client';
 
 /**
  * Creates a test database client
- * 
+ *
  * @returns Prisma client instance
  */
 export function createTestDbClient(): PrismaClient {
@@ -24,7 +24,7 @@ export function createTestDbClient(): PrismaClient {
 
 /**
  * Cleans up test data from database
- * 
+ *
  * @param prisma - Prisma client instance
  * @param testId - Test identifier for cleanup
  */
@@ -39,17 +39,20 @@ export async function cleanupTestDatabase(
     // await prisma.tracker.deleteMany({ where: { /* testId filter */ } });
     // await prisma.user.deleteMany({ where: { /* testId filter */ } });
     // await prisma.guild.deleteMany({ where: { /* testId filter */ } });
-    
+
     console.log(`Cleaned up test database for: ${testId}`);
+    // Explicitly return void promise to satisfy async requirement
+    await Promise.resolve();
   } catch (error) {
-    console.error(`Error cleaning up test database: ${error}`);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(`Error cleaning up test database: ${errorMessage}`);
     throw error;
   }
 }
 
 /**
  * Seeds test data into database
- * 
+ *
  * @param prisma - Prisma client instance
  * @param testData - Test data to seed
  */
@@ -60,5 +63,6 @@ export async function seedTestData(
   // Template for seeding test data
   // Implementation depends on your schema
   console.log('Seeding test data:', testData);
+  // Explicitly return void promise to satisfy async requirement
+  await Promise.resolve();
 }
-
