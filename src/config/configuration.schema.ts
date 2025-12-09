@@ -78,6 +78,10 @@ export const configurationSchema = Joi.object({
 
   // FlareSolverr Configuration
   FLARESOLVERR_URL: Joi.string().default('http://flaresolverr:8191'),
+  FLARESOLVERR_TIMEOUT_MS: Joi.number().default(60000),
+  FLARESOLVERR_RETRY_ATTEMPTS: Joi.number().default(3),
+  FLARESOLVERR_RETRY_DELAY_MS: Joi.number().default(1000),
+  FLARESOLVERR_RATE_LIMIT_PER_MINUTE: Joi.number().default(60),
 
   // Tracker Refresh Configuration
   TRACKER_REFRESH_INTERVAL_HOURS: Joi.number().default(24),

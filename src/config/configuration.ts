@@ -86,6 +86,16 @@ export default () => ({
   },
   flaresolverr: {
     url: process.env.FLARESOLVERR_URL || 'http://flaresolverr:8191',
+    timeoutMs: parseInt(process.env.FLARESOLVERR_TIMEOUT_MS || '60000', 10),
+    retryAttempts: parseInt(process.env.FLARESOLVERR_RETRY_ATTEMPTS || '3', 10),
+    retryDelayMs: parseInt(
+      process.env.FLARESOLVERR_RETRY_DELAY_MS || '1000',
+      10,
+    ),
+    rateLimitPerMinute: parseInt(
+      process.env.FLARESOLVERR_RATE_LIMIT_PER_MINUTE || '60',
+      10,
+    ),
   },
   tracker: {
     refreshIntervalHours: parseInt(
