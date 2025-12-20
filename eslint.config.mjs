@@ -126,6 +126,10 @@ export default tseslint.config(
       'vitest/no-duplicate-hooks': 'error',
       'vitest/no-hooks': 'off', // Allow hooks but enforce order
       
+      // 5. Test Quality Rules - enforce atomic test design
+      'vitest/max-expects': ['error', { max: 5 }], // TQA Error (2) - max 5 assertions per test
+      'vitest/max-nested-describe': ['warn', { max: 3 }], // TQA Warning (1) - max 3 nesting levels
+      
       // ============================================
       // Governance Pillar II: Isolation and Statelessness
       // ============================================

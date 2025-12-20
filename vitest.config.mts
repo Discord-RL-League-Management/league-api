@@ -35,15 +35,15 @@ export default defineConfig({
         '**/prisma/**',
       ],
       thresholds: {
-        lines: 70,
-        functions: 70,
-        branches: 70,
-        statements: 70,
+        lines: 80,
+        functions: 80,
+        branches: 75,
+        statements: 80,
       },
     },
     
     // Test timeout (100ms target per test)
-    testTimeout: 5000,
+    testTimeout: 100,
     
     // Parallel execution support
     pool: 'threads',
