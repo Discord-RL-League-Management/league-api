@@ -1,6 +1,6 @@
 /**
  * GuildAccessValidationService Unit Tests
- * 
+ *
  * Demonstrates TDD methodology with Vitest.
  * Focus: Functional core, state verification, fast execution.
  */
@@ -103,9 +103,9 @@ describe('GuildAccessValidationService', () => {
       vi.mocked(mockGuildMembersService.findOne).mockRejectedValue(
         new NotFoundException('Not found'),
       );
-      vi.mocked(mockTokenManagementService.getValidAccessToken).mockResolvedValue(
-        accessToken,
-      );
+      vi.mocked(
+        mockTokenManagementService.getValidAccessToken,
+      ).mockResolvedValue(accessToken);
       vi.mocked(mockDiscordApiService.checkGuildPermissions).mockResolvedValue(
         guildPermissions as any,
       );
@@ -137,9 +137,9 @@ describe('GuildAccessValidationService', () => {
       vi.mocked(mockGuildMembersService.findOne).mockRejectedValue(
         new NotFoundException('Not found'),
       );
-      vi.mocked(mockTokenManagementService.getValidAccessToken).mockResolvedValue(
-        accessToken,
-      );
+      vi.mocked(
+        mockTokenManagementService.getValidAccessToken,
+      ).mockResolvedValue(accessToken);
       vi.mocked(mockDiscordApiService.checkGuildPermissions).mockResolvedValue(
         guildPermissions as any,
       );
@@ -162,9 +162,9 @@ describe('GuildAccessValidationService', () => {
       vi.mocked(mockGuildMembersService.findOne).mockRejectedValue(
         new NotFoundException('Not found'),
       );
-      vi.mocked(mockTokenManagementService.getValidAccessToken).mockResolvedValue(
-        null,
-      );
+      vi.mocked(
+        mockTokenManagementService.getValidAccessToken,
+      ).mockResolvedValue(null);
 
       // ACT & ASSERT
       await expect(
@@ -173,4 +173,3 @@ describe('GuildAccessValidationService', () => {
     });
   });
 });
-

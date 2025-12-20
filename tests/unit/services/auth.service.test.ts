@@ -10,11 +10,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { InternalServerErrorException } from '@nestjs/common';
-import {
-  createTestTokenPair,
-  createTestAccessToken,
-  createTestRefreshToken,
-} from '../../factories/token.factory';
+import { createTestTokenPair } from '../../factories/token.factory';
 import { AuthService } from '@/auth/auth.service';
 import { UserOrchestratorService } from '@/users/services/user-orchestrator.service';
 import { JwtService } from '@nestjs/jwt';
@@ -184,7 +180,7 @@ describe('AuthService', () => {
       };
 
       // ACT
-      const result = service.generateJwt(user);
+      service.generateJwt(user);
 
       // ASSERT
       expect(mockJwtService.sign).toHaveBeenCalledWith(
@@ -368,4 +364,3 @@ describe('AuthService', () => {
     });
   });
 });
-

@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
-import { firstValueFrom, timeout, retry, catchError } from 'rxjs';
+import { firstValueFrom, retry, catchError } from 'rxjs';
 import { AxiosError, AxiosResponse } from 'axios';
 import { TrackerUrlConverterService } from './tracker-url-converter.service';
 import {
@@ -379,7 +379,6 @@ export class TrackerScraperService {
             timeout: this.flaresolverrTimeout,
           })
           .pipe(
-            timeout(this.flaresolverrTimeout),
             ...(this.flaresolverrRetryAttempts > 0
               ? [
                   retry({

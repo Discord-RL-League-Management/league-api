@@ -1,6 +1,6 @@
 /**
  * LeagueSettingsValidationService Unit Tests
- * 
+ *
  * Demonstrates TDD methodology with Vitest.
  * Focus: Functional core, state verification, fast execution.
  */
@@ -48,11 +48,9 @@ describe('SettingsValidationService (Leagues)', () => {
         },
       };
 
-      // ACT
-      service.validate(config);
-
-      // ASSERT
-      // Should not throw
+      // ACT & ASSERT
+      // Should not throw - verify validation passes
+      expect(() => service.validate(config)).not.toThrow();
     });
 
     it('should_throw_LeagueValidationException_when_minPlayers_less_than_one', () => {
@@ -74,7 +72,9 @@ describe('SettingsValidationService (Leagues)', () => {
 
       // ACT & ASSERT
       expect(() => service.validate(config)).toThrow(LeagueValidationException);
-      expect(() => service.validate(config)).toThrow('minPlayers must be at least 1');
+      expect(() => service.validate(config)).toThrow(
+        'minPlayers must be at least 1',
+      );
     });
 
     it('should_throw_LeagueValidationException_when_maxPlayers_less_than_minPlayers', () => {
@@ -307,4 +307,3 @@ describe('SettingsValidationService (Leagues)', () => {
     });
   });
 });
-

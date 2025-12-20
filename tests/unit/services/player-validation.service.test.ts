@@ -1,9 +1,9 @@
 /**
  * PlayerValidationService Unit Tests
- * 
+ *
  * Demonstrates TDD methodology with Vitest.
  * Focus: Functional core, state verification, fast execution.
- * 
+ *
  * Aligned with ISO/IEC/IEEE 29119 standards.
  */
 
@@ -271,9 +271,7 @@ describe('PlayerValidationService', () => {
       ).rejects.toThrow(PlayerValidationException);
       await expect(
         service.validateGuildMembership(userId, guildId),
-      ).rejects.toThrow(
-        `User ${userId} is not a member of guild ${guildId}`,
-      );
+      ).rejects.toThrow(`User ${userId} is not a member of guild ${guildId}`);
     });
   });
 
@@ -325,7 +323,9 @@ describe('PlayerValidationService', () => {
     it('should_pass_when_cooldown_period_has_expired', () => {
       // ARRANGE
       const now = new Date();
-      const lastLeftLeagueAt = new Date(now.getTime() - 8 * 24 * 60 * 60 * 1000); // 8 days ago
+      const lastLeftLeagueAt = new Date(
+        now.getTime() - 8 * 24 * 60 * 60 * 1000,
+      ); // 8 days ago
       const cooldownDays = 7;
 
       // ACT & ASSERT
@@ -337,7 +337,9 @@ describe('PlayerValidationService', () => {
     it('should_throw_PlayerValidationException_when_cooldown_period_is_active', () => {
       // ARRANGE
       const now = new Date();
-      const lastLeftLeagueAt = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000); // 3 days ago
+      const lastLeftLeagueAt = new Date(
+        now.getTime() - 3 * 24 * 60 * 60 * 1000,
+      ); // 3 days ago
       const cooldownDays = 7;
 
       // ACT & ASSERT
@@ -352,7 +354,9 @@ describe('PlayerValidationService', () => {
     it('should_include_days_remaining_in_error_message', () => {
       // ARRANGE
       const now = new Date();
-      const lastLeftLeagueAt = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000); // 3 days ago
+      const lastLeftLeagueAt = new Date(
+        now.getTime() - 3 * 24 * 60 * 60 * 1000,
+      ); // 3 days ago
       const cooldownDays = 7;
 
       // ACT & ASSERT
@@ -374,9 +378,7 @@ describe('PlayerValidationService', () => {
         primaryTrackerId: null,
       };
 
-      vi.mocked(mockPrisma.player.findUnique).mockResolvedValue(
-        player as any,
-      );
+      vi.mocked(mockPrisma.player.findUnique).mockResolvedValue(player as any);
 
       // ACT
       await service.validatePlayerForLeague(playerId, false);
@@ -414,9 +416,7 @@ describe('PlayerValidationService', () => {
         primaryTrackerId: null,
       };
 
-      vi.mocked(mockPrisma.player.findUnique).mockResolvedValue(
-        player as any,
-      );
+      vi.mocked(mockPrisma.player.findUnique).mockResolvedValue(player as any);
 
       // ACT & ASSERT
       await expect(
@@ -435,9 +435,7 @@ describe('PlayerValidationService', () => {
         primaryTrackerId: null,
       };
 
-      vi.mocked(mockPrisma.player.findUnique).mockResolvedValue(
-        player as any,
-      );
+      vi.mocked(mockPrisma.player.findUnique).mockResolvedValue(player as any);
 
       // ACT & ASSERT
       await expect(
@@ -445,9 +443,7 @@ describe('PlayerValidationService', () => {
       ).rejects.toThrow(PlayerValidationException);
       await expect(
         service.validatePlayerForLeague(playerId, true),
-      ).rejects.toThrow(
-        `Player ${playerId} must have a primary tracker`,
-      );
+      ).rejects.toThrow(`Player ${playerId} must have a primary tracker`);
     });
 
     it('should_validate_tracker_link_when_primaryTrackerId_exists', async () => {
@@ -468,9 +464,7 @@ describe('PlayerValidationService', () => {
         },
       };
 
-      vi.mocked(mockPrisma.player.findUnique).mockResolvedValue(
-        player as any,
-      );
+      vi.mocked(mockPrisma.player.findUnique).mockResolvedValue(player as any);
       vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
         player.primaryTracker as any,
       );
@@ -483,4 +477,3 @@ describe('PlayerValidationService', () => {
     });
   });
 });
-

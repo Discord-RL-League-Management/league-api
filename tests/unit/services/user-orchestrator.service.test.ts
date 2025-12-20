@@ -104,7 +104,9 @@ describe('UserOrchestratorService', () => {
         lastLoginAt: new Date(),
       };
       vi.mocked(mockUsersService.exists).mockResolvedValue(true);
-      vi.mocked(mockUsersService.update).mockResolvedValue(updatedUserWithLogin);
+      vi.mocked(mockUsersService.update).mockResolvedValue(
+        updatedUserWithLogin,
+      );
 
       // ACT
       const result = await service.upsertUserFromOAuth(mockDiscordProfile);
@@ -229,4 +231,3 @@ describe('UserOrchestratorService', () => {
     });
   });
 });
-

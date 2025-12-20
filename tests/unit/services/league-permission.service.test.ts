@@ -1,6 +1,6 @@
 /**
  * LeaguePermissionService Unit Tests
- * 
+ *
  * Demonstrates TDD methodology with Vitest.
  * Focus: Functional core, state verification, fast execution.
  */
@@ -114,9 +114,9 @@ describe('LeaguePermissionService', () => {
       vi.mocked(mockPlayerService.findByUserIdAndGuildId).mockResolvedValue(
         player as any,
       );
-      vi.mocked(mockLeagueMemberRepository.findByPlayerAndLeague).mockResolvedValue(
-        leagueMember as any,
-      );
+      vi.mocked(
+        mockLeagueMemberRepository.findByPlayerAndLeague,
+      ).mockResolvedValue(leagueMember as any);
 
       // ACT
       await service.checkLeagueAdminAccess(userId, leagueId);
@@ -126,10 +126,9 @@ describe('LeaguePermissionService', () => {
         userId,
         guildId,
       );
-      expect(mockLeagueMemberRepository.findByPlayerAndLeague).toHaveBeenCalledWith(
-        player.id,
-        leagueId,
-      );
+      expect(
+        mockLeagueMemberRepository.findByPlayerAndLeague,
+      ).toHaveBeenCalledWith(player.id, leagueId);
     });
 
     it('should_throw_LeagueNotFoundException_when_league_not_found', async () => {
@@ -169,9 +168,9 @@ describe('LeaguePermissionService', () => {
       vi.mocked(mockPlayerService.findByUserIdAndGuildId).mockResolvedValue(
         player as any,
       );
-      vi.mocked(mockLeagueMemberRepository.findByPlayerAndLeague).mockResolvedValue(
-        leagueMember as any,
-      );
+      vi.mocked(
+        mockLeagueMemberRepository.findByPlayerAndLeague,
+      ).mockResolvedValue(leagueMember as any);
 
       // ACT & ASSERT
       await expect(
@@ -231,15 +230,17 @@ describe('LeaguePermissionService', () => {
       vi.mocked(mockPlayerService.findByUserIdAndGuildId).mockResolvedValue(
         player as any,
       );
-      vi.mocked(mockLeagueMemberRepository.findByPlayerAndLeague).mockResolvedValue(
-        leagueMember as any,
-      );
+      vi.mocked(
+        mockLeagueMemberRepository.findByPlayerAndLeague,
+      ).mockResolvedValue(leagueMember as any);
 
       // ACT
       await service.checkLeagueAdminOrModeratorAccess(userId, leagueId);
 
       // ASSERT
-      expect(mockLeagueMemberRepository.findByPlayerAndLeague).toHaveBeenCalled();
+      expect(
+        mockLeagueMemberRepository.findByPlayerAndLeague,
+      ).toHaveBeenCalled();
     });
 
     it('should_pass_when_user_is_league_moderator', async () => {
@@ -266,15 +267,17 @@ describe('LeaguePermissionService', () => {
       vi.mocked(mockPlayerService.findByUserIdAndGuildId).mockResolvedValue(
         player as any,
       );
-      vi.mocked(mockLeagueMemberRepository.findByPlayerAndLeague).mockResolvedValue(
-        leagueMember as any,
-      );
+      vi.mocked(
+        mockLeagueMemberRepository.findByPlayerAndLeague,
+      ).mockResolvedValue(leagueMember as any);
 
       // ACT
       await service.checkLeagueAdminOrModeratorAccess(userId, leagueId);
 
       // ASSERT
-      expect(mockLeagueMemberRepository.findByPlayerAndLeague).toHaveBeenCalled();
+      expect(
+        mockLeagueMemberRepository.findByPlayerAndLeague,
+      ).toHaveBeenCalled();
     });
 
     it('should_throw_ForbiddenException_when_user_has_no_admin_or_moderator_access', async () => {
@@ -301,9 +304,9 @@ describe('LeaguePermissionService', () => {
       vi.mocked(mockPlayerService.findByUserIdAndGuildId).mockResolvedValue(
         player as any,
       );
-      vi.mocked(mockLeagueMemberRepository.findByPlayerAndLeague).mockResolvedValue(
-        leagueMember as any,
-      );
+      vi.mocked(
+        mockLeagueMemberRepository.findByPlayerAndLeague,
+      ).mockResolvedValue(leagueMember as any);
 
       // ACT & ASSERT
       await expect(
@@ -364,4 +367,3 @@ describe('LeaguePermissionService', () => {
     });
   });
 });
-

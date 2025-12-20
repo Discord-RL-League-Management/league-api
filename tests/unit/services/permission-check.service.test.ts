@@ -1,6 +1,6 @@
 /**
  * PermissionCheckService Unit Tests
- * 
+ *
  * Demonstrates TDD methodology with Vitest.
  * Focus: Functional core, state verification, fast execution.
  */
@@ -46,9 +46,9 @@ describe('PermissionCheckService', () => {
       const userId = 'user123';
       const guildId = 'guild123';
 
-      vi.mocked(mockGuildMembersService.findMemberWithGuildSettings).mockResolvedValue(
-        null,
-      );
+      vi.mocked(
+        mockGuildMembersService.findMemberWithGuildSettings,
+      ).mockResolvedValue(null);
 
       // ACT
       const result = await service.checkGuildAccess(userId, guildId);
@@ -69,9 +69,9 @@ describe('PermissionCheckService', () => {
         roles: ['role123'],
       };
 
-      vi.mocked(mockGuildMembersService.findMemberWithGuildSettings).mockResolvedValue(
-        membership as any,
-      );
+      vi.mocked(
+        mockGuildMembersService.findMemberWithGuildSettings,
+      ).mockResolvedValue(membership as any);
 
       // ACT
       const result = await service.checkGuildAccess(userId, guildId);
@@ -99,13 +99,15 @@ describe('PermissionCheckService', () => {
       const adminRoles = [{ id: 'adminRole123', name: 'Admin' }];
       const permissions = ['manage_guild'];
 
-      vi.mocked(mockGuildMembersService.findMemberWithGuildSettings).mockResolvedValue(
-        membership as any,
-      );
+      vi.mocked(
+        mockGuildMembersService.findMemberWithGuildSettings,
+      ).mockResolvedValue(membership as any);
       vi.mocked(mockRoleParser.getAdminRolesFromSettings).mockReturnValue(
         adminRoles,
       );
-      vi.mocked(mockRoleParser.calculatePermissions).mockReturnValue(permissions);
+      vi.mocked(mockRoleParser.calculatePermissions).mockReturnValue(
+        permissions,
+      );
 
       // ACT
       const result = await service.checkGuildAccess(
@@ -136,11 +138,13 @@ describe('PermissionCheckService', () => {
       };
       const permissions = ['manage_members'];
 
-      vi.mocked(mockGuildMembersService.findMemberWithGuildSettings).mockResolvedValue(
-        membership as any,
-      );
+      vi.mocked(
+        mockGuildMembersService.findMemberWithGuildSettings,
+      ).mockResolvedValue(membership as any);
       vi.mocked(mockRoleParser.getAdminRolesFromSettings).mockReturnValue([]);
-      vi.mocked(mockRoleParser.calculatePermissions).mockReturnValue(permissions);
+      vi.mocked(mockRoleParser.calculatePermissions).mockReturnValue(
+        permissions,
+      );
 
       // ACT
       const result = await service.checkGuildAccess(
@@ -160,9 +164,9 @@ describe('PermissionCheckService', () => {
       const userId = 'user123';
       const guildId = 'guild123';
 
-      vi.mocked(mockGuildMembersService.findMemberWithGuildSettings).mockRejectedValue(
-        new Error('Database error'),
-      );
+      vi.mocked(
+        mockGuildMembersService.findMemberWithGuildSettings,
+      ).mockRejectedValue(new Error('Database error'));
 
       // ACT
       const result = await service.checkGuildAccess(userId, guildId);
@@ -180,9 +184,9 @@ describe('PermissionCheckService', () => {
       const userId = 'user123';
       const guildId = 'guild123';
 
-      vi.mocked(mockGuildMembersService.findMemberWithGuildSettings).mockResolvedValue(
-        null,
-      );
+      vi.mocked(
+        mockGuildMembersService.findMemberWithGuildSettings,
+      ).mockResolvedValue(null);
 
       // ACT
       const result = await service.hasAdminRole(userId, guildId);
@@ -201,9 +205,9 @@ describe('PermissionCheckService', () => {
         roles: ['role123'],
       };
 
-      vi.mocked(mockGuildMembersService.findMemberWithGuildSettings).mockResolvedValue(
-        membership as any,
-      );
+      vi.mocked(
+        mockGuildMembersService.findMemberWithGuildSettings,
+      ).mockResolvedValue(membership as any);
 
       // ACT
       const result = await service.hasAdminRole(userId, guildId);
@@ -228,9 +232,9 @@ describe('PermissionCheckService', () => {
       };
       const adminRoles = [{ id: 'adminRole123', name: 'Admin' }];
 
-      vi.mocked(mockGuildMembersService.findMemberWithGuildSettings).mockResolvedValue(
-        membership as any,
-      );
+      vi.mocked(
+        mockGuildMembersService.findMemberWithGuildSettings,
+      ).mockResolvedValue(membership as any);
       vi.mocked(mockRoleParser.getAdminRolesFromSettings).mockReturnValue(
         adminRoles,
       );
@@ -268,9 +272,9 @@ describe('PermissionCheckService', () => {
       };
       const adminRoles = [{ id: 'adminRole123', name: 'Admin' }];
 
-      vi.mocked(mockGuildMembersService.findMemberWithGuildSettings).mockResolvedValue(
-        membership as any,
-      );
+      vi.mocked(
+        mockGuildMembersService.findMemberWithGuildSettings,
+      ).mockResolvedValue(membership as any);
       vi.mocked(mockRoleParser.getAdminRolesFromSettings).mockReturnValue(
         adminRoles,
       );
@@ -308,9 +312,9 @@ describe('PermissionCheckService', () => {
       };
       const adminRoles = [{ id: 'adminRole123', name: 'Admin' }];
 
-      vi.mocked(mockGuildMembersService.findMemberWithGuildSettings).mockResolvedValue(
-        membership as any,
-      );
+      vi.mocked(
+        mockGuildMembersService.findMemberWithGuildSettings,
+      ).mockResolvedValue(membership as any);
       vi.mocked(mockRoleParser.getAdminRolesFromSettings).mockReturnValue(
         adminRoles,
       );
@@ -329,4 +333,3 @@ describe('PermissionCheckService', () => {
     });
   });
 });
-

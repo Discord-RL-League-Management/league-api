@@ -1,6 +1,6 @@
 /**
  * PrismaExceptionFilter Unit Tests
- * 
+ *
  * Demonstrates TDD methodology with Vitest.
  * Focus: Functional core, state verification, fast execution.
  */
@@ -206,4 +206,3 @@ describe('PrismaExceptionFilter', () => {
     });
   });
 });
-

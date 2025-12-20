@@ -1,17 +1,14 @@
 /**
  * TrackerService Unit Tests
- * 
+ *
  * Demonstrates TDD methodology with Vitest.
  * Focus: Functional core, state verification, fast execution.
- * 
+ *
  * Aligned with ISO/IEC/IEEE 29119 standards and Black Box Axiom.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import {
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { TrackerService } from '@/trackers/services/tracker.service';
 import { TrackerRepository } from '@/trackers/repositories/tracker.repository';
 import { TrackerValidationService } from '@/trackers/services/tracker-validation.service';
@@ -20,7 +17,6 @@ import { TrackerSeasonService } from '@/trackers/services/tracker-season.service
 import { TrackerProcessingGuardService } from '@/trackers/services/tracker-processing-guard.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import { Game, GamePlatform, TrackerScrapingStatus } from '@prisma/client';
-import { createTrackerData } from '@tests/factories/tracker.factory';
 
 describe('TrackerService', () => {
   let service: TrackerService;
@@ -79,9 +75,9 @@ describe('TrackerService', () => {
 
     mockProcessingGuard = {
       canProcessTracker: vi.fn().mockResolvedValue(true),
-      filterProcessableTrackers: vi.fn().mockImplementation(
-        async (ids: string[]) => ids,
-      ),
+      filterProcessableTrackers: vi
+        .fn()
+        .mockImplementation((ids: string[]) => Promise.resolve(ids)),
       canProcessTrackerForUser: vi.fn().mockResolvedValue(true),
     } as unknown as TrackerProcessingGuardService;
 
@@ -108,7 +104,8 @@ describe('TrackerService', () => {
   describe('createTracker', () => {
     it('should_create_tracker_with_valid_data', async () => {
       // ARRANGE
-      const url = 'https://rocketleague.tracker.network/rocket-league/profile/steam/testuser/overview';
+      const url =
+        'https://rocketleague.tracker.network/rocket-league/profile/steam/testuser/overview';
       const game = Game.ROCKET_LEAGUE;
       const platform = GamePlatform.STEAM;
       const username = 'testuser';
@@ -216,7 +213,8 @@ describe('TrackerService', () => {
   describe('getTrackerByUrl', () => {
     it('should_return_tracker_when_url_exists', async () => {
       // ARRANGE
-      const url = 'https://rocketleague.tracker.network/rocket-league/profile/steam/testuser/overview';
+      const url =
+        'https://rocketleague.tracker.network/rocket-league/profile/steam/testuser/overview';
       vi.mocked(mockRepository.findByUrl).mockResolvedValue(mockTracker);
 
       // ACT
@@ -272,7 +270,11 @@ describe('TrackerService', () => {
       vi.mocked(mockRepository.update).mockResolvedValue(updatedTracker);
 
       // ACT
-      const result = await service.updateTracker(trackerId, undefined, isActive);
+      const result = await service.updateTracker(
+        trackerId,
+        undefined,
+        isActive,
+      );
 
       // ASSERT
       expect(result).toEqual(updatedTracker);
@@ -325,7 +327,8 @@ describe('TrackerService', () => {
   describe('checkUrlUniqueness', () => {
     it('should_return_true_when_url_is_unique', async () => {
       // ARRANGE
-      const url = 'https://rocketleague.tracker.network/rocket-league/profile/steam/testuser/overview';
+      const url =
+        'https://rocketleague.tracker.network/rocket-league/profile/steam/testuser/overview';
       vi.mocked(mockRepository.checkUrlUniqueness).mockResolvedValue(true);
 
       // ACT
@@ -382,7 +385,7 @@ describe('TrackerService', () => {
       vi.mocked(mockValidation.batchCheckUrlUniqueness).mockResolvedValue(
         new Map(urls.map((url) => [url, true])),
       );
-      vi.mocked(mockRepository.create).mockImplementation(async (data) => {
+      vi.mocked(mockRepository.create).mockImplementation((data) => {
         const index = urls.indexOf(data.url);
         return createdTrackers[index];
       });
@@ -469,7 +472,8 @@ describe('TrackerService', () => {
     it('should_add_tracker_when_user_has_less_than_four_trackers', async () => {
       // ARRANGE
       const userId = 'user_123';
-      const url = 'https://rocketleague.tracker.network/rocket-league/profile/steam/testuser/overview';
+      const url =
+        'https://rocketleague.tracker.network/rocket-league/profile/steam/testuser/overview';
       const userData = {
         username: 'testuser',
         globalName: 'Test User',
@@ -513,4 +517,3 @@ describe('TrackerService', () => {
     });
   });
 });
-

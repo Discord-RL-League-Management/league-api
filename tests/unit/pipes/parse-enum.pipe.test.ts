@@ -1,11 +1,11 @@
 /**
  * ParseEnumPipe Unit Tests
- * 
+ *
  * Demonstrates TDD methodology with Vitest.
  * Focus: Functional core, state verification, fast execution.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { BadRequestException } from '@nestjs/common';
 import { ParseEnumPipe } from '@/common/pipes/parse-enum.pipe';
 
@@ -122,4 +122,3 @@ describe('ParseEnumPipe', () => {
     });
   });
 });
-

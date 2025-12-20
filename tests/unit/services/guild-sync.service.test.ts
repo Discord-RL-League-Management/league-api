@@ -33,7 +33,6 @@ describe('GuildSyncService', () => {
   let mockSettingsService: SettingsService;
 
   const guildId = 'guild-123';
-  const userId = 'user-123';
   const ownerId = 'owner-123';
 
   const mockGuildData: CreateGuildDto = {
@@ -106,7 +105,7 @@ describe('GuildSyncService', () => {
     } as unknown as SettingsService;
 
     mockPrisma = {
-      $transaction: vi.fn().mockImplementation(async (callback) => {
+      $transaction: vi.fn().mockImplementation((callback) => {
         const mockTx = {
           guild: {
             upsert: vi.fn(),
@@ -136,27 +135,29 @@ describe('GuildSyncService', () => {
   describe('syncGuildWithMembers', () => {
     it('should_sync_new_guild_with_members_successfully', async () => {
       // ARRANGE
-      vi.mocked(mockPrisma.$transaction).mockImplementation(async (callback) => {
-        const mockTx = {
-          guild: {
-            upsert: vi.fn().mockResolvedValue(mockGuild),
-          },
-          settings: {
-            findUnique: vi.fn().mockResolvedValue(null),
-            upsert: vi.fn().mockResolvedValue({
-              id: 'settings-1',
-              ownerType: 'guild',
-              ownerId: guildId,
-              settings: mockDefaultSettings,
-            }),
-          },
-          guildMember: {
-            deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
-            createMany: vi.fn().mockResolvedValue({ count: 2 }),
-          },
-        } as any;
-        return callback(mockTx);
-      });
+      vi.mocked(mockPrisma.$transaction).mockImplementation(
+        async (callback) => {
+          const mockTx = {
+            guild: {
+              upsert: vi.fn().mockResolvedValue(mockGuild),
+            },
+            settings: {
+              findUnique: vi.fn().mockResolvedValue(null),
+              upsert: vi.fn().mockResolvedValue({
+                id: 'settings-1',
+                ownerType: 'guild',
+                ownerId: guildId,
+                settings: mockDefaultSettings,
+              }),
+            },
+            guildMember: {
+              deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+              createMany: vi.fn().mockResolvedValue({ count: 2 }),
+            },
+          } as any;
+          return callback(mockTx);
+        },
+      );
 
       // ACT
       const result = await service.syncGuildWithMembers(
@@ -173,32 +174,34 @@ describe('GuildSyncService', () => {
     it('should_sync_existing_guild_with_members_successfully', async () => {
       // ARRANGE
       const existingGuild = { ...mockGuild, name: 'Existing Guild' };
-      vi.mocked(mockPrisma.$transaction).mockImplementation(async (callback) => {
-        const mockTx = {
-          guild: {
-            upsert: vi.fn().mockResolvedValue(existingGuild),
-          },
-          settings: {
-            findUnique: vi.fn().mockResolvedValue({
-              id: 'settings-1',
-              ownerType: 'guild',
-              ownerId: guildId,
-              settings: mockDefaultSettings,
-            }),
-            upsert: vi.fn().mockResolvedValue({
-              id: 'settings-1',
-              ownerType: 'guild',
-              ownerId: guildId,
-              settings: mockDefaultSettings,
-            }),
-          },
-          guildMember: {
-            deleteMany: vi.fn().mockResolvedValue({ count: 5 }),
-            createMany: vi.fn().mockResolvedValue({ count: 2 }),
-          },
-        } as any;
-        return callback(mockTx);
-      });
+      vi.mocked(mockPrisma.$transaction).mockImplementation(
+        async (callback) => {
+          const mockTx = {
+            guild: {
+              upsert: vi.fn().mockResolvedValue(existingGuild),
+            },
+            settings: {
+              findUnique: vi.fn().mockResolvedValue({
+                id: 'settings-1',
+                ownerType: 'guild',
+                ownerId: guildId,
+                settings: mockDefaultSettings,
+              }),
+              upsert: vi.fn().mockResolvedValue({
+                id: 'settings-1',
+                ownerType: 'guild',
+                ownerId: guildId,
+                settings: mockDefaultSettings,
+              }),
+            },
+            guildMember: {
+              deleteMany: vi.fn().mockResolvedValue({ count: 5 }),
+              createMany: vi.fn().mockResolvedValue({ count: 2 }),
+            },
+          } as any;
+          return callback(mockTx);
+        },
+      );
 
       // ACT
       const result = await service.syncGuildWithMembers(
@@ -214,27 +217,29 @@ describe('GuildSyncService', () => {
 
     it('should_create_settings_when_settings_do_not_exist', async () => {
       // ARRANGE
-      vi.mocked(mockPrisma.$transaction).mockImplementation(async (callback) => {
-        const mockTx = {
-          guild: {
-            upsert: vi.fn().mockResolvedValue(mockGuild),
-          },
-          settings: {
-            findUnique: vi.fn().mockResolvedValue(null),
-            upsert: vi.fn().mockResolvedValue({
-              id: 'settings-1',
-              ownerType: 'guild',
-              ownerId: guildId,
-              settings: mockDefaultSettings,
-            }),
-          },
-          guildMember: {
-            deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
-            createMany: vi.fn().mockResolvedValue({ count: 0 }),
-          },
-        } as any;
-        return callback(mockTx);
-      });
+      vi.mocked(mockPrisma.$transaction).mockImplementation(
+        async (callback) => {
+          const mockTx = {
+            guild: {
+              upsert: vi.fn().mockResolvedValue(mockGuild),
+            },
+            settings: {
+              findUnique: vi.fn().mockResolvedValue(null),
+              upsert: vi.fn().mockResolvedValue({
+                id: 'settings-1',
+                ownerType: 'guild',
+                ownerId: guildId,
+                settings: mockDefaultSettings,
+              }),
+            },
+            guildMember: {
+              deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+              createMany: vi.fn().mockResolvedValue({ count: 0 }),
+            },
+          } as any;
+          return callback(mockTx);
+        },
+      );
 
       // ACT
       const result = await service.syncGuildWithMembers(
@@ -263,27 +268,29 @@ describe('GuildSyncService', () => {
         },
       };
 
-      vi.mocked(mockPrisma.$transaction).mockImplementation(async (callback) => {
-        const mockTx = {
-          guild: {
-            upsert: vi.fn().mockResolvedValue(mockGuild),
-          },
-          settings: {
-            findUnique: vi.fn().mockResolvedValue(null),
-            upsert: vi.fn().mockResolvedValue({
-              id: 'settings-1',
-              ownerType: 'guild',
-              ownerId: guildId,
-              settings: settingsWithRoles,
-            }),
-          },
-          guildMember: {
-            deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
-            createMany: vi.fn().mockResolvedValue({ count: 0 }),
-          },
-        } as any;
-        return callback(mockTx);
-      });
+      vi.mocked(mockPrisma.$transaction).mockImplementation(
+        async (callback) => {
+          const mockTx = {
+            guild: {
+              upsert: vi.fn().mockResolvedValue(mockGuild),
+            },
+            settings: {
+              findUnique: vi.fn().mockResolvedValue(null),
+              upsert: vi.fn().mockResolvedValue({
+                id: 'settings-1',
+                ownerType: 'guild',
+                ownerId: guildId,
+                settings: settingsWithRoles,
+              }),
+            },
+            guildMember: {
+              deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+              createMany: vi.fn().mockResolvedValue({ count: 0 }),
+            },
+          } as any;
+          return callback(mockTx);
+        },
+      );
 
       // ACT
       const result = await service.syncGuildWithMembers(
@@ -299,28 +306,30 @@ describe('GuildSyncService', () => {
 
     it('should_upsert_users_during_member_sync', async () => {
       // ARRANGE
-      vi.mocked(mockPrisma.$transaction).mockImplementation(async (callback) => {
-        const mockTx = {
-          guild: {
-            upsert: vi.fn().mockResolvedValue(mockGuild),
-          },
-          settings: {
-            findUnique: vi.fn().mockResolvedValue(null),
-            upsert: vi.fn().mockResolvedValue({
-              id: 'settings-1',
-              ownerType: 'guild',
-              ownerId: guildId,
-              settings: mockDefaultSettings,
-            }),
-          },
-          guildMember: {
-            deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
-            createMany: vi.fn().mockResolvedValue({ count: 2 }),
-          },
-        } as any;
-        vi.mocked(mockUserRepository.upsert).mockResolvedValue({} as any);
-        return callback(mockTx);
-      });
+      vi.mocked(mockPrisma.$transaction).mockImplementation(
+        async (callback) => {
+          const mockTx = {
+            guild: {
+              upsert: vi.fn().mockResolvedValue(mockGuild),
+            },
+            settings: {
+              findUnique: vi.fn().mockResolvedValue(null),
+              upsert: vi.fn().mockResolvedValue({
+                id: 'settings-1',
+                ownerType: 'guild',
+                ownerId: guildId,
+                settings: mockDefaultSettings,
+              }),
+            },
+            guildMember: {
+              deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+              createMany: vi.fn().mockResolvedValue({ count: 2 }),
+            },
+          } as any;
+          vi.mocked(mockUserRepository.upsert).mockResolvedValue({} as any);
+          return callback(mockTx);
+        },
+      );
 
       // ACT
       await service.syncGuildWithMembers(guildId, mockGuildData, mockMembers);
@@ -336,27 +345,29 @@ describe('GuildSyncService', () => {
         { ...mockMembers[0] }, // Duplicate
       ];
 
-      vi.mocked(mockPrisma.$transaction).mockImplementation(async (callback) => {
-        const mockTx = {
-          guild: {
-            upsert: vi.fn().mockResolvedValue(mockGuild),
-          },
-          settings: {
-            findUnique: vi.fn().mockResolvedValue(null),
-            upsert: vi.fn().mockResolvedValue({
-              id: 'settings-1',
-              ownerType: 'guild',
-              ownerId: guildId,
-              settings: mockDefaultSettings,
-            }),
-          },
-          guildMember: {
-            deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
-            createMany: vi.fn().mockResolvedValue({ count: 3 }), // All members created (deduplication happens for user upsert, not member count)
-          },
-        } as any;
-        return callback(mockTx);
-      });
+      vi.mocked(mockPrisma.$transaction).mockImplementation(
+        async (callback) => {
+          const mockTx = {
+            guild: {
+              upsert: vi.fn().mockResolvedValue(mockGuild),
+            },
+            settings: {
+              findUnique: vi.fn().mockResolvedValue(null),
+              upsert: vi.fn().mockResolvedValue({
+                id: 'settings-1',
+                ownerType: 'guild',
+                ownerId: guildId,
+                settings: mockDefaultSettings,
+              }),
+            },
+            guildMember: {
+              deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+              createMany: vi.fn().mockResolvedValue({ count: 3 }), // All members created (deduplication happens for user upsert, not member count)
+            },
+          } as any;
+          return callback(mockTx);
+        },
+      );
 
       // ACT
       const result = await service.syncGuildWithMembers(
@@ -371,27 +382,29 @@ describe('GuildSyncService', () => {
 
     it('should_delete_existing_members_before_creating_new_ones', async () => {
       // ARRANGE
-      vi.mocked(mockPrisma.$transaction).mockImplementation(async (callback) => {
-        const mockTx = {
-          guild: {
-            upsert: vi.fn().mockResolvedValue(mockGuild),
-          },
-          settings: {
-            findUnique: vi.fn().mockResolvedValue(null),
-            upsert: vi.fn().mockResolvedValue({
-              id: 'settings-1',
-              ownerType: 'guild',
-              ownerId: guildId,
-              settings: mockDefaultSettings,
-            }),
-          },
-          guildMember: {
-            deleteMany: vi.fn().mockResolvedValue({ count: 5 }),
-            createMany: vi.fn().mockResolvedValue({ count: 2 }),
-          },
-        } as any;
-        return callback(mockTx);
-      });
+      vi.mocked(mockPrisma.$transaction).mockImplementation(
+        async (callback) => {
+          const mockTx = {
+            guild: {
+              upsert: vi.fn().mockResolvedValue(mockGuild),
+            },
+            settings: {
+              findUnique: vi.fn().mockResolvedValue(null),
+              upsert: vi.fn().mockResolvedValue({
+                id: 'settings-1',
+                ownerType: 'guild',
+                ownerId: guildId,
+                settings: mockDefaultSettings,
+              }),
+            },
+            guildMember: {
+              deleteMany: vi.fn().mockResolvedValue({ count: 5 }),
+              createMany: vi.fn().mockResolvedValue({ count: 2 }),
+            },
+          } as any;
+          return callback(mockTx);
+        },
+      );
 
       // ACT
       const result = await service.syncGuildWithMembers(
@@ -471,27 +484,29 @@ describe('GuildSyncService', () => {
 
     it('should_handle_empty_members_array', async () => {
       // ARRANGE
-      vi.mocked(mockPrisma.$transaction).mockImplementation(async (callback) => {
-        const mockTx = {
-          guild: {
-            upsert: vi.fn().mockResolvedValue(mockGuild),
-          },
-          settings: {
-            findUnique: vi.fn().mockResolvedValue(null),
-            upsert: vi.fn().mockResolvedValue({
-              id: 'settings-1',
-              ownerType: 'guild',
-              ownerId: guildId,
-              settings: mockDefaultSettings,
-            }),
-          },
-          guildMember: {
-            deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
-            createMany: vi.fn().mockResolvedValue({ count: 0 }),
-          },
-        } as any;
-        return callback(mockTx);
-      });
+      vi.mocked(mockPrisma.$transaction).mockImplementation(
+        async (callback) => {
+          const mockTx = {
+            guild: {
+              upsert: vi.fn().mockResolvedValue(mockGuild),
+            },
+            settings: {
+              findUnique: vi.fn().mockResolvedValue(null),
+              upsert: vi.fn().mockResolvedValue({
+                id: 'settings-1',
+                ownerType: 'guild',
+                ownerId: guildId,
+                settings: mockDefaultSettings,
+              }),
+            },
+            guildMember: {
+              deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+              createMany: vi.fn().mockResolvedValue({ count: 0 }),
+            },
+          } as any;
+          return callback(mockTx);
+        },
+      );
 
       // ACT
       const result = await service.syncGuildWithMembers(
@@ -517,28 +532,30 @@ describe('GuildSyncService', () => {
         settings: mockDefaultSettings,
       };
 
-      vi.mocked(mockPrisma.$transaction).mockImplementation(async (callback) => {
-        const mockTx = {
-          guild: {
-            upsert: vi.fn().mockResolvedValue(mockGuild),
-          },
-          settings: {
-            findUnique: vi.fn().mockResolvedValue(existingSettings),
-            upsert: vi.fn().mockResolvedValue({
-              ...existingSettings,
-              settings: {
-                ...mockDefaultSettings,
-                roles: { admin: rolesData.admin },
-              },
-            }),
-          },
-          guildMember: {
-            deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
-            createMany: vi.fn().mockResolvedValue({ count: 0 }),
-          },
-        } as any;
-        return callback(mockTx);
-      });
+      vi.mocked(mockPrisma.$transaction).mockImplementation(
+        async (callback) => {
+          const mockTx = {
+            guild: {
+              upsert: vi.fn().mockResolvedValue(mockGuild),
+            },
+            settings: {
+              findUnique: vi.fn().mockResolvedValue(existingSettings),
+              upsert: vi.fn().mockResolvedValue({
+                ...existingSettings,
+                settings: {
+                  ...mockDefaultSettings,
+                  roles: { admin: rolesData.admin },
+                },
+              }),
+            },
+            guildMember: {
+              deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+              createMany: vi.fn().mockResolvedValue({ count: 0 }),
+            },
+          } as any;
+          return callback(mockTx);
+        },
+      );
 
       // ACT
       const result = await service.syncGuildWithMembers(
@@ -553,4 +570,3 @@ describe('GuildSyncService', () => {
     });
   });
 });
-

@@ -1,13 +1,12 @@
 /**
  * GlobalExceptionFilter Unit Tests
- * 
+ *
  * Demonstrates TDD methodology with Vitest.
  * Focus: Functional core, state verification, fast execution.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
-  HttpException,
   HttpStatus,
   BadRequestException,
   InternalServerErrorException,
@@ -200,4 +199,3 @@ describe('GlobalExceptionFilter', () => {
     });
   });
 });
-

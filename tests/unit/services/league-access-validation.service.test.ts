@@ -1,6 +1,6 @@
 /**
  * LeagueAccessValidationService Unit Tests
- * 
+ *
  * Demonstrates TDD methodology with Vitest.
  * Focus: Functional core, state verification, fast execution.
  */
@@ -96,9 +96,9 @@ describe('LeagueAccessValidationService', () => {
       vi.mocked(mockPlayerService.findByUserIdAndGuildId).mockResolvedValue(
         player as any,
       );
-      vi.mocked(mockLeagueMemberRepository.findByPlayerAndLeague).mockResolvedValue(
-        null,
-      );
+      vi.mocked(
+        mockLeagueMemberRepository.findByPlayerAndLeague,
+      ).mockResolvedValue(null);
 
       // ACT
       await service.validateLeagueAccess(userId, leagueId);
@@ -136,9 +136,9 @@ describe('LeagueAccessValidationService', () => {
       vi.mocked(mockPlayerService.findByUserIdAndGuildId).mockResolvedValue(
         player as any,
       );
-      vi.mocked(mockLeagueMemberRepository.findByPlayerAndLeague).mockResolvedValue(
-        member as any,
-      );
+      vi.mocked(
+        mockLeagueMemberRepository.findByPlayerAndLeague,
+      ).mockResolvedValue(member as any);
 
       // ACT & ASSERT
       await expect(
@@ -198,4 +198,3 @@ describe('LeagueAccessValidationService', () => {
     });
   });
 });
-

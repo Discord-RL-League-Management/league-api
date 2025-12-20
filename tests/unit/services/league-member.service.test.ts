@@ -1,17 +1,14 @@
 /**
  * LeagueMemberService Unit Tests
- * 
+ *
  * Demonstrates TDD methodology with Vitest.
  * Focus: Functional core, state verification, fast execution.
- * 
+ *
  * Aligned with ISO/IEC/IEEE 29119 standards and Black Box Axiom.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import {
-  NotFoundException,
-  InternalServerErrorException,
-} from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { LeagueMemberService } from '@/league-members/services/league-member.service';
 import { LeagueMemberRepository } from '@/league-members/repositories/league-member.repository';
 import { LeagueJoinValidationService } from '@/league-members/services/league-join-validation.service';
@@ -26,7 +23,7 @@ import {
 } from '@/league-members/exceptions/league-member.exceptions';
 import { JoinLeagueDto } from '@/league-members/dto/join-league.dto';
 import { UpdateLeagueMemberDto } from '@/league-members/dto/update-league-member.dto';
-import { LeagueMemberStatus, LeagueMemberRole, LeagueStatus, Game, PlayerStatus } from '@prisma/client';
+import { LeagueMemberStatus, LeagueStatus, PlayerStatus } from '@prisma/client';
 
 describe('LeagueMemberService', () => {
   let service: LeagueMemberService;
@@ -126,11 +123,13 @@ describe('LeagueMemberService', () => {
         create: vi.fn(),
         update: vi.fn(),
       },
-      $transaction: vi.fn((callback) => callback({
-        league: { findUnique: vi.fn() },
-        player: { findUnique: vi.fn(), update: vi.fn() },
-        leagueMember: { create: vi.fn(), update: vi.fn() },
-      })),
+      $transaction: vi.fn((callback) =>
+        callback({
+          league: { findUnique: vi.fn() },
+          player: { findUnique: vi.fn(), update: vi.fn() },
+          leagueMember: { create: vi.fn(), update: vi.fn() },
+        }),
+      ),
     } as unknown as PrismaService;
 
     service = new LeagueMemberService(
@@ -230,8 +229,8 @@ describe('LeagueMemberService', () => {
       const updateDto: UpdateLeagueMemberDto = {
         notes: 'Updated notes',
       };
-      const updatedMember = { 
-        ...mockLeagueMember, 
+      const updatedMember = {
+        ...mockLeagueMember,
         ...updateDto,
         leftAt: updateDto.leftAt ? new Date(updateDto.leftAt) : null,
       };
@@ -308,20 +307,22 @@ describe('LeagueMemberService', () => {
       vi.mocked(mockRepository.findById).mockResolvedValue(pendingMember);
       vi.mocked(mockPrisma.player.findUnique).mockResolvedValue(mockPlayer);
       vi.mocked(mockPrisma.league.findUnique).mockResolvedValue(mockLeague);
-      vi.mocked(mockPrisma.$transaction).mockImplementation(async (callback) => {
-        const tx = {
-          leagueMember: {
-            update: vi.fn().mockResolvedValue(approvedMember),
-          },
-          player: {
-            findUnique: vi.fn().mockResolvedValue(mockPlayer),
-          },
-          league: {
-            findUnique: vi.fn().mockResolvedValue(mockLeague),
-          },
-        };
-        return callback(tx as any);
-      });
+      vi.mocked(mockPrisma.$transaction).mockImplementation(
+        async (callback) => {
+          const tx = {
+            leagueMember: {
+              update: vi.fn().mockResolvedValue(approvedMember),
+            },
+            player: {
+              findUnique: vi.fn().mockResolvedValue(mockPlayer),
+            },
+            league: {
+              findUnique: vi.fn().mockResolvedValue(mockLeague),
+            },
+          };
+          return callback(tx as any);
+        },
+      );
 
       // ACT
       const result = await service.approveMember(memberId, approvedBy);
@@ -468,19 +469,21 @@ describe('LeagueMemberService', () => {
           requiresApproval: false, // Note: requiresApproval, not requireApproval
         },
       } as any);
-      
+
       // Mock transaction with all required operations
-      vi.mocked(mockPrisma.$transaction).mockImplementation(async (callback) => {
-        const tx = {
-          leagueMember: {
-            findUnique: vi.fn().mockResolvedValue(null), // No existing member
-            create: vi.fn().mockResolvedValue(newMember),
-          },
-        };
-        const result = await callback(tx as any);
-        return result;
-      });
-      
+      vi.mocked(mockPrisma.$transaction).mockImplementation(
+        async (callback) => {
+          const tx = {
+            leagueMember: {
+              findUnique: vi.fn().mockResolvedValue(null), // No existing member
+              create: vi.fn().mockResolvedValue(newMember),
+            },
+          };
+          const result = await callback(tx as any);
+          return result;
+        },
+      );
+
       // Mock activity log and rating service to be called within transaction
       vi.mocked(mockActivityLog.logActivity).mockResolvedValue({
         id: 'log-1',
@@ -576,21 +579,23 @@ describe('LeagueMemberService', () => {
       vi.mocked(mockRepository.findByPlayerAndLeague).mockResolvedValue(
         activeMember,
       );
-      vi.mocked(mockPrisma.$transaction).mockImplementation(async (callback) => {
-        const tx = {
-          league: {
-            findUnique: vi.fn().mockResolvedValue(mockLeague),
-          },
-          player: {
-            findUnique: vi.fn().mockResolvedValue(mockPlayer),
-            update: vi.fn().mockResolvedValue(mockPlayer),
-          },
-          leagueMember: {
-            update: vi.fn().mockResolvedValue(inactiveMember),
-          },
-        };
-        return callback(tx as any);
-      });
+      vi.mocked(mockPrisma.$transaction).mockImplementation(
+        async (callback) => {
+          const tx = {
+            league: {
+              findUnique: vi.fn().mockResolvedValue(mockLeague),
+            },
+            player: {
+              findUnique: vi.fn().mockResolvedValue(mockPlayer),
+              update: vi.fn().mockResolvedValue(mockPlayer),
+            },
+            leagueMember: {
+              update: vi.fn().mockResolvedValue(inactiveMember),
+            },
+          };
+          return callback(tx as any);
+        },
+      );
 
       // ACT
       const result = await service.leaveLeague(playerId, leagueId);
@@ -633,4 +638,3 @@ describe('LeagueMemberService', () => {
     });
   });
 });
-

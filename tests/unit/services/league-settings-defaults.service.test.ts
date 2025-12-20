@@ -1,6 +1,6 @@
 /**
  * LeagueSettingsDefaultsService Unit Tests
- * 
+ *
  * Demonstrates TDD methodology with Vitest.
  * Focus: Functional core, state verification, fast execution.
  */
@@ -22,12 +22,14 @@ describe('LeagueSettingsDefaultsService', () => {
       const result = service.getDefaults();
 
       // ASSERT
-      expect(result).toHaveProperty('_metadata');
-      expect(result).toHaveProperty('membership');
-      expect(result).toHaveProperty('game');
-      expect(result).toHaveProperty('skill');
-      expect(result).toHaveProperty('visibility');
-      expect(result).toHaveProperty('administration');
+      expect(result).toMatchObject({
+        _metadata: expect.any(Object),
+        membership: expect.any(Object),
+        game: expect.any(Object),
+        skill: expect.any(Object),
+        visibility: expect.any(Object),
+        administration: expect.any(Object),
+      });
     });
 
     it('should_include_metadata_with_version_info', () => {
@@ -123,4 +125,3 @@ describe('LeagueSettingsDefaultsService', () => {
     });
   });
 });
-

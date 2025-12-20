@@ -1,6 +1,6 @@
 /**
  * GuildSettingsDefaultsService Unit Tests
- * 
+ *
  * Demonstrates TDD methodology with Vitest.
  * Focus: Functional core, state verification, fast execution.
  */
@@ -22,12 +22,16 @@ describe('SettingsDefaultsService (Guilds)', () => {
       const result = service.getDefaults();
 
       // ASSERT
-      expect(result).toHaveProperty('_metadata');
-      expect(result).toHaveProperty('bot_command_channels');
-      expect(result).toHaveProperty('register_command_channels');
-      expect(result).toHaveProperty('roles');
-      expect(result).toHaveProperty('mmrCalculation');
-      expect(result).toHaveProperty('trackerProcessing');
+      expect(result).toMatchObject({
+        _metadata: expect.anything(),
+        bot_command_channels: expect.anything(),
+        register_command_channels: expect.anything(),
+        roles: expect.anything(),
+      });
+      expect(result).toMatchObject({
+        mmrCalculation: expect.anything(),
+        trackerProcessing: expect.anything(),
+      });
     });
 
     it('should_include_metadata_with_version_info', () => {
@@ -62,11 +66,13 @@ describe('SettingsDefaultsService (Guilds)', () => {
 
       // ASSERT
       expect(result.roles).toBeDefined();
-      expect(result.roles!.admin).toEqual([]);
-      expect(result.roles!.moderator).toEqual([]);
-      expect(result.roles!.member).toEqual([]);
-      expect(result.roles!.league_manager).toEqual([]);
-      expect(result.roles!.tournament_manager).toEqual([]);
+      expect(result.roles!).toEqual({
+        admin: [],
+        moderator: [],
+        member: [],
+        league_manager: [],
+        tournament_manager: [],
+      });
     });
 
     it('should_have_default_mmr_calculation_config', () => {
@@ -141,4 +147,3 @@ describe('SettingsDefaultsService (Guilds)', () => {
     });
   });
 });
-

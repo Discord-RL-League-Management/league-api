@@ -1,6 +1,6 @@
 /**
  * FormulaValidationService Unit Tests
- * 
+ *
  * Demonstrates TDD methodology with Vitest.
  * Focus: Functional core, state verification, fast execution.
  */
@@ -152,7 +152,8 @@ describe('FormulaValidationService', () => {
 
     it('should_allow_complex_formulas_with_nested_expressions', () => {
       // ARRANGE
-      const formula = 'sqrt((ones * onesGames + twos * twosGames) / totalGames)';
+      const formula =
+        'sqrt((ones * onesGames + twos * twosGames) / totalGames)';
 
       // ACT
       const result = service.validateFormula(formula);
@@ -162,4 +163,3 @@ describe('FormulaValidationService', () => {
     });
   });
 });
-

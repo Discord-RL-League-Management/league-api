@@ -30,7 +30,7 @@ import {
   NotGeneralManagerException,
   OrganizationCapacityExceededException,
 } from '@/organizations/exceptions/organization.exceptions';
-import { Organization, OrganizationMemberRole, LeagueStatus, Game } from '@prisma/client';
+import { Organization, LeagueStatus } from '@prisma/client';
 
 describe('OrganizationService', () => {
   let service: OrganizationService;
@@ -126,7 +126,7 @@ describe('OrganizationService', () => {
     } as unknown as TeamRepository;
 
     mockPrisma = {
-      $transaction: vi.fn().mockImplementation(async (callback) => {
+      $transaction: vi.fn().mockImplementation((callback) => {
         const mockTx = {
           team: {
             count: vi.fn().mockResolvedValue(0),
@@ -298,9 +298,9 @@ describe('OrganizationService', () => {
         name: 'Test Org',
       };
       const capacityError = new BadRequestException('Capacity exceeded');
-      vi.mocked(mockValidationService.validateLeagueOrganizationCapacity).mockRejectedValue(
-        capacityError,
-      );
+      vi.mocked(
+        mockValidationService.validateLeagueOrganizationCapacity,
+      ).mockRejectedValue(capacityError);
       vi.mocked(mockLeagueRepository.findById).mockResolvedValue(mockLeague);
 
       // ACT & ASSERT
@@ -321,10 +321,12 @@ describe('OrganizationService', () => {
       vi.mocked(mockOrganizationRepository.findById).mockResolvedValue(
         mockOrganization,
       );
-      vi.mocked(mockOrganizationMemberService.isGeneralManager).mockResolvedValue(
-        true,
+      vi.mocked(
+        mockOrganizationMemberService.isGeneralManager,
+      ).mockResolvedValue(true);
+      vi.mocked(mockOrganizationRepository.update).mockResolvedValue(
+        updatedOrg,
       );
-      vi.mocked(mockOrganizationRepository.update).mockResolvedValue(updatedOrg);
 
       // ACT
       const result = await service.update(organizationId, updateDto, userId);
@@ -343,12 +345,12 @@ describe('OrganizationService', () => {
       vi.mocked(mockOrganizationRepository.findById).mockResolvedValue(
         mockOrganization,
       );
-      vi.mocked(mockOrganizationMemberService.isGeneralManager).mockResolvedValue(
-        false,
-      );
-      vi.mocked(mockOrganizationMemberService.hasGeneralManagers).mockResolvedValue(
-        true,
-      );
+      vi.mocked(
+        mockOrganizationMemberService.isGeneralManager,
+      ).mockResolvedValue(false);
+      vi.mocked(
+        mockOrganizationMemberService.hasGeneralManagers,
+      ).mockResolvedValue(true);
 
       // ACT & ASSERT
       await expect(
@@ -366,13 +368,15 @@ describe('OrganizationService', () => {
       vi.mocked(mockOrganizationRepository.findById).mockResolvedValue(
         mockOrganization,
       );
-      vi.mocked(mockOrganizationMemberService.isGeneralManager).mockResolvedValue(
-        false,
+      vi.mocked(
+        mockOrganizationMemberService.isGeneralManager,
+      ).mockResolvedValue(false);
+      vi.mocked(
+        mockOrganizationMemberService.hasGeneralManagers,
+      ).mockResolvedValue(false);
+      vi.mocked(mockOrganizationRepository.update).mockResolvedValue(
+        updatedOrg,
       );
-      vi.mocked(mockOrganizationMemberService.hasGeneralManagers).mockResolvedValue(
-        false,
-      );
-      vi.mocked(mockOrganizationRepository.update).mockResolvedValue(updatedOrg);
 
       // ACT
       const result = await service.update(organizationId, updateDto, 'bot');
@@ -402,9 +406,9 @@ describe('OrganizationService', () => {
       vi.mocked(mockOrganizationRepository.findById).mockResolvedValue(
         mockOrganization,
       );
-      vi.mocked(mockOrganizationMemberService.isGeneralManager).mockResolvedValue(
-        true,
-      );
+      vi.mocked(
+        mockOrganizationMemberService.isGeneralManager,
+      ).mockResolvedValue(true);
       vi.mocked(mockOrganizationRepository.delete).mockResolvedValue(
         mockOrganization,
       );
@@ -421,12 +425,12 @@ describe('OrganizationService', () => {
       vi.mocked(mockOrganizationRepository.findById).mockResolvedValue(
         mockOrganization,
       );
-      vi.mocked(mockOrganizationMemberService.isGeneralManager).mockResolvedValue(
-        false,
-      );
-      vi.mocked(mockOrganizationMemberService.hasGeneralManagers).mockResolvedValue(
-        true,
-      );
+      vi.mocked(
+        mockOrganizationMemberService.isGeneralManager,
+      ).mockResolvedValue(false);
+      vi.mocked(
+        mockOrganizationMemberService.hasGeneralManagers,
+      ).mockResolvedValue(true);
 
       // ACT & ASSERT
       await expect(service.delete(organizationId, userId)).rejects.toThrow(
@@ -440,12 +444,12 @@ describe('OrganizationService', () => {
       vi.mocked(mockOrganizationRepository.findById).mockResolvedValue(
         mockOrganization,
       );
-      vi.mocked(mockOrganizationMemberService.isGeneralManager).mockResolvedValue(
-        true,
-      );
-      vi.mocked(mockValidationService.validateCanDeleteOrganization).mockRejectedValue(
-        validationError,
-      );
+      vi.mocked(
+        mockOrganizationMemberService.isGeneralManager,
+      ).mockResolvedValue(true);
+      vi.mocked(
+        mockValidationService.validateCanDeleteOrganization,
+      ).mockRejectedValue(validationError);
 
       // ACT & ASSERT
       await expect(service.delete(organizationId, userId)).rejects.toThrow(
@@ -467,9 +471,9 @@ describe('OrganizationService', () => {
       vi.mocked(mockOrganizationRepository.findById).mockResolvedValue(
         mockOrganization,
       );
-      vi.mocked(mockOrganizationRepository.findTeamsByOrganization).mockResolvedValue(
-        teams as any,
-      );
+      vi.mocked(
+        mockOrganizationRepository.findTeamsByOrganization,
+      ).mockResolvedValue(teams as any);
 
       // ACT
       const result = await service.findTeams(organizationId);
@@ -509,7 +513,9 @@ describe('OrganizationService', () => {
       vi.mocked(mockOrganizationMemberService.isGeneralManager)
         .mockResolvedValueOnce(true) // Source GM check
         .mockResolvedValueOnce(false); // Target GM check
-      vi.mocked(mockTeamRepository.update).mockResolvedValue(updatedTeam as any);
+      vi.mocked(mockTeamRepository.update).mockResolvedValue(
+        updatedTeam as any,
+      );
 
       // ACT
       const result = await service.transferTeam(teamId, targetOrgId, userId);
@@ -537,7 +543,9 @@ describe('OrganizationService', () => {
       vi.mocked(mockOrganizationMemberService.isGeneralManager)
         .mockResolvedValueOnce(false) // Source GM check
         .mockResolvedValueOnce(true); // Target GM check
-      vi.mocked(mockTeamRepository.update).mockResolvedValue(updatedTeam as any);
+      vi.mocked(mockTeamRepository.update).mockResolvedValue(
+        updatedTeam as any,
+      );
 
       // ACT
       const result = await service.transferTeam(teamId, targetOrgId, userId);
@@ -605,15 +613,15 @@ describe('OrganizationService', () => {
       vi.mocked(mockOrganizationRepository.findById).mockResolvedValue(
         mockOrganization,
       );
-      vi.mocked(mockOrganizationRepository.countTeamsByOrganization).mockResolvedValue(
-        5,
-      );
-      vi.mocked(mockOrganizationRepository.findMembersByOrganization).mockResolvedValue(
-        [{ id: 'member-1' }, { id: 'member-2' }] as any,
-      );
-      vi.mocked(mockOrganizationRepository.countGeneralManagers).mockResolvedValue(
-        2,
-      );
+      vi.mocked(
+        mockOrganizationRepository.countTeamsByOrganization,
+      ).mockResolvedValue(5);
+      vi.mocked(
+        mockOrganizationRepository.findMembersByOrganization,
+      ).mockResolvedValue([{ id: 'member-1' }, { id: 'member-2' }] as any);
+      vi.mocked(
+        mockOrganizationRepository.countGeneralManagers,
+      ).mockResolvedValue(2);
 
       // ACT
       const result = await service.getOrganizationStats(organizationId);
@@ -655,19 +663,21 @@ describe('OrganizationService', () => {
       vi.mocked(mockLeagueSettingsService.getSettings).mockResolvedValue(
         leagueSettings as any,
       );
-      vi.mocked(mockPrisma.$transaction).mockImplementation(async (callback) => {
-        const mockTx = {
-          team: {
-            count: vi.fn().mockResolvedValue(3), // Current count
-            update: vi.fn().mockImplementation((args: any) => ({
-              id: args.where.id,
-              organizationId,
-              ...args.data,
-            })),
-          },
-        } as any;
-        return callback(mockTx);
-      });
+      vi.mocked(mockPrisma.$transaction).mockImplementation(
+        async (callback) => {
+          const mockTx = {
+            team: {
+              count: vi.fn().mockResolvedValue(3), // Current count
+              update: vi.fn().mockImplementation((args: any) => ({
+                id: args.where.id,
+                organizationId,
+                ...args.data,
+              })),
+            },
+          } as any;
+          return callback(mockTx);
+        },
+      );
 
       // ACT
       const result = await service.assignTeamsToOrganization(
@@ -696,15 +706,17 @@ describe('OrganizationService', () => {
       vi.mocked(mockLeagueSettingsService.getSettings).mockResolvedValue(
         leagueSettings as any,
       );
-      vi.mocked(mockPrisma.$transaction).mockImplementation(async (callback) => {
-        const mockTx = {
-          team: {
-            count: vi.fn().mockResolvedValue(4), // Current count (4 + 2 = 6 > 5)
-            update: vi.fn(),
-          },
-        } as any;
-        return callback(mockTx);
-      });
+      vi.mocked(mockPrisma.$transaction).mockImplementation(
+        async (callback) => {
+          const mockTx = {
+            team: {
+              count: vi.fn().mockResolvedValue(4), // Current count (4 + 2 = 6 > 5)
+              update: vi.fn(),
+            },
+          } as any;
+          return callback(mockTx);
+        },
+      );
 
       // ACT & ASSERT
       await expect(
@@ -741,19 +753,21 @@ describe('OrganizationService', () => {
       vi.mocked(mockLeagueSettingsService.getSettings).mockResolvedValue(
         leagueSettings as any,
       );
-      vi.mocked(mockPrisma.$transaction).mockImplementation(async (callback) => {
-        const mockTx = {
-          team: {
-            count: vi.fn().mockResolvedValue(100), // High count, but no limit
-            update: vi.fn().mockImplementation((args: any) => ({
-              id: args.where.id,
-              organizationId,
-              ...args.data,
-            })),
-          },
-        } as any;
-        return callback(mockTx);
-      });
+      vi.mocked(mockPrisma.$transaction).mockImplementation(
+        async (callback) => {
+          const mockTx = {
+            team: {
+              count: vi.fn().mockResolvedValue(100), // High count, but no limit
+              update: vi.fn().mockImplementation((args: any) => ({
+                id: args.where.id,
+                organizationId,
+                ...args.data,
+              })),
+            },
+          } as any;
+          return callback(mockTx);
+        },
+      );
 
       // ACT
       const result = await service.assignTeamsToOrganization(
@@ -767,4 +781,3 @@ describe('OrganizationService', () => {
     });
   });
 });
-

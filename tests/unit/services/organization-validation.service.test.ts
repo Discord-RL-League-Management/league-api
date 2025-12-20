@@ -1,6 +1,6 @@
 /**
  * OrganizationValidationService Unit Tests
- * 
+ *
  * Demonstrates TDD methodology with Vitest.
  * Focus: Functional core, state verification, fast execution.
  */
@@ -100,9 +100,9 @@ describe('OrganizationValidationService', () => {
         organization as any,
       );
       vi.mocked(mockPlayerService.findOne).mockResolvedValue(player as any);
-      vi.mocked(mockOrganizationRepository.findMembersByPlayer).mockResolvedValue(
-        null,
-      );
+      vi.mocked(
+        mockOrganizationRepository.findMembersByPlayer,
+      ).mockResolvedValue(null);
 
       // ACT
       await service.validateMemberAdd(organizationId, playerId, leagueId);
@@ -146,9 +146,9 @@ describe('OrganizationValidationService', () => {
         organization as any,
       );
       vi.mocked(mockPlayerService.findOne).mockResolvedValue({} as any);
-      vi.mocked(mockOrganizationRepository.findMembersByPlayer).mockResolvedValue(
-        existingMembership as any,
-      );
+      vi.mocked(
+        mockOrganizationRepository.findMembersByPlayer,
+      ).mockResolvedValue(existingMembership as any);
 
       // ACT & ASSERT
       await expect(
@@ -161,9 +161,9 @@ describe('OrganizationValidationService', () => {
     it('should_pass_when_at_least_one_general_manager_exists', async () => {
       // ARRANGE
       const organizationId = 'org123';
-      vi.mocked(mockOrganizationRepository.countGeneralManagers).mockResolvedValue(
-        1,
-      );
+      vi.mocked(
+        mockOrganizationRepository.countGeneralManagers,
+      ).mockResolvedValue(1);
 
       // ACT
       await service.validateGeneralManagerRequirement(organizationId);
@@ -177,9 +177,9 @@ describe('OrganizationValidationService', () => {
     it('should_throw_NoGeneralManagerException_when_no_general_managers_exist', async () => {
       // ARRANGE
       const organizationId = 'org123';
-      vi.mocked(mockOrganizationRepository.countGeneralManagers).mockResolvedValue(
-        0,
-      );
+      vi.mocked(
+        mockOrganizationRepository.countGeneralManagers,
+      ).mockResolvedValue(0);
 
       // ACT & ASSERT
       await expect(
@@ -223,9 +223,9 @@ describe('OrganizationValidationService', () => {
       vi.mocked(mockOrganizationRepository.findMemberById).mockResolvedValue(
         member as any,
       );
-      vi.mocked(mockOrganizationRepository.countGeneralManagers).mockResolvedValue(
-        2,
-      );
+      vi.mocked(
+        mockOrganizationRepository.countGeneralManagers,
+      ).mockResolvedValue(2);
 
       // ACT
       await service.validateCanRemoveGeneralManager(organizationId, memberId);
@@ -248,9 +248,9 @@ describe('OrganizationValidationService', () => {
       vi.mocked(mockOrganizationRepository.findMemberById).mockResolvedValue(
         member as any,
       );
-      vi.mocked(mockOrganizationRepository.countGeneralManagers).mockResolvedValue(
-        1,
-      );
+      vi.mocked(
+        mockOrganizationRepository.countGeneralManagers,
+      ).mockResolvedValue(1);
 
       // ACT & ASSERT
       await expect(
@@ -268,7 +268,9 @@ describe('OrganizationValidationService', () => {
       await service.validateOrganizationCapacity(leagueId);
 
       // ASSERT
-      expect(mockOrganizationRepository.countTeamsByOrganization).not.toHaveBeenCalled();
+      expect(
+        mockOrganizationRepository.countTeamsByOrganization,
+      ).not.toHaveBeenCalled();
     });
 
     it('should_pass_when_team_count_is_within_capacity', async () => {
@@ -404,18 +406,17 @@ describe('OrganizationValidationService', () => {
       // ARRANGE
       const playerId = 'player123';
       const leagueId = 'league123';
-      vi.mocked(mockOrganizationRepository.findMembersByPlayer).mockResolvedValue(
-        null,
-      );
+      vi.mocked(
+        mockOrganizationRepository.findMembersByPlayer,
+      ).mockResolvedValue(null);
 
       // ACT
       await service.validatePlayerNotInAnotherOrg(playerId, leagueId);
 
       // ASSERT
-      expect(mockOrganizationRepository.findMembersByPlayer).toHaveBeenCalledWith(
-        playerId,
-        leagueId,
-      );
+      expect(
+        mockOrganizationRepository.findMembersByPlayer,
+      ).toHaveBeenCalledWith(playerId, leagueId);
     });
 
     it('should_pass_when_player_in_same_organization', async () => {
@@ -428,9 +429,9 @@ describe('OrganizationValidationService', () => {
         playerId,
       };
 
-      vi.mocked(mockOrganizationRepository.findMembersByPlayer).mockResolvedValue(
-        existingMembership as any,
-      );
+      vi.mocked(
+        mockOrganizationRepository.findMembersByPlayer,
+      ).mockResolvedValue(existingMembership as any);
 
       // ACT
       await service.validatePlayerNotInAnotherOrg(
@@ -440,10 +441,9 @@ describe('OrganizationValidationService', () => {
       );
 
       // ASSERT
-      expect(mockOrganizationRepository.findMembersByPlayer).toHaveBeenCalledWith(
-        playerId,
-        leagueId,
-      );
+      expect(
+        mockOrganizationRepository.findMembersByPlayer,
+      ).toHaveBeenCalledWith(playerId, leagueId);
     });
 
     it('should_throw_PlayerAlreadyInOrganizationException_when_player_in_different_organization', async () => {
@@ -456,19 +456,14 @@ describe('OrganizationValidationService', () => {
         playerId,
       };
 
-      vi.mocked(mockOrganizationRepository.findMembersByPlayer).mockResolvedValue(
-        existingMembership as any,
-      );
+      vi.mocked(
+        mockOrganizationRepository.findMembersByPlayer,
+      ).mockResolvedValue(existingMembership as any);
 
       // ACT & ASSERT
       await expect(
-        service.validatePlayerNotInAnotherOrg(
-          playerId,
-          leagueId,
-          excludeOrgId,
-        ),
+        service.validatePlayerNotInAnotherOrg(playerId, leagueId, excludeOrgId),
       ).rejects.toThrow(PlayerAlreadyInOrganizationException);
     });
   });
 });
-

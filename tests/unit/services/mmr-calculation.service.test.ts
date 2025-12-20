@@ -1,9 +1,9 @@
 /**
  * MMR Calculation Service Unit Tests
- * 
+ *
  * Demonstrates TDD methodology with Vitest.
  * Focus: Functional core, state verification, fast execution.
- * 
+ *
  * Aligned with ISO/IEC/IEEE 29119 standards.
  */
 
@@ -176,7 +176,10 @@ describe('MmrCalculationService', () => {
 
       // ACT & ASSERT
       expect(() =>
-        service.calculateMmr(trackerData, null as unknown as MmrCalculationConfig),
+        service.calculateMmr(
+          trackerData,
+          null as unknown as MmrCalculationConfig,
+        ),
       ).toThrow(BadRequestException);
     });
 
@@ -194,4 +197,3 @@ describe('MmrCalculationService', () => {
     });
   });
 });
-

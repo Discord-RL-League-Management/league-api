@@ -1,11 +1,11 @@
 /**
  * UserSettingsService Unit Tests
- * 
+ *
  * Demonstrates TDD methodology with Vitest.
  * Focus: Functional core, state verification, fast execution.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { UserSettingsService } from '@/profile/services/user-settings.service';
 import { PrismaService } from '@/prisma/prisma.service';
 
@@ -29,10 +29,11 @@ describe('UserSettingsService', () => {
 
       // ASSERT
       expect(result).toBeDefined();
-      expect(result.notifications).toBeDefined();
-      expect(result.notifications.email).toBe(true);
-      expect(result.notifications.discord).toBe(true);
-      expect(result.notifications.gameReminders).toBe(true);
+      expect(result.notifications).toEqual({
+        email: true,
+        discord: true,
+        gameReminders: true,
+      });
       expect(result.theme).toBe('auto');
       expect(result.privacy).toBeDefined();
       expect(result.preferences).toBeDefined();
@@ -160,4 +161,3 @@ describe('UserSettingsService', () => {
     });
   });
 });
-

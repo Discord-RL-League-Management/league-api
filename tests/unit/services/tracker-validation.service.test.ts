@@ -1,6 +1,6 @@
 /**
  * TrackerValidationService Unit Tests
- * 
+ *
  * Demonstrates TDD methodology with Vitest.
  * Focus: Functional core, state verification, fast execution.
  */
@@ -257,9 +257,7 @@ describe('TrackerValidationService', () => {
         'https://rocketleague.tracker.network/rocket-league/profile/steam/user1/overview',
         'https://rocketleague.tracker.network/rocket-league/profile/epic/user2/overview',
       ];
-      const existingTrackers = [
-        { url: urls[0], id: 'tracker123' },
-      ];
+      const existingTrackers = [{ url: urls[0], id: 'tracker123' }];
 
       vi.mocked(mockPrisma.tracker.findMany).mockResolvedValue(
         existingTrackers as any,
@@ -279,9 +277,7 @@ describe('TrackerValidationService', () => {
         'https://rocketleague.tracker.network/rocket-league/profile/steam/user1/overview',
       ];
       const excludeTrackerIds = ['tracker123'];
-      const existingTrackers = [
-        { url: urls[0], id: 'tracker123' },
-      ];
+      const existingTrackers = [{ url: urls[0], id: 'tracker123' }];
 
       vi.mocked(mockPrisma.tracker.findMany).mockResolvedValue(
         existingTrackers as any,
@@ -331,4 +327,3 @@ describe('TrackerValidationService', () => {
     });
   });
 });
-

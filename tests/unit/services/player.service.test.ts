@@ -76,7 +76,7 @@ describe('PlayerService', () => {
     } as unknown as ActivityLogService;
 
     mockPrisma = {
-      $transaction: vi.fn().mockImplementation(async (callback) => {
+      $transaction: vi.fn().mockImplementation((callback) => {
         const mockTx = {
           player: {
             create: vi.fn(),
@@ -182,7 +182,10 @@ describe('PlayerService', () => {
       );
 
       // ACT
-      const result = await service.findByGuildId(guildId, { page: 2, limit: 10 });
+      const result = await service.findByGuildId(guildId, {
+        page: 2,
+        limit: 10,
+      });
 
       // ASSERT
       expect(result.page).toBe(2);
@@ -199,7 +202,9 @@ describe('PlayerService', () => {
         page: 1,
         limit: 50,
       };
-      vi.mocked(mockPlayerRepository.findByUserId).mockResolvedValue(mockResult);
+      vi.mocked(mockPlayerRepository.findByUserId).mockResolvedValue(
+        mockResult,
+      );
 
       // ACT
       const result = await service.findByUserId(userId);
@@ -241,14 +246,16 @@ describe('PlayerService', () => {
       vi.mocked(mockPlayerRepository.findByUserIdAndGuildId).mockResolvedValue(
         null,
       );
-      vi.mocked(mockPrisma.$transaction).mockImplementation(async (callback) => {
-        const mockTx = {
-          player: {
-            create: vi.fn().mockResolvedValue(mockPlayer),
-          },
-        } as any;
-        return callback(mockTx);
-      });
+      vi.mocked(mockPrisma.$transaction).mockImplementation(
+        async (callback) => {
+          const mockTx = {
+            player: {
+              create: vi.fn().mockResolvedValue(mockPlayer),
+            },
+          } as any;
+          return callback(mockTx);
+        },
+      );
 
       // ACT
       const result = await service.create(createDto);
@@ -282,16 +289,20 @@ describe('PlayerService', () => {
         userId,
         guildId,
       };
-      const validationError = new NotFoundException('Guild membership not found');
-      vi.mocked(mockValidationService.validateGuildMembership).mockRejectedValue(
-        validationError,
+      const validationError = new NotFoundException(
+        'Guild membership not found',
       );
+      vi.mocked(
+        mockValidationService.validateGuildMembership,
+      ).mockRejectedValue(validationError);
       vi.mocked(mockPlayerRepository.findByUserIdAndGuildId).mockResolvedValue(
         null,
       );
 
       // ACT & ASSERT
-      await expect(service.create(createDto)).rejects.toThrow(NotFoundException);
+      await expect(service.create(createDto)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should_validate_tracker_link_when_tracker_provided', async () => {
@@ -310,7 +321,9 @@ describe('PlayerService', () => {
       );
 
       // ACT & ASSERT
-      await expect(service.create(createDto)).rejects.toThrow(NotFoundException);
+      await expect(service.create(createDto)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should_throw_PlayerAlreadyExistsException_on_prisma_unique_constraint', async () => {
@@ -378,15 +391,17 @@ describe('PlayerService', () => {
       vi.mocked(mockPlayerRepository.findByUserIdAndGuildId).mockResolvedValue(
         null,
       );
-      vi.mocked(mockPrisma.$transaction).mockImplementation(async (callback) => {
-        const mockTx = {
-          player: {
-            findUnique: vi.fn().mockResolvedValue(null),
-            create: vi.fn().mockResolvedValue(mockPlayer),
-          },
-        } as any;
-        return callback(mockTx);
-      });
+      vi.mocked(mockPrisma.$transaction).mockImplementation(
+        async (callback) => {
+          const mockTx = {
+            player: {
+              findUnique: vi.fn().mockResolvedValue(null),
+              create: vi.fn().mockResolvedValue(mockPlayer),
+            },
+          } as any;
+          return callback(mockTx);
+        },
+      );
 
       // ACT
       const result = await service.ensurePlayerExists(userId, guildId);
@@ -401,15 +416,17 @@ describe('PlayerService', () => {
       vi.mocked(mockPlayerRepository.findByUserIdAndGuildId).mockResolvedValue(
         null,
       );
-      vi.mocked(mockPrisma.$transaction).mockImplementation(async (callback) => {
-        const mockTx = {
-          player: {
-            findUnique: vi.fn().mockResolvedValue(mockPlayer), // Created by another transaction
-            create: vi.fn(),
-          },
-        } as any;
-        return callback(mockTx);
-      });
+      vi.mocked(mockPrisma.$transaction).mockImplementation(
+        async (callback) => {
+          const mockTx = {
+            player: {
+              findUnique: vi.fn().mockResolvedValue(mockPlayer), // Created by another transaction
+              create: vi.fn(),
+            },
+          } as any;
+          return callback(mockTx);
+        },
+      );
 
       // ACT
       const result = await service.ensurePlayerExists(userId, guildId);
@@ -420,18 +437,20 @@ describe('PlayerService', () => {
 
     it('should_validate_guild_membership_before_creating', async () => {
       // ARRANGE
-      const validationError = new NotFoundException('Guild membership not found');
+      const validationError = new NotFoundException(
+        'Guild membership not found',
+      );
       vi.mocked(mockPlayerRepository.findByUserIdAndGuildId).mockResolvedValue(
         null,
       );
-      vi.mocked(mockValidationService.validateGuildMembership).mockRejectedValue(
-        validationError,
-      );
+      vi.mocked(
+        mockValidationService.validateGuildMembership,
+      ).mockRejectedValue(validationError);
 
       // ACT & ASSERT
-      await expect(
-        service.ensurePlayerExists(userId, guildId),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.ensurePlayerExists(userId, guildId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should_validate_tracker_link_when_tracker_provided', async () => {
@@ -460,14 +479,16 @@ describe('PlayerService', () => {
       const updatedPlayer = { ...mockPlayer, status: PlayerStatus.INACTIVE };
 
       vi.mocked(mockPlayerRepository.findById).mockResolvedValue(mockPlayer);
-      vi.mocked(mockPrisma.$transaction).mockImplementation(async (callback) => {
-        const mockTx = {
-          player: {
-            update: vi.fn().mockResolvedValue(updatedPlayer),
-          },
-        } as any;
-        return callback(mockTx);
-      });
+      vi.mocked(mockPrisma.$transaction).mockImplementation(
+        async (callback) => {
+          const mockTx = {
+            player: {
+              update: vi.fn().mockResolvedValue(updatedPlayer),
+            },
+          } as any;
+          return callback(mockTx);
+        },
+      );
 
       // ACT
       const result = await service.update(playerId, updateDto);
@@ -488,14 +509,16 @@ describe('PlayerService', () => {
       };
 
       vi.mocked(mockPlayerRepository.findById).mockResolvedValue(mockPlayer);
-      vi.mocked(mockPrisma.$transaction).mockImplementation(async (callback) => {
-        const mockTx = {
-          player: {
-            update: vi.fn().mockResolvedValue(updatedPlayer),
-          },
-        } as any;
-        return callback(mockTx);
-      });
+      vi.mocked(mockPrisma.$transaction).mockImplementation(
+        async (callback) => {
+          const mockTx = {
+            player: {
+              update: vi.fn().mockResolvedValue(updatedPlayer),
+            },
+          } as any;
+          return callback(mockTx);
+        },
+      );
 
       // ACT
       const result = await service.update(playerId, updateDto);
@@ -659,4 +682,3 @@ describe('PlayerService', () => {
     });
   });
 });
-

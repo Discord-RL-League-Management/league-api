@@ -1,6 +1,6 @@
 /**
  * LeagueJoinValidationService Unit Tests
- * 
+ *
  * Demonstrates TDD methodology with Vitest.
  * Focus: Functional core, state verification, fast execution.
  */
@@ -99,9 +99,9 @@ describe('LeagueJoinValidationService', () => {
         settings as any,
       );
       vi.mocked(mockPlayerService.findOne).mockResolvedValue(player as any);
-      vi.mocked(mockLeagueMemberRepository.countActiveMembers).mockResolvedValue(
-        0,
-      );
+      vi.mocked(
+        mockLeagueMemberRepository.countActiveMembers,
+      ).mockResolvedValue(0);
 
       // ACT
       await service.validateJoin(playerId, leagueId);
@@ -142,9 +142,9 @@ describe('LeagueJoinValidationService', () => {
       );
       vi.mocked(mockPlayerService.findOne).mockResolvedValue(player as any);
       vi.mocked(mockGuildMembersService.findOne).mockResolvedValue({} as any);
-      vi.mocked(mockLeagueMemberRepository.countActiveMembers).mockResolvedValue(
-        0,
-      );
+      vi.mocked(
+        mockLeagueMemberRepository.countActiveMembers,
+      ).mockResolvedValue(0);
 
       // ACT
       await service.validateJoin(playerId, leagueId);
@@ -185,20 +185,20 @@ describe('LeagueJoinValidationService', () => {
         settings as any,
       );
       vi.mocked(mockPlayerService.findOne).mockResolvedValue(player as any);
-      vi.mocked(mockPlayerValidationService.validatePlayerStatus).mockReturnValue(
-        undefined,
-      );
-      vi.mocked(mockLeagueMemberRepository.countActiveMembers).mockResolvedValue(
-        0,
-      );
+      vi.mocked(
+        mockPlayerValidationService.validatePlayerStatus,
+      ).mockReturnValue(undefined);
+      vi.mocked(
+        mockLeagueMemberRepository.countActiveMembers,
+      ).mockResolvedValue(0);
 
       // ACT
       await service.validateJoin(playerId, leagueId);
 
       // ASSERT
-      expect(mockPlayerValidationService.validatePlayerStatus).toHaveBeenCalledWith(
-        player.status,
-      );
+      expect(
+        mockPlayerValidationService.validatePlayerStatus,
+      ).toHaveBeenCalledWith(player.status);
     });
 
     it('should_throw_LeagueJoinValidationException_when_tracker_required_but_not_present', async () => {
@@ -309,9 +309,9 @@ describe('LeagueJoinValidationService', () => {
         settings as any,
       );
       vi.mocked(mockPlayerService.findOne).mockResolvedValue(player as any);
-      vi.mocked(mockLeagueMemberRepository.countActiveMembers).mockResolvedValue(
-        10,
-      );
+      vi.mocked(
+        mockLeagueMemberRepository.countActiveMembers,
+      ).mockResolvedValue(10);
 
       // ACT & ASSERT
       await expect(service.validateJoin(playerId, leagueId)).rejects.toThrow(
@@ -355,9 +355,9 @@ describe('LeagueJoinValidationService', () => {
         total: 1,
         data: [{ id: 'member123' }],
       } as any);
-      vi.mocked(mockLeagueMemberRepository.countActiveMembers).mockResolvedValue(
-        0,
-      );
+      vi.mocked(
+        mockLeagueMemberRepository.countActiveMembers,
+      ).mockResolvedValue(0);
 
       // ACT & ASSERT
       await expect(service.validateJoin(playerId, leagueId)).rejects.toThrow(
@@ -401,9 +401,9 @@ describe('LeagueJoinValidationService', () => {
       vi.mocked(mockPlayerValidationService.validateCooldown).mockReturnValue(
         undefined,
       );
-      vi.mocked(mockLeagueMemberRepository.countActiveMembers).mockResolvedValue(
-        0,
-      );
+      vi.mocked(
+        mockLeagueMemberRepository.countActiveMembers,
+      ).mockResolvedValue(0);
 
       // ACT
       await service.validateJoin(playerId, leagueId);
@@ -416,4 +416,3 @@ describe('LeagueJoinValidationService', () => {
     });
   });
 });
-
