@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
-import { firstValueFrom, timeout, retry, catchError, throwError } from 'rxjs';
+import { firstValueFrom, timeout, retry, catchError } from 'rxjs';
 import { AxiosError, AxiosResponse } from 'axios';
 import { TrackerUrlConverterService } from './tracker-url-converter.service';
 import {
@@ -380,40 +380,35 @@ export class TrackerScraperService {
           })
           .pipe(
             timeout(this.flaresolverrTimeout),
-            retry({
-              count: this.flaresolverrRetryAttempts,
-              delay: this.flaresolverrRetryDelay,
-            }),
+            ...(this.flaresolverrRetryAttempts > 0
+              ? [
+                  retry({
+                    count: this.flaresolverrRetryAttempts,
+                    delay: this.flaresolverrRetryDelay,
+                  }),
+                ]
+              : []),
             catchError((error: AxiosError) => {
               if (error.response) {
                 if (error.response.status === 429) {
                   this.logger.warn('Rate limit hit from FlareSolverr API');
-                  return throwError(
-                    () =>
-                      new ServiceUnavailableException(
-                        'Rate limit exceeded. Please try again later.',
-                      ),
+                  throw new ServiceUnavailableException(
+                    'Rate limit exceeded. Please try again later.',
                   );
                 }
                 if (error.response.status >= 500) {
                   this.logger.error(
                     `FlareSolverr API server error: ${error.response.status}`,
                   );
-                  return throwError(
-                    () =>
-                      new ServiceUnavailableException(
-                        'FlareSolverr scraper service unavailable',
-                      ),
+                  throw new ServiceUnavailableException(
+                    'FlareSolverr scraper service unavailable',
                   );
                 }
               }
 
               if (error.code === 'ECONNABORTED') {
-                return throwError(
-                  () =>
-                    new ServiceUnavailableException(
-                      'Request timeout while connecting to FlareSolverr API',
-                    ),
+                throw new ServiceUnavailableException(
+                  'Request timeout while connecting to FlareSolverr API',
                 );
               }
 
@@ -422,7 +417,7 @@ export class TrackerScraperService {
                   `FlareSolverr API 400 error: ${JSON.stringify(error.response.data)}`,
                 );
               }
-              return throwError(() => error);
+              throw error;
             }),
           ),
       );
