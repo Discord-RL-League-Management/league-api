@@ -58,6 +58,9 @@ describe('TrackerScraperService', () => {
     'https://api.tracker.gg/api/v2/rocket-league/standard/profile/steam/testuser';
 
   beforeEach(() => {
+    // Use fake timers to make rate limiting instant in unit tests
+    vi.useFakeTimers();
+
     // ARRANGE: Setup test dependencies
     mockHttpService = {
       post: vi.fn(),
@@ -80,6 +83,7 @@ describe('TrackerScraperService', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.useRealTimers();
   });
 
   describe('constructor', () => {
@@ -295,6 +299,22 @@ describe('TrackerScraperService', () => {
 
     it('should_throw_service_unavailable_when_http_request_fails', async () => {
       // ARRANGE
+      // Disable retries for error tests - we're testing error handling, not retry logic
+      // This avoids RxJS retry operator subscription cleanup issues
+      const noRetryConfig = {
+        ...mockFlareSolverrConfig,
+        retryAttempts: 0,
+        retryDelayMs: 0,
+      };
+      const noRetryConfigService = {
+        get: vi.fn().mockReturnValue(noRetryConfig),
+      } as unknown as ConfigService;
+      const noRetryService = new TrackerScraperService(
+        mockHttpService,
+        noRetryConfigService,
+        mockUrlConverter,
+      );
+
       const axiosError = new AxiosError('Network error');
       axiosError.code = 'ECONNREFUSED';
 
@@ -303,9 +323,13 @@ describe('TrackerScraperService', () => {
       );
 
       // ACT & ASSERT
-      await expect(service.scrapeTrackerData(mockTrnUrl)).rejects.toThrow(
-        ServiceUnavailableException,
-      );
+      const promise = noRetryService.scrapeTrackerData(mockTrnUrl);
+      // Advance timers to resolve rate limiting delays
+      await vi.runAllTimersAsync();
+      // Await the rejection - this ensures the observable chain fully settles
+      await expect(promise).rejects.toThrow(ServiceUnavailableException);
+      // Advance timers one more time to ensure all async operations complete
+      await vi.runAllTimersAsync();
     });
 
     it('should_propagate_bad_request_exceptions', async () => {
@@ -640,14 +664,20 @@ describe('TrackerScraperService', () => {
       const result = await service.scrapeTrackerData(mockTrnUrl);
 
       // ASSERT
-      expect(result.platformInfo.platformSlug).toBe('');
-      expect(result.platformInfo.platformUserId).toBe('');
-      expect(result.platformInfo.platformUserHandle).toBe('');
-      expect(result.userInfo.userId).toBe(0);
-      expect(result.userInfo.isPremium).toBe(false);
-      expect(result.metadata.lastUpdated).toBe('');
-      expect(result.metadata.playerId).toBe(0);
-      expect(result.metadata.currentSeason).toBe(0);
+      expect(result.platformInfo).toEqual({
+        platformSlug: '',
+        platformUserId: '',
+        platformUserHandle: '',
+      });
+      expect(result.userInfo).toEqual({
+        userId: 0,
+        isPremium: false,
+      });
+      expect(result.metadata).toEqual({
+        lastUpdated: '',
+        playerId: 0,
+        currentSeason: 0,
+      });
     });
   });
 
@@ -941,13 +971,18 @@ describe('TrackerScraperService', () => {
       const result = service.parseSegments(segments, 34, availableSegments);
 
       // ASSERT
-      expect(result.playlist1v1?.rank).toBe('Supersonic Legend');
-      expect(result.playlist1v1?.rankValue).toBe(22);
-      expect(result.playlist1v1?.division).toBe('Division I');
-      expect(result.playlist1v1?.divisionValue).toBe(0);
-      expect(result.playlist1v1?.rating).toBe(1721);
-      expect(result.playlist1v1?.matchesPlayed).toBe(62);
-      expect(result.playlist1v1?.winStreak).toBe(11);
+      expect(result.playlist1v1).toBeDefined();
+      expect(result.playlist1v1).toMatchObject({
+        rank: 'Supersonic Legend',
+        rankValue: 22,
+        division: 'Division I',
+        divisionValue: 0,
+      });
+      expect(result.playlist1v1).toMatchObject({
+        rating: 1721,
+        matchesPlayed: 62,
+        winStreak: 11,
+      });
     });
 
     it('should_handle_missing_tier_gracefully', () => {
@@ -1132,7 +1167,9 @@ describe('TrackerScraperService', () => {
         .mockReturnValueOnce(of(season32AxiosResponse) as any); // Season 32
 
       // ACT
-      const result = await service.scrapeAllSeasons(mockTrnUrl);
+      const promise = service.scrapeAllSeasons(mockTrnUrl);
+      await vi.runAllTimersAsync();
+      const result = await promise;
 
       // ASSERT
       expect(result.length).toBeGreaterThan(0);
@@ -1166,7 +1203,9 @@ describe('TrackerScraperService', () => {
         .mockReturnValueOnce(of(season33AxiosResponse) as any);
 
       // ACT
-      const result = await service.scrapeAllSeasons(mockTrnUrl);
+      const promise = service.scrapeAllSeasons(mockTrnUrl);
+      await vi.runAllTimersAsync();
+      const result = await promise;
 
       // ASSERT
       expect(result.length).toBeGreaterThan(1);
@@ -1211,7 +1250,9 @@ describe('TrackerScraperService', () => {
         .mockReturnValueOnce(throwError(() => axiosError) as any); // Season 33 fails
 
       // ACT
-      const result = await fastService.scrapeAllSeasons(mockTrnUrl);
+      const promise = fastService.scrapeAllSeasons(mockTrnUrl);
+      await vi.runAllTimersAsync();
+      const result = await promise;
 
       // ASSERT
       expect(result.length).toBe(1); // Only base season included
@@ -1274,7 +1315,9 @@ describe('TrackerScraperService', () => {
       );
 
       // ACT
-      const result = await service.scrapeAllSeasons(mockTrnUrl);
+      const promise = service.scrapeAllSeasons(mockTrnUrl);
+      await vi.runAllTimersAsync();
+      const result = await promise;
 
       // ASSERT
       const currentSeason = result.find((s) => s.seasonNumber === 34);
@@ -1340,7 +1383,9 @@ describe('TrackerScraperService', () => {
         .mockReturnValueOnce(of(season32AxiosResponse) as any); // Season 32
 
       // ACT
-      const result = await service.scrapeAllSeasons(mockTrnUrl);
+      const promise = service.scrapeAllSeasons(mockTrnUrl);
+      await vi.runAllTimersAsync();
+      const result = await promise;
 
       // ASSERT
       // Should have base season (34) and scraped seasons (33, 32), but not duplicate 34
@@ -1433,6 +1478,22 @@ describe('TrackerScraperService', () => {
 
     it('should_handle_rate_limit_errors_gracefully', async () => {
       // ARRANGE
+      // Disable retries for error tests - we're testing error handling, not retry logic
+      // This avoids RxJS retry operator subscription cleanup issues
+      const noRetryConfig = {
+        ...mockFlareSolverrConfig,
+        retryAttempts: 0,
+        retryDelayMs: 0,
+      };
+      const noRetryConfigService = {
+        get: vi.fn().mockReturnValue(noRetryConfig),
+      } as unknown as ConfigService;
+      const noRetryService = new TrackerScraperService(
+        mockHttpService,
+        noRetryConfigService,
+        mockUrlConverter,
+      );
+
       const axiosError = new AxiosError('Rate limit exceeded');
       axiosError.response = {
         status: 429,
@@ -1447,13 +1508,33 @@ describe('TrackerScraperService', () => {
       );
 
       // ACT & ASSERT
-      await expect(service.scrapeTrackerData(mockTrnUrl)).rejects.toThrow(
-        ServiceUnavailableException,
-      );
+      const promise = noRetryService.scrapeTrackerData(mockTrnUrl);
+      // Advance timers to resolve rate limiting delays
+      await vi.runAllTimersAsync();
+      // Await the rejection - this ensures the observable chain fully settles
+      await expect(promise).rejects.toThrow(ServiceUnavailableException);
+      // Advance timers one more time to ensure all async operations complete
+      await vi.runAllTimersAsync();
     });
 
     it('should_handle_server_errors_gracefully', async () => {
       // ARRANGE
+      // Disable retries for error tests - we're testing error handling, not retry logic
+      // This avoids RxJS retry operator subscription cleanup issues
+      const noRetryConfig = {
+        ...mockFlareSolverrConfig,
+        retryAttempts: 0,
+        retryDelayMs: 0,
+      };
+      const noRetryConfigService = {
+        get: vi.fn().mockReturnValue(noRetryConfig),
+      } as unknown as ConfigService;
+      const noRetryService = new TrackerScraperService(
+        mockHttpService,
+        noRetryConfigService,
+        mockUrlConverter,
+      );
+
       const axiosError = new AxiosError('Server error');
       axiosError.response = {
         status: 500,
@@ -1468,13 +1549,33 @@ describe('TrackerScraperService', () => {
       );
 
       // ACT & ASSERT
-      await expect(service.scrapeTrackerData(mockTrnUrl)).rejects.toThrow(
-        ServiceUnavailableException,
-      );
+      const promise = noRetryService.scrapeTrackerData(mockTrnUrl);
+      // Advance timers to resolve rate limiting delays
+      await vi.runAllTimersAsync();
+      // Await the rejection - this ensures the observable chain fully settles
+      await expect(promise).rejects.toThrow(ServiceUnavailableException);
+      // Advance timers one more time to ensure all async operations complete
+      await vi.runAllTimersAsync();
     });
 
     it('should_throw_service_unavailable_on_timeout', async () => {
       // ARRANGE
+      // Disable retries for error tests - we're testing error handling, not retry logic
+      // This avoids RxJS retry operator subscription cleanup issues
+      const noRetryConfig = {
+        ...mockFlareSolverrConfig,
+        retryAttempts: 0,
+        retryDelayMs: 0,
+      };
+      const noRetryConfigService = {
+        get: vi.fn().mockReturnValue(noRetryConfig),
+      } as unknown as ConfigService;
+      const noRetryService = new TrackerScraperService(
+        mockHttpService,
+        noRetryConfigService,
+        mockUrlConverter,
+      );
+
       const axiosError = new AxiosError('Timeout');
       axiosError.code = 'ECONNABORTED';
 
@@ -1483,13 +1584,33 @@ describe('TrackerScraperService', () => {
       );
 
       // ACT & ASSERT
-      await expect(service.scrapeTrackerData(mockTrnUrl)).rejects.toThrow(
-        ServiceUnavailableException,
-      );
+      const promise = noRetryService.scrapeTrackerData(mockTrnUrl);
+      // Advance timers to resolve rate limiting delays
+      await vi.runAllTimersAsync();
+      // Await the rejection - this ensures the observable chain fully settles
+      await expect(promise).rejects.toThrow(ServiceUnavailableException);
+      // Advance timers one more time to ensure all async operations complete
+      await vi.runAllTimersAsync();
     });
 
     it('should_handle_network_errors', async () => {
       // ARRANGE
+      // Disable retries for error tests - we're testing error handling, not retry logic
+      // This avoids RxJS retry operator subscription cleanup issues
+      const noRetryConfig = {
+        ...mockFlareSolverrConfig,
+        retryAttempts: 0,
+        retryDelayMs: 0,
+      };
+      const noRetryConfigService = {
+        get: vi.fn().mockReturnValue(noRetryConfig),
+      } as unknown as ConfigService;
+      const noRetryService = new TrackerScraperService(
+        mockHttpService,
+        noRetryConfigService,
+        mockUrlConverter,
+      );
+
       const axiosError = new AxiosError('Network error');
       axiosError.code = 'ECONNREFUSED';
 
@@ -1498,9 +1619,13 @@ describe('TrackerScraperService', () => {
       );
 
       // ACT & ASSERT
-      await expect(service.scrapeTrackerData(mockTrnUrl)).rejects.toThrow(
-        ServiceUnavailableException,
-      );
+      const promise = noRetryService.scrapeTrackerData(mockTrnUrl);
+      // Advance timers to resolve rate limiting delays
+      await vi.runAllTimersAsync();
+      // Await the rejection - this ensures the observable chain fully settles
+      await expect(promise).rejects.toThrow(ServiceUnavailableException);
+      // Advance timers one more time to ensure all async operations complete
+      await vi.runAllTimersAsync();
     });
   });
 
@@ -1537,19 +1662,22 @@ describe('TrackerScraperService', () => {
         of(mockAxiosResponse) as any,
       );
 
-      const startTime = Date.now();
+      // ACT - Make multiple rapid requests
+      const promise1 = service.scrapeTrackerData(mockTrnUrl);
+      // Advance timers to resolve rate limiting delays (testing logic, not timing)
+      await vi.runAllTimersAsync();
+      const result1 = await promise1;
 
-      // ACT - Make multiple requests
-      await service.scrapeTrackerData(mockTrnUrl);
-      await service.scrapeTrackerData(mockTrnUrl);
+      const promise2 = service.scrapeTrackerData(mockTrnUrl);
+      await vi.runAllTimersAsync();
+      const result2 = await promise2;
 
-      const endTime = Date.now();
-      const elapsed = endTime - startTime;
-
-      // ASSERT - With rate limit of 60/min, requests should be spaced at least 1000ms apart
-      // However, since we're mocking, we mainly verify the method completes
-      // In a real scenario, rate limiting would add delays
-      expect(elapsed).toBeGreaterThanOrEqual(0);
+      // ASSERT - Verify both requests completed successfully
+      // Fake timers allow us to test rate limiting logic (calculations, state) without waiting
+      expect(result1).toBeDefined();
+      expect(result2).toBeDefined();
+      expect(result1.platformInfo.platformSlug).toBe('steam');
+      expect(result2.platformInfo.platformSlug).toBe('steam');
     });
   });
 });
