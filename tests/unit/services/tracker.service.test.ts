@@ -387,7 +387,7 @@ describe('TrackerService', () => {
       );
       vi.mocked(mockRepository.create).mockImplementation((data) => {
         const index = urls.indexOf(data.url);
-        return createdTrackers[index];
+        return Promise.resolve(createdTrackers[index]);
       });
 
       // ACT

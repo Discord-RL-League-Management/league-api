@@ -114,12 +114,13 @@ describe('GuildSettingsService', () => {
       }),
     } as unknown as PrismaService;
 
-    const mockGet = vi.fn<[string], Promise<unknown>>();
-    mockGet.mockResolvedValue(undefined as unknown);
+    const mockGet = vi.fn().mockResolvedValue(undefined as unknown) as (
+      key: string,
+    ) => Promise<unknown>;
     const mockSet = vi.fn().mockResolvedValue(undefined);
     const mockDel = vi.fn().mockResolvedValue(undefined);
     mockCacheManager = {
-      get: mockGet as (key: string) => Promise<unknown>,
+      get: mockGet,
       set: mockSet,
       del: mockDel,
     } as unknown as Cache;

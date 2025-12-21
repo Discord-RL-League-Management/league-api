@@ -361,65 +361,68 @@ export class TrackerScraperService {
         maxTimeout: this.flaresolverrTimeout,
       };
 
-      const response = await firstValueFrom(
-        this.httpService
-          .post<{
-            status?: string;
-            message?: string;
-            solution?: {
-              response?: string;
-              status?: number;
-              url?: string;
-            };
-          }>(`${this.flaresolverrUrl}/v1`, requestBody, {
-            headers: {
-              'Content-Type': 'application/json',
-              Accept: 'application/json',
-            },
-            timeout: this.flaresolverrTimeout,
-          })
-          .pipe(
-            ...(this.flaresolverrRetryAttempts > 0
-              ? [
-                  retry({
-                    count: this.flaresolverrRetryAttempts,
-                    delay: this.flaresolverrRetryDelay,
-                  }),
-                ]
-              : []),
-            catchError((error: AxiosError) => {
-              if (error.response) {
-                if (error.response.status === 429) {
-                  this.logger.warn('Rate limit hit from FlareSolverr API');
-                  throw new ServiceUnavailableException(
-                    'Rate limit exceeded. Please try again later.',
-                  );
-                }
-                if (error.response.status >= 500) {
-                  this.logger.error(
-                    `FlareSolverr API server error: ${error.response.status}`,
-                  );
-                  throw new ServiceUnavailableException(
-                    'FlareSolverr scraper service unavailable',
-                  );
-                }
-              }
+      const errorHandler = catchError((error: AxiosError) => {
+        if (error.response) {
+          if (error.response.status === 429) {
+            this.logger.warn('Rate limit hit from FlareSolverr API');
+            throw new ServiceUnavailableException(
+              'Rate limit exceeded. Please try again later.',
+            );
+          }
+          if (error.response.status >= 500) {
+            this.logger.error(
+              `FlareSolverr API server error: ${error.response.status}`,
+            );
+            throw new ServiceUnavailableException(
+              'FlareSolverr scraper service unavailable',
+            );
+          }
+        }
 
-              if (error.code === 'ECONNABORTED') {
-                throw new ServiceUnavailableException(
-                  'Request timeout while connecting to FlareSolverr API',
-                );
-              }
+        if (error.code === 'ECONNABORTED') {
+          throw new ServiceUnavailableException(
+            'Request timeout while connecting to FlareSolverr API',
+          );
+        }
 
-              if (error.response?.status === 400) {
-                this.logger.error(
-                  `FlareSolverr API 400 error: ${JSON.stringify(error.response.data)}`,
-                );
-              }
-              throw error;
-            }),
-          ),
-      );
+        if (error.response?.status === 400) {
+          this.logger.error(
+            `FlareSolverr API 400 error: ${JSON.stringify(error.response.data)}`,
+          );
+        }
+        throw error;
+      });
+
+      const httpObservable = this.httpService.post<{
+        status?: string;
+        message?: string;
+        solution?: {
+          response?: string;
+          status?: number;
+          url?: string;
+        };
+      }>(`${this.flaresolverrUrl}/v1`, requestBody, {
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        timeout: this.flaresolverrTimeout,
+      });
+
+      const observableWithRetry =
+        this.flaresolverrRetryAttempts > 0
+          ? httpObservable.pipe(
+              retry({
+                count: this.flaresolverrRetryAttempts,
+                delay: this.flaresolverrRetryDelay,
+              }),
+              errorHandler,
+            )
+          : httpObservable.pipe(errorHandler);
+
+      const response = (await firstValueFrom(
+        observableWithRetry,
+      )) as AxiosResponse<unknown>;
 
       // FlareSolverr returns error status in the response body with status: "error" or "failed"
       if (

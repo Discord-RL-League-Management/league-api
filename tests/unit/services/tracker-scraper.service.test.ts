@@ -20,7 +20,10 @@ import { of, throwError } from 'rxjs';
 import { AxiosError, AxiosResponse } from 'axios';
 import { TrackerScraperService } from '@/trackers/services/tracker-scraper.service';
 import { TrackerUrlConverterService } from '@/trackers/services/tracker-url-converter.service';
-import type { ScrapedTrackerData } from '@/trackers/interfaces/scraper.interfaces';
+import type {
+  ScrapedTrackerData,
+  TrackerSegment,
+} from '@/trackers/interfaces/scraper.interfaces';
 import {
   createFlareSolverrResponse,
   createFlareSolverrResponseWithHtml,
@@ -848,7 +851,7 @@ describe('TrackerScraperService', () => {
 
     it('should_extract_season_name_from_available_segments', () => {
       // ARRANGE
-      const segments = [];
+      const segments: TrackerSegment[] = [];
       const availableSegments = [
         {
           type: 'playlist',
@@ -866,8 +869,11 @@ describe('TrackerScraperService', () => {
 
     it('should_use_fallback_season_name_when_not_found', () => {
       // ARRANGE
-      const segments = [];
-      const availableSegments = [];
+      const segments: TrackerSegment[] = [];
+      const availableSegments: Array<{
+        attributes: { season: number };
+        metadata: { name: string };
+      }> = [];
 
       // ACT
       const result = service.parseSegments(segments, 34, availableSegments);
@@ -1064,7 +1070,7 @@ describe('TrackerScraperService', () => {
 
     it('should_use_default_season_name_when_no_season_name_found', () => {
       // ARRANGE
-      const segments = []; // No segments at all
+      const segments: TrackerSegment[] = []; // No segments at all
       const availableSegments: Array<{
         type: string;
         attributes: { season: number };
