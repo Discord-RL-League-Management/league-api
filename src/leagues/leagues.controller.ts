@@ -114,7 +114,6 @@ export class LeaguesController {
       createLeagueDto.guildId,
     );
 
-    // Only guild admins can create leagues to prevent unauthorized league creation
     await this.leaguePermissionService.checkGuildAdminAccessForGuild(
       user.id,
       createLeagueDto.guildId,
@@ -171,7 +170,6 @@ export class LeaguesController {
 
     await this.leagueAccessValidationService.validateLeagueAccess(user.id, id);
 
-    // Status changes affect league visibility and participation, requiring admin privileges
     await this.leaguePermissionService.checkLeagueAdminAccess(user.id, id);
 
     return this.leaguesService.updateStatus(id, body.status);

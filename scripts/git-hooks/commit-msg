@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# Commit-msg hook to validate conventional commit message format
+# Uses commitlint to validate commit messages
+
+npx --no -- commitlint --edit "$1"
+

@@ -6,8 +6,8 @@ import {
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
-import { firstValueFrom, timeout, retry, catchError, throwError } from 'rxjs';
-import { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
+import { firstValueFrom, retry, catchError } from 'rxjs';
+import { AxiosError, AxiosResponse } from 'axios';
 import { TrackerUrlConverterService } from './tracker-url-converter.service';
 import {
   ScrapedTrackerData,
@@ -40,12 +40,10 @@ const PLAYLIST_ID_MAP: Record<
 @Injectable()
 export class TrackerScraperService {
   private readonly logger = new Logger(TrackerScraperService.name);
-  private readonly zyteApiKey: string;
-  private readonly zyteProxyHost: string;
-  private readonly zyteProxyPort: number;
-  private readonly zyteTimeout: number;
-  private readonly zyteRetryAttempts: number;
-  private readonly zyteRetryDelay: number;
+  private readonly flaresolverrUrl: string;
+  private readonly flaresolverrTimeout: number;
+  private readonly flaresolverrRetryAttempts: number;
+  private readonly flaresolverrRetryDelay: number;
   private readonly rateLimitPerMinute: number;
   private lastRequestTime: number = 0;
   private requestCount: number = 0;
@@ -56,25 +54,21 @@ export class TrackerScraperService {
     private readonly configService: ConfigService,
     private readonly urlConverter: TrackerUrlConverterService,
   ) {
-    const zyteConfig = this.configService.get<{
-      apiKey: string;
-      proxyHost: string;
-      proxyPort: number;
+    const flaresolverrConfig = this.configService.get<{
+      url: string;
       timeoutMs: number;
       retryAttempts: number;
       retryDelayMs: number;
       rateLimitPerMinute: number;
-    }>('zyte');
-    if (!zyteConfig) {
-      throw new Error('Zyte configuration is missing');
+    }>('flaresolverr');
+    if (!flaresolverrConfig) {
+      throw new Error('FlareSolverr configuration is missing');
     }
-    this.zyteApiKey = zyteConfig.apiKey;
-    this.zyteProxyHost = zyteConfig.proxyHost;
-    this.zyteProxyPort = zyteConfig.proxyPort;
-    this.zyteTimeout = zyteConfig.timeoutMs;
-    this.zyteRetryAttempts = zyteConfig.retryAttempts;
-    this.zyteRetryDelay = zyteConfig.retryDelayMs;
-    this.rateLimitPerMinute = zyteConfig.rateLimitPerMinute;
+    this.flaresolverrUrl = flaresolverrConfig.url;
+    this.flaresolverrTimeout = flaresolverrConfig.timeoutMs;
+    this.flaresolverrRetryAttempts = flaresolverrConfig.retryAttempts;
+    this.flaresolverrRetryDelay = flaresolverrConfig.retryDelayMs;
+    this.rateLimitPerMinute = flaresolverrConfig.rateLimitPerMinute;
   }
 
   /**
@@ -87,20 +81,16 @@ export class TrackerScraperService {
     seasonNumber?: number,
   ): Promise<ScrapedTrackerData> {
     try {
-      // Convert TRN URL to tracker.gg API URL
       const apiUrl = this.urlConverter.convertTrnUrlToApiUrl(trnUrl);
 
-      // Add season parameter if provided
       const urlWithSeason = seasonNumber
         ? `${apiUrl}?season=${seasonNumber}`
         : apiUrl;
 
       this.logger.debug(`Scraping tracker data from: ${urlWithSeason}`);
 
-      // Make request through Zyte proxy
       const response = await this.makeProxyRequest(urlWithSeason);
 
-      // Parse and validate response
       const data = this.parseApiResponse(response);
 
       this.logger.debug(
@@ -133,10 +123,8 @@ export class TrackerScraperService {
    */
   async scrapeAllSeasons(trnUrl: string): Promise<SeasonData[]> {
     try {
-      // Get base data to find available seasons
       const baseData = await this.scrapeTrackerData(trnUrl);
 
-      // Extract available season numbers
       const availableSeasons = baseData.availableSegments
         .filter((seg) => seg.type === 'playlist' && seg.attributes.season)
         .map((seg) => seg.attributes.season)
@@ -196,17 +184,14 @@ export class TrackerScraperService {
 
       const seasonResults = await Promise.all(seasonDataPromises);
 
-      // Filter out null results (failed seasons)
       const validSeasons = seasonResults.filter(
         (season): season is SeasonData => season !== null,
       );
 
-      // Add current season data if we have it
       if (currentSeasonData) {
         validSeasons.push(currentSeasonData);
       }
 
-      // Sort by season number descending (newest first)
       validSeasons.sort((a, b) => b.seasonNumber - a.seasonNumber);
 
       this.logger.log(
@@ -240,7 +225,6 @@ export class TrackerScraperService {
         seg.type === 'playlist' && seg.attributes.season === seasonNumber,
     );
 
-    // Initialize season data
     const seasonData: SeasonData = {
       seasonNumber,
       seasonName: this.extractSeasonName(
@@ -254,7 +238,6 @@ export class TrackerScraperService {
       playlist4v4: null,
     };
 
-    // Extract playlist data for each playlist type
     for (const segment of playlistSegments) {
       const playlistId = segment.attributes.playlistId;
       if (!playlistId || typeof playlistId !== 'number') {
@@ -366,149 +349,105 @@ export class TrackerScraperService {
   }
 
   /**
-   * Make HTTP request through Zyte proxy
+   * Make HTTP request through FlareSolverr scraper API
    */
   private async makeProxyRequest(url: string): Promise<AxiosResponse<unknown>> {
-    // Enforce rate limiting
     await this.enforceRateLimit();
 
-    // Configure proxy for axios
-    const proxyConfig: AxiosRequestConfig = {
-      proxy: {
-        protocol: 'http',
-        host: this.zyteProxyHost,
-        port: this.zyteProxyPort,
-        auth: {
-          username: this.zyteApiKey,
-          password: '',
-        },
-      },
-      timeout: this.zyteTimeout,
-      headers: {
-        'User-Agent': 'LeagueManagement-Bot/1.0',
-      },
-    };
-
     try {
-      const response = await firstValueFrom(
-        this.httpService.get(url, proxyConfig).pipe(
-          timeout(this.zyteTimeout),
-          retry({
-            count: this.zyteRetryAttempts,
-            delay: this.zyteRetryDelay,
-          }),
-          catchError((error: AxiosError) => {
-            // Check for Zyte-specific error headers (case-insensitive)
-            const headers = error.response?.headers || {};
-            const zyteErrorTitle =
-              headers['zyte-error-title'] || headers['Zyte-Error-Title'];
-            const zyteErrorType =
-              headers['zyte-error-type'] || headers['Zyte-Error-Type'];
-            const zyteRequestId = (headers['zyte-request-id'] ||
-              headers['Zyte-Request-ID']) as string | undefined;
+      const requestBody = {
+        cmd: 'request.get',
+        url: url,
+        maxTimeout: this.flaresolverrTimeout,
+      };
 
-            if (zyteErrorTitle || zyteErrorType) {
-              const errorMsg =
-                typeof zyteErrorTitle === 'string'
-                  ? zyteErrorTitle
-                  : typeof zyteErrorType === 'string'
-                    ? zyteErrorType
-                    : '';
-              const requestId =
-                typeof zyteRequestId === 'string'
-                  ? zyteRequestId
-                  : zyteRequestId != null
-                    ? String(zyteRequestId)
-                    : 'unknown';
-              this.logger.error(
-                `Zyte proxy error: ${errorMsg} (Request ID: ${requestId})`,
-              );
-              return throwError(
-                () =>
-                  new ServiceUnavailableException(
-                    `Zyte proxy error: ${errorMsg}`,
-                  ),
-              );
-            }
+      const errorHandler = catchError((error: AxiosError) => {
+        if (error.response) {
+          if (error.response.status === 429) {
+            this.logger.warn('Rate limit hit from FlareSolverr API');
+            throw new ServiceUnavailableException(
+              'Rate limit exceeded. Please try again later.',
+            );
+          }
+          if (error.response.status >= 500) {
+            this.logger.error(
+              `FlareSolverr API server error: ${error.response.status}`,
+            );
+            throw new ServiceUnavailableException(
+              'FlareSolverr scraper service unavailable',
+            );
+          }
+        }
 
-            // Handle HTTP errors
-            if (error.response) {
-              if (error.response.status === 429) {
-                this.logger.warn('Rate limit hit from Zyte proxy');
-                return throwError(
-                  () =>
-                    new ServiceUnavailableException(
-                      'Rate limit exceeded. Please try again later.',
-                    ),
-                );
-              }
+        if (error.code === 'ECONNABORTED') {
+          throw new ServiceUnavailableException(
+            'Request timeout while connecting to FlareSolverr API',
+          );
+        }
 
-              if (error.response.status >= 500) {
-                this.logger.error(
-                  `Zyte proxy server error: ${error.response.status}`,
-                );
-                return throwError(
-                  () =>
-                    new ServiceUnavailableException(
-                      'Zyte proxy service unavailable',
-                    ),
-                );
-              }
-            }
+        if (error.response?.status === 400) {
+          this.logger.error(
+            `FlareSolverr API 400 error: ${JSON.stringify(error.response.data)}`,
+          );
+        }
+        throw error;
+      });
 
-            // Network errors
-            if (error.code === 'ECONNABORTED') {
-              return throwError(
-                () =>
-                  new ServiceUnavailableException(
-                    'Request timeout while connecting to Zyte proxy',
-                  ),
-              );
-            }
+      const httpObservable = this.httpService.post<{
+        status?: string;
+        message?: string;
+        solution?: {
+          response?: string;
+          status?: number;
+          url?: string;
+        };
+      }>(`${this.flaresolverrUrl}/v1`, requestBody, {
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        timeout: this.flaresolverrTimeout,
+      });
 
-            return throwError(() => error);
-          }),
-        ),
+      const observableWithRetry =
+        this.flaresolverrRetryAttempts > 0
+          ? httpObservable.pipe(
+              retry({
+                count: this.flaresolverrRetryAttempts,
+                delay: this.flaresolverrRetryDelay,
+              }),
+              errorHandler,
+            )
+          : httpObservable.pipe(errorHandler);
+
+      const response = (await firstValueFrom(
+        observableWithRetry,
+      )) as AxiosResponse<unknown>;
+
+      // FlareSolverr returns error status in the response body with status: "error" or "failed"
+      if (
+        response.data &&
+        typeof response.data === 'object' &&
+        'status' in response.data
+      ) {
+        const flaresolverrResponse = response.data as {
+          status?: string;
+          message?: string;
+        };
+        if (flaresolverrResponse.status !== 'ok') {
+          const errorMessage =
+            flaresolverrResponse.message ||
+            `FlareSolverr scraping failed with status: ${flaresolverrResponse.status || 'unknown'}`;
+          this.logger.error(`FlareSolverr scraping failed: ${errorMessage}`);
+          throw new ServiceUnavailableException(
+            `Failed to scrape target: ${errorMessage}`,
+          );
+        }
+      }
+
+      this.logger.debug(
+        `FlareSolverr API response received. Status: ${response.status}, Data type: ${typeof response.data}`,
       );
-
-      // Check for Zyte error headers in successful responses (case-insensitive)
-      const responseHeaders = (response.headers || {}) as Record<
-        string,
-        unknown
-      >;
-      const zyteErrorTitle = (responseHeaders['zyte-error-title'] ||
-        responseHeaders['Zyte-Error-Title']) as string | undefined;
-      const zyteErrorType = (responseHeaders['zyte-error-type'] ||
-        responseHeaders['Zyte-Error-Type']) as string | undefined;
-      if (zyteErrorTitle || zyteErrorType) {
-        const zyteRequestId = (responseHeaders['zyte-request-id'] ||
-          responseHeaders['Zyte-Request-ID']) as string | undefined;
-        const errorMsg =
-          typeof zyteErrorTitle === 'string'
-            ? zyteErrorTitle
-            : typeof zyteErrorType === 'string'
-              ? zyteErrorType
-              : 'Unknown error';
-        const requestIdStr =
-          typeof zyteRequestId === 'string'
-            ? zyteRequestId
-            : zyteRequestId != null
-              ? String(zyteRequestId)
-              : 'unknown';
-        this.logger.error(
-          `Zyte proxy error in response: ${errorMsg} (Request ID: ${requestIdStr})`,
-        );
-        throw new ServiceUnavailableException(`Zyte proxy error: ${errorMsg}`);
-      }
-
-      // Log Zyte request ID for debugging (case-insensitive)
-      const zyteRequestId =
-        responseHeaders['zyte-request-id'] ||
-        responseHeaders['Zyte-Request-ID'];
-      if (zyteRequestId && typeof zyteRequestId === 'string') {
-        this.logger.debug(`Zyte Request ID: ${zyteRequestId}`);
-      }
-
       return response;
     } catch (error) {
       if (
@@ -519,31 +458,196 @@ export class TrackerScraperService {
       }
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      this.logger.error(`Proxy request failed: ${errorMessage}`, error);
+      this.logger.error(
+        `FlareSolverr API request failed: ${errorMessage}`,
+        error,
+      );
       throw new ServiceUnavailableException(
-        `Failed to make request through Zyte proxy: ${errorMessage}`,
+        `Failed to make request through FlareSolverr API: ${errorMessage}`,
       );
     }
   }
 
   /**
    * Parse and validate API response
-   * Response from tracker.gg API has structure: { data: { ... } }
+   * Response from FlareSolverr API has structure: { status: "ok", solution: { response: "<html>...<pre>{JSON}</pre>..." } }
+   * Response from tracker.gg API (after extraction) has structure: { data: { ... } }
    */
   private parseApiResponse(
     response: AxiosResponse<unknown> | { data?: unknown },
   ): ScrapedTrackerData {
-    // Handle both direct response and nested data structure
-    let data: unknown = response;
-    if (response && typeof response === 'object' && 'data' in response) {
-      data = (response as { data?: unknown }).data || response;
+    let responseData = this.extractResponseData(response);
+    this.logResponseData(responseData);
+
+    // Handle FlareSolverr response format
+    if (this.isFlareSolverrResponse(responseData)) {
+      responseData = this.parseFlareSolverrResponse(responseData);
     }
 
+    // Handle both direct response and nested data structure from tracker.gg
+    const data = this.extractTrackerData(responseData);
+    const trackerData = this.validateAndNormalizeTrackerData(data);
+
+    return this.buildScrapedTrackerData(trackerData);
+  }
+
+  /**
+   * Extract response data from Axios response or direct object
+   */
+  private extractResponseData(
+    response: AxiosResponse<unknown> | { data?: unknown },
+  ): unknown {
+    if (response && typeof response === 'object' && 'data' in response) {
+      return (response as AxiosResponse<unknown>).data || response;
+    }
+    return response;
+  }
+
+  /**
+   * Log response data for debugging
+   */
+  private logResponseData(responseData: unknown): void {
+    const responseDataType = typeof responseData;
+    const isObject = responseData !== null && typeof responseData === 'object';
+    const keys =
+      isObject && responseData !== null && typeof responseData === 'object'
+        ? Object.keys(responseData).join(', ')
+        : 'N/A';
+    this.logger.debug(
+      `Parsing API response. ResponseData type: ${responseDataType}, Is object: ${isObject}, Keys: ${keys}`,
+    );
+  }
+
+  /**
+   * Check if response is in FlareSolverr format
+   */
+  private isFlareSolverrResponse(responseData: unknown): boolean {
+    return (
+      responseData !== null &&
+      typeof responseData === 'object' &&
+      'status' in responseData &&
+      'solution' in responseData
+    );
+  }
+
+  /**
+   * Parse FlareSolverr response and extract JSON from HTML
+   */
+  private parseFlareSolverrResponse(responseData: unknown): unknown {
+    const flaresolverrResponse = responseData as {
+      status?: string;
+      message?: string;
+      solution?: {
+        response?: string;
+        status?: number;
+        url?: string;
+      };
+    };
+
+    this.validateFlareSolverrStatus(flaresolverrResponse);
+    const htmlResponse = this.extractHtmlResponse(flaresolverrResponse);
+    return this.extractJsonFromHtml(htmlResponse);
+  }
+
+  /**
+   * Validate FlareSolverr response status
+   */
+  private validateFlareSolverrStatus(flaresolverrResponse: {
+    status?: string;
+    message?: string;
+  }): void {
+    if (flaresolverrResponse.status !== 'ok') {
+      const errorMessage =
+        flaresolverrResponse.message ||
+        `FlareSolverr scraping failed with status: ${flaresolverrResponse.status}`;
+      this.logger.error(`FlareSolverr scraping failed: ${errorMessage}`);
+      throw new ServiceUnavailableException(
+        `Failed to scrape target: ${errorMessage}`,
+      );
+    }
+  }
+
+  /**
+   * Extract HTML response from FlareSolverr solution
+   */
+  private extractHtmlResponse(flaresolverrResponse: {
+    solution?: { response?: string };
+  }): string {
+    if (!flaresolverrResponse.solution?.response) {
+      throw new BadRequestException(
+        'Invalid FlareSolverr response: missing solution.response',
+      );
+    }
+
+    const htmlResponse = flaresolverrResponse.solution.response;
+    this.logger.debug(
+      `FlareSolverr response has HTML content. Length: ${htmlResponse.length}`,
+    );
+    return htmlResponse;
+  }
+
+  /**
+   * Extract JSON from HTML <pre> tag
+   */
+  private extractJsonFromHtml(htmlResponse: string): unknown {
+    try {
+      const preTagMatch = htmlResponse.match(/<pre[^>]*>(.*?)<\/pre>/s);
+      if (!preTagMatch || !preTagMatch[1]) {
+        throw new BadRequestException(
+          'Invalid FlareSolverr response: could not find JSON in <pre> tag',
+        );
+      }
+
+      const jsonString = preTagMatch[1];
+      const parsed = JSON.parse(jsonString) as unknown;
+      this.logger.debug(
+        `Successfully extracted and parsed JSON from HTML <pre> tag`,
+      );
+      return parsed;
+    } catch (parseError) {
+      this.logger.error(
+        'Failed to extract or parse JSON from FlareSolverr HTML response',
+        parseError,
+      );
+      throw new BadRequestException(
+        'Invalid API response: failed to parse JSON from FlareSolverr HTML response',
+      );
+    }
+  }
+
+  /**
+   * Extract tracker data from response, handling nested data structure
+   */
+  private extractTrackerData(responseData: unknown): unknown {
+    if (
+      responseData &&
+      typeof responseData === 'object' &&
+      'data' in responseData
+    ) {
+      return (responseData as { data?: unknown }).data || responseData;
+    }
+    return responseData;
+  }
+
+  /**
+   * Validate and normalize tracker data structure
+   */
+  private validateAndNormalizeTrackerData(data: unknown): {
+    segments: TrackerSegment[];
+    availableSegments: Array<{
+      type: string;
+      attributes: { season: number };
+      metadata: { name: string };
+    }>;
+    platformInfo?: ScrapedTrackerData['platformInfo'];
+    userInfo?: ScrapedTrackerData['userInfo'];
+    metadata?: ScrapedTrackerData['metadata'];
+  } {
     if (!data || typeof data !== 'object') {
       throw new BadRequestException('Invalid API response: missing data');
     }
 
-    const responseData = data as {
+    const trackerData = data as {
       segments?: TrackerSegment[];
       availableSegments?: Array<{
         type: string;
@@ -555,15 +659,15 @@ export class TrackerScraperService {
       metadata?: ScrapedTrackerData['metadata'];
     };
 
-    if (!responseData.segments || !Array.isArray(responseData.segments)) {
+    if (!trackerData.segments || !Array.isArray(trackerData.segments)) {
       throw new BadRequestException(
         'Invalid API response: missing or invalid segments array',
       );
     }
 
     if (
-      !responseData.availableSegments ||
-      !Array.isArray(responseData.availableSegments)
+      !trackerData.availableSegments ||
+      !Array.isArray(trackerData.availableSegments)
     ) {
       throw new BadRequestException(
         'Invalid API response: missing or invalid availableSegments array',
@@ -571,56 +675,75 @@ export class TrackerScraperService {
     }
 
     return {
+      segments: trackerData.segments,
+      availableSegments: trackerData.availableSegments,
+      platformInfo: trackerData.platformInfo,
+      userInfo: trackerData.userInfo,
+      metadata: trackerData.metadata,
+    };
+  }
+
+  /**
+   * Build ScrapedTrackerData with default values for missing fields
+   */
+  private buildScrapedTrackerData(trackerData: {
+    segments: TrackerSegment[];
+    availableSegments: Array<{
+      type: string;
+      attributes: { season: number };
+      metadata: { name: string };
+    }>;
+    platformInfo?: ScrapedTrackerData['platformInfo'];
+    userInfo?: ScrapedTrackerData['userInfo'];
+    metadata?: ScrapedTrackerData['metadata'];
+  }): ScrapedTrackerData {
+    return {
       platformInfo:
-        responseData.platformInfo ||
+        trackerData.platformInfo ||
         ({
           platformSlug: '',
           platformUserId: '',
           platformUserHandle: '',
         } as ScrapedTrackerData['platformInfo']),
       userInfo:
-        responseData.userInfo ||
+        trackerData.userInfo ||
         ({ userId: 0, isPremium: false } as ScrapedTrackerData['userInfo']),
       metadata:
-        responseData.metadata ||
+        trackerData.metadata ||
         ({
           lastUpdated: '',
           playerId: 0,
           currentSeason: 0,
         } as ScrapedTrackerData['metadata']),
-      segments: responseData.segments,
-      availableSegments: responseData.availableSegments,
+      segments: trackerData.segments,
+      availableSegments: trackerData.availableSegments,
     };
   }
 
   /**
-   * Enforce rate limiting for Zyte API
+   * Enforce rate limiting for FlareSolverr API
    */
   private async enforceRateLimit(): Promise<void> {
     const now = Date.now();
     const windowMs = 60 * 1000; // 1 minute window
 
-    // Reset window if we've moved to a new minute
     if (now - this.rateLimitWindowStart >= windowMs) {
       this.rateLimitWindowStart = now;
       this.requestCount = 0;
     }
 
-    // Check if we've exceeded rate limit
     if (this.requestCount >= this.rateLimitPerMinute) {
       const waitTime = windowMs - (now - this.rateLimitWindowStart);
       this.logger.warn(
         `Rate limit reached. Waiting ${waitTime}ms before next request`,
       );
       await new Promise((resolve) => setTimeout(resolve, waitTime));
-      // Reset after waiting
       this.rateLimitWindowStart = Date.now();
       this.requestCount = 0;
     }
 
-    // Ensure minimum delay between requests
     const timeSinceLastRequest = now - this.lastRequestTime;
-    const minDelay = (60 * 1000) / this.rateLimitPerMinute; // Minimum delay between requests
+    const minDelay = (60 * 1000) / this.rateLimitPerMinute;
     if (timeSinceLastRequest < minDelay && this.lastRequestTime > 0) {
       const delay = minDelay - timeSinceLastRequest;
       await new Promise((resolve) => setTimeout(resolve, delay));

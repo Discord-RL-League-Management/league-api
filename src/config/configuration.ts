@@ -69,17 +69,33 @@ export default () => ({
     threshold: parseInt(process.env.CIRCUIT_BREAKER_THRESHOLD || '5', 10),
     timeout: parseInt(process.env.CIRCUIT_BREAKER_TIMEOUT || '60000', 10),
   },
-  zyte: {
-    apiKey: process.env.ZYTE_API_KEY || '',
-    proxyHost: process.env.ZYTE_PROXY_HOST || 'api.zyte.com',
-    proxyPort: parseInt(process.env.ZYTE_PROXY_PORT || '8011', 10),
+  decodo: {
+    apiKey: process.env.DECODO_API_KEY || '',
+    apiUrl:
+      process.env.DECODO_API_URL || 'https://scraper-api.decodo.com/v2/scrape',
+    proxyUrl: process.env.DECODO_PROXY_URL || 'http://gate.decodo.com:7000',
+    proxyUsername: process.env.DECODO_PROXY_USERNAME || '',
+    proxyPassword: process.env.DECODO_PROXY_PASSWORD || '',
     rateLimitPerMinute: parseInt(
-      process.env.ZYTE_RATE_LIMIT_PER_MINUTE || '60',
+      process.env.DECODO_RATE_LIMIT_PER_MINUTE || '60',
       10,
     ),
-    timeoutMs: parseInt(process.env.ZYTE_TIMEOUT_MS || '30000', 10),
-    retryAttempts: parseInt(process.env.ZYTE_RETRY_ATTEMPTS || '3', 10),
-    retryDelayMs: parseInt(process.env.ZYTE_RETRY_DELAY_MS || '1000', 10),
+    timeoutMs: parseInt(process.env.DECODO_TIMEOUT_MS || '30000', 10),
+    retryAttempts: parseInt(process.env.DECODO_RETRY_ATTEMPTS || '3', 10),
+    retryDelayMs: parseInt(process.env.DECODO_RETRY_DELAY_MS || '1000', 10),
+  },
+  flaresolverr: {
+    url: process.env.FLARESOLVERR_URL || 'http://flaresolverr:8191',
+    timeoutMs: parseInt(process.env.FLARESOLVERR_TIMEOUT_MS || '60000', 10),
+    retryAttempts: parseInt(process.env.FLARESOLVERR_RETRY_ATTEMPTS || '3', 10),
+    retryDelayMs: parseInt(
+      process.env.FLARESOLVERR_RETRY_DELAY_MS || '1000',
+      10,
+    ),
+    rateLimitPerMinute: parseInt(
+      process.env.FLARESOLVERR_RATE_LIMIT_PER_MINUTE || '60',
+      10,
+    ),
   },
   tracker: {
     refreshIntervalHours: parseInt(

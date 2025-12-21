@@ -1,0 +1,175 @@
+/**
+ * GuildAccessValidationService Unit Tests
+ *
+ * Demonstrates TDD methodology with Vitest.
+ * Focus: Functional core, state verification, fast execution.
+ */
+
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { createTestAccessToken } from '../../factories/token.factory';
+import { NotFoundException, ForbiddenException } from '@nestjs/common';
+import { GuildAccessValidationService } from '@/guilds/services/guild-access-validation.service';
+import { GuildMembersService } from '@/guild-members/guild-members.service';
+import { GuildsService } from '@/guilds/guilds.service';
+import { TokenManagementService } from '@/auth/services/token-management.service';
+import { DiscordApiService } from '@/discord/discord-api.service';
+
+describe('GuildAccessValidationService', () => {
+  let service: GuildAccessValidationService;
+  let mockGuildMembersService: GuildMembersService;
+  let mockGuildsService: GuildsService;
+  let mockTokenManagementService: TokenManagementService;
+  let mockDiscordApiService: DiscordApiService;
+
+  beforeEach(() => {
+    // ARRANGE: Setup test dependencies
+    mockGuildMembersService = {
+      findOne: vi.fn(),
+      create: vi.fn(),
+    } as unknown as GuildMembersService;
+
+    mockGuildsService = {
+      exists: vi.fn(),
+      findOne: vi.fn(),
+    } as unknown as GuildsService;
+
+    mockTokenManagementService = {
+      getValidAccessToken: vi.fn(),
+    } as unknown as TokenManagementService;
+
+    mockDiscordApiService = {
+      checkGuildPermissions: vi.fn(),
+    } as unknown as DiscordApiService;
+
+    service = new GuildAccessValidationService(
+      mockGuildMembersService,
+      mockGuildsService,
+      mockTokenManagementService,
+      mockDiscordApiService,
+    );
+  });
+
+  describe('validateUserGuildAccess', () => {
+    it('should_pass_when_guild_exists_and_user_is_member', async () => {
+      // ARRANGE
+      const userId = 'user123';
+      const guildId = 'guild123';
+      const membership = { userId, guildId };
+
+      vi.mocked(mockGuildsService.exists).mockResolvedValue(true);
+      vi.mocked(mockGuildMembersService.findOne).mockResolvedValue(
+        membership as any,
+      );
+
+      // ACT
+      await service.validateUserGuildAccess(userId, guildId);
+
+      // ASSERT
+      expect(mockGuildsService.exists).toHaveBeenCalledWith(guildId);
+      expect(mockGuildMembersService.findOne).toHaveBeenCalledWith(
+        userId,
+        guildId,
+      );
+    });
+
+    it('should_throw_NotFoundException_when_guild_does_not_exist', async () => {
+      // ARRANGE
+      const userId = 'user123';
+      const guildId = 'guild123';
+
+      vi.mocked(mockGuildsService.exists).mockResolvedValue(false);
+
+      // ACT & ASSERT
+      await expect(
+        service.validateUserGuildAccess(userId, guildId),
+      ).rejects.toThrow(NotFoundException);
+      await expect(
+        service.validateUserGuildAccess(userId, guildId),
+      ).rejects.toThrow('Guild not found or bot is not a member');
+    });
+
+    it('should_sync_membership_when_not_found_but_valid_in_discord', async () => {
+      // ARRANGE
+      const userId = 'user123';
+      const guildId = 'guild123';
+      const accessToken = createTestAccessToken('guild');
+      const guild = { id: guildId, name: 'Test Guild' };
+      const guildPermissions = {
+        isMember: true,
+        roles: ['role123'],
+      };
+
+      vi.mocked(mockGuildsService.exists).mockResolvedValue(true);
+      vi.mocked(mockGuildMembersService.findOne).mockRejectedValue(
+        new NotFoundException('Not found'),
+      );
+      vi.mocked(
+        mockTokenManagementService.getValidAccessToken,
+      ).mockResolvedValue(accessToken);
+      vi.mocked(mockDiscordApiService.checkGuildPermissions).mockResolvedValue(
+        guildPermissions as any,
+      );
+      vi.mocked(mockGuildsService.findOne).mockResolvedValue(guild as any);
+      vi.mocked(mockGuildMembersService.create).mockResolvedValue({} as any);
+
+      // ACT
+      await service.validateUserGuildAccess(userId, guildId);
+
+      // ASSERT
+      expect(mockDiscordApiService.checkGuildPermissions).toHaveBeenCalledWith(
+        accessToken,
+        guildId,
+      );
+      expect(mockGuildMembersService.create).toHaveBeenCalled();
+    });
+
+    it('should_throw_ForbiddenException_when_user_not_member_in_discord', async () => {
+      // ARRANGE
+      const userId = 'user123';
+      const guildId = 'guild123';
+      const accessToken = createTestAccessToken('guild');
+      const guildPermissions = {
+        isMember: false,
+        roles: [],
+      };
+
+      vi.mocked(mockGuildsService.exists).mockResolvedValue(true);
+      vi.mocked(mockGuildMembersService.findOne).mockRejectedValue(
+        new NotFoundException('Not found'),
+      );
+      vi.mocked(
+        mockTokenManagementService.getValidAccessToken,
+      ).mockResolvedValue(accessToken);
+      vi.mocked(mockDiscordApiService.checkGuildPermissions).mockResolvedValue(
+        guildPermissions as any,
+      );
+
+      // ACT & ASSERT
+      await expect(
+        service.validateUserGuildAccess(userId, guildId),
+      ).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.validateUserGuildAccess(userId, guildId),
+      ).rejects.toThrow('You are not a member of this guild');
+    });
+
+    it('should_throw_ForbiddenException_when_no_access_token', async () => {
+      // ARRANGE
+      const userId = 'user123';
+      const guildId = 'guild123';
+
+      vi.mocked(mockGuildsService.exists).mockResolvedValue(true);
+      vi.mocked(mockGuildMembersService.findOne).mockRejectedValue(
+        new NotFoundException('Not found'),
+      );
+      vi.mocked(
+        mockTokenManagementService.getValidAccessToken,
+      ).mockResolvedValue(null);
+
+      // ACT & ASSERT
+      await expect(
+        service.validateUserGuildAccess(userId, guildId),
+      ).rejects.toThrow(ForbiddenException);
+    });
+  });
+});

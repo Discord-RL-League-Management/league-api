@@ -10,6 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TrackerScrapingQueueService } from '../queues/tracker-scraping.queue';
 import { TrackerBatchRefreshService } from './tracker-batch-refresh.service';
+import { TrackerProcessingGuardService } from './tracker-processing-guard.service';
 
 // Manages cron jobs via SchedulerRegistry to schedule tracker refreshes and prevents orphaned tasks on shutdown
 @Injectable()
@@ -28,6 +29,7 @@ export class TrackerRefreshSchedulerService
     private readonly batchRefreshService: TrackerBatchRefreshService,
     private readonly configService: ConfigService,
     private readonly schedulerRegistry: SchedulerRegistry,
+    private readonly processingGuard: TrackerProcessingGuardService,
   ) {
     const trackerConfig = this.configService.get<{
       refreshIntervalHours: number;
@@ -126,16 +128,34 @@ export class TrackerRefreshSchedulerService
       },
     });
 
-    return trackers.map((t) => t.id);
+    const trackerIds = trackers.map((t) => t.id);
+
+    // Filter trackers to only those that can be processed based on guild settings
+    return this.processingGuard.filterProcessableTrackers(trackerIds);
   }
 
-  onApplicationShutdown(signal?: string) {
+  async onApplicationShutdown(signal?: string) {
     this.logger.log(`Application shutting down: ${signal || 'unknown signal'}`);
 
     if (this.cronJob) {
-      void this.cronJob.stop();
-      void this.schedulerRegistry.deleteCronJob('tracker-refresh');
+      try {
+        await this.cronJob.stop();
+      } catch (error) {
+        this.logger.warn(
+          `Error stopping cron job: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
       this.cronJob = null;
+    }
+
+    // Check if cron job exists before attempting to delete (official NestJS approach)
+    if (this.schedulerRegistry.doesExist('cron', 'tracker-refresh')) {
+      this.schedulerRegistry.deleteCronJob('tracker-refresh');
+      this.logger.debug('Tracker refresh cron job deleted from registry');
+    } else {
+      this.logger.debug(
+        'Tracker refresh cron job not found in registry (may not have been registered)',
+      );
     }
 
     this.logger.log('✅ Tracker refresh scheduler stopped');

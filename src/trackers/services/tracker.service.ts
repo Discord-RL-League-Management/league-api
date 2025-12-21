@@ -3,12 +3,14 @@ import {
   Logger,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TrackerRepository } from '../repositories/tracker.repository';
 import { TrackerValidationService } from './tracker-validation.service';
 import { TrackerScrapingQueueService } from '../queues/tracker-scraping.queue';
 import { TrackerSeasonService } from './tracker-season.service';
+import { TrackerProcessingGuardService } from './tracker-processing-guard.service';
 import {
   GamePlatform,
   Game,
@@ -27,6 +29,7 @@ export class TrackerService {
     private readonly validationService: TrackerValidationService,
     private readonly scrapingQueueService: TrackerScrapingQueueService,
     private readonly seasonService: TrackerSeasonService,
+    private readonly processingGuard: TrackerProcessingGuardService,
   ) {}
 
   /**
@@ -176,7 +179,6 @@ export class TrackerService {
     channelId?: string,
     interactionToken?: string,
   ) {
-    // Ensure user exists before creating trackers
     await this.ensureUserExists(userId, userData);
 
     if (urls.length === 0 || urls.length > 4) {
@@ -185,7 +187,6 @@ export class TrackerService {
       );
     }
 
-    // Check if user already has trackers
     const existingTrackers = await this.getTrackersByUserId(userId);
     const activeTrackers = existingTrackers.filter((t) => !t.isDeleted);
 
@@ -195,7 +196,6 @@ export class TrackerService {
       );
     }
 
-    // Validate all URLs and check for duplicates
     const uniqueUrls = Array.from(new Set(urls));
     if (uniqueUrls.length !== urls.length) {
       throw new BadRequestException('Duplicate URLs are not allowed');
@@ -217,12 +217,11 @@ export class TrackerService {
       );
     }
 
-    // Validate all URLs (format validation only, uniqueness already checked in batch)
+    // Format validation only, uniqueness already checked in batch
     const validationPromises = uniqueUrls.map((url) =>
       this.validationService
-        .validateTrackerUrl(url, userId, undefined, true) // Skip uniqueness check
+        .validateTrackerUrl(url, userId, undefined, true)
         .catch((error) => {
-          // Re-throw validation errors
           throw error;
         }),
     );
@@ -233,7 +232,6 @@ export class TrackerService {
       parsed: parsedResults[index],
     }));
 
-    // Create all trackers
     const trackers = [];
     for (const { url, parsed } of parsedUrls) {
       const tracker = await this.createTracker(
@@ -248,6 +246,31 @@ export class TrackerService {
       );
       trackers.push(tracker);
 
+      const canProcess = await this.processingGuard.canProcessTracker(
+        tracker.id,
+      );
+
+      if (!canProcess) {
+        await this.prisma.tracker
+          .update({
+            where: { id: tracker.id },
+            data: {
+              scrapingStatus: TrackerScrapingStatus.FAILED,
+              scrapingError: 'Tracker processing disabled by guild settings',
+              scrapingAttempts: 1,
+            },
+          })
+          .catch((updateError) => {
+            this.logger.error(
+              `Failed to update tracker ${tracker.id} status after processing guard check: ${updateError instanceof Error ? updateError.message : String(updateError)}`,
+            );
+          });
+        this.logger.warn(
+          `Skipping tracker ${tracker.id} - processing disabled by guild settings`,
+        );
+        continue;
+      }
+
       // Enqueue scraping job (async)
       this.scrapingQueueService.addScrapingJob(tracker.id).catch((error) => {
         const errorMessage =
@@ -255,7 +278,6 @@ export class TrackerService {
         this.logger.error(
           `Failed to enqueue scraping job for tracker ${tracker.id}: ${errorMessage}`,
         );
-        // Update tracker status with proper error handling
         this.prisma.tracker
           .update({
             where: { id: tracker.id },
@@ -303,10 +325,8 @@ export class TrackerService {
       );
     }
 
-    // Validate tracker URL format and uniqueness
     const parsed = await this.validationService.validateTrackerUrl(url, userId);
 
-    // Create new tracker
     const tracker = await this.createTracker(
       url,
       parsed.game,
@@ -318,24 +338,46 @@ export class TrackerService {
       interactionToken, // registrationInteractionToken
     );
 
-    // Enqueue scraping job (async)
-    this.scrapingQueueService.addScrapingJob(tracker.id).catch((error) => {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      this.logger.error(
-        `Failed to enqueue scraping job for tracker ${tracker.id}: ${errorMessage}`,
-      );
-      this.prisma.tracker
+    const canProcess = await this.processingGuard.canProcessTracker(tracker.id);
+
+    if (!canProcess) {
+      await this.prisma.tracker
         .update({
           where: { id: tracker.id },
           data: {
             scrapingStatus: TrackerScrapingStatus.FAILED,
-            scrapingError: `Failed to enqueue scraping job: ${errorMessage}`,
+            scrapingError: 'Tracker processing disabled by guild settings',
             scrapingAttempts: 1,
           },
         })
-        .catch(() => {});
-    });
+        .catch((updateError) => {
+          this.logger.error(
+            `Failed to update tracker ${tracker.id} status after processing guard check: ${updateError instanceof Error ? updateError.message : String(updateError)}`,
+          );
+        });
+      this.logger.warn(
+        `Skipping tracker ${tracker.id} - processing disabled by guild settings`,
+      );
+    } else {
+      // Enqueue scraping job (async)
+      this.scrapingQueueService.addScrapingJob(tracker.id).catch((error) => {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        this.logger.error(
+          `Failed to enqueue scraping job for tracker ${tracker.id}: ${errorMessage}`,
+        );
+        this.prisma.tracker
+          .update({
+            where: { id: tracker.id },
+            data: {
+              scrapingStatus: TrackerScrapingStatus.FAILED,
+              scrapingError: `Failed to enqueue scraping job: ${errorMessage}`,
+              scrapingAttempts: 1,
+            },
+          })
+          .catch(() => {});
+      });
+    }
 
     this.logger.log(
       `Added tracker ${tracker.id} for user ${userId} (${activeTrackers.length + 1}/4)`,
@@ -355,7 +397,13 @@ export class TrackerService {
       throw new NotFoundException('Tracker not found');
     }
 
-    // Update status to PENDING
+    const canProcess = await this.processingGuard.canProcessTracker(trackerId);
+    if (!canProcess) {
+      throw new ForbiddenException(
+        'Tracker processing is disabled by guild settings',
+      );
+    }
+
     await this.prisma.tracker.update({
       where: { id: trackerId },
       data: {
@@ -364,7 +412,6 @@ export class TrackerService {
       },
     });
 
-    // Enqueue scraping job
     await this.scrapingQueueService.addScrapingJob(trackerId);
 
     this.logger.log(`Enqueued refresh job for tracker ${trackerId}`);

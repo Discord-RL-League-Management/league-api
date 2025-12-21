@@ -103,6 +103,13 @@ export interface MmrCalculationConfig {
 }
 
 /**
+ * Tracker processing configuration
+ */
+export interface TrackerProcessingConfig {
+  enabled: boolean;
+}
+
+/**
  * Complete guild settings structure
  */
 export interface GuildSettings {
@@ -117,4 +124,5 @@ export interface GuildSettings {
     tournament_manager?: Array<{ id: string; name?: string } | string>;
   };
   mmrCalculation?: MmrCalculationConfig;
+  trackerProcessing?: TrackerProcessingConfig;
 }

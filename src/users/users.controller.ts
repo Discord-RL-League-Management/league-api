@@ -32,7 +32,6 @@ export class UsersController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() data: UpdateUserProfileDto,
   ) {
-    // Restrict updates to username only to prevent unauthorized email changes
     const allowedFields = { username: data.username };
     return this.usersService.update(user.id, allowedFields);
   }
@@ -42,7 +41,6 @@ export class UsersController {
     @Param('id') id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    // Enforce privacy by restricting profile access to the authenticated user
     if (id !== user.id) {
       throw new ForbiddenException('You can only view your own profile');
     }

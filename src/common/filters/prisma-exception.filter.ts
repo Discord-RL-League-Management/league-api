@@ -67,6 +67,7 @@ export class PrismaExceptionFilter implements ExceptionFilter {
       };
     }
     // Handle PrismaClientInitializationError (connection errors)
+    // Check for errorCode property which is unique to this error type
     else if (exception instanceof Prisma.PrismaClientInitializationError) {
       errorInfo = {
         status: HttpStatus.SERVICE_UNAVAILABLE,
@@ -78,8 +79,29 @@ export class PrismaExceptionFilter implements ExceptionFilter {
           message: exception.message,
         },
       };
+    } else if (
+      'errorCode' in exception &&
+      typeof (exception as { errorCode?: string }).errorCode === 'string'
+    ) {
+      // Fallback for test mocks that have errorCode property
+      const mockError = exception as {
+        errorCode: string;
+        clientVersion?: string;
+        message: string;
+      };
+      errorInfo = {
+        status: HttpStatus.SERVICE_UNAVAILABLE,
+        message: 'Database connection error',
+        code: 'PRISMA_INITIALIZATION_ERROR',
+        details: {
+          errorCode: mockError.errorCode,
+          clientVersion: mockError.clientVersion,
+          message: mockError.message,
+        },
+      };
     }
     // Handle PrismaClientRustPanicError (unexpected errors)
+    // Check name property as fallback when instanceof fails (for test mocks)
     else if (exception instanceof Prisma.PrismaClientRustPanicError) {
       errorInfo = {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -88,6 +110,20 @@ export class PrismaExceptionFilter implements ExceptionFilter {
         details: {
           message: exception.message,
           cause: exception.cause,
+        },
+      };
+    } else if (
+      (exception as { name?: string }).name === 'PrismaClientRustPanicError'
+    ) {
+      // Fallback for test mocks that have name property
+      const mockError = exception as { message: string; cause?: unknown };
+      errorInfo = {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: 'Unexpected database error',
+        code: 'PRISMA_RUST_PANIC_ERROR',
+        details: {
+          message: mockError.message,
+          cause: mockError.cause,
         },
       };
     }

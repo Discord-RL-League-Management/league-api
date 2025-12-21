@@ -40,6 +40,10 @@ export class SettingsValidationService {
     if (settings.mmrCalculation) {
       this.validateMmrCalculation(settings.mmrCalculation);
     }
+
+    if (settings.trackerProcessing) {
+      this.validateTrackerProcessing(settings.trackerProcessing);
+    }
   }
 
   /**
@@ -241,6 +245,21 @@ export class SettingsValidationService {
           `Ascendancy weights sum to ${totalWeight}, not 1.0. This may produce unexpected results.`,
         );
       }
+    }
+  }
+
+  /**
+   * Validate tracker processing configuration
+   * Single Responsibility: Tracker processing config validation
+   */
+  private validateTrackerProcessing(config: { enabled?: boolean }): void {
+    // Validate that enabled is a boolean if provided
+    // Note: class-validator decorators handle most validation,
+    // but this provides explicit validation for consistency
+    if (config.enabled !== undefined && typeof config.enabled !== 'boolean') {
+      throw new BadRequestException(
+        'trackerProcessing.enabled must be a boolean',
+      );
     }
   }
 }
