@@ -125,25 +125,24 @@ export class PlayerValidationService {
   ): Promise<void> {
     const player = await this.prisma.player.findUnique({
       where: { id: playerId },
-      include: { primaryTracker: true },
     });
 
     if (!player) {
       throw new PlayerValidationException(`Player ${playerId} not found`);
     }
 
-    // Validate status
     this.validatePlayerStatus(player.status);
 
-    // Validate tracker if required
-    if (requireTracker && !player.primaryTrackerId) {
-      throw new PlayerValidationException(
-        `Player ${playerId} must have a primary tracker`,
+    // Validate tracker if required - check if user has any active trackers
+    if (requireTracker) {
+      const bestTracker = await this.trackerService.findBestTrackerForUser(
+        player.userId,
       );
-    }
-
-    if (player.primaryTrackerId) {
-      await this.validateTrackerLink(player.primaryTrackerId, player.userId);
+      if (!bestTracker) {
+        throw new PlayerValidationException(
+          `Player ${playerId} must have at least one active tracker`,
+        );
+      }
     }
   }
 }

@@ -69,7 +69,6 @@ describe('LeagueMemberService', () => {
     status: PlayerStatus.ACTIVE,
     lastLeftLeagueAt: null,
     lastLeftLeagueId: null,
-    primaryTrackerId: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };

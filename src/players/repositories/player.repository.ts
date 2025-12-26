@@ -40,9 +40,6 @@ export class PlayerRepository
     if (opts.includeGuild) {
       include.guild = true;
     }
-    if (opts.includePrimaryTracker) {
-      include.primaryTracker = true;
-    }
 
     return this.prisma.player.findUnique({
       where: { id },
@@ -97,9 +94,6 @@ export class PlayerRepository
     if (opts.includeGuild) {
       include.guild = true;
     }
-    if (opts.includePrimaryTracker) {
-      include.primaryTracker = true;
-    }
 
     return this.prisma.player.findUnique({
       where: {
@@ -143,9 +137,6 @@ export class PlayerRepository
     }
     if (opts.includeGuild) {
       include.guild = true;
-    }
-    if (opts.includePrimaryTracker) {
-      include.primaryTracker = true;
     }
 
     const orderBy: Prisma.PlayerOrderByWithRelationInput = {};
@@ -206,9 +197,6 @@ export class PlayerRepository
     if (opts.includeGuild) {
       include.guild = true;
     }
-    if (opts.includePrimaryTracker) {
-      include.primaryTracker = true;
-    }
 
     const orderBy: Prisma.PlayerOrderByWithRelationInput = {};
     if (opts.sortBy) {
@@ -245,7 +233,6 @@ export class PlayerRepository
         userId: data.userId,
         guildId: data.guildId,
         status: data.status || 'ACTIVE',
-        primaryTrackerId: data.primaryTrackerId,
       },
     });
   }
@@ -258,9 +245,6 @@ export class PlayerRepository
       where: { id },
       data: {
         ...(data.status !== undefined && { status: data.status }),
-        ...(data.primaryTrackerId !== undefined && {
-          primaryTrackerId: data.primaryTrackerId,
-        }),
       },
     });
   }

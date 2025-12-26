@@ -58,6 +58,7 @@ describe('TrackerService', () => {
       update: vi.fn(),
       softDelete: vi.fn(),
       checkUrlUniqueness: vi.fn(),
+      findBestForUser: vi.fn(),
     } as unknown as TrackerRepository;
 
     mockValidation = {
@@ -514,6 +515,43 @@ describe('TrackerService', () => {
       await expect(service.addTracker(userId, url)).rejects.toThrow(
         BadRequestException,
       );
+    });
+  });
+
+  describe('findBestTrackerForUser', () => {
+    it('should_delegate_to_repository_findBestForUser', async () => {
+      // ARRANGE
+      const userId = 'user_123';
+      const expectedTracker = {
+        ...mockTracker,
+        seasons: [{ seasonNumber: 25 }],
+      };
+
+      vi.mocked(mockRepository.findBestForUser).mockResolvedValue(
+        expectedTracker as any,
+      );
+
+      // ACT
+      const result = await service.findBestTrackerForUser(userId);
+
+      // ASSERT
+      expect(result).toEqual(expectedTracker);
+      expect(mockRepository.findBestForUser).toHaveBeenCalledWith(userId);
+      expect(mockRepository.findBestForUser).toHaveBeenCalledTimes(1);
+    });
+
+    it('should_return_null_when_repository_returns_null', async () => {
+      // ARRANGE
+      const userId = 'user_123';
+
+      vi.mocked(mockRepository.findBestForUser).mockResolvedValue(null);
+
+      // ACT
+      const result = await service.findBestTrackerForUser(userId);
+
+      // ASSERT
+      expect(result).toBeNull();
+      expect(mockRepository.findBestForUser).toHaveBeenCalledWith(userId);
     });
   });
 });

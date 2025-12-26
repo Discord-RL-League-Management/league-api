@@ -61,7 +61,6 @@ export class InternalPlayersController {
     return this.playerService.findOne(id, {
       includeUser: true,
       includeGuild: true,
-      includePrimaryTracker: true,
     });
   }
 
@@ -113,7 +112,6 @@ export class InternalPlayersController {
       ...query,
       includeUser: true,
       includeGuild: true,
-      includePrimaryTracker: true,
     });
   }
 
@@ -132,7 +130,6 @@ export class InternalPlayersController {
       ...query,
       includeUser: true,
       includeGuild: true,
-      includePrimaryTracker: true,
     });
   }
 }

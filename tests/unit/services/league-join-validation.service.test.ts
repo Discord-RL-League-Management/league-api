@@ -56,6 +56,7 @@ describe('LeagueJoinValidationService', () => {
 
     mockTrackerService = {
       getTrackerById: vi.fn(),
+      findBestTrackerForUser: vi.fn(),
     } as unknown as TrackerService;
 
     service = new LeagueJoinValidationService(
@@ -92,7 +93,6 @@ describe('LeagueJoinValidationService', () => {
         userId: 'user123',
         guildId: 'guild123',
         status: PlayerStatus.ACTIVE,
-        primaryTrackerId: null,
       };
 
       vi.mocked(mockLeagueSettingsService.getSettings).mockResolvedValue(
@@ -134,7 +134,6 @@ describe('LeagueJoinValidationService', () => {
         userId: 'user123',
         guildId: 'guild123',
         status: PlayerStatus.ACTIVE,
-        primaryTrackerId: null,
       };
 
       vi.mocked(mockLeagueSettingsService.getSettings).mockResolvedValue(
@@ -178,7 +177,6 @@ describe('LeagueJoinValidationService', () => {
         userId: 'user123',
         guildId: 'guild123',
         status: PlayerStatus.ACTIVE,
-        primaryTrackerId: null,
       };
 
       vi.mocked(mockLeagueSettingsService.getSettings).mockResolvedValue(
@@ -223,7 +221,6 @@ describe('LeagueJoinValidationService', () => {
         userId: 'user123',
         guildId: 'guild123',
         status: PlayerStatus.ACTIVE,
-        primaryTrackerId: null,
       };
 
       vi.mocked(mockLeagueSettingsService.getSettings).mockResolvedValue(
@@ -236,7 +233,7 @@ describe('LeagueJoinValidationService', () => {
         LeagueJoinValidationException,
       );
       await expect(service.validateJoin(playerId, leagueId)).rejects.toThrow(
-        'Player must have a primary tracker',
+        'Player must have at least one active tracker',
       );
     });
 
@@ -262,7 +259,6 @@ describe('LeagueJoinValidationService', () => {
         userId: 'user123',
         guildId: 'guild123',
         status: PlayerStatus.ACTIVE,
-        primaryTrackerId: null,
       };
 
       vi.mocked(mockLeagueSettingsService.getSettings).mockResolvedValue(
@@ -302,7 +298,6 @@ describe('LeagueJoinValidationService', () => {
         userId: 'user123',
         guildId: 'guild123',
         status: PlayerStatus.ACTIVE,
-        primaryTrackerId: null,
       };
 
       vi.mocked(mockLeagueSettingsService.getSettings).mockResolvedValue(
@@ -344,7 +339,6 @@ describe('LeagueJoinValidationService', () => {
         userId: 'user123',
         guildId: 'guild123',
         status: PlayerStatus.ACTIVE,
-        primaryTrackerId: null,
       };
 
       vi.mocked(mockLeagueSettingsService.getSettings).mockResolvedValue(
@@ -390,7 +384,6 @@ describe('LeagueJoinValidationService', () => {
         userId: 'user123',
         guildId: 'guild123',
         status: PlayerStatus.ACTIVE,
-        primaryTrackerId: null,
         lastLeftLeagueAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), // 10 days ago
       };
 

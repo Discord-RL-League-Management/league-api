@@ -95,7 +95,6 @@ export class PlayersController {
     const player = await this.playerService.findOne(id, {
       includeUser: true,
       includeGuild: true,
-      includePrimaryTracker: true,
     });
 
     if ((player as Player & { userId: string }).userId !== user.id) {

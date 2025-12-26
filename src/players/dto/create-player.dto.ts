@@ -40,12 +40,4 @@ export class CreatePlayerDto {
     message: 'Status must be a valid PlayerStatus enum value',
   })
   status?: PlayerStatus;
-
-  @ApiPropertyOptional({
-    description: 'Primary tracker ID (CUID)',
-    example: 'clx1234567890abcdef',
-  })
-  @IsOptional()
-  @IsString()
-  primaryTrackerId?: string;
 }

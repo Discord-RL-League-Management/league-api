@@ -41,6 +41,13 @@ enum TrackerScrapingStatus {
   FAILED
 }
 
+enum ScheduledProcessingStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+  FAILED
+}
+
 enum PlayerStatus {
   ACTIVE
   INACTIVE
@@ -162,6 +169,7 @@ model Guild {
   members GuildMember[]
   leagues League[]
   players Player[]
+  scheduledTrackerProcessing ScheduledTrackerProcessing[]
 
   // Indexes for performance
   @@index([isActive])
@@ -222,7 +230,6 @@ model Tracker {
   snapshots    TrackerSnapshot[]
   seasons      TrackerSeason[]
   scrapingLogs TrackerScrapingLog[]
-  primaryFor   Player[]             @relation("PlayerPrimaryTracker")
 
   @@index([userId])
   @@index([platform])
@@ -385,12 +392,34 @@ model TrackerScrapingLog {
   @@map("tracker_scraping_logs")
 }
 
+model ScheduledTrackerProcessing {
+  id          String                     @id @default(cuid())
+  guildId     String                     @db.VarChar(20) // Discord guild snowflake ID
+  scheduledAt DateTime                   // When to process trackers
+  status      ScheduledProcessingStatus  @default(PENDING)
+  createdBy   String                     @db.VarChar(20) // Discord user snowflake ID who created the schedule
+  executedAt  DateTime?                  // When the job was actually executed
+  errorMessage String?                   @db.Text
+  metadata    Json?                      // Additional metadata (e.g., reason, season info)
+  createdAt   DateTime                   @default(now())
+  updatedAt   DateTime                   @updatedAt
+
+  // Relationships
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([guildId])
+  @@index([status])
+  @@index([scheduledAt])
+  @@index([guildId, scheduledAt])
+  @@index([status, scheduledAt])
+  @@map("scheduled_tracker_processing")
+}
+
 model Player {
   id               String       @id @default(cuid())
   userId           String       @db.VarChar(20)
   guildId          String       @db.VarChar(20)
   status           PlayerStatus @default(ACTIVE)
-  primaryTrackerId String?
   lastLeftLeagueAt DateTime?
   lastLeftLeagueId String?
   createdAt        DateTime     @default(now())
@@ -399,7 +428,6 @@ model Player {
   // Relationships
   user                   User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
   guild                  Guild                   @relation(fields: [guildId], references: [id], onDelete: Cascade)
-  primaryTracker         Tracker?                @relation("PlayerPrimaryTracker", fields: [primaryTrackerId], references: [id], onDelete: SetNull)
   leagueMembers          LeagueMember[]
   teamMembers            TeamMember[]
   captainOf              Team[]                  @relation("TeamCaptain")

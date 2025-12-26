@@ -43,12 +43,10 @@ export class LeagueJoinValidationService {
     const player = (await this.playerService.findOne(playerId, {
       includeUser: true,
       includeGuild: true,
-      includePrimaryTracker: true,
     })) as Player & {
       userId: string;
       guildId: string;
       status: string;
-      primaryTrackerId: string | null;
     };
 
     if (membershipConfig.requireGuildMembership) {
@@ -62,15 +60,14 @@ export class LeagueJoinValidationService {
     }
 
     if (skillConfig.requireTracker) {
-      if (!player.primaryTrackerId) {
-        throw new LeagueJoinValidationException(
-          'Player must have a primary tracker to join this league',
-        );
-      }
-      await this.playerValidationService.validateTrackerLink(
-        player.primaryTrackerId,
+      const bestTracker = await this.trackerService.findBestTrackerForUser(
         player.userId,
       );
+      if (!bestTracker) {
+        throw new LeagueJoinValidationException(
+          'Player must have at least one active tracker to join this league',
+        );
+      }
     }
 
     if (membershipConfig.skillRequirements) {
@@ -123,22 +120,22 @@ export class LeagueJoinValidationService {
    * Single Responsibility: Skill validation
    */
   private async validateSkillRequirements(
-    player: { primaryTrackerId: string | null },
+    player: { userId: string },
     skillRequirements: {
       minSkill?: number;
       maxSkill?: number;
       skillMetric: 'MMR' | 'RANK' | 'ELO' | 'CUSTOM';
     },
   ): Promise<void> {
-    if (!player.primaryTrackerId) {
+    const tracker = await this.trackerService.findBestTrackerForUser(
+      player.userId,
+    );
+
+    if (!tracker) {
       throw new LeagueJoinValidationException(
-        'Player must have a primary tracker to validate skill requirements',
+        'Player must have at least one active tracker with data to validate skill requirements',
       );
     }
-
-    const tracker = await this.trackerService.getTrackerById(
-      player.primaryTrackerId,
-    );
 
     const latestSeason = tracker.seasons?.[0];
     if (!latestSeason) {
