@@ -1,0 +1,35 @@
+---
+description: STATIC_ANALYSIS_GATE: Enforces specific technical blocks for bugs, security, and complexity in src/.
+globs: "src/**/*.ts"
+alwaysApply: true
+---
+# ⚡ Code Quality Enforcer
+
+**Objective:** Perform immediate static analysis on all code in `src/`. Block if the following specific signatures are detected.
+
+## 🔴 CRITICAL BLOCKS (Hard Stop)
+
+### 1. Specific Logic & Runtime Bugs
+* **Null/Undefined Dereference:** Block if a property access or method call occurs on a variable that hasn't been guarded by an optional chain (`?.`), a nullish coalescing operator (`??`), or a truthy check.
+* **Floating Promises:** Block any `async` call that is not `await`ed, `return`ed, or explicitly handled with `.catch()`. 
+* **Dead/Unreachable Code:** Block any code following a `return`, `throw`, `break`, or `continue` statement within the same block.
+* **Incorrect Collection Iteration:** Block `for...in` on arrays; require `for...of` or `.map/.forEach`.
+
+### 2. Security (CVSS $\geq 7.0$)
+* **Secret Signatures:** Block strings matching regex for: `AIza[0-9A-Za-z-_]{35}` (Google), `sk_live_[0-9a-zA-Z]{24}` (Stripe), or generic `(?i)password|secret|token|api_key\s*[:=]\s*['"].+['"]`.
+* **Injection Vectors:** Block raw string interpolation in database queries (e.g., Prisma `$queryRaw` or `$executeRaw`) unless using template literals provided by the ORM.
+* **Unsafe Eval:** Block use of `eval()`, `new Function()`, or `setTimeout/setInterval` with string arguments.
+
+### 3. Complexity & Maintainability
+* **Cyclomatic Complexity (CC) > 30:** Block functions with excessive nested `if/else`, `switch`, or loops. 
+* **Deep Nesting:** Block code nested > 4 levels deep (e.g., a loop inside a loop inside a conditional inside a try/catch).
+* **Data Clumps:** Block functions accepting > 4 primitive parameters; require an Interface or DTO.
+
+## 🟡 AUTO-REMEDIATION (Quick Fix)
+For Code Smells (Long Methods, Magic Numbers):
+1.  **Mandatory Refactor:** Extract to private methods or constants.
+2.  **Verification Loop:** You MUST run `npm test` or specific tests in `./tests/` to verify the refactor. If tests fail, revert.
+
+## 📝 Feedback Protocol
+- **No Report Files:** Provide feedback only in the chat/composer.
+- **Format:** ❌ [File:Line] - [ID] | [Technical Violation] | Fix: [Snippet]
