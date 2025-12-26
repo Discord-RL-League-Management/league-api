@@ -115,7 +115,6 @@ export class PlayerService {
         );
       }
 
-      // Create player with activity logging in transaction
       return await this.prisma.$transaction(async (tx) => {
         const player = await tx.player.create({
           data: {
@@ -178,7 +177,6 @@ export class PlayerService {
 
     await this.validationService.validateGuildMembership(userId, guildId);
 
-    // Create player in transaction with activity logging
     return await this.prisma.$transaction(async (tx) => {
       // Double-check in transaction
       const existing = await tx.player.findUnique({
@@ -202,7 +200,6 @@ export class PlayerService {
         },
       });
 
-      // Log activity
       await this.activityLogService.logActivity(
         tx,
         'player',
@@ -235,7 +232,6 @@ export class PlayerService {
         this.validationService.validatePlayerStatus(updatePlayerDto.status);
       }
 
-      // Update with activity logging in transaction
       return await this.prisma.$transaction(async (tx) => {
         const updated = await tx.player.update({
           where: { id },

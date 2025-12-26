@@ -284,7 +284,6 @@ export class TrackerService {
         continue;
       }
 
-      // Enqueue scraping job (async)
       this.scrapingQueueService.addScrapingJob(tracker.id).catch((error) => {
         const errorMessage =
           error instanceof Error ? error.message : String(error);
@@ -370,7 +369,6 @@ export class TrackerService {
         `Skipping tracker ${tracker.id} - processing disabled by guild settings`,
       );
     } else {
-      // Enqueue scraping job (async)
       this.scrapingQueueService.addScrapingJob(tracker.id).catch((error) => {
         const errorMessage =
           error instanceof Error ? error.message : String(error);
@@ -470,7 +468,6 @@ export class TrackerService {
     processed: number;
     trackers: string[];
   }> {
-    // Get all trackers with PENDING status that are active and not deleted
     const pendingTrackers = await this.prisma.tracker.findMany({
       where: {
         scrapingStatus: TrackerScrapingStatus.PENDING,
@@ -489,7 +486,6 @@ export class TrackerService {
 
     const trackerIds = pendingTrackers.map((t) => t.id);
 
-    // Filter trackers to only those that can be processed based on guild settings
     const processableTrackerIds =
       await this.processingGuard.filterProcessableTrackers(trackerIds);
 
@@ -500,7 +496,6 @@ export class TrackerService {
       return { processed: 0, trackers: [] };
     }
 
-    // Enqueue all processable trackers
     await this.scrapingQueueService.addBatchScrapingJobs(processableTrackerIds);
 
     this.logger.log(
@@ -529,7 +524,6 @@ export class TrackerService {
   async processPendingTrackersForGuild(
     guildId: string,
   ): Promise<{ processed: number; trackers: string[] }> {
-    // Get all pending trackers for users who are members of this guild
     const pendingTrackers = await this.prisma.tracker.findMany({
       where: {
         scrapingStatus: TrackerScrapingStatus.PENDING,

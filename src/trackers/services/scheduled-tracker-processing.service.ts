@@ -74,12 +74,10 @@ export class ScheduledTrackerProcessingService
     const scheduledDate =
       scheduledAt instanceof Date ? scheduledAt : new Date(scheduledAt);
 
-    // Validate scheduled date is in the future
     if (scheduledDate <= new Date()) {
       throw new BadRequestException('Scheduled date must be in the future');
     }
 
-    // Verify guild exists
     const guild = await this.prisma.guild.findUnique({
       where: { id: guildId },
     });
@@ -88,7 +86,6 @@ export class ScheduledTrackerProcessingService
       throw new NotFoundException(`Guild ${guildId} not found`);
     }
 
-    // Create schedule in database
     const schedule = await this.prisma.scheduledTrackerProcessing.create({
       data: {
         guildId,
@@ -99,7 +96,6 @@ export class ScheduledTrackerProcessingService
       },
     });
 
-    // Schedule the job
     this.scheduleJob(schedule.id, scheduledDate, guildId);
 
     this.logger.log(
@@ -162,7 +158,6 @@ export class ScheduledTrackerProcessingService
       );
     }
 
-    // Stop and remove the cron job
     const jobId = `scheduled-processing-${id}`;
     if (this.scheduledJobs.has(jobId)) {
       const job = this.scheduledJobs.get(jobId)!;
@@ -174,7 +169,6 @@ export class ScheduledTrackerProcessingService
       this.schedulerRegistry.deleteCronJob(jobId);
     }
 
-    // Update database
     const updated = await this.prisma.scheduledTrackerProcessing.update({
       where: { id },
       data: {
@@ -220,7 +214,6 @@ export class ScheduledTrackerProcessingService
   ): void {
     const jobId = `scheduled-processing-${scheduleId}`;
 
-    // Calculate cron expression for the specific date/time
     const cronExpression = this.dateToCronExpression(scheduledAt);
 
     const job = new CronJob(cronExpression, async () => {
@@ -229,7 +222,6 @@ export class ScheduledTrackerProcessingService
           `Executing scheduled tracker processing ${scheduleId} for guild ${guildId}`,
         );
 
-        // Update status to processing
         await this.prisma.scheduledTrackerProcessing.update({
           where: { id: scheduleId },
           data: {
@@ -238,10 +230,8 @@ export class ScheduledTrackerProcessingService
           },
         });
 
-        // Execute the tracker processing
         await this.trackerService.processPendingTrackersForGuild(guildId);
 
-        // Mark as completed
         await this.prisma.scheduledTrackerProcessing.update({
           where: { id: scheduleId },
           data: {
@@ -253,7 +243,6 @@ export class ScheduledTrackerProcessingService
           `Completed scheduled tracker processing ${scheduleId} for guild ${guildId}`,
         );
 
-        // Clean up the job after execution
         job.stop();
         this.scheduledJobs.delete(jobId);
         if (this.schedulerRegistry.doesExist('cron', jobId)) {
@@ -266,7 +255,6 @@ export class ScheduledTrackerProcessingService
           `Error executing scheduled tracker processing ${scheduleId}: ${errorMessage}`,
         );
 
-        // Mark as failed
         await this.prisma.scheduledTrackerProcessing.update({
           where: { id: scheduleId },
           data: {
@@ -275,7 +263,6 @@ export class ScheduledTrackerProcessingService
           },
         });
 
-        // Clean up the job
         job.stop();
         this.scheduledJobs.delete(jobId);
         if (this.schedulerRegistry.doesExist('cron', jobId)) {
@@ -303,7 +290,6 @@ export class ScheduledTrackerProcessingService
     const day = date.getDate();
     const month = date.getMonth() + 1; // JavaScript months are 0-indexed
 
-    // Cron format: second minute hour day month dayOfWeek
     // For a one-time job, we use the specific date (dayOfWeek = *)
     return `${second} ${minute} ${hour} ${day} ${month} *`;
   }

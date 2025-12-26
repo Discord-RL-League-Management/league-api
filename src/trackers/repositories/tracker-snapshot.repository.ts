@@ -77,7 +77,6 @@ export class TrackerSnapshotRepository {
   }
 
   async findByGuildId(guildId: string): Promise<TrackerSnapshot[]> {
-    // TODO: Update to use VisibilityService when available
     const visibleEntities = await this.prisma.entityVisibility.findMany({
       where: {
         entityType: 'tracker_snapshot',
