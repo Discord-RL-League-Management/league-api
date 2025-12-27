@@ -116,7 +116,6 @@ export class TrackerProcessingGuardService {
     }
 
     try {
-      // Get all trackers with their userIds
       const trackers = await this.prisma.tracker.findMany({
         where: {
           id: { in: trackerIds },

@@ -58,7 +58,6 @@ export class TrackerRepository {
   }
 
   async findByGuildId(guildId: string): Promise<Tracker[]> {
-    // Get trackers for users who are members of this guild
     return this.prisma.tracker.findMany({
       where: {
         user: {
@@ -108,12 +107,8 @@ export class TrackerRepository {
         },
         OR: [
           { scrapingStatus: TrackerScrapingStatus.PENDING },
-          {
-            OR: [
-              { lastScrapedAt: null },
-              { lastScrapedAt: { lt: cutoffTime } },
-            ],
-          },
+          { lastScrapedAt: null },
+          { lastScrapedAt: { lt: cutoffTime } },
         ],
         user: {
           guildMembers: {
@@ -162,7 +157,6 @@ export class TrackerRepository {
   async findBestForUser(
     userId: string,
   ): Promise<(Tracker & { seasons: TrackerSeason[] }) | null> {
-    // First, try to find a tracker with season data, ordered by lastScrapedAt desc
     const trackerWithData = await this.prisma.tracker.findFirst({
       where: {
         userId,
@@ -175,7 +169,7 @@ export class TrackerRepository {
       include: {
         seasons: {
           orderBy: { seasonNumber: 'desc' },
-          take: 1, // Only need latest season
+          take: 1,
         },
       },
       orderBy: { lastScrapedAt: 'desc' },

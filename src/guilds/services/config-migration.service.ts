@@ -54,10 +54,7 @@ export class ConfigMigrationService {
       migrated = await this.migrateToV2(migrated);
     }
 
-    // Future migrations:
-    // if (schemaVersion < 3) {
-    //   migrated = await this.migrateToV3(migrated);
-    // }
+    // Future migrations follow the pattern: if (schemaVersion < N) { migrated = await this.migrateToVN(migrated); }
 
     // Final normalization ensures current structure
     return this.normalizeToCurrentSchema(migrated);

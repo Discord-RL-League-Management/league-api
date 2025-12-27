@@ -90,7 +90,6 @@ export class TrackerQueueOrchestratorService {
     const processableTrackerIds =
       await this.processingGuard.filterProcessableTrackers(trackerIds);
 
-    // Update non-processable trackers to FAILED status
     const nonProcessableIds = trackerIds.filter(
       (id) => !processableTrackerIds.includes(id),
     );
@@ -116,7 +115,6 @@ export class TrackerQueueOrchestratorService {
       );
     }
 
-    // Enqueue processable trackers
     if (processableTrackerIds.length > 0) {
       await this.scrapingQueueService.addBatchScrapingJobs(
         processableTrackerIds,
