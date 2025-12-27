@@ -7,3 +7,6 @@ dist/
 *.tsbuildinfo
 .debt-markers.json
 coverage/
+
+# Cursor IDE workspace files
+.cursor/worktrees.json

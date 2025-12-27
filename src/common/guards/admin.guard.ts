@@ -67,7 +67,6 @@ export class AdminGuard implements CanActivate {
     }
 
     try {
-      // Get user's access token for Discord API calls
       const accessToken = await this.tokenProvider.getValidAccessToken(user.id);
       if (!accessToken) {
         this.logger.warn(
@@ -86,7 +85,7 @@ export class AdminGuard implements CanActivate {
         throw new ForbiddenException('You are not a member of this guild');
       }
 
-      // Check if user has Discord Administrator permission (primary check)
+      // Primary check: Discord Administrator permission
       if (guildPermissions.hasAdministratorPermission) {
         this.logger.log(
           `AdminGuard: User ${user.id} has Discord Administrator permission in guild ${guildId}`,
@@ -114,7 +113,6 @@ export class AdminGuard implements CanActivate {
       // This ensures settings are always available for permission checks
       const settings = await this.guildAccessProvider.getSettings(guildId);
 
-      // Check if any admin roles are configured
       const settingsTyped = settings;
       const adminRoles = settingsTyped?.roles?.admin || [];
       const hasNoAdminRolesConfigured = !adminRoles || adminRoles.length === 0;
@@ -156,7 +154,7 @@ export class AdminGuard implements CanActivate {
         throw new ForbiddenException('You are not a member of this guild');
       }
 
-      // Check configured admin roles using stored roles (validate with Discord for final check)
+      // Validate with Discord for final authorization check
       const isAdmin = await this.permissionProvider.checkAdminRoles(
         membership.roles,
         guildId,
@@ -164,7 +162,6 @@ export class AdminGuard implements CanActivate {
         true, // Validate with Discord for authorization
       );
 
-      // Log audit event
       await this.auditProvider.logAdminAction(
         {
           userId: user.id,

@@ -35,7 +35,6 @@ export class LeagueJoinValidationService {
    * Single Responsibility: Complete join validation
    */
   async validateJoin(playerId: string, leagueId: string): Promise<void> {
-    // Get league settings
     const settings = await this.leagueSettingsService.getSettings(leagueId);
     const membershipConfig = settings.membership;
     const skillConfig = settings.skill;

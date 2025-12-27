@@ -58,9 +58,6 @@ export class LeagueRepository
     if (opts.includeTournaments) {
       (include as Record<string, unknown>).tournaments = true;
     }
-    // if (opts.includeSeries) {
-    //   include.series = true;
-    // }
 
     const league = await this.prisma.league.findUnique({
       where: { id },

@@ -183,7 +183,6 @@ export class PlayerLeagueStatsRepository {
       updated.totalSaves,
     );
 
-    // Update derived stats
     return client.playerLeagueStats.update({
       where: { playerId_leagueId: { playerId, leagueId } },
       data: derived,

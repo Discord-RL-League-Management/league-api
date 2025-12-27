@@ -22,6 +22,19 @@ export class TrackerQueueOrchestratorService {
   ) {}
 
   /**
+   * Execute a promise in fire-and-forget mode with error logging
+   * Used for operations where we don't need to wait for completion
+   * but want to ensure errors are logged
+   */
+  private fireAndForget(promise: Promise<unknown>, errorContext: string): void {
+    promise.catch((error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(`${errorContext}: ${errorMessage}`);
+    });
+  }
+
+  /**
    * Enqueue a single tracker with processing guard check
    * If processing is disabled, updates tracker status to FAILED
    *
@@ -52,27 +65,30 @@ export class TrackerQueueOrchestratorService {
       return;
     }
 
-    void this.scrapingQueueService.addScrapingJob(trackerId).catch((error) => {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      this.logger.error(
-        `Failed to enqueue scraping job for tracker ${trackerId}: ${errorMessage}`,
-      );
-      void this.prisma.tracker
-        .update({
-          where: { id: trackerId },
-          data: {
-            scrapingStatus: TrackerScrapingStatus.FAILED,
-            scrapingError: `Failed to enqueue scraping job: ${errorMessage}`,
-            scrapingAttempts: 1,
-          },
-        })
-        .catch((updateError) => {
-          this.logger.error(
-            `Failed to update tracker ${trackerId} status after enqueue failure: ${updateError instanceof Error ? updateError.message : String(updateError)}`,
-          );
-        });
-    });
+    this.fireAndForget(
+      this.scrapingQueueService.addScrapingJob(trackerId).catch((error) => {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        this.logger.error(
+          `Failed to enqueue scraping job for tracker ${trackerId}: ${errorMessage}`,
+        );
+        return this.prisma.tracker
+          .update({
+            where: { id: trackerId },
+            data: {
+              scrapingStatus: TrackerScrapingStatus.FAILED,
+              scrapingError: `Failed to enqueue scraping job: ${errorMessage}`,
+              scrapingAttempts: 1,
+            },
+          })
+          .catch((updateError) => {
+            this.logger.error(
+              `Failed to update tracker ${trackerId} status after enqueue failure: ${updateError instanceof Error ? updateError.message : String(updateError)}`,
+            );
+          });
+      }),
+      `Failed to enqueue scraping job for tracker ${trackerId}`,
+    );
   }
 
   /**
@@ -90,7 +106,6 @@ export class TrackerQueueOrchestratorService {
     const processableTrackerIds =
       await this.processingGuard.filterProcessableTrackers(trackerIds);
 
-    // Update non-processable trackers to FAILED status
     const nonProcessableIds = trackerIds.filter(
       (id) => !processableTrackerIds.includes(id),
     );
@@ -116,7 +131,6 @@ export class TrackerQueueOrchestratorService {
       );
     }
 
-    // Enqueue processable trackers
     if (processableTrackerIds.length > 0) {
       await this.scrapingQueueService.addBatchScrapingJobs(
         processableTrackerIds,

@@ -227,8 +227,8 @@ export class PlayerService {
         throw new PlayerNotFoundException(id);
       }
 
-      // Validate status transition if status is being updated
       if (updatePlayerDto.status && updatePlayerDto.status !== player.status) {
+        // Validate status transition
         this.validationService.validatePlayerStatus(updatePlayerDto.status);
       }
 

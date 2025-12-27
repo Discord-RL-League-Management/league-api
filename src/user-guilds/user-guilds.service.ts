@@ -45,7 +45,6 @@ export class UserGuildsService {
     try {
       const guilds = await this.filterUserGuilds(userId);
 
-      // Get user's guild memberships for permission data
       const memberships =
         await this.guildMembersService.findMembersByUser(userId);
 
@@ -99,7 +98,6 @@ export class UserGuildsService {
     userGuilds: Array<DiscordGuild & { roles?: string[] }>,
   ): Promise<void> {
     try {
-      // Get existing memberships
       const existingMemberships =
         await this.guildMembersService.findMembersByUser(userId);
 
@@ -117,7 +115,6 @@ export class UserGuildsService {
           roles: guild.roles || [], // Use roles from OAuth data
         }));
 
-      // Create new memberships using the service
       for (const membership of newMemberships) {
         try {
           await this.guildMembersService.create(membership);
@@ -156,7 +153,6 @@ export class UserGuildsService {
       // Sync guild memberships atomically with roles
       await this.syncUserGuildMembershipsWithRoles(userId, userGuilds);
 
-      // Get enriched guild data
       const availableGuilds =
         await this.getUserAvailableGuildsWithPermissions(userId);
 
@@ -188,7 +184,6 @@ export class UserGuildsService {
         return cachedGuilds;
       }
 
-      // Get valid access token
       const accessToken =
         await this.tokenManagementService.getValidAccessToken(userId);
       if (!accessToken) {
@@ -200,7 +195,6 @@ export class UserGuildsService {
       const userGuilds =
         await this.discordApiService.getUserGuilds(accessToken);
 
-      // Get bot's active guild IDs from guilds service
       const guildIds = await this.guildsService.findActiveGuildIds();
       const botGuildIds = new Set(guildIds);
 

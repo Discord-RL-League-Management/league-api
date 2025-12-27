@@ -34,6 +34,25 @@ export class ScheduledTrackerProcessingService
   ) {}
 
   /**
+   * Safely stop a CronJob, handling both sync and async stop methods
+   * @param job - The CronJob instance to stop
+   * @param jobId - Job ID for logging purposes
+   */
+  private async stopJobSafely(job: CronJob, jobId: string): Promise<void> {
+    try {
+      const stopResult = job.stop();
+      // CronJob.stop() returns void or Promise<void>, handle both
+      if (stopResult && typeof stopResult.then === 'function') {
+        await stopResult;
+      }
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(`Error stopping job ${jobId}: ${errorMessage}`);
+    }
+  }
+
+  /**
    * Initialize scheduled jobs on module start
    * Loads all pending scheduled jobs from database and schedules them
    */
@@ -45,14 +64,10 @@ export class ScheduledTrackerProcessingService
   /**
    * Clean up scheduled jobs on shutdown
    */
-  onApplicationShutdown() {
+  async onApplicationShutdown() {
     this.logger.log('Shutting down scheduled tracker processing service');
     for (const [jobId, job] of this.scheduledJobs.entries()) {
-      void Promise.resolve(job.stop()).catch((error: unknown) => {
-        this.logger.error(
-          `Error stopping job ${jobId}: ${error instanceof Error ? error.message : String(error)}`,
-        );
-      });
+      await this.stopJobSafely(job, jobId);
       if (this.schedulerRegistry.doesExist('cron', jobId)) {
         try {
           this.schedulerRegistry.deleteCronJob(jobId);
@@ -128,13 +143,17 @@ export class ScheduledTrackerProcessingService
   ) {
     const where: Prisma.ScheduledTrackerProcessingWhereInput = {
       guildId,
-      ...(options?.status && { status: options.status }),
-      ...(options?.includeCompleted === false && {
-        status: {
-          not: ScheduledProcessingStatus.COMPLETED,
-        },
-      }),
     };
+
+    // If status is explicitly provided, use it (takes precedence)
+    if (options?.status) {
+      where.status = options.status;
+    } else if (options?.includeCompleted === false) {
+      // Only apply includeCompleted filter if status wasn't explicitly provided
+      where.status = {
+        not: ScheduledProcessingStatus.COMPLETED,
+      };
+    }
 
     return this.prisma.scheduledTrackerProcessing.findMany({
       where,
@@ -176,11 +195,7 @@ export class ScheduledTrackerProcessingService
         this.logger.warn(`Job ${jobId} not found in scheduledJobs map`);
         this.scheduledJobs.delete(jobId);
       } else {
-        void Promise.resolve(job.stop()).catch((error: unknown) => {
-          this.logger.error(
-            `Error stopping job ${jobId}: ${error instanceof Error ? error.message : String(error)}`,
-          );
-        });
+        await this.stopJobSafely(job, jobId);
         this.scheduledJobs.delete(jobId);
       }
     }
@@ -267,23 +282,6 @@ export class ScheduledTrackerProcessingService
         this.logger.log(
           `Completed scheduled tracker processing ${scheduleId} for guild ${guildId}`,
         );
-
-        void Promise.resolve(job.stop()).catch((err: unknown) => {
-          const errorMessage = err instanceof Error ? err.message : String(err);
-          this.logger.error(`Error stopping job ${jobId}: ${errorMessage}`);
-        });
-        this.scheduledJobs.delete(jobId);
-        if (this.schedulerRegistry.doesExist('cron', jobId)) {
-          try {
-            this.schedulerRegistry.deleteCronJob(jobId);
-          } catch (err: unknown) {
-            const errorMessage =
-              err instanceof Error ? err.message : String(err);
-            this.logger.error(
-              `Error deleting cron job ${jobId}: ${errorMessage}`,
-            );
-          }
-        }
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : String(error);
@@ -291,18 +289,24 @@ export class ScheduledTrackerProcessingService
           `Error executing scheduled tracker processing ${scheduleId}: ${errorMessage}`,
         );
 
-        await this.prisma.scheduledTrackerProcessing.update({
-          where: { id: scheduleId },
-          data: {
-            status: ScheduledProcessingStatus.FAILED,
-            errorMessage: errorMessage,
-          },
-        });
-
-        void Promise.resolve(job.stop()).catch((err: unknown) => {
-          const errorMessage = err instanceof Error ? err.message : String(err);
-          this.logger.error(`Error stopping job ${jobId}: ${errorMessage}`);
-        });
+        await this.prisma.scheduledTrackerProcessing
+          .update({
+            where: { id: scheduleId },
+            data: {
+              status: ScheduledProcessingStatus.FAILED,
+              errorMessage: errorMessage,
+            },
+          })
+          .catch((dbError: unknown) => {
+            const dbErrorMessage =
+              dbError instanceof Error ? dbError.message : String(dbError);
+            this.logger.error(
+              `Failed to update schedule status to FAILED for ${scheduleId}: ${dbErrorMessage}`,
+            );
+          });
+      } finally {
+        // Ensure cleanup always runs regardless of success or failure
+        await this.stopJobSafely(job, jobId);
         this.scheduledJobs.delete(jobId);
         if (this.schedulerRegistry.doesExist('cron', jobId)) {
           try {
