@@ -14,6 +14,15 @@ alwaysApply: true
 * **Floating Promises:** Block any `async` call that is not `await`ed, `return`ed, or explicitly handled with `.catch()`. 
 * **Dead/Unreachable Code:** Block any code following a `return`, `throw`, `break`, or `continue` statement within the same block.
 * **Incorrect Collection Iteration:** Block `for...in` on arrays; require `for...of` or `.map/.forEach`.
+* **Object Spread Conflicts:** Block object literals where multiple conditional spread operators assign to the same property key. This indicates conflicting optional parameters. Pattern: `{ ...(cond1 && { key: val1 }), ...(cond2 && { key: val2 }) }` - the second overwrites the first. **Fix:** Use explicit `if/else` logic to establish precedence.
+* **Resource Cleanup Anti-Pattern:** Block try/catch blocks containing duplicated cleanup code (e.g., `job.stop()`, `map.delete()`, `registry.delete()`) without a `finally` block. Cleanup must be in `finally` to guarantee execution. **Pattern:** If cleanup appears in both `try` and `catch`, it must be in `finally`.
+* **Control Flow Sequence Errors:** Detect operations called in wrong sequence (e.g., `close()` before `save()`, processing after termination). Flag method calls that should follow specific order based on semantics. **Fix:** Reorder operations or add explicit sequencing.
+* **State Management Violations:** Block state modifications after terminal states (e.g., modifying properties after status changes to `COMPLETED`, `CANCELLED`, `FAILED`). Detect invalid state transitions that violate state machine invariants. **Fix:** Prevent modifications after terminal states.
+* **Initialization Bugs:** Block variables used before initialization, uninitialized variables passed to functions, or data flow anomalies where variables are set but never used before reassignment. **Fix:** Ensure proper initialization before use.
+* **Parameter Conflicts:** Flag methods with optional parameters that semantically conflict (e.g., both `status?: T` and `includeCompleted?: boolean` modify the same filter). Explicit parameters must take precedence over derived filters. **Fix:** Establish explicit precedence rules.
+* **Boundary Condition Errors:** Block off-by-one errors in loops (`<= array.length` should be `< array.length`), wrong comparison operators (`<=` vs `<`, `==` vs `===`), or incorrect boundary handling. **Fix:** Correct boundary conditions and comparison operators.
+* **Logical Operator Errors:** Block incorrect use of `&&` vs `||`, missing negations, or conditions that can never be true/false due to logical flaws. **Fix:** Correct logical operators and conditions.
+* **Interface Contract Violations:** Block missing required fields in return values, wrong return types, or objects that don't satisfy interface contracts. **Fix:** Ensure return values satisfy interface contracts.
 
 ### 2. Security (CVSS $\geq 7.0$)
 * **Secret Signatures:** Block strings matching regex for: `AIza[0-9A-Za-z-_]{35}` (Google), `sk_live_[0-9a-zA-Z]{24}` (Stripe), or generic `(?i)password|secret|token|api_key\s*[:=]\s*['"].+['"]`.
@@ -24,6 +33,7 @@ alwaysApply: true
 * **Cyclomatic Complexity (CC) > 30:** Block functions with excessive nested `if/else`, `switch`, or loops. 
 * **Deep Nesting:** Block code nested > 4 levels deep (e.g., a loop inside a loop inside a conditional inside a try/catch).
 * **Data Clumps:** Block functions accepting > 4 primitive parameters; require an Interface or DTO.
+* **API Contract Violations:** Flag methods with optional parameters that semantically conflict (e.g., both `status?: T` and `includeCompleted?: boolean` modify the same filter). Explicit parameters must take precedence over derived filters.
 
 ## 🟡 AUTO-REMEDIATION (Quick Fix)
 For Code Smells (Long Methods, Magic Numbers):
@@ -33,3 +43,17 @@ For Code Smells (Long Methods, Magic Numbers):
 ## 📝 Feedback Protocol
 - **No Report Files:** Provide feedback only in the chat/composer.
 - **Format:** ❌ [File:Line] - [ID] | [Technical Violation] | Fix: [Snippet]
+
+## 🔍 Semantic Analysis (AI-Enhanced Detection)
+When performing code quality checks, also analyze:
+
+1. **Object Spread Precedence:** Detect when multiple spreads assign to the same key - suggest explicit if/else logic with clear precedence.
+2. **Resource Lifecycle:** Detect cleanup code duplication in try/catch - suggest moving to finally block to guarantee execution.
+3. **Control Flow Sequence:** Detect operations in incorrect sequence - suggest reordering based on semantic requirements.
+4. **State Invariants:** Detect state modifications after terminal states or invalid state transitions - suggest state validation.
+5. **Parameter Precedence:** Detect optional parameters that modify the same behavior - suggest explicit precedence rules (if/else chains over spread conflicts).
+6. **Boundary Conditions:** Detect off-by-one errors, wrong comparison operators, or missing edge case handling - suggest corrections.
+7. **Data Flow:** Detect uninitialized variables, variables used before initialization, or dead assignments - suggest proper initialization.
+8. **Logical Operators:** Detect incorrect `&&` vs `||` usage, missing negations, or logically impossible conditions - suggest corrections.
+9. **Interface Contracts:** Detect missing required fields in return values or objects that don't satisfy interfaces - suggest complete implementations.
+10. **Business Logic:** Flag operations that violate domain rules or business requirements based on context and naming conventions.
