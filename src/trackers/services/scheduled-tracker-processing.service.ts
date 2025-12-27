@@ -34,6 +34,25 @@ export class ScheduledTrackerProcessingService
   ) {}
 
   /**
+   * Safely stop a CronJob, handling both sync and async stop methods
+   * @param job - The CronJob instance to stop
+   * @param jobId - Job ID for logging purposes
+   */
+  private async stopJobSafely(job: CronJob, jobId: string): Promise<void> {
+    try {
+      const stopResult = job.stop();
+      // CronJob.stop() returns void or Promise<void>, handle both
+      if (stopResult && typeof stopResult.then === 'function') {
+        await stopResult;
+      }
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(`Error stopping job ${jobId}: ${errorMessage}`);
+    }
+  }
+
+  /**
    * Initialize scheduled jobs on module start
    * Loads all pending scheduled jobs from database and schedules them
    */
@@ -45,14 +64,10 @@ export class ScheduledTrackerProcessingService
   /**
    * Clean up scheduled jobs on shutdown
    */
-  onApplicationShutdown() {
+  async onApplicationShutdown() {
     this.logger.log('Shutting down scheduled tracker processing service');
     for (const [jobId, job] of this.scheduledJobs.entries()) {
-      void Promise.resolve(job.stop()).catch((error: unknown) => {
-        this.logger.error(
-          `Error stopping job ${jobId}: ${error instanceof Error ? error.message : String(error)}`,
-        );
-      });
+      await this.stopJobSafely(job, jobId);
       if (this.schedulerRegistry.doesExist('cron', jobId)) {
         try {
           this.schedulerRegistry.deleteCronJob(jobId);
@@ -180,11 +195,7 @@ export class ScheduledTrackerProcessingService
         this.logger.warn(`Job ${jobId} not found in scheduledJobs map`);
         this.scheduledJobs.delete(jobId);
       } else {
-        void Promise.resolve(job.stop()).catch((error: unknown) => {
-          this.logger.error(
-            `Error stopping job ${jobId}: ${error instanceof Error ? error.message : String(error)}`,
-          );
-        });
+        await this.stopJobSafely(job, jobId);
         this.scheduledJobs.delete(jobId);
       }
     }
@@ -295,10 +306,7 @@ export class ScheduledTrackerProcessingService
           });
       } finally {
         // Ensure cleanup always runs regardless of success or failure
-        void Promise.resolve(job.stop()).catch((err: unknown) => {
-          const errorMessage = err instanceof Error ? err.message : String(err);
-          this.logger.error(`Error stopping job ${jobId}: ${errorMessage}`);
-        });
+        await this.stopJobSafely(job, jobId);
         this.scheduledJobs.delete(jobId);
         if (this.schedulerRegistry.doesExist('cron', jobId)) {
           try {
