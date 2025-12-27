@@ -42,7 +42,8 @@ export default defineConfig({
       },
     },
     
-    // Test timeout (100ms target per test)
+    // Test timeout (100ms for fast feedback on unit tests)
+    // Async tests that need more time should use per-test timeout override
     testTimeout: 100,
     
     // Parallel execution support

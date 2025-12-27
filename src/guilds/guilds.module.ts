@@ -67,6 +67,7 @@ import { UsersModule } from '../users/users.module';
     GuildSettingsService,
     SettingsDefaultsService,
     GuildAccessProviderAdapter,
+    GuildRepository,
   ],
 })
 export class GuildsModule {}

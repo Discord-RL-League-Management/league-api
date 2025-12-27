@@ -23,6 +23,9 @@ import { TrackerSeasonService } from './services/tracker-season.service';
 import { TrackerRefreshSchedulerService } from './services/tracker-refresh-scheduler.service';
 import { TrackerBatchRefreshService } from './services/tracker-batch-refresh.service';
 import { ScheduledTrackerProcessingService } from './services/scheduled-tracker-processing.service';
+import { ScheduledTrackerProcessingRepository } from './repositories/scheduled-tracker-processing.repository';
+import { CronJobSchedulerService } from './services/cron-job-scheduler.service';
+import { ScheduledJobLifecycleManager } from './services/scheduled-job-lifecycle-manager.service';
 import { AuditModule } from '../audit/audit.module';
 import { MmrCalculationModule } from '../mmr-calculation/mmr-calculation.module';
 import { GuildsModule } from '../guilds/guilds.module';
@@ -100,6 +103,9 @@ import { TrackerBatchProcessorService } from './services/tracker-batch-processor
     TrackerQueueOrchestratorService,
     TrackerBatchProcessorService,
     ScheduledTrackerProcessingService,
+    ScheduledTrackerProcessingRepository,
+    CronJobSchedulerService,
+    ScheduledJobLifecycleManager,
     TrackerRepository,
     TrackerSnapshotRepository,
     DiscordMessageService,
