@@ -6,6 +6,7 @@ import {
   GamePlatform,
   Game,
   TrackerSeason,
+  TrackerScrapingStatus,
 } from '@prisma/client';
 
 @Injectable()
@@ -75,6 +76,58 @@ export class TrackerRepository {
         user: true,
       },
       orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * Find pending and stale trackers for a specific guild
+   *
+   * Returns trackers that are:
+   * - Active and not deleted
+   * - Not currently in progress
+   * - Either pending (never scraped) OR stale (lastScrapedAt is null or older than refreshIntervalHours)
+   * - Belong to users who are members of the specified guild
+   *
+   * @param guildId - Discord guild ID
+   * @param refreshIntervalHours - Number of hours after which a tracker is considered stale
+   * @returns Array of tracker objects with id field selected
+   */
+  async findPendingAndStaleForGuild(
+    guildId: string,
+    refreshIntervalHours: number,
+  ): Promise<Array<{ id: string }>> {
+    const cutoffTime = new Date();
+    cutoffTime.setHours(cutoffTime.getHours() - refreshIntervalHours);
+
+    return this.prisma.tracker.findMany({
+      where: {
+        isActive: true,
+        isDeleted: false,
+        scrapingStatus: {
+          not: TrackerScrapingStatus.IN_PROGRESS,
+        },
+        OR: [
+          { scrapingStatus: TrackerScrapingStatus.PENDING },
+          {
+            OR: [
+              { lastScrapedAt: null },
+              { lastScrapedAt: { lt: cutoffTime } },
+            ],
+          },
+        ],
+        user: {
+          guildMembers: {
+            some: {
+              guildId,
+              isDeleted: false,
+              isBanned: false,
+            },
+          },
+        },
+      },
+      select: {
+        id: true,
+      },
     });
   }
 

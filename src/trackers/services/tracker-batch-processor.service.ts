@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
+import { TrackerRepository } from '../repositories/tracker.repository';
 import { TrackerScrapingQueueService } from '../queues/tracker-scraping.queue';
 import { TrackerProcessingGuardService } from './tracker-processing-guard.service';
 import { TrackerScrapingStatus } from '@prisma/client';
@@ -13,12 +15,23 @@ import { TrackerScrapingStatus } from '@prisma/client';
 @Injectable()
 export class TrackerBatchProcessorService {
   private readonly logger = new Logger(TrackerBatchProcessorService.name);
+  private readonly refreshIntervalHours: number;
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly trackerRepository: TrackerRepository,
     private readonly scrapingQueueService: TrackerScrapingQueueService,
     private readonly processingGuard: TrackerProcessingGuardService,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    const trackerConfig = this.configService.get<{
+      refreshIntervalHours: number;
+    }>('tracker');
+    if (!trackerConfig) {
+      throw new Error('Tracker configuration is missing');
+    }
+    this.refreshIntervalHours = trackerConfig.refreshIntervalHours ?? 24;
+  }
 
   /**
    * Process all pending trackers by enqueueing them for scraping
@@ -77,6 +90,10 @@ export class TrackerBatchProcessorService {
    * This method is used by the Discord bot when a server admin runs the /process-trackers command.
    * It only processes trackers for users who are members of the specified guild.
    *
+   * Processes both:
+   * - Trackers with scrapingStatus: PENDING (never scraped)
+   * - Stale trackers: lastScrapedAt is null OR older than refreshIntervalHours
+   *
    * NOTE: This method bypasses the guild's tracker processing toggle because it's a manual
    * admin action. The toggle only applies to automatic/scheduled processing.
    *
@@ -86,39 +103,24 @@ export class TrackerBatchProcessorService {
   async processPendingTrackersForGuild(
     guildId: string,
   ): Promise<{ processed: number; trackers: string[] }> {
-    const pendingTrackers = await this.prisma.tracker.findMany({
-      where: {
-        scrapingStatus: TrackerScrapingStatus.PENDING,
-        isActive: true,
-        isDeleted: false,
-        user: {
-          guildMembers: {
-            some: {
-              guildId,
-              isDeleted: false,
-              isBanned: false,
-            },
-          },
-        },
-      },
-      select: {
-        id: true,
-      },
-    });
+    const trackers = await this.trackerRepository.findPendingAndStaleForGuild(
+      guildId,
+      this.refreshIntervalHours,
+    );
 
-    if (pendingTrackers.length === 0) {
-      this.logger.log(`No pending trackers to process for guild ${guildId}`);
+    if (trackers.length === 0) {
+      this.logger.log(
+        `No pending or stale trackers to process for guild ${guildId}`,
+      );
       return { processed: 0, trackers: [] };
     }
 
-    const trackerIds = pendingTrackers.map((t) => t.id);
+    const trackerIds = trackers.map((t) => t.id);
 
-    // Manual admin action bypasses the toggle - process all pending trackers for this guild
-    // The toggle only applies to automatic/scheduled processing
     await this.scrapingQueueService.addBatchScrapingJobs(trackerIds);
 
     this.logger.log(
-      `Enqueued ${trackerIds.length} pending trackers for guild ${guildId} (manual admin action - bypasses toggle)`,
+      `Enqueued ${trackerIds.length} pending and stale trackers for guild ${guildId} (manual admin action - bypasses toggle)`,
     );
 
     return {
