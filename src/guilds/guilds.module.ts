@@ -14,6 +14,7 @@ import { GuildSyncService } from './services/guild-sync.service';
 import { GuildErrorHandlerService } from './services/guild-error-handler.service';
 import { GuildRepository } from './repositories/guild.repository';
 import { GuildMembersModule } from '../guild-members/guild-members.module';
+import { GuildAccessProviderAdapter } from './adapters/guild-access-provider.adapter';
 import { InfrastructureModule } from '../infrastructure/infrastructure.module';
 import { UserGuildsModule } from '../user-guilds/user-guilds.module';
 import { DiscordModule } from '../discord/discord.module';
@@ -37,8 +38,8 @@ import { UsersModule } from '../users/users.module';
     forwardRef(() => AuditModule),
     PermissionCheckModule,
     PrismaModule,
-    InfrastructureModule,
-    MmrCalculationModule,
+    forwardRef(() => InfrastructureModule),
+    forwardRef(() => MmrCalculationModule),
     UsersModule,
     HttpModule.register(httpModuleOptions),
     CacheModule.register(cacheModuleOptions),
@@ -58,12 +59,14 @@ import { UsersModule } from '../users/users.module';
     GuildSyncService,
     GuildErrorHandlerService,
     GuildRepository,
+    GuildAccessProviderAdapter,
   ],
   exports: [
     GuildsService,
     GuildAccessValidationService,
     GuildSettingsService,
     SettingsDefaultsService,
+    GuildAccessProviderAdapter,
   ],
 })
 export class GuildsModule {}

@@ -5,7 +5,6 @@ import {
   ArgumentMetadata,
 } from '@nestjs/common';
 
-// Validates enum query/route parameters to prevent invalid enum values from reaching business logic
 @Injectable()
 export class ParseEnumPipe<T extends object>
   implements PipeTransform<string | undefined, T[keyof T] | undefined>
@@ -24,7 +23,6 @@ export class ParseEnumPipe<T extends object>
 
     const enumValues = Object.values(this.enumObject);
 
-    // Check if value matches as-is (for string enums)
     if (enumValues.includes(value as T[keyof T])) {
       return value as T[keyof T];
     }

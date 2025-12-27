@@ -15,11 +15,6 @@ export interface PlayerQueryOptions {
   includeGuild?: boolean;
 
   /**
-   * Include primary tracker data
-   */
-  includePrimaryTracker?: boolean;
-
-  /**
    * Filter by status
    */
   status?: string | string[];
@@ -46,7 +41,6 @@ export const defaultPlayerQueryOptions: Required<
   Pick<PlayerQueryOptions, 'status' | 'sortBy' | 'sortOrder'> = {
   includeUser: false,
   includeGuild: false,
-  includePrimaryTracker: false,
   page: 1,
   limit: 50,
 };

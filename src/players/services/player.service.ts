@@ -98,21 +98,11 @@ export class PlayerService {
    */
   async create(createPlayerDto: CreatePlayerDto): Promise<any> {
     try {
-      // Validate guild membership
       await this.validationService.validateGuildMembership(
         createPlayerDto.userId,
         createPlayerDto.guildId,
       );
 
-      // Validate tracker if provided
-      if (createPlayerDto.primaryTrackerId) {
-        await this.validationService.validateTrackerLink(
-          createPlayerDto.primaryTrackerId,
-          createPlayerDto.userId,
-        );
-      }
-
-      // Check if player already exists
       const existing = await this.playerRepository.findByUserIdAndGuildId(
         createPlayerDto.userId,
         createPlayerDto.guildId,
@@ -125,18 +115,15 @@ export class PlayerService {
         );
       }
 
-      // Create player with activity logging in transaction
       return await this.prisma.$transaction(async (tx) => {
         const player = await tx.player.create({
           data: {
             userId: createPlayerDto.userId,
             guildId: createPlayerDto.guildId,
             status: createPlayerDto.status || 'ACTIVE',
-            primaryTrackerId: createPlayerDto.primaryTrackerId,
           },
         });
 
-        // Log activity
         await this.activityLogService.logActivity(
           tx,
           'player',
@@ -145,7 +132,7 @@ export class PlayerService {
           'create',
           createPlayerDto.userId,
           createPlayerDto.guildId,
-          { status: player.status, primaryTrackerId: player.primaryTrackerId },
+          { status: player.status },
         );
 
         return player;
@@ -178,12 +165,7 @@ export class PlayerService {
    * Auto-create player on first league join attempt
    * Single Responsibility: Auto-creation with transaction
    */
-  async ensurePlayerExists(
-    userId: string,
-    guildId: string,
-    primaryTrackerId?: string,
-  ): Promise<any> {
-    // Check if player exists
+  async ensurePlayerExists(userId: string, guildId: string): Promise<any> {
     const player = await this.playerRepository.findByUserIdAndGuildId(
       userId,
       guildId,
@@ -193,18 +175,8 @@ export class PlayerService {
       return player;
     }
 
-    // Validate guild membership
     await this.validationService.validateGuildMembership(userId, guildId);
 
-    // Validate tracker if provided
-    if (primaryTrackerId) {
-      await this.validationService.validateTrackerLink(
-        primaryTrackerId,
-        userId,
-      );
-    }
-
-    // Create player in transaction with activity logging
     return await this.prisma.$transaction(async (tx) => {
       // Double-check in transaction
       const existing = await tx.player.findUnique({
@@ -225,11 +197,9 @@ export class PlayerService {
           userId,
           guildId,
           status: PlayerStatus.ACTIVE,
-          primaryTrackerId,
         },
       });
 
-      // Log activity
       await this.activityLogService.logActivity(
         tx,
         'player',
@@ -238,7 +208,7 @@ export class PlayerService {
         'create',
         userId,
         guildId,
-        { status: player.status, primaryTrackerId: player.primaryTrackerId },
+        { status: player.status },
         { autoCreated: true },
       );
 
@@ -262,15 +232,6 @@ export class PlayerService {
         this.validationService.validatePlayerStatus(updatePlayerDto.status);
       }
 
-      // Validate tracker if being updated
-      if (updatePlayerDto.primaryTrackerId !== undefined) {
-        await this.validationService.validateTrackerLink(
-          updatePlayerDto.primaryTrackerId,
-          player.userId,
-        );
-      }
-
-      // Update with activity logging in transaction
       return await this.prisma.$transaction(async (tx) => {
         const updated = await tx.player.update({
           where: { id },
@@ -278,13 +239,9 @@ export class PlayerService {
             ...(updatePlayerDto.status !== undefined && {
               status: updatePlayerDto.status,
             }),
-            ...(updatePlayerDto.primaryTrackerId !== undefined && {
-              primaryTrackerId: updatePlayerDto.primaryTrackerId,
-            }),
           },
         });
 
-        // Log activity
         await this.activityLogService.logActivity(
           tx,
           'player',

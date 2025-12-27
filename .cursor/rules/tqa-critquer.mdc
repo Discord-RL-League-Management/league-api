@@ -1,0 +1,16 @@
+---
+description: TQA_AUDIT_AGENT: Use to audit and critique tests in ./tests/ for Pillar compliance.
+globs: "tests/api/*.test.ts,tests/e2e/*.test.ts,tests/unit/services/*.test.ts,tests/unit/repositories/*.test.ts"
+alwaysApply: false
+---
+# 🛡️ TQA Critiquer (Judge)
+Audit files in `tests/` against the TQA Protocol.
+
+## 🔍 Rejection Gates (Severity: Error)
+- **Pillar I:** Fail if naming is not `should_..._when_...`.
+- **Pillar II:** Fail if mocks aren't cleaned via `afterEach` or `vi.restoreAllMocks()`.
+- **Pillar III:** Fail if assertions > 5 (Assertion Roulette).
+- **Async:** Fail if missing `await` on any promise.
+
+## 📝 Required Output
+❌ [Rule ID] - Error (2) | Issue: [Desc] | Fix: [Action]

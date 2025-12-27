@@ -38,14 +38,12 @@ describe('PlayerService', () => {
   const playerId = 'player-123';
   const userId = 'user-123';
   const guildId = 'guild-123';
-  const trackerId = 'tracker-123';
 
   const mockPlayer: Player = {
     id: playerId,
     userId,
     guildId,
     status: PlayerStatus.ACTIVE,
-    primaryTrackerId: trackerId,
     lastLeftLeagueId: null,
     lastLeftLeagueAt: null,
     createdAt: new Date(),
@@ -305,27 +303,6 @@ describe('PlayerService', () => {
       );
     });
 
-    it('should_validate_tracker_link_when_tracker_provided', async () => {
-      // ARRANGE
-      const createDto: CreatePlayerDto = {
-        userId,
-        guildId,
-        primaryTrackerId: trackerId,
-      };
-      const validationError = new NotFoundException('Tracker not found');
-      vi.mocked(mockValidationService.validateTrackerLink).mockRejectedValue(
-        validationError,
-      );
-      vi.mocked(mockPlayerRepository.findByUserIdAndGuildId).mockResolvedValue(
-        null,
-      );
-
-      // ACT & ASSERT
-      await expect(service.create(createDto)).rejects.toThrow(
-        NotFoundException,
-      );
-    });
-
     it('should_throw_PlayerAlreadyExistsException_on_prisma_unique_constraint', async () => {
       // ARRANGE
       const createDto: CreatePlayerDto = {
@@ -452,22 +429,6 @@ describe('PlayerService', () => {
         NotFoundException,
       );
     });
-
-    it('should_validate_tracker_link_when_tracker_provided', async () => {
-      // ARRANGE
-      const validationError = new NotFoundException('Tracker not found');
-      vi.mocked(mockPlayerRepository.findByUserIdAndGuildId).mockResolvedValue(
-        null,
-      );
-      vi.mocked(mockValidationService.validateTrackerLink).mockRejectedValue(
-        validationError,
-      );
-
-      // ACT & ASSERT
-      await expect(
-        service.ensurePlayerExists(userId, guildId, trackerId),
-      ).rejects.toThrow(NotFoundException);
-    });
   });
 
   describe('update', () => {
@@ -496,36 +457,6 @@ describe('PlayerService', () => {
       // ASSERT
       expect(result).toEqual(updatedPlayer);
       expect(result.status).toBe(PlayerStatus.INACTIVE);
-    });
-
-    it('should_update_player_tracker_successfully', async () => {
-      // ARRANGE
-      const updateDto: UpdatePlayerDto = {
-        primaryTrackerId: 'new-tracker-123',
-      };
-      const updatedPlayer = {
-        ...mockPlayer,
-        primaryTrackerId: 'new-tracker-123',
-      };
-
-      vi.mocked(mockPlayerRepository.findById).mockResolvedValue(mockPlayer);
-      vi.mocked(mockPrisma.$transaction).mockImplementation(
-        async (callback) => {
-          const mockTx = {
-            player: {
-              update: vi.fn().mockResolvedValue(updatedPlayer),
-            },
-          } as any;
-          return callback(mockTx);
-        },
-      );
-
-      // ACT
-      const result = await service.update(playerId, updateDto);
-
-      // ASSERT
-      expect(result).toEqual(updatedPlayer);
-      expect(result.primaryTrackerId).toBe('new-tracker-123');
     });
 
     it('should_throw_PlayerNotFoundException_when_player_does_not_exist', async () => {
@@ -561,24 +492,6 @@ describe('PlayerService', () => {
       // ACT & ASSERT
       await expect(service.update(playerId, updateDto)).rejects.toThrow(
         InvalidPlayerStatusException,
-      );
-    });
-
-    it('should_throw_InternalServerErrorException_when_tracker_validation_fails', async () => {
-      // ARRANGE
-      const updateDto: UpdatePlayerDto = {
-        primaryTrackerId: 'new-tracker-123',
-      };
-      const validationError = new NotFoundException('Tracker not found');
-
-      vi.mocked(mockPlayerRepository.findById).mockResolvedValue(mockPlayer);
-      vi.mocked(mockValidationService.validateTrackerLink).mockRejectedValue(
-        validationError,
-      );
-
-      // ACT & ASSERT: Validation errors are wrapped in InternalServerErrorException
-      await expect(service.update(playerId, updateDto)).rejects.toThrow(
-        InternalServerErrorException,
       );
     });
 

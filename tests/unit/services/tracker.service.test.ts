@@ -58,6 +58,7 @@ describe('TrackerService', () => {
       update: vi.fn(),
       softDelete: vi.fn(),
       checkUrlUniqueness: vi.fn(),
+      findBestForUser: vi.fn(),
     } as unknown as TrackerRepository;
 
     mockValidation = {
@@ -91,6 +92,24 @@ describe('TrackerService', () => {
       },
     } as unknown as PrismaService;
 
+    const mockUserOrchestrator = {
+      ensureUserExists: vi.fn().mockResolvedValue(undefined),
+    } as unknown as import('@/trackers/services/tracker-user-orchestrator.service').TrackerUserOrchestratorService;
+
+    const mockQueueOrchestrator = {
+      enqueueTrackerWithGuard: vi.fn().mockResolvedValue(undefined),
+      enqueueTrackersWithGuard: vi.fn().mockResolvedValue(undefined),
+    } as unknown as import('@/trackers/services/tracker-queue-orchestrator.service').TrackerQueueOrchestratorService;
+
+    const mockBatchProcessor = {
+      processPendingTrackers: vi
+        .fn()
+        .mockResolvedValue({ processed: 0, trackers: [] }),
+      processPendingTrackersForGuild: vi
+        .fn()
+        .mockResolvedValue({ processed: 0, trackers: [] }),
+    } as unknown as import('@/trackers/services/tracker-batch-processor.service').TrackerBatchProcessorService;
+
     service = new TrackerService(
       mockPrisma,
       mockRepository,
@@ -98,6 +117,9 @@ describe('TrackerService', () => {
       mockScrapingQueue,
       mockSeasonService,
       mockProcessingGuard,
+      mockUserOrchestrator,
+      mockQueueOrchestrator,
+      mockBatchProcessor,
     );
   });
 
@@ -514,6 +536,43 @@ describe('TrackerService', () => {
       await expect(service.addTracker(userId, url)).rejects.toThrow(
         BadRequestException,
       );
+    });
+  });
+
+  describe('findBestTrackerForUser', () => {
+    it('should_delegate_to_repository_findBestForUser', async () => {
+      // ARRANGE
+      const userId = 'user_123';
+      const expectedTracker = {
+        ...mockTracker,
+        seasons: [{ seasonNumber: 25 }],
+      };
+
+      vi.mocked(mockRepository.findBestForUser).mockResolvedValue(
+        expectedTracker as any,
+      );
+
+      // ACT
+      const result = await service.findBestTrackerForUser(userId);
+
+      // ASSERT
+      expect(result).toEqual(expectedTracker);
+      expect(mockRepository.findBestForUser).toHaveBeenCalledWith(userId);
+      expect(mockRepository.findBestForUser).toHaveBeenCalledTimes(1);
+    });
+
+    it('should_return_null_when_repository_returns_null', async () => {
+      // ARRANGE
+      const userId = 'user_123';
+
+      vi.mocked(mockRepository.findBestForUser).mockResolvedValue(null);
+
+      // ACT
+      const result = await service.findBestTrackerForUser(userId);
+
+      // ASSERT
+      expect(result).toBeNull();
+      expect(mockRepository.findBestForUser).toHaveBeenCalledWith(userId);
     });
   });
 });

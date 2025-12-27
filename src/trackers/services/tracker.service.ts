@@ -11,6 +11,9 @@ import { TrackerValidationService } from './tracker-validation.service';
 import { TrackerScrapingQueueService } from '../queues/tracker-scraping.queue';
 import { TrackerSeasonService } from './tracker-season.service';
 import { TrackerProcessingGuardService } from './tracker-processing-guard.service';
+import { TrackerUserOrchestratorService } from './tracker-user-orchestrator.service';
+import { TrackerQueueOrchestratorService } from './tracker-queue-orchestrator.service';
+import { TrackerBatchProcessorService } from './tracker-batch-processor.service';
 import {
   GamePlatform,
   Game,
@@ -30,6 +33,9 @@ export class TrackerService {
     private readonly scrapingQueueService: TrackerScrapingQueueService,
     private readonly seasonService: TrackerSeasonService,
     private readonly processingGuard: TrackerProcessingGuardService,
+    private readonly userOrchestrator: TrackerUserOrchestratorService,
+    private readonly queueOrchestrator: TrackerQueueOrchestratorService,
+    private readonly batchProcessor: TrackerBatchProcessorService,
   ) {}
 
   /**
@@ -94,6 +100,19 @@ export class TrackerService {
   }
 
   /**
+   * Find the best/most recent tracker from a user's active trackers
+   * Used for skill validation when checking league requirements
+   *
+   * Delegates to repository for data access.
+   *
+   * @param userId - User ID to find trackers for
+   * @returns Best tracker with seasons or null if no active trackers exist
+   */
+  async findBestTrackerForUser(userId: string) {
+    return this.trackerRepository.findBestForUser(userId);
+  }
+
+  /**
    * Get trackers accessible to a guild
    * Guilds can access trackers for users who are members of that guild
    */
@@ -141,58 +160,21 @@ export class TrackerService {
   }
 
   /**
-   * Ensure user exists in database, creating or updating as needed
-   * Single Responsibility: User upsert logic
+   * Validate tracker URLs for registration
+   * @private
    */
-  private async ensureUserExists(
-    userId: string,
-    userData?: { username: string; globalName?: string; avatar?: string },
-  ): Promise<void> {
-    const username = userData?.username || userId;
-    const globalName = userData?.globalName ?? null;
-    const avatar = userData?.avatar ?? null;
-
-    await this.prisma.user.upsert({
-      where: { id: userId },
-      update: {
-        username,
-        globalName,
-        avatar,
-      },
-      create: {
-        id: userId,
-        username,
-        globalName,
-        avatar,
-      },
-    });
-  }
-
-  /**
-   * Register multiple trackers for a user (1-4 trackers)
-   * Validates user doesn't already have trackers
-   */
-  async registerTrackers(
-    userId: string,
+  private async validateTrackerUrls(
     urls: string[],
-    userData?: { username: string; globalName?: string; avatar?: string },
-    channelId?: string,
-    interactionToken?: string,
-  ) {
-    await this.ensureUserExists(userId, userData);
-
+    userId: string,
+  ): Promise<
+    Array<{
+      url: string;
+      parsed: { game: Game; platform: GamePlatform; username: string };
+    }>
+  > {
     if (urls.length === 0 || urls.length > 4) {
       throw new BadRequestException(
         'You must provide between 1 and 4 tracker URLs',
-      );
-    }
-
-    const existingTrackers = await this.getTrackersByUserId(userId);
-    const activeTrackers = existingTrackers.filter((t) => !t.isDeleted);
-
-    if (activeTrackers.length > 0) {
-      throw new BadRequestException(
-        `You already have ${activeTrackers.length} tracker(s) registered. Use /api/trackers/add to add more.`,
       );
     }
 
@@ -219,18 +201,53 @@ export class TrackerService {
 
     // Format validation only, uniqueness already checked in batch
     const validationPromises = uniqueUrls.map((url) =>
-      this.validationService
-        .validateTrackerUrl(url, userId, undefined, true)
-        .catch((error) => {
-          throw error;
-        }),
+      this.validationService.validateTrackerUrl(url, userId, undefined, true),
     );
 
     const parsedResults = await Promise.all(validationPromises);
-    const parsedUrls = uniqueUrls.map((url, index) => ({
+    return uniqueUrls.map((url, index) => ({
       url,
       parsed: parsedResults[index],
     }));
+  }
+
+  /**
+   * Validate tracker count limit
+   * @private
+   */
+  private validateTrackerCount(
+    existingCount: number,
+    maxCount: number,
+    errorMessage: string,
+  ): void {
+    if (existingCount >= maxCount) {
+      throw new BadRequestException(errorMessage);
+    }
+  }
+
+  /**
+   * Register multiple trackers for a user (1-4 trackers)
+   * Validates user doesn't already have trackers
+   */
+  async registerTrackers(
+    userId: string,
+    urls: string[],
+    userData?: { username: string; globalName?: string; avatar?: string },
+    channelId?: string,
+    interactionToken?: string,
+  ) {
+    await this.userOrchestrator.ensureUserExists(userId, userData);
+
+    const existingTrackers = await this.getTrackersByUserId(userId);
+    const activeTrackers = existingTrackers.filter((t) => !t.isDeleted);
+
+    if (activeTrackers.length > 0) {
+      throw new BadRequestException(
+        `You already have ${activeTrackers.length} tracker(s) registered. Use /api/trackers/add to add more.`,
+      );
+    }
+
+    const parsedUrls = await this.validateTrackerUrls(urls, userId);
 
     const trackers = [];
     for (const { url, parsed } of parsedUrls) {
@@ -246,53 +263,7 @@ export class TrackerService {
       );
       trackers.push(tracker);
 
-      const canProcess = await this.processingGuard.canProcessTracker(
-        tracker.id,
-      );
-
-      if (!canProcess) {
-        await this.prisma.tracker
-          .update({
-            where: { id: tracker.id },
-            data: {
-              scrapingStatus: TrackerScrapingStatus.FAILED,
-              scrapingError: 'Tracker processing disabled by guild settings',
-              scrapingAttempts: 1,
-            },
-          })
-          .catch((updateError) => {
-            this.logger.error(
-              `Failed to update tracker ${tracker.id} status after processing guard check: ${updateError instanceof Error ? updateError.message : String(updateError)}`,
-            );
-          });
-        this.logger.warn(
-          `Skipping tracker ${tracker.id} - processing disabled by guild settings`,
-        );
-        continue;
-      }
-
-      // Enqueue scraping job (async)
-      this.scrapingQueueService.addScrapingJob(tracker.id).catch((error) => {
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
-        this.logger.error(
-          `Failed to enqueue scraping job for tracker ${tracker.id}: ${errorMessage}`,
-        );
-        this.prisma.tracker
-          .update({
-            where: { id: tracker.id },
-            data: {
-              scrapingStatus: TrackerScrapingStatus.FAILED,
-              scrapingError: `Failed to enqueue scraping job: ${errorMessage}`,
-              scrapingAttempts: 1,
-            },
-          })
-          .catch((updateError) => {
-            this.logger.error(
-              `Failed to update tracker ${tracker.id} status after enqueue failure: ${updateError instanceof Error ? updateError.message : String(updateError)}`,
-            );
-          });
-      });
+      await this.queueOrchestrator.enqueueTrackerWithGuard(tracker.id);
     }
 
     this.logger.log(
@@ -312,18 +283,16 @@ export class TrackerService {
     channelId?: string,
     interactionToken?: string,
   ) {
-    // Ensure user exists before creating tracker
-    await this.ensureUserExists(userId, userData);
+    await this.userOrchestrator.ensureUserExists(userId, userData);
 
-    // Check current tracker count
     const existingTrackers = await this.getTrackersByUserId(userId);
     const activeTrackers = existingTrackers.filter((t) => !t.isDeleted);
 
-    if (activeTrackers.length >= 4) {
-      throw new BadRequestException(
-        'You have reached the maximum of 4 trackers. Please remove one before adding another.',
-      );
-    }
+    this.validateTrackerCount(
+      activeTrackers.length,
+      4,
+      'You have reached the maximum of 4 trackers. Please remove one before adding another.',
+    );
 
     const parsed = await this.validationService.validateTrackerUrl(url, userId);
 
@@ -338,46 +307,7 @@ export class TrackerService {
       interactionToken, // registrationInteractionToken
     );
 
-    const canProcess = await this.processingGuard.canProcessTracker(tracker.id);
-
-    if (!canProcess) {
-      await this.prisma.tracker
-        .update({
-          where: { id: tracker.id },
-          data: {
-            scrapingStatus: TrackerScrapingStatus.FAILED,
-            scrapingError: 'Tracker processing disabled by guild settings',
-            scrapingAttempts: 1,
-          },
-        })
-        .catch((updateError) => {
-          this.logger.error(
-            `Failed to update tracker ${tracker.id} status after processing guard check: ${updateError instanceof Error ? updateError.message : String(updateError)}`,
-          );
-        });
-      this.logger.warn(
-        `Skipping tracker ${tracker.id} - processing disabled by guild settings`,
-      );
-    } else {
-      // Enqueue scraping job (async)
-      this.scrapingQueueService.addScrapingJob(tracker.id).catch((error) => {
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
-        this.logger.error(
-          `Failed to enqueue scraping job for tracker ${tracker.id}: ${errorMessage}`,
-        );
-        this.prisma.tracker
-          .update({
-            where: { id: tracker.id },
-            data: {
-              scrapingStatus: TrackerScrapingStatus.FAILED,
-              scrapingError: `Failed to enqueue scraping job: ${errorMessage}`,
-              scrapingAttempts: 1,
-            },
-          })
-          .catch(() => {});
-      });
-    }
+    await this.queueOrchestrator.enqueueTrackerWithGuard(tracker.id);
 
     this.logger.log(
       `Added tracker ${tracker.id} for user ${userId} (${activeTrackers.length + 1}/4)`,
@@ -449,5 +379,31 @@ export class TrackerService {
    */
   async getTrackerSeasons(trackerId: string): Promise<TrackerSeason[]> {
     return this.seasonService.getSeasonsByTracker(trackerId);
+  }
+
+  /**
+   * Process all pending trackers by enqueueing them for scraping
+   * Single Responsibility: Process all pending trackers
+   * Delegates to TrackerBatchProcessorService for implementation
+   */
+  async processPendingTrackers(): Promise<{
+    processed: number;
+    trackers: string[];
+  }> {
+    return this.batchProcessor.processPendingTrackers();
+  }
+
+  /**
+   * Process pending trackers for a specific guild
+   * Single Responsibility: Process pending trackers for a specific guild
+   * Delegates to TrackerBatchProcessorService for implementation
+   *
+   * @param guildId - Discord guild ID to process trackers for
+   * @returns Number of trackers processed and their IDs
+   */
+  async processPendingTrackersForGuild(
+    guildId: string,
+  ): Promise<{ processed: number; trackers: string[] }> {
+    return this.batchProcessor.processPendingTrackersForGuild(guildId);
   }
 }

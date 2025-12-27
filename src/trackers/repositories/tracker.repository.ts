@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Prisma, Tracker, GamePlatform, Game } from '@prisma/client';
+import {
+  Prisma,
+  Tracker,
+  GamePlatform,
+  Game,
+  TrackerSeason,
+} from '@prisma/client';
 
 @Injectable()
 export class TrackerRepository {
@@ -89,5 +95,58 @@ export class TrackerRepository {
   async checkUrlUniqueness(url: string): Promise<boolean> {
     const existing = await this.findByUrl(url);
     return existing === null;
+  }
+
+  /**
+   * Find the best/most recent tracker from a user's active trackers
+   * Selects tracker with:
+   * 1. Most recent lastScrapedAt date
+   * 2. Has season data available (preferred)
+   *
+   * @param userId - User ID to find trackers for
+   * @returns Best tracker with seasons or null if no active trackers exist
+   */
+  async findBestForUser(
+    userId: string,
+  ): Promise<(Tracker & { seasons: TrackerSeason[] }) | null> {
+    // First, try to find a tracker with season data, ordered by lastScrapedAt desc
+    const trackerWithData = await this.prisma.tracker.findFirst({
+      where: {
+        userId,
+        isActive: true,
+        isDeleted: false,
+        seasons: {
+          some: {},
+        },
+      },
+      include: {
+        seasons: {
+          orderBy: { seasonNumber: 'desc' },
+          take: 1, // Only need latest season
+        },
+      },
+      orderBy: { lastScrapedAt: 'desc' },
+    });
+
+    if (trackerWithData) {
+      return trackerWithData;
+    }
+
+    // Fallback: return most recently scraped tracker (even without season data)
+    // This handles cases where trackers exist but haven't been scraped yet
+    return this.prisma.tracker.findFirst({
+      where: {
+        userId,
+        isActive: true,
+        isDeleted: false,
+      },
+      include: {
+        seasons: {
+          orderBy: { seasonNumber: 'desc' },
+          take: 1,
+        },
+      },
+      orderBy: { lastScrapedAt: 'desc' },
+    });
   }
 }

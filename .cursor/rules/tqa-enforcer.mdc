@@ -1,0 +1,17 @@
+---
+description: Mandatory TDD enforcement. Refuse to write implementation code until a test exists in the ./tests/ directory.
+alwaysApply: true
+---
+# 🤖 TQA Core Enforcer
+
+## 🔴 CRITICAL: NO CODE WITHOUT TESTS
+- **BLOCKER:** Do not write implementation code in `src/` without a corresponding test file already existing in `./tests/`.
+- **SEQUENCE:** 1. Generate test in `./tests/unit/`, `./tests/api/`, or `./tests/e2e/`.
+  2. The test must follow the TQA Quality Gates before implementation begins.
+  3. Only after the test is defined, implement the logic in `src/`.
+
+## 🛡️ TQA Quality Gates (Vitest)
+- **Naming:** Must use pattern `should_<behavior>_when_<condition>`.
+- **Performance:** Unit tests MUST have a timeout < 100ms.
+- **Isolation:** Use `vi.spyOn()`. No shared mutable state between tests.
+- **Coverage:** Minimum 80% Statement and 75% Branch coverage required for unit tests.

@@ -22,10 +22,14 @@ import { TrackerScraperService } from './services/tracker-scraper.service';
 import { TrackerSeasonService } from './services/tracker-season.service';
 import { TrackerRefreshSchedulerService } from './services/tracker-refresh-scheduler.service';
 import { TrackerBatchRefreshService } from './services/tracker-batch-refresh.service';
+import { ScheduledTrackerProcessingService } from './services/scheduled-tracker-processing.service';
 import { AuditModule } from '../audit/audit.module';
 import { MmrCalculationModule } from '../mmr-calculation/mmr-calculation.module';
 import { GuildsModule } from '../guilds/guilds.module';
 import { TrackerProcessingGuardService } from './services/tracker-processing-guard.service';
+import { TrackerUserOrchestratorService } from './services/tracker-user-orchestrator.service';
+import { TrackerQueueOrchestratorService } from './services/tracker-queue-orchestrator.service';
+import { TrackerBatchProcessorService } from './services/tracker-batch-processor.service';
 
 @Module({
   imports: [
@@ -92,6 +96,10 @@ import { TrackerProcessingGuardService } from './services/tracker-processing-gua
     TrackerRefreshSchedulerService,
     TrackerBatchRefreshService,
     TrackerProcessingGuardService,
+    TrackerUserOrchestratorService,
+    TrackerQueueOrchestratorService,
+    TrackerBatchProcessorService,
+    ScheduledTrackerProcessingService,
     TrackerRepository,
     TrackerSnapshotRepository,
     DiscordMessageService,
@@ -102,6 +110,7 @@ import { TrackerProcessingGuardService } from './services/tracker-processing-gua
     TrackerSnapshotService,
     TrackerScrapingQueueService,
     TrackerSeasonService,
+    ScheduledTrackerProcessingService,
   ],
 })
 export class TrackersModule {}

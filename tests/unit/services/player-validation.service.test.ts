@@ -34,6 +34,7 @@ describe('PlayerValidationService', () => {
 
     mockTrackerService = {
       getTrackerById: vi.fn(),
+      findBestTrackerForUser: vi.fn(),
     } as unknown as TrackerService;
 
     mockGuildMembersService = {
@@ -375,7 +376,6 @@ describe('PlayerValidationService', () => {
         id: playerId,
         userId,
         status: PlayerStatus.ACTIVE,
-        primaryTrackerId: null,
       };
 
       vi.mocked(mockPrisma.player.findUnique).mockResolvedValue(player as any);
@@ -386,7 +386,6 @@ describe('PlayerValidationService', () => {
       // ASSERT
       expect(mockPrisma.player.findUnique).toHaveBeenCalledWith({
         where: { id: playerId },
-        include: { primaryTracker: true },
       });
     });
 
@@ -413,7 +412,6 @@ describe('PlayerValidationService', () => {
         id: playerId,
         userId,
         status: PlayerStatus.BANNED,
-        primaryTrackerId: null,
       };
 
       vi.mocked(mockPrisma.player.findUnique).mockResolvedValue(player as any);
@@ -432,10 +430,12 @@ describe('PlayerValidationService', () => {
         id: playerId,
         userId,
         status: PlayerStatus.ACTIVE,
-        primaryTrackerId: null,
       };
 
       vi.mocked(mockPrisma.player.findUnique).mockResolvedValue(player as any);
+      vi.mocked(mockTrackerService.findBestTrackerForUser).mockResolvedValue(
+        null,
+      );
 
       // ACT & ASSERT
       await expect(
@@ -443,10 +443,15 @@ describe('PlayerValidationService', () => {
       ).rejects.toThrow(PlayerValidationException);
       await expect(
         service.validatePlayerForLeague(playerId, true),
-      ).rejects.toThrow(`Player ${playerId} must have a primary tracker`);
+      ).rejects.toThrow(
+        `Player ${playerId} must have at least one active tracker`,
+      );
+      expect(mockTrackerService.findBestTrackerForUser).toHaveBeenCalledWith(
+        userId,
+      );
     });
 
-    it('should_validate_tracker_link_when_primaryTrackerId_exists', async () => {
+    it('should_pass_when_tracker_required_and_active_tracker_exists', async () => {
       // ARRANGE
       const playerId = 'player123';
       const userId = 'user123';
@@ -455,25 +460,26 @@ describe('PlayerValidationService', () => {
         id: playerId,
         userId,
         status: PlayerStatus.ACTIVE,
-        primaryTrackerId: trackerId,
-        primaryTracker: {
-          id: trackerId,
-          userId,
-          isActive: true,
-          isDeleted: false,
-        },
+      };
+      const tracker = {
+        id: trackerId,
+        userId,
+        isActive: true,
+        isDeleted: false,
       };
 
       vi.mocked(mockPrisma.player.findUnique).mockResolvedValue(player as any);
-      vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
-        player.primaryTracker as any,
+      vi.mocked(mockTrackerService.findBestTrackerForUser).mockResolvedValue(
+        tracker as any,
       );
 
       // ACT
-      await service.validatePlayerForLeague(playerId, false);
+      await service.validatePlayerForLeague(playerId, true);
 
       // ASSERT
-      expect(mockTrackerService.getTrackerById).toHaveBeenCalledWith(trackerId);
+      expect(mockTrackerService.findBestTrackerForUser).toHaveBeenCalledWith(
+        userId,
+      );
     });
   });
 });
