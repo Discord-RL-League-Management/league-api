@@ -92,6 +92,24 @@ describe('TrackerService', () => {
       },
     } as unknown as PrismaService;
 
+    const mockUserOrchestrator = {
+      ensureUserExists: vi.fn().mockResolvedValue(undefined),
+    } as unknown as import('@/trackers/services/tracker-user-orchestrator.service').TrackerUserOrchestratorService;
+
+    const mockQueueOrchestrator = {
+      enqueueTrackerWithGuard: vi.fn().mockResolvedValue(undefined),
+      enqueueTrackersWithGuard: vi.fn().mockResolvedValue(undefined),
+    } as unknown as import('@/trackers/services/tracker-queue-orchestrator.service').TrackerQueueOrchestratorService;
+
+    const mockBatchProcessor = {
+      processPendingTrackers: vi
+        .fn()
+        .mockResolvedValue({ processed: 0, trackers: [] }),
+      processPendingTrackersForGuild: vi
+        .fn()
+        .mockResolvedValue({ processed: 0, trackers: [] }),
+    } as unknown as import('@/trackers/services/tracker-batch-processor.service').TrackerBatchProcessorService;
+
     service = new TrackerService(
       mockPrisma,
       mockRepository,
@@ -99,6 +117,9 @@ describe('TrackerService', () => {
       mockScrapingQueue,
       mockSeasonService,
       mockProcessingGuard,
+      mockUserOrchestrator,
+      mockQueueOrchestrator,
+      mockBatchProcessor,
     );
   });
 

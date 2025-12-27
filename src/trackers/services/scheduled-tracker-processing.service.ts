@@ -48,9 +48,20 @@ export class ScheduledTrackerProcessingService
   onApplicationShutdown() {
     this.logger.log('Shutting down scheduled tracker processing service');
     for (const [jobId, job] of this.scheduledJobs.entries()) {
-      job.stop();
+      void Promise.resolve(job.stop()).catch((error: unknown) => {
+        this.logger.error(
+          `Error stopping job ${jobId}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      });
       if (this.schedulerRegistry.doesExist('cron', jobId)) {
-        void this.schedulerRegistry.deleteCronJob(jobId);
+        try {
+          this.schedulerRegistry.deleteCronJob(jobId);
+        } catch (err: unknown) {
+          const errorMessage = err instanceof Error ? err.message : String(err);
+          this.logger.error(
+            `Error deleting cron job ${jobId}: ${errorMessage}`,
+          );
+        }
       }
       this.logger.log(`Stopped scheduled job: ${jobId}`);
     }
@@ -92,7 +103,7 @@ export class ScheduledTrackerProcessingService
         scheduledAt: scheduledDate,
         createdBy,
         status: ScheduledProcessingStatus.PENDING,
-        metadata: metadata || {},
+        metadata: (metadata || {}) as Prisma.InputJsonValue,
       },
     });
 
@@ -160,13 +171,27 @@ export class ScheduledTrackerProcessingService
 
     const jobId = `scheduled-processing-${id}`;
     if (this.scheduledJobs.has(jobId)) {
-      const job = this.scheduledJobs.get(jobId)!;
-      job.stop();
-      this.scheduledJobs.delete(jobId);
+      const job = this.scheduledJobs.get(jobId);
+      if (!job) {
+        this.logger.warn(`Job ${jobId} not found in scheduledJobs map`);
+        this.scheduledJobs.delete(jobId);
+      } else {
+        void Promise.resolve(job.stop()).catch((error: unknown) => {
+          this.logger.error(
+            `Error stopping job ${jobId}: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        });
+        this.scheduledJobs.delete(jobId);
+      }
     }
 
     if (this.schedulerRegistry.doesExist('cron', jobId)) {
-      this.schedulerRegistry.deleteCronJob(jobId);
+      try {
+        this.schedulerRegistry.deleteCronJob(jobId);
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        this.logger.error(`Error deleting cron job ${jobId}: ${errorMessage}`);
+      }
     }
 
     const updated = await this.prisma.scheduledTrackerProcessing.update({
@@ -243,10 +268,21 @@ export class ScheduledTrackerProcessingService
           `Completed scheduled tracker processing ${scheduleId} for guild ${guildId}`,
         );
 
-        job.stop();
+        void Promise.resolve(job.stop()).catch((err: unknown) => {
+          const errorMessage = err instanceof Error ? err.message : String(err);
+          this.logger.error(`Error stopping job ${jobId}: ${errorMessage}`);
+        });
         this.scheduledJobs.delete(jobId);
         if (this.schedulerRegistry.doesExist('cron', jobId)) {
-          void this.schedulerRegistry.deleteCronJob(jobId);
+          try {
+            this.schedulerRegistry.deleteCronJob(jobId);
+          } catch (err: unknown) {
+            const errorMessage =
+              err instanceof Error ? err.message : String(err);
+            this.logger.error(
+              `Error deleting cron job ${jobId}: ${errorMessage}`,
+            );
+          }
         }
       } catch (error) {
         const errorMessage =
@@ -263,10 +299,21 @@ export class ScheduledTrackerProcessingService
           },
         });
 
-        job.stop();
+        void Promise.resolve(job.stop()).catch((err: unknown) => {
+          const errorMessage = err instanceof Error ? err.message : String(err);
+          this.logger.error(`Error stopping job ${jobId}: ${errorMessage}`);
+        });
         this.scheduledJobs.delete(jobId);
         if (this.schedulerRegistry.doesExist('cron', jobId)) {
-          this.schedulerRegistry.deleteCronJob(jobId);
+          try {
+            this.schedulerRegistry.deleteCronJob(jobId);
+          } catch (err: unknown) {
+            const errorMessage =
+              err instanceof Error ? err.message : String(err);
+            this.logger.error(
+              `Error deleting cron job ${jobId}: ${errorMessage}`,
+            );
+          }
         }
       }
     });

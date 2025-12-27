@@ -10,6 +10,17 @@ import { GuildsModule } from '../guilds/guilds.module';
 import { GuildMembersModule } from '../guild-members/guild-members.module';
 import { DiscordModule } from '../discord/discord.module';
 import { TokenManagementModule } from '../auth/services/token-management.module';
+import { PermissionProviderAdapter } from '../permissions/adapters/permission-provider.adapter';
+import { AuditProviderAdapter } from '../audit/adapters/audit-provider.adapter';
+import { DiscordProviderAdapter } from '../discord/adapters/discord-provider.adapter';
+import { TokenProviderAdapter } from '../auth/adapters/token-provider.adapter';
+import { GuildAccessProviderAdapter } from '../guilds/adapters/guild-access-provider.adapter';
+import { PermissionCheckService } from '../permissions/modules/permission-check/permission-check.service';
+import { AuditLogService } from '../audit/services/audit-log.service';
+import { DiscordApiService } from '../discord/discord-api.service';
+import { TokenManagementService } from '../auth/services/token-management.service';
+import { GuildSettingsService } from '../guilds/guild-settings.service';
+import { GuildMembersService } from '../guild-members/guild-members.service';
 
 /**
  * CommonModule - Shared utilities and guards
@@ -20,36 +31,78 @@ import { TokenManagementModule } from '../auth/services/token-management.module'
  * - AdminGuard: Validates admin permissions in guilds
  * - SystemAdminGuard: Validates system-wide admin permissions
  *
- * AdminGuard Dependencies:
- * This module imports all modules required by AdminGuard to ensure proper dependency injection:
- * - AuditModule: Provides AuditLogService for audit logging
- * - PermissionCheckModule: Provides PermissionCheckService for permission validation
- * - GuildsModule: Provides GuildSettingsService for guild settings access
- * - GuildMembersModule: Provides GuildMembersService for guild member access (required by AdminGuard)
- * - DiscordModule: Provides DiscordApiService (required by AdminGuard)
- * - TokenManagementModule: Provides TokenManagementService (required by AdminGuard)
+ * AdminGuard Dependencies (via Dependency Inversion):
+ * AdminGuard uses interfaces (IPermissionProvider, IAuditProvider, etc.) instead of
+ * concrete services. Adapters implement these interfaces and are provided via
+ * dependency injection tokens, breaking cross-boundary coupling.
+ *
+ * Modules imported:
+ * - AuditModule: Exports AuditProviderAdapter
+ * - PermissionCheckModule: Exports PermissionProviderAdapter
+ * - GuildsModule: Exports GuildAccessProviderAdapter (which uses GuildSettingsService + GuildMembersService)
+ * - DiscordModule: Exports DiscordProviderAdapter
+ * - TokenManagementModule: Exports TokenProviderAdapter
  *
  * SystemAdminGuard Dependencies:
  * - ConfigModule: Provides ConfigService for reading system admin user IDs
  * - AuditModule: Provides AuditLogService for audit logging
- *
- * Note: When adding new dependencies to AdminGuard or SystemAdminGuard, ensure their source modules are imported here.
- * Also note: Any module that uses AdminGuard (like AuditModule) must also import all AdminGuard
- * dependencies due to circular dependency resolution with forwardRef.
  */
 @Module({
   imports: [
     ConfigModule,
-    forwardRef(() => AuditModule),
-    forwardRef(() => PermissionCheckModule),
+    AuditModule,
+    PermissionCheckModule,
     forwardRef(() => GuildsModule),
-    forwardRef(() => GuildMembersModule),
+    GuildMembersModule,
     DiscordModule,
     TokenManagementModule,
   ],
   providers: [
     EncryptionService,
     ResourceOwnershipGuard,
+    // Provide adapters with injection tokens for AdminGuard
+    // Use factory functions to create adapters, avoiding circular dependency issues
+    {
+      provide: 'IPermissionProvider',
+      useFactory: (permissionCheckService: PermissionCheckService) => {
+        return new PermissionProviderAdapter(permissionCheckService);
+      },
+      inject: [PermissionCheckService],
+    },
+    {
+      provide: 'IAuditProvider',
+      useFactory: (auditLogService: AuditLogService) => {
+        return new AuditProviderAdapter(auditLogService);
+      },
+      inject: [AuditLogService],
+    },
+    {
+      provide: 'IDiscordProvider',
+      useFactory: (discordApiService: DiscordApiService) => {
+        return new DiscordProviderAdapter(discordApiService);
+      },
+      inject: [DiscordApiService],
+    },
+    {
+      provide: 'ITokenProvider',
+      useFactory: (tokenManagementService: TokenManagementService) => {
+        return new TokenProviderAdapter(tokenManagementService);
+      },
+      inject: [TokenManagementService],
+    },
+    {
+      provide: 'IGuildAccessProvider',
+      useFactory: (
+        guildSettingsService: GuildSettingsService,
+        guildMembersService: GuildMembersService,
+      ) => {
+        return new GuildAccessProviderAdapter(
+          guildSettingsService,
+          guildMembersService,
+        );
+      },
+      inject: [GuildSettingsService, GuildMembersService],
+    },
     AdminGuard,
     SystemAdminGuard,
   ],
@@ -58,6 +111,12 @@ import { TokenManagementModule } from '../auth/services/token-management.module'
     ResourceOwnershipGuard,
     AdminGuard,
     SystemAdminGuard,
+    // Export provider tokens so AdminGuard dependencies are available to modules that import CommonModule
+    'IPermissionProvider',
+    'IAuditProvider',
+    'IDiscordProvider',
+    'ITokenProvider',
+    'IGuildAccessProvider',
   ],
 })
 export class CommonModule {}

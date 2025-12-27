@@ -4,17 +4,17 @@ import {
   ExecutionContext,
   ForbiddenException,
   Logger,
+  Inject,
 } from '@nestjs/common';
-import { PermissionCheckService } from '../../permissions/modules/permission-check/permission-check.service';
-import { AuditLogService } from '../../audit/services/audit-log.service';
 import { AuditAction } from '../../audit/interfaces/audit-event.interface';
-import { DiscordApiService } from '../../discord/discord-api.service';
-import { TokenManagementService } from '../../auth/services/token-management.service';
-import { GuildSettingsService } from '../../guilds/guild-settings.service';
-import { GuildMembersService } from '../../guild-members/guild-members.service';
 import { GuildSettings } from '../../guilds/interfaces/settings.interface';
 import type { AuthenticatedUser } from '../interfaces/user.interface';
 import type { Request } from 'express';
+import type { IPermissionProvider } from '../interfaces/permission-provider.interface';
+import type { IAuditProvider } from '../interfaces/audit-provider.interface';
+import type { IDiscordProvider } from '../interfaces/discord-provider.interface';
+import type { ITokenProvider } from '../interfaces/token-provider.interface';
+import type { IGuildAccessProvider } from '../interfaces/guild-access-provider.interface';
 
 interface RequestWithUser extends Request {
   user: AuthenticatedUser | { type: 'bot'; id: string };
@@ -28,23 +28,24 @@ export class AdminGuard implements CanActivate {
   /**
    * AdminGuard Constructor - Dependencies
    *
-   * Required services and their source modules:
-   * - PermissionCheckService: From PermissionCheckModule (imported via CommonModule)
-   * - AuditLogService: From AuditModule (imported via CommonModule)
-   * - DiscordApiService: From DiscordModule (imported in CommonModule and AuditModule)
-   * - TokenManagementService: From TokenManagementModule (imported in CommonModule and AuditModule)
-   * - GuildSettingsService: From GuildsModule (imported via CommonModule)
+   * Uses dependency inversion with interfaces to break cross-boundary coupling.
+   * All dependencies are injected via interfaces, allowing CommonModule to
+   * depend on abstractions rather than concrete domain implementations.
    *
-   * Note: All required modules must be imported in both CommonModule (where AdminGuard is provided)
-   * and any module that uses AdminGuard (like AuditModule) due to circular dependencies.
+   * Interface providers are implemented by adapters in their respective modules
+   * and registered in CommonModule via dependency injection tokens.
    */
   constructor(
-    private permissionCheckService: PermissionCheckService,
-    private auditLogService: AuditLogService,
-    private discordApiService: DiscordApiService,
-    private tokenManagementService: TokenManagementService,
-    private guildSettingsService: GuildSettingsService,
-    private guildMembersService: GuildMembersService,
+    @Inject('IPermissionProvider')
+    private permissionProvider: IPermissionProvider,
+    @Inject('IAuditProvider')
+    private auditProvider: IAuditProvider,
+    @Inject('IDiscordProvider')
+    private discordProvider: IDiscordProvider,
+    @Inject('ITokenProvider')
+    private tokenProvider: ITokenProvider,
+    @Inject('IGuildAccessProvider')
+    private guildAccessProvider: IGuildAccessProvider,
   ) {}
 
   /**
@@ -67,9 +68,7 @@ export class AdminGuard implements CanActivate {
 
     try {
       // Get user's access token for Discord API calls
-      const accessToken = await this.tokenManagementService.getValidAccessToken(
-        user.id,
-      );
+      const accessToken = await this.tokenProvider.getValidAccessToken(user.id);
       if (!accessToken) {
         this.logger.warn(
           `AdminGuard: No access token available for user ${user.id}`,
@@ -78,11 +77,10 @@ export class AdminGuard implements CanActivate {
       }
 
       // Check Discord permissions first (primary check for Discord admins)
-      const guildPermissions =
-        await this.discordApiService.checkGuildPermissions(
-          accessToken,
-          guildId,
-        );
+      const guildPermissions = await this.discordProvider.checkGuildPermissions(
+        accessToken,
+        guildId,
+      );
 
       if (!guildPermissions.isMember) {
         throw new ForbiddenException('You are not a member of this guild');
@@ -94,7 +92,7 @@ export class AdminGuard implements CanActivate {
           `AdminGuard: User ${user.id} has Discord Administrator permission in guild ${guildId}`,
         );
 
-        await this.auditLogService.logAdminAction(
+        await this.auditProvider.logAdminAction(
           {
             userId: user.id,
             guildId,
@@ -114,7 +112,7 @@ export class AdminGuard implements CanActivate {
 
       // Ensure settings exist before checking configured roles (auto-creates if missing)
       // This ensures settings are always available for permission checks
-      const settings = await this.guildSettingsService.getSettings(guildId);
+      const settings = await this.guildAccessProvider.getSettings(guildId);
 
       // Check if any admin roles are configured
       const settingsTyped = settings;
@@ -128,7 +126,7 @@ export class AdminGuard implements CanActivate {
           `No admin roles configured for guild ${guildId}. Allowing access for initial setup.`,
         );
 
-        await this.auditLogService.logAdminAction(
+        await this.auditProvider.logAdminAction(
           {
             userId: user.id,
             guildId,
@@ -147,7 +145,7 @@ export class AdminGuard implements CanActivate {
       }
 
       // Get membership from DB for stored roles (single source of truth for roles)
-      const membership = await this.guildMembersService.findOne(
+      const membership = await this.guildAccessProvider.findOne(
         user.id,
         guildId,
       );
@@ -159,7 +157,7 @@ export class AdminGuard implements CanActivate {
       }
 
       // Check configured admin roles using stored roles (validate with Discord for final check)
-      const isAdmin = await this.permissionCheckService.checkAdminRoles(
+      const isAdmin = await this.permissionProvider.checkAdminRoles(
         membership.roles,
         guildId,
         settings as GuildSettings | Record<string, unknown>,
@@ -167,7 +165,7 @@ export class AdminGuard implements CanActivate {
       );
 
       // Log audit event
-      await this.auditLogService.logAdminAction(
+      await this.auditProvider.logAdminAction(
         {
           userId: user.id,
           guildId,

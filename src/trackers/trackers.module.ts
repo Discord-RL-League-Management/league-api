@@ -27,6 +27,9 @@ import { AuditModule } from '../audit/audit.module';
 import { MmrCalculationModule } from '../mmr-calculation/mmr-calculation.module';
 import { GuildsModule } from '../guilds/guilds.module';
 import { TrackerProcessingGuardService } from './services/tracker-processing-guard.service';
+import { TrackerUserOrchestratorService } from './services/tracker-user-orchestrator.service';
+import { TrackerQueueOrchestratorService } from './services/tracker-queue-orchestrator.service';
+import { TrackerBatchProcessorService } from './services/tracker-batch-processor.service';
 
 @Module({
   imports: [
@@ -93,6 +96,9 @@ import { TrackerProcessingGuardService } from './services/tracker-processing-gua
     TrackerRefreshSchedulerService,
     TrackerBatchRefreshService,
     TrackerProcessingGuardService,
+    TrackerUserOrchestratorService,
+    TrackerQueueOrchestratorService,
+    TrackerBatchProcessorService,
     ScheduledTrackerProcessingService,
     TrackerRepository,
     TrackerSnapshotRepository,
