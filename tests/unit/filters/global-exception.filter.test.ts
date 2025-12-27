@@ -52,6 +52,10 @@ describe('GlobalExceptionFilter', () => {
     filter = new GlobalExceptionFilter(mockConfigService);
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('catch', () => {
     it('should_handle_HttpException_with_string_message', () => {
       // ARRANGE

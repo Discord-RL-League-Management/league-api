@@ -79,6 +79,10 @@ describe('GuildsService', () => {
     );
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('create', () => {
     it('should_create_guild_with_default_settings_when_guild_does_not_exist', async () => {
       // ARRANGE

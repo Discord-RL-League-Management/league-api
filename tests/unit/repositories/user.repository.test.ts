@@ -40,6 +40,10 @@ describe('UserRepository', () => {
     repository = new UserRepository(mockPrisma, mockTransformer);
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('findById', () => {
     it('should_return_user_when_found', async () => {
       // ARRANGE

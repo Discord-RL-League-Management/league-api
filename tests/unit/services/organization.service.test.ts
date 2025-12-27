@@ -149,6 +149,10 @@ describe('OrganizationService', () => {
     );
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('findOne', () => {
     it('should_return_organization_when_organization_exists', async () => {
       // ARRANGE

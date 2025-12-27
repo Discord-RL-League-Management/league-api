@@ -142,6 +142,10 @@ describe('LeagueMemberService', () => {
     );
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('findOne', () => {
     it('should_return_league_member_when_member_exists', async () => {
       // ARRANGE

@@ -19,6 +19,10 @@ describe('UserSettingsService', () => {
     service = new UserSettingsService(mockPrisma);
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('getSettings', () => {
     it('should_return_default_settings', async () => {
       // ARRANGE

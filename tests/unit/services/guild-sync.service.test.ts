@@ -132,6 +132,10 @@ describe('GuildSyncService', () => {
     );
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('syncGuildWithMembers', () => {
     it('should_sync_new_guild_with_members_successfully', async () => {
       // ARRANGE

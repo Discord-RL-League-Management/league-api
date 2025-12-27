@@ -60,6 +60,10 @@ describe('LeaguePermissionService', () => {
     );
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('checkLeagueAdminAccess', () => {
     it('should_pass_when_user_is_guild_admin', async () => {
       // ARRANGE

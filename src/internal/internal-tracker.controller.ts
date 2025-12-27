@@ -1,33 +1,26 @@
-import {
-  Controller,
-  Post,
-  Body,
-  UseGuards,
-  Logger,
-  Get,
-  Param,
-} from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Logger } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { BotAuthGuard } from '../auth/guards/bot-auth.guard';
 import { TrackerService } from '../trackers/services/tracker.service';
-import { ScheduledTrackerProcessingService } from '../trackers/services/scheduled-tracker-processing.service';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { InternalRegisterTrackersDto } from './dto/register-trackers.dto';
 import { InternalAddTrackerDto } from './dto/add-tracker.dto';
 import { ProcessTrackersDto } from './dto/process-trackers.dto';
-import { ScheduleTrackerProcessingDto } from './dto/schedule-tracker-processing.dto';
 
 @ApiTags('Internal - Trackers')
 @Controller('internal/trackers')
 @UseGuards(BotAuthGuard)
 @SkipThrottle()
+@ApiBearerAuth('bot-api-key')
 export class InternalTrackerController {
   private readonly logger = new Logger(InternalTrackerController.name);
 
-  constructor(
-    private readonly trackerService: TrackerService,
-    private readonly scheduledProcessingService: ScheduledTrackerProcessingService,
-  ) {}
+  constructor(private readonly trackerService: TrackerService) {}
 
   @Post('register-multiple')
   @ApiOperation({ summary: 'Register multiple trackers (Bot only)' })
@@ -80,63 +73,5 @@ export class InternalTrackerController {
       `Processing trackers for guild ${body.guildId} (requested by bot)`,
     );
     return this.trackerService.processPendingTrackersForGuild(body.guildId);
-  }
-
-  @Post('schedule')
-  @ApiOperation({
-    summary: 'Schedule tracker processing for a specific guild (Bot only)',
-    description:
-      'Schedules tracker processing to run automatically at a specific date/time. Useful for season start dates where trackers need to be updated autonomously.',
-  })
-  @ApiResponse({
-    status: 201,
-    description: 'Tracker processing scheduled successfully',
-  })
-  async scheduleTrackerProcessing(
-    @Body() body: ScheduleTrackerProcessingDto,
-  ): Promise<unknown> {
-    this.logger.log(
-      `Scheduling tracker processing for guild ${body.guildId} at ${body.scheduledAt}`,
-    );
-    return this.scheduledProcessingService.createSchedule(
-      body.guildId,
-      body.scheduledAt,
-      body.createdBy,
-      body.metadata,
-    );
-  }
-
-  @Get('schedule/guild/:guildId')
-  @ApiOperation({
-    summary: 'Get all scheduled tracker processing jobs for a guild (Bot only)',
-  })
-  @ApiParam({
-    name: 'guildId',
-    description: 'Discord guild ID',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'List of scheduled jobs',
-  })
-  async getSchedulesForGuild(
-    @Param('guildId') guildId: string,
-  ): Promise<unknown> {
-    return this.scheduledProcessingService.getSchedulesForGuild(guildId);
-  }
-
-  @Post('schedule/:id/cancel')
-  @ApiOperation({
-    summary: 'Cancel a scheduled tracker processing job (Bot only)',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'Schedule ID',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Schedule cancelled successfully',
-  })
-  async cancelSchedule(@Param('id') id: string): Promise<unknown> {
-    return this.scheduledProcessingService.cancelSchedule(id);
   }
 }

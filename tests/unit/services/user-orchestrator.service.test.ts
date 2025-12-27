@@ -69,6 +69,10 @@ describe('UserOrchestratorService', () => {
     service = new UserOrchestratorService(mockUsersService);
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('upsertUserFromOAuth', () => {
     it('should_create_new_user_when_user_does_not_exist', async () => {
       // ARRANGE

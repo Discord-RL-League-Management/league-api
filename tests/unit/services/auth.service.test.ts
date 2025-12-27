@@ -87,6 +87,10 @@ describe('AuthService', () => {
     );
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('validateDiscordUser', () => {
     it('should_return_user_when_validation_succeeds', async () => {
       // ARRANGE

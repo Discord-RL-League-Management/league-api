@@ -40,6 +40,10 @@ describe('PermissionCheckService', () => {
     );
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('checkGuildAccess', () => {
     it('should_return_not_member_when_membership_not_found', async () => {
       // ARRANGE

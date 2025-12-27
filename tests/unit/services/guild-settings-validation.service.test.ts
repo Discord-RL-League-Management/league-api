@@ -32,6 +32,10 @@ describe('SettingsValidationService (Guilds)', () => {
     );
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('validate', () => {
     it('should_pass_when_all_validations_pass', async () => {
       // ARRANGE

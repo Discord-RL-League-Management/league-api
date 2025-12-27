@@ -28,6 +28,10 @@ describe('MmrCalculationService', () => {
     service = new MmrCalculationService(mockFormulaValidation);
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('calculateMmr - WEIGHTED_AVERAGE algorithm', () => {
     it('should_calculate_weighted_average_mmr_with_valid_data', () => {
       // ARRANGE: Prepare test data

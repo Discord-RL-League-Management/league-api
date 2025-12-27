@@ -82,22 +82,29 @@ it('should_create_user_with_valid_data_and_return_201_status', async () => {
 
 **Standards:**
 - Given-When-Then structure
-- Focus on user behavior and business value
-- Use `data-testid` attributes for locators
-- Flexible wait conditions (no hard-coded sleeps)
-- Critical user journeys only
+- Focus on complete API workflows across multiple endpoints
+- Test integration between services
+- Critical business processes end-to-end
+- Use Playwright's `request` API (not `page` API)
 
 **Example:**
 ```typescript
-test('should_complete_discord_oauth_flow_successfully', async ({ page }) => {
-  // GIVEN: User is on the home page
-  await page.goto('/');
+test('should_complete_oauth_workflow_and_access_protected_resources', async ({ request }) => {
+  // GIVEN: User initiates OAuth flow
+  const oauthResponse = await request.get('/auth/discord', { maxRedirects: 0 });
+  expect(oauthResponse.status()).toBe(302);
   
-  // WHEN: User clicks on "Login with Discord"
-  await page.getByTestId('login-discord-button').click();
+  // WHEN: OAuth callback completes
+  const callbackResponse = await request.get('/auth/discord/callback?code=mock_code', {
+    maxRedirects: 0
+  });
+  const token = extractTokenFromResponse(callbackResponse);
   
-  // THEN: User should be redirected to Discord OAuth
-  await expect(page).toHaveURL(/discord.com\/oauth/);
+  // THEN: User can access protected resources
+  const profileResponse = await request.get('/api/profile', {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  expect(profileResponse.status()).toBe(200);
 });
 ```
 

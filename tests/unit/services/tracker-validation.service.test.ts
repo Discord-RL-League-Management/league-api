@@ -33,6 +33,10 @@ describe('TrackerValidationService', () => {
     service = new TrackerValidationService(mockPrisma, mockUrlConverter);
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('validateTrackerUrl', () => {
     it('should_return_parsed_tracker_url_when_all_validations_pass', async () => {
       // ARRANGE

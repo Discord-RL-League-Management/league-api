@@ -94,6 +94,10 @@ describe('PlayerService', () => {
     );
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('findOne', () => {
     it('should_return_player_when_player_exists', async () => {
       // ARRANGE

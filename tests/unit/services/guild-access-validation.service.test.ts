@@ -49,6 +49,10 @@ describe('GuildAccessValidationService', () => {
     );
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('validateUserGuildAccess', () => {
     it('should_pass_when_guild_exists_and_user_is_member', async () => {
       // ARRANGE

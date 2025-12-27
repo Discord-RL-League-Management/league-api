@@ -5,7 +5,7 @@
  * Focus: Functional core, state verification, fast execution.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { BadRequestException } from '@nestjs/common';
 import { ParseEnumPipe } from '@/common/pipes/parse-enum.pipe';
 
@@ -22,6 +22,10 @@ enum TestNumericEnum {
 }
 
 describe('ParseEnumPipe', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('string enum', () => {
     it('should_return_enum_value_when_valid_string_provided', () => {
       // ARRANGE

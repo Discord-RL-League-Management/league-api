@@ -24,12 +24,10 @@ export class SettingsValidationService {
   validate(config: Partial<LeagueConfiguration>): void {
     const errors: string[] = [];
 
-    // Validate membership configuration
     if (config.membership) {
       errors.push(...this.validateMembershipConfig(config.membership));
     }
 
-    // Validate skill configuration
     if (config.skill) {
       errors.push(...this.validateSkillConfig(config.skill));
     }
@@ -49,7 +47,6 @@ export class SettingsValidationService {
   ): string[] {
     const errors: string[] = [];
 
-    // Validate capacity limits
     if (config.minPlayers !== undefined && config.minPlayers !== null) {
       if (config.minPlayers < 1) {
         errors.push('minPlayers must be at least 1');
@@ -68,7 +65,6 @@ export class SettingsValidationService {
       }
     }
 
-    // Validate registration dates
     if (config.registrationStartDate && config.registrationEndDate) {
       if (
         new Date(config.registrationStartDate) >=
@@ -78,7 +74,6 @@ export class SettingsValidationService {
       }
     }
 
-    // Validate cooldown
     if (
       config.cooldownAfterLeave !== undefined &&
       config.cooldownAfterLeave !== null
@@ -88,7 +83,6 @@ export class SettingsValidationService {
       }
     }
 
-    // Validate organization requirements
     if (
       config.maxOrganizations !== undefined &&
       config.maxOrganizations !== null
@@ -125,7 +119,6 @@ export class SettingsValidationService {
   private validateSkillConfig(config: Partial<SkillConfig>): string[] {
     const errors: string[] = [];
 
-    // Validate skill levels if skill-based
     if (config.isSkillBased) {
       if (config.minSkillLevel !== undefined && config.minSkillLevel !== null) {
         if (config.minSkillLevel < 0) {

@@ -39,6 +39,10 @@ describe('PrismaExceptionFilter', () => {
     filter = new PrismaExceptionFilter();
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('catch', () => {
     it('should_handle_unique_constraint_violation', () => {
       // ARRANGE

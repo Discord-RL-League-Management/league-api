@@ -70,6 +70,10 @@ describe('LeagueJoinValidationService', () => {
     );
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('validateJoin', () => {
     it('should_pass_when_all_validations_pass', async () => {
       // ARRANGE

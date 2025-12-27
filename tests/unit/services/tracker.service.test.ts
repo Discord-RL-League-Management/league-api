@@ -123,6 +123,10 @@ describe('TrackerService', () => {
     );
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('createTracker', () => {
     it('should_create_tracker_with_valid_data', async () => {
       // ARRANGE

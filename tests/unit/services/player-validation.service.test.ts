@@ -48,6 +48,10 @@ describe('PlayerValidationService', () => {
     );
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('validatePlayerStatus', () => {
     it('should_pass_when_player_status_is_ACTIVE', () => {
       // ARRANGE

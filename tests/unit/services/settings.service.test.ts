@@ -25,6 +25,10 @@ describe('SettingsService', () => {
     service = new SettingsService(mockRepository);
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('getSettings', () => {
     it('should_return_settings_when_found', async () => {
       // ARRANGE

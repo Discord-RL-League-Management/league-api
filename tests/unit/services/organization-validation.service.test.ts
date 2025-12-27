@@ -62,6 +62,10 @@ describe('OrganizationValidationService', () => {
     );
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('validateCreate', () => {
     it('should_pass_when_league_exists', async () => {
       // ARRANGE

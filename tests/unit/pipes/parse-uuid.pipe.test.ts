@@ -5,7 +5,7 @@
  * Focus: Functional core, state verification, fast execution.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { BadRequestException } from '@nestjs/common';
 import { ParseUUIDPipe } from '@/common/pipes/parse-uuid.pipe';
 
@@ -15,6 +15,10 @@ describe('ParseUUIDPipe', () => {
   beforeEach(() => {
     // ARRANGE: Setup test dependencies
     pipe = new ParseUUIDPipe();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('should_return_valid_uuid_v4', () => {

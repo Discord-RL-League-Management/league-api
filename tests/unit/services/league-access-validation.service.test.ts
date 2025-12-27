@@ -51,6 +51,10 @@ describe('LeagueAccessValidationService', () => {
     );
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('validateGuildAccess', () => {
     it('should_pass_when_guild_exists', async () => {
       // ARRANGE

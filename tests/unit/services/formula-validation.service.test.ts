@@ -16,6 +16,10 @@ describe('FormulaValidationService', () => {
     service = new FormulaValidationService();
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('validateFormula', () => {
     it('should_return_valid_for_simple_addition_formula', () => {
       // ARRANGE

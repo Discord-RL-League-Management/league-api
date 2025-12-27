@@ -30,6 +30,10 @@ describe('TrackerRepository', () => {
     repository = new TrackerRepository(mockPrisma);
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('findPendingAndStaleForGuild', () => {
     const guildId = 'guild_123';
     const refreshIntervalHours = 24;

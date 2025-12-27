@@ -16,6 +16,10 @@ describe('RoleParserService', () => {
     service = new RoleParserService();
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('getAdminRolesFromSettings', () => {
     it('should_return_empty_array_when_no_roles_in_settings', () => {
       // ARRANGE

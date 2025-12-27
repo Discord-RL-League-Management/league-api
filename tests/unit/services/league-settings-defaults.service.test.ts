@@ -16,6 +16,10 @@ describe('LeagueSettingsDefaultsService', () => {
     service = new LeagueSettingsDefaultsService();
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('getDefaults', () => {
     it('should_return_complete_default_settings_structure', () => {
       // ACT

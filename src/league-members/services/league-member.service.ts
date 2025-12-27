@@ -99,7 +99,6 @@ export class LeagueMemberService {
     joinLeagueDto: JoinLeagueDto,
   ): Promise<any> {
     try {
-      // Get league to get guildId
       const league = await this.prisma.league.findUnique({
         where: { id: leagueId },
       });
@@ -108,8 +107,6 @@ export class LeagueMemberService {
         throw new NotFoundException('League', leagueId);
       }
 
-      // Get player - if playerId is provided, use it; otherwise we'll need userId
-      // For now, assume playerId is a CUID
       let player;
       try {
         player = await this.playerService.findOne(joinLeagueDto.playerId);
@@ -118,8 +115,6 @@ export class LeagueMemberService {
         player = null;
       }
 
-      // Ensure player exists for this guild (auto-create if needed)
-      // If player doesn't exist, we need userId - for now, assume joinLeagueDto has userId
       let guildPlayer: { id: string };
       if (player) {
         guildPlayer = (await this.playerService.ensurePlayerExists(
@@ -132,7 +127,6 @@ export class LeagueMemberService {
         throw new NotFoundException('Player', joinLeagueDto.playerId);
       }
 
-      // Check if already a member
       const existing = await this.leagueMemberRepository.findByPlayerAndLeague(
         guildPlayer.id,
         leagueId,
@@ -147,7 +141,6 @@ export class LeagueMemberService {
         }
         // If inactive, validate join eligibility (including cooldown) before reactivating
         await this.joinValidationService.validateJoin(guildPlayer.id, leagueId);
-        // Reactivate
         return this.leagueMemberRepository.update(existing.id, {
           status: LeagueMemberStatus.ACTIVE,
           leftAt: null,
@@ -155,16 +148,13 @@ export class LeagueMemberService {
         });
       }
 
-      // Validate join eligibility for new members
       await this.joinValidationService.validateJoin(guildPlayer.id, leagueId);
 
-      // Get league settings to determine initial status
       const settings = await this.leagueSettingsService.getSettings(leagueId);
       const initialStatus = settings.membership.requiresApproval
         ? LeagueMemberStatus.PENDING_APPROVAL
         : LeagueMemberStatus.ACTIVE;
 
-      // Create league member in transaction
       return await this.prisma.$transaction(async (tx) => {
         // Double-check in transaction
         const existingInTx = await tx.leagueMember.findUnique({
@@ -203,7 +193,6 @@ export class LeagueMemberService {
           },
         });
 
-        // Log activity
         await this.activityLogService.logActivity(
           tx,
           'league_member',
@@ -217,7 +206,6 @@ export class LeagueMemberService {
           { status: initialStatus, leagueId },
         );
 
-        // Initialize rating if member is active
         if (initialStatus === 'ACTIVE') {
           try {
             await this.ratingService.updateRating(
@@ -254,7 +242,6 @@ export class LeagueMemberService {
         throw error;
       }
 
-      // Handle Prisma unique constraint errors
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
@@ -291,11 +278,9 @@ export class LeagueMemberService {
       throw new LeagueMemberNotFoundException(`${playerId}-${leagueId}`);
     }
 
-    // Get league settings for cooldown
     const settings = await this.leagueSettingsService.getSettings(leagueId);
     const cooldownDays = settings.membership.cooldownAfterLeave;
 
-    // Update member and player cooldown in transaction
     return await this.prisma.$transaction(async (tx) => {
       // Get league and player for activity logging (inside transaction for atomicity)
       const league = await tx.league.findUnique({ where: { id: leagueId } });
@@ -305,7 +290,6 @@ export class LeagueMemberService {
         throw new LeagueMemberNotFoundException(`${playerId}-${leagueId}`);
       }
 
-      // Update member status
       const updatedMember = await tx.leagueMember.update({
         where: { id: member.id },
         data: {
@@ -314,7 +298,6 @@ export class LeagueMemberService {
         },
       });
 
-      // Update player cooldown if needed
       if (cooldownDays && cooldownDays > 0) {
         await tx.player.update({
           where: { id: playerId },
@@ -325,7 +308,6 @@ export class LeagueMemberService {
         });
       }
 
-      // Log activity
       await this.activityLogService.logActivity(
         tx,
         'league_member',
@@ -396,7 +378,6 @@ export class LeagueMemberService {
         where: { id: member.leagueId },
       });
 
-      // Log activity
       if (player && league) {
         await this.activityLogService.logActivity(
           tx,
@@ -410,7 +391,6 @@ export class LeagueMemberService {
         );
       }
 
-      // Initialize rating
       try {
         await this.ratingService.updateRating(
           member.playerId,

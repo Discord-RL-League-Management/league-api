@@ -137,6 +137,10 @@ describe('GuildSettingsService', () => {
     );
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('getSettings', () => {
     it('should_return_cached_settings_when_cache_hit', async () => {
       // ARRANGE

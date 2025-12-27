@@ -39,6 +39,10 @@ describe('TeamValidationService', () => {
     );
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('validateOrganizationRequirement', () => {
     it('should_pass_when_organization_not_required', async () => {
       // ARRANGE
