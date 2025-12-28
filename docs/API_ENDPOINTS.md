@@ -58,6 +58,529 @@ This document provides a comprehensive reference of all available API endpoints 
 
 ---
 
+## User Endpoints (JWT Required)
+
+### Profile Management
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/profile` | Get own profile | ✅ JWT |
+| `GET` | `/api/profile/stats` | Get own stats | ✅ JWT |
+| `PATCH` | `/api/profile/settings` | Update settings | ✅ JWT |
+
+### User Data
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/users/me` | Get own user data | ✅ JWT |
+| `PATCH` | `/api/users/me` | Update own user data | ✅ JWT |
+| `GET` | `/api/users/:id` | Get user (only if :id matches JWT user) | ✅ JWT |
+
+**Example User Request:**
+```bash
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  http://localhost:3000/api/profile
+```
+
+### Players
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/players/me` | Get current user's players | ✅ JWT |
+| `GET` | `/api/players/guild/:guildId` | List players in guild | ✅ JWT |
+| `GET` | `/api/players/:id` | Get player details | ✅ JWT |
+| `PATCH` | `/api/players/:id` | Update player | ✅ JWT |
+
+**Query Parameters for `/api/players/me` and `/api/players/guild/:guildId`:**
+- `page` (optional): Page number
+- `limit` (optional): Items per page
+- `status` (optional): Filter by status
+
+**Example User Request:**
+```bash
+# Get my players
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  http://localhost:3000/api/players/me
+
+# List players in guild
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  "http://localhost:3000/api/players/guild/123456789012345678?page=1&limit=10"
+```
+
+### Trackers
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/api/trackers/register` | Register 1-4 tracker URLs (for new users) | ✅ JWT |
+| `GET` | `/api/trackers/me` | Get current user's trackers | ✅ JWT |
+| `GET` | `/api/trackers` | Get trackers (filtered by guild access or user) | ✅ JWT |
+| `GET` | `/api/trackers/:id` | Get tracker details | ✅ JWT |
+| `GET` | `/api/trackers/:id/detail` | Get tracker details with all seasons | ✅ JWT |
+| `GET` | `/api/trackers/:id/status` | Get scraping status for a tracker | ✅ JWT |
+| `GET` | `/api/trackers/:id/seasons` | Get all seasons for a tracker | ✅ JWT |
+| `POST` | `/api/trackers/:id/refresh` | Trigger manual refresh for a tracker | ✅ JWT |
+| `GET` | `/api/trackers/:id/snapshots` | Get snapshots for a tracker | ✅ JWT |
+| `POST` | `/api/trackers/:id/snapshots` | Create a new snapshot for a tracker | ✅ JWT |
+| `PUT` | `/api/trackers/:id` | Update tracker metadata | ✅ JWT |
+| `DELETE` | `/api/trackers/:id` | Soft delete a tracker | ✅ JWT |
+| `POST` | `/api/trackers/add` | Add an additional tracker (up to 4 total) | ✅ JWT |
+
+**Query Parameters for `/api/trackers`:**
+- `guildId` (optional): Filter by guild ID
+
+**Query Parameters for `/api/trackers/:id/snapshots`:**
+- `season` (optional): Filter by season number
+
+**Example User Request:**
+```bash
+# Register trackers
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{"urls":["https://tracker.network/profile/steam/123"]}' \
+  http://localhost:3000/api/trackers/register
+
+# Get my trackers
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  http://localhost:3000/api/trackers/me
+
+# Refresh tracker
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  -X POST \
+  http://localhost:3000/api/trackers/clxyz1234567890/refresh
+```
+
+### Guilds
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/guilds/:id` | Get guild details | ✅ JWT |
+| `GET` | `/api/guilds/:id/settings` | Get guild settings (admin only) | ✅ JWT |
+| `GET` | `/api/guilds/:id/channels` | Get Discord channels for guild (admin only) | ✅ JWT |
+| `GET` | `/api/guilds/:id/roles` | Get Discord roles for guild (admin only) | ✅ JWT |
+
+**Example User Request:**
+```bash
+# Get guild details
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  http://localhost:3000/api/guilds/123456789012345678
+
+# Get guild settings (admin only)
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  http://localhost:3000/api/guilds/123456789012345678/settings
+```
+
+### Guild Members
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/guilds/:guildId/members` | Get guild members with pagination | ✅ JWT |
+| `GET` | `/api/guilds/:guildId/members/search` | Search guild members | ✅ JWT |
+| `GET` | `/api/guilds/:guildId/members/stats` | Get guild member statistics | ✅ JWT |
+| `GET` | `/api/guilds/:guildId/members/:userId` | Get specific guild member | ✅ JWT |
+| `POST` | `/api/guilds/:guildId/members` | Create guild member (admin only) | ✅ JWT |
+| `PATCH` | `/api/guilds/:guildId/members/:userId` | Update guild member (admin only) | ✅ JWT |
+| `DELETE` | `/api/guilds/:guildId/members/:userId` | Remove guild member (admin only) | ✅ JWT |
+| `POST` | `/api/guilds/:guildId/members/sync` | Sync all guild members (admin only) | ✅ JWT |
+
+**Query Parameters for `/api/guilds/:guildId/members`:**
+- `page` (optional): Page number (default: 1)
+- `limit` (optional): Items per page (default: 50, max: 100)
+
+**Query Parameters for `/api/guilds/:guildId/members/search`:**
+- `q` (required): Search query
+- `page` (optional): Page number (default: 1)
+- `limit` (optional): Items per page (default: 20, max: 100)
+
+**Example User Request:**
+```bash
+# Get guild members
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  "http://localhost:3000/api/guilds/123456789012345678/members?page=1&limit=50"
+
+# Search guild members
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  "http://localhost:3000/api/guilds/123456789012345678/members/search?q=john&page=1"
+```
+
+### Guild Settings
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/guilds/:guildId/settings` | Get guild settings (admin only) | ✅ JWT |
+| `PATCH` | `/api/guilds/:guildId/settings` | Update guild settings (admin only) | ✅ JWT |
+| `POST` | `/api/guilds/:guildId/settings/reset` | Reset guild settings to defaults (admin only) | ✅ JWT |
+| `GET` | `/api/guilds/:guildId/settings/history` | Get guild settings history (admin only) | ✅ JWT |
+
+**Query Parameters for `/api/guilds/:guildId/settings/history`:**
+- `limit` (optional): Maximum number of history entries (default: 50)
+
+**Example User Request:**
+```bash
+# Get guild settings
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  http://localhost:3000/api/guilds/123456789012345678/settings
+
+# Update guild settings
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -X PATCH \
+  -d '{"mmrCalculation":{"algorithm":"WEIGHTED_AVERAGE"}}' \
+  http://localhost:3000/api/guilds/123456789012345678/settings
+```
+
+### Permissions
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/guilds/:guildId/permissions/me` | Get current user's permissions in a guild | ✅ JWT |
+
+**Example User Request:**
+```bash
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  http://localhost:3000/api/guilds/123456789012345678/permissions/me
+```
+
+### Audit Logs
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/guilds/:guildId/audit-logs` | Get audit logs for a guild (admin only) | ✅ JWT |
+
+**Query Parameters:**
+- `userId` (optional): Filter by user ID
+- `action` (optional): Filter by action type
+- `startDate` (optional): Start date for filter
+- `endDate` (optional): End date for filter
+- `limit` (optional): Number of results (max 100)
+- `offset` (optional): Offset for pagination
+
+**Example User Request:**
+```bash
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  "http://localhost:3000/api/guilds/123456789012345678/audit-logs?limit=50&offset=0"
+```
+
+### League Management
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/leagues/guild/:guildId` | List leagues in guild | ✅ JWT |
+| `GET` | `/api/leagues/:id` | Get league details | ✅ JWT |
+| `POST` | `/api/leagues` | Create league (requires admin) | ✅ JWT |
+| `PATCH` | `/api/leagues/:id` | Update league (requires admin/league admin) | ✅ JWT |
+| `PATCH` | `/api/leagues/:id/status` | Update league status (requires admin) | ✅ JWT |
+| `DELETE` | `/api/leagues/:id` | Delete league (requires admin) | ✅ JWT |
+
+**Query Parameters for `/api/leagues/guild/:guildId`:**
+- `page` (optional): Page number (default: 1)
+- `limit` (optional): Items per page (default: 50)
+- `status` (optional): Filter by status (ACTIVE, PAUSED, ARCHIVED, CANCELLED)
+- `game` (optional): Filter by game (ROCKET_LEAGUE, DOTA_2)
+
+**Example User Request:**
+```bash
+# List leagues in guild
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  "http://localhost:3000/api/leagues/guild/123456789012345678?status=ACTIVE&page=1&limit=10"
+
+# Get league details
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  http://localhost:3000/api/leagues/clxyz1234567890
+
+# Create league
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{"name":"Diamond League","guildId":"123456789012345678","game":"ROCKET_LEAGUE"}' \
+  http://localhost:3000/api/leagues
+```
+
+### League Members
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/leagues/:leagueId/members` | List league members | ✅ JWT |
+| `POST` | `/api/leagues/:leagueId/members` | Join a league | ✅ JWT |
+| `DELETE` | `/api/leagues/:leagueId/members/:playerId` | Leave a league | ✅ JWT |
+| `PATCH` | `/api/leagues/:leagueId/members/:playerId` | Update league member | ✅ JWT |
+
+**Query Parameters for `/api/leagues/:leagueId/members`:**
+- `page` (optional): Page number
+- `limit` (optional): Items per page
+- `status` (optional): Filter by status
+
+**Example User Request:**
+```bash
+# Join league
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{"playerId":"clxyz1234567890"}' \
+  http://localhost:3000/api/leagues/clxyz1234567890/members
+
+# List league members
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  "http://localhost:3000/api/leagues/clxyz1234567890/members?page=1&limit=50"
+```
+
+### League Settings
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/leagues/:leagueId/settings` | Get league settings (requires admin/moderator) | ✅ JWT |
+| `PATCH` | `/api/leagues/:leagueId/settings` | Update league settings (requires admin) | ✅ JWT |
+
+**Example User Request:**
+```bash
+# Get league settings
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  http://localhost:3000/api/leagues/clxyz1234567890/settings
+
+# Update league settings
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -X PATCH \
+  -d '{"membership":{"joinMethod":"OPEN"}}' \
+  http://localhost:3000/api/leagues/clxyz1234567890/settings
+```
+
+### Teams
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/leagues/:leagueId/teams` | List teams in league | ✅ JWT |
+| `GET` | `/api/leagues/:leagueId/teams/:id` | Get team details | ✅ JWT |
+| `POST` | `/api/leagues/:leagueId/teams` | Create team | ✅ JWT |
+| `PATCH` | `/api/leagues/:leagueId/teams/:id` | Update team | ✅ JWT |
+| `DELETE` | `/api/leagues/:leagueId/teams/:id` | Delete team | ✅ JWT |
+
+**Example User Request:**
+```bash
+# List teams in league
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  http://localhost:3000/api/leagues/clxyz1234567890/teams
+
+# Create team
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{"name":"Team Alpha","tag":"ALPHA"}' \
+  http://localhost:3000/api/leagues/clxyz1234567890/teams
+```
+
+### Team Members
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/teams/:teamId/members` | List team members | ✅ JWT |
+| `POST` | `/api/teams/:teamId/members` | Add team member | ✅ JWT |
+| `PATCH` | `/api/teams/:teamId/members/:id` | Update team member | ✅ JWT |
+| `DELETE` | `/api/teams/:teamId/members/:id` | Remove team member | ✅ JWT |
+
+**Example User Request:**
+```bash
+# List team members
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  http://localhost:3000/api/teams/clxteam1234567890/members
+
+# Add team member
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{"playerId":"clxyz1234567890","role":"CAPTAIN"}' \
+  http://localhost:3000/api/teams/clxteam1234567890/members
+```
+
+### Organization Management
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/leagues/:leagueId/organizations` | List organizations in league | ✅ JWT |
+| `GET` | `/api/organizations/:id` | Get organization details | ✅ JWT |
+| `GET` | `/api/organizations/:id/teams` | List teams in organization | ✅ JWT |
+| `GET` | `/api/organizations/:id/stats` | Get organization statistics | ✅ JWT |
+| `POST` | `/api/leagues/:leagueId/organizations` | Create organization (creator becomes GM) | ✅ JWT |
+| `PATCH` | `/api/organizations/:id` | Update organization (GM only) | ✅ JWT |
+| `DELETE` | `/api/organizations/:id` | Delete organization (GM only, must have no teams) | ✅ JWT |
+| `POST` | `/api/organizations/:id/teams/:teamId/transfer` | Transfer team to different organization (GM of source or target org) | ✅ JWT |
+| `GET` | `/api/organizations/:id/members` | List organization members | ✅ JWT |
+| `POST` | `/api/organizations/:id/members` | Add member to organization (GM only) | ✅ JWT |
+| `PATCH` | `/api/organizations/:id/members/:memberId` | Update member role/status (GM only) | ✅ JWT |
+| `DELETE` | `/api/organizations/:id/members/:memberId` | Remove member from organization (GM only, cannot remove last GM) | ✅ JWT |
+
+**Example User Request:**
+```bash
+# List organizations in league
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  http://localhost:3000/api/leagues/clxyz1234567890/organizations
+
+# Create organization
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{"name":"Alpha Organization","tag":"ALPHA","description":"A competitive organization"}' \
+  http://localhost:3000/api/leagues/clxyz1234567890/organizations
+
+# Transfer team
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{"targetOrganizationId":"clxorg1234567890"}' \
+  http://localhost:3000/api/organizations/clxorg1234567890/teams/clxteam1234567890/transfer
+```
+
+### Matches
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/matches/:id` | Get match details | ✅ JWT |
+| `POST` | `/api/matches` | Create match | ✅ JWT |
+| `POST` | `/api/matches/:id/participants` | Add match participant | ✅ JWT |
+| `PATCH` | `/api/matches/:id/status` | Update match status | ✅ JWT |
+| `POST` | `/api/matches/:id/complete` | Complete match and update stats/ratings | ✅ JWT |
+
+**Example User Request:**
+```bash
+# Create match
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{"leagueId":"clxyz1234567890","team1Id":"clxteam1234567890","team2Id":"clxteam0987654321"}' \
+  http://localhost:3000/api/matches
+
+# Complete match
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{"winnerId":"clxteam1234567890"}' \
+  http://localhost:3000/api/matches/clxmatch1234567890/complete
+```
+
+### Tournaments
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/tournaments/:id` | Get tournament details | ✅ JWT |
+| `POST` | `/api/tournaments` | Create tournament | ✅ JWT |
+| `POST` | `/api/tournaments/:id/register` | Register participant | ✅ JWT |
+
+**Example User Request:**
+```bash
+# Create tournament
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{"name":"Spring Championship","leagueId":"clxyz1234567890"}' \
+  http://localhost:3000/api/tournaments
+
+# Register participant
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{"playerId":"clxyz1234567890","leagueId":"clxyz1234567890"}' \
+  http://localhost:3000/api/tournaments/clxtour1234567890/register
+```
+
+### Player Stats & Ratings
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/players/:playerId/stats/league/:leagueId` | Get player stats for league | ✅ JWT |
+| `GET` | `/api/leagues/:leagueId/leaderboard` | Get league leaderboard | ✅ JWT |
+| `GET` | `/api/players/:playerId/ratings/league/:leagueId` | Get player rating for league | ✅ JWT |
+| `GET` | `/api/leagues/:leagueId/standings` | Get league standings | ✅ JWT |
+
+**Query Parameters for `/api/leagues/:leagueId/leaderboard` and `/api/leagues/:leagueId/standings`:**
+- `limit` (optional): Number of results (default: 10)
+
+**Example User Request:**
+```bash
+# Get player stats
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  http://localhost:3000/api/players/clxyz1234567890/stats/league/clxyz1234567890
+
+# Get league leaderboard
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  "http://localhost:3000/api/leagues/clxyz1234567890/leaderboard?limit=20"
+
+# Get league standings
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  "http://localhost:3000/api/leagues/clxyz1234567890/standings?limit=20"
+```
+
+### MMR Calculation & Calculator
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/api/calculator` | Calculate MMR using guild configuration (public, JWT required) | ✅ JWT |
+| `POST` | `/api/mmr-calculation/test-formula` | Test custom MMR formula (admin only) | ✅ JWT + Admin |
+| `POST` | `/api/mmr-calculation/validate-formula` | Validate custom MMR formula (admin only) | ✅ JWT + Admin |
+| `POST` | `/api/mmr-calculation/calculate-mmr` | Calculate MMR (admin only) | ✅ JWT + Admin |
+
+**Example User Request:**
+```bash
+# Calculate MMR (public endpoint)
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{"guildId":"123456789012345678","trackerData":{"ones":1500,"twos":1600}}' \
+  http://localhost:3000/api/calculator
+
+# Test formula (admin only)
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{"formula":"(ones + twos) / 2","testData":{"ones":1500,"twos":1600}}' \
+  http://localhost:3000/api/mmr-calculation/test-formula
+```
+
+---
+
+## Admin Endpoints (JWT + Admin Guard Required)
+
+### Tracker Admin
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/admin/trackers` | List all trackers (Admin only) | ✅ JWT + Admin |
+| `GET` | `/api/admin/trackers/scraping-status` | Get overview of scraping status (Admin only) | ✅ JWT + Admin |
+| `GET` | `/api/admin/trackers/scraping-logs` | Get scraping logs (Admin only) | ✅ JWT + Admin |
+| `POST` | `/api/admin/trackers/:id/refresh` | Manually trigger refresh for a tracker (Admin only) | ✅ JWT + Admin |
+| `POST` | `/api/admin/trackers/batch-refresh` | Trigger batch refresh for multiple trackers (Admin only) | ✅ JWT + Admin |
+
+**Query Parameters for `/api/admin/trackers`:**
+- `status` (optional): Filter by scraping status (PENDING, IN_PROGRESS, COMPLETED, FAILED)
+- `platform` (optional): Filter by platform
+- `page` (optional): Page number
+- `limit` (optional): Items per page
+
+**Query Parameters for `/api/admin/trackers/scraping-logs`:**
+- `trackerId` (optional): Filter by tracker ID
+- `status` (optional): Filter by status
+- `page` (optional): Page number
+- `limit` (optional): Items per page
+
+**Example Admin Request:**
+```bash
+# List all trackers
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  "http://localhost:3000/api/admin/trackers?status=PENDING&page=1&limit=50"
+
+# Get scraping status overview
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  http://localhost:3000/api/admin/trackers/scraping-status
+
+# Batch refresh
+curl -H "Authorization: Bearer JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{"trackerIds":["clxyz1234567890","clxyz0987654321"]}' \
+  http://localhost:3000/api/admin/trackers/batch-refresh
+```
+
+---
+
 ## Bot Endpoints (API Key Required)
 
 ### Internal Health
@@ -100,107 +623,6 @@ curl -H "Authorization: Bearer BOT_API_KEY" \
   -X POST \
   -d '{"name":"Diamond League","guildId":"123456789012345678","game":"ROCKET_LEAGUE","createdBy":"bot"}' \
   http://localhost:3000/internal/leagues
-```
-
----
-
-## User Endpoints (JWT Required)
-
-### Profile Management
-
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| `GET` | `/api/profile` | Get own profile | ✅ JWT |
-| `GET` | `/api/profile/stats` | Get own stats | ✅ JWT |
-| `PATCH` | `/api/profile/settings` | Update settings | ✅ JWT |
-
-### User Data
-
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| `GET` | `/api/users/me` | Get own user data | ✅ JWT |
-| `PATCH` | `/api/users/me` | Update own user data | ✅ JWT |
-| `GET` | `/api/users/:id` | Get user (only if :id matches JWT user) | ✅ JWT |
-
-**Example User Request:**
-```bash
-curl -H "Authorization: Bearer JWT_TOKEN" \
-  http://localhost:3000/api/profile
-```
-
-### League Management (User)
-
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| `GET` | `/api/leagues/guild/:guildId` | List leagues in guild | ✅ JWT |
-| `GET` | `/api/leagues/:id` | Get league details | ✅ JWT |
-| `POST` | `/api/leagues` | Create league (requires admin) | ✅ JWT |
-| `PATCH` | `/api/leagues/:id` | Update league (requires admin/league admin) | ✅ JWT |
-| `PATCH` | `/api/leagues/:id/status` | Update league status (requires admin) | ✅ JWT |
-| `DELETE` | `/api/leagues/:id` | Delete league (requires admin) | ✅ JWT |
-| `GET` | `/api/leagues/:leagueId/settings` | Get league settings (requires admin) | ✅ JWT |
-| `PATCH` | `/api/leagues/:leagueId/settings` | Update league settings (requires admin) | ✅ JWT |
-
-**Query Parameters for `/api/leagues/guild/:guildId`:**
-- `page` (optional): Page number (default: 1)
-- `limit` (optional): Items per page (default: 50)
-- `status` (optional): Filter by status (ACTIVE, PAUSED, ARCHIVED, CANCELLED)
-- `game` (optional): Filter by game (ROCKET_LEAGUE, DOTA_2)
-
-**Example User Request:**
-```bash
-# List leagues in guild
-curl -H "Authorization: Bearer JWT_TOKEN" \
-  "http://localhost:3000/api/leagues/guild/123456789012345678?status=ACTIVE&page=1&limit=10"
-
-# Get league details
-curl -H "Authorization: Bearer JWT_TOKEN" \
-  http://localhost:3000/api/leagues/clxyz1234567890
-
-# Create league
-curl -H "Authorization: Bearer JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -X POST \
-  -d '{"name":"Diamond League","guildId":"123456789012345678","game":"ROCKET_LEAGUE"}' \
-  http://localhost:3000/api/leagues
-```
-
-### Organization Management (User)
-
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| `GET` | `/api/leagues/:leagueId/organizations` | List organizations in league | ✅ JWT |
-| `GET` | `/api/organizations/:id` | Get organization details | ✅ JWT |
-| `GET` | `/api/organizations/:id/teams` | List teams in organization | ✅ JWT |
-| `GET` | `/api/organizations/:id/stats` | Get organization statistics | ✅ JWT |
-| `POST` | `/api/leagues/:leagueId/organizations` | Create organization (creator becomes GM) | ✅ JWT |
-| `PATCH` | `/api/organizations/:id` | Update organization (GM only) | ✅ JWT |
-| `DELETE` | `/api/organizations/:id` | Delete organization (GM only, must have no teams) | ✅ JWT |
-| `POST` | `/api/organizations/:id/teams/:teamId/transfer` | Transfer team to different organization (GM of source or target org) | ✅ JWT |
-| `GET` | `/api/organizations/:id/members` | List organization members | ✅ JWT |
-| `POST` | `/api/organizations/:id/members` | Add member to organization (GM only) | ✅ JWT |
-| `PATCH` | `/api/organizations/:id/members/:memberId` | Update member role/status (GM only) | ✅ JWT |
-| `DELETE` | `/api/organizations/:id/members/:memberId` | Remove member from organization (GM only, cannot remove last GM) | ✅ JWT |
-
-**Example User Request:**
-```bash
-# List organizations in league
-curl -H "Authorization: Bearer JWT_TOKEN" \
-  http://localhost:3000/api/leagues/clxyz1234567890/organizations
-
-# Create organization
-curl -H "Authorization: Bearer JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -X POST \
-  -d '{"name":"Alpha Organization","tag":"ALPHA","description":"A competitive organization"}' \
-  http://localhost:3000/api/leagues/clxyz1234567890/organizations
-
-# Transfer team
-curl -H "Authorization: Bearer JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -X POST \
-  -d '{"targetOrganizationId":"clxorg1234567890"}' \
-  http://localhost:3000/api/organizations/clxorg1234567890/teams/clxteam1234567890/transfer
 ```
 
 ### Organization Management (Bot)
