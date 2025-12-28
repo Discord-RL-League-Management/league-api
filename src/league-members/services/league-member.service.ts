@@ -4,7 +4,6 @@ import {
   NotFoundException,
   InternalServerErrorException,
   Inject,
-  forwardRef,
 } from '@nestjs/common';
 import { Prisma, LeagueMemberStatus, Player } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -13,7 +12,7 @@ import { JoinLeagueDto } from '../dto/join-league.dto';
 import { LeagueMemberRepository } from '../repositories/league-member.repository';
 import { LeagueJoinValidationService } from './league-join-validation.service';
 import { PlayerService } from '../../players/services/player.service';
-import { LeagueSettingsService } from '../../leagues/league-settings.service';
+import type { ILeagueSettingsProvider } from '../interfaces/league-settings-provider.interface';
 import { ActivityLogService } from '../../infrastructure/activity-log/services/activity-log.service';
 import { PlayerLeagueRatingService } from '../../player-ratings/services/player-league-rating.service';
 import {
@@ -37,8 +36,8 @@ export class LeagueMemberService {
     private leagueMemberRepository: LeagueMemberRepository,
     private joinValidationService: LeagueJoinValidationService,
     private playerService: PlayerService,
-    @Inject(forwardRef(() => LeagueSettingsService))
-    private leagueSettingsService: LeagueSettingsService,
+    @Inject('ILeagueSettingsProvider')
+    private leagueSettingsProvider: ILeagueSettingsProvider,
     private prisma: PrismaService,
     private activityLogService: ActivityLogService,
     private ratingService: PlayerLeagueRatingService,
@@ -150,7 +149,7 @@ export class LeagueMemberService {
 
       await this.joinValidationService.validateJoin(guildPlayer.id, leagueId);
 
-      const settings = await this.leagueSettingsService.getSettings(leagueId);
+      const settings = await this.leagueSettingsProvider.getSettings(leagueId);
       const initialStatus = settings.membership.requiresApproval
         ? LeagueMemberStatus.PENDING_APPROVAL
         : LeagueMemberStatus.ACTIVE;
@@ -278,7 +277,7 @@ export class LeagueMemberService {
       throw new LeagueMemberNotFoundException(`${playerId}-${leagueId}`);
     }
 
-    const settings = await this.leagueSettingsService.getSettings(leagueId);
+    const settings = await this.leagueSettingsProvider.getSettings(leagueId);
     const cooldownDays = settings.membership.cooldownAfterLeave;
 
     return await this.prisma.$transaction(async (tx) => {

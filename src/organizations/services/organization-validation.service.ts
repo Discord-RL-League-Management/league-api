@@ -36,7 +36,6 @@ export class OrganizationValidationService {
    * Validate organization creation
    */
   async validateCreate(data: CreateOrganizationDto): Promise<void> {
-    // Verify league exists
     const leagueExists = await this.leagueRepository.exists(data.leagueId);
     if (!leagueExists) {
       throw new LeagueNotFoundException(data.leagueId);
@@ -51,7 +50,6 @@ export class OrganizationValidationService {
     playerId: string,
     leagueId: string,
   ): Promise<void> {
-    // Verify organization exists
     const organization = await this.organizationRepository.findByIdAndLeague(
       organizationId,
       leagueId,
@@ -60,10 +58,8 @@ export class OrganizationValidationService {
       throw new OrganizationNotFoundException(organizationId);
     }
 
-    // Verify player exists
     await this.playerService.findOne(playerId);
 
-    // Check if player is already in an organization in this league
     // Note: findMembersByPlayer now filters out REMOVED members, so this only returns ACTIVE memberships
     const existingMembership =
       await this.organizationRepository.findMembersByPlayer(playerId, leagueId);
@@ -73,7 +69,6 @@ export class OrganizationValidationService {
       if (existingMembership.organizationId === organizationId) {
         throw new PlayerAlreadyInOrganizationException(playerId, leagueId);
       }
-      // If in a different organization, throw error
       throw new PlayerAlreadyInOrganizationException(playerId, leagueId);
     }
   }
@@ -209,7 +204,6 @@ export class OrganizationValidationService {
     targetOrgId: string,
     leagueId: string,
   ): Promise<void> {
-    // Verify both organizations exist in the same league
     const sourceOrg = await this.organizationRepository.findByIdAndLeague(
       sourceOrgId,
       leagueId,
@@ -226,7 +220,6 @@ export class OrganizationValidationService {
       throw new OrganizationNotFoundException(targetOrgId);
     }
 
-    // Validate target organization capacity
     await this.validateOrganizationCapacity(leagueId, targetOrgId);
   }
 }

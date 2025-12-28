@@ -38,7 +38,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     const errorResponse = this.buildErrorResponse(exception, request);
 
-    // Log error
     this.logError(exception, request, errorResponse);
 
     response.status(errorResponse.statusCode).json(errorResponse);

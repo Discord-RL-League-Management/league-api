@@ -6,7 +6,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CacheModule } from '@nestjs/cache-manager';
 import { UsersModule } from '../users/users.module';
 import { DiscordModule } from '../discord/discord.module';
-import { CommonModule } from '../common/common.module';
 import { UserGuildsModule } from '../user-guilds/user-guilds.module';
 import { GuildsModule } from '../guilds/guilds.module';
 import { AuthController } from './auth.controller';
@@ -24,7 +23,6 @@ import { UserOrchestratorService } from '../users/services/user-orchestrator.ser
   imports: [
     UsersModule,
     DiscordModule,
-    CommonModule,
     UserGuildsModule,
     forwardRef(() => GuildsModule),
     TokenManagementModule,

@@ -7,7 +7,8 @@ import { TrackerDataExtractionService } from './services/tracker-data-extraction
 import { MmrCalculationIntegrationService } from './services/mmr-calculation-integration.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { GuildsModule } from '../guilds/guilds.module';
-import { CommonModule } from '../common/common.module';
+import { GuardsModule } from '../guards/guards.module';
+import { GuildAccessAdapterModule } from '../guilds/adapters/guild-access-adapter.module';
 
 /**
  * MmrCalculationModule - Single Responsibility: MMR calculation module
@@ -18,17 +19,14 @@ import { CommonModule } from '../common/common.module';
  * Dependencies:
  * - PrismaModule: Data access
  * - GuildsModule: Provides GuildSettingsService (needed for MMR calculation logic)
- * - CommonModule: Provides AdminGuard for controller authentication
- *
- * Note: Since AdminGuard now uses dependency inversion with interfaces,
- * we no longer need to import all AdminGuard dependencies directly.
- * CommonModule handles all AdminGuard dependencies via adapters.
+ * - GuardsModule: Provides AdminGuard for controller authentication
  */
 @Module({
   imports: [
     PrismaModule,
     forwardRef(() => GuildsModule),
-    forwardRef(() => CommonModule),
+    GuardsModule,
+    forwardRef(() => GuildAccessAdapterModule), // Required for AdminGuard (IGuildAccessProvider)
   ],
   controllers: [MmrCalculationController, MMRCalculatorDemoController],
   providers: [

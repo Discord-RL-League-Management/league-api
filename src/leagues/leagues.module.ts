@@ -1,7 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { InfrastructureModule } from '../infrastructure/infrastructure.module';
-import { CommonModule } from '../common/common.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { AuthModule } from '../auth/auth.module';
 import { GuildsModule } from '../guilds/guilds.module';
@@ -28,17 +27,19 @@ import { LeaguePermissionService } from './services/league-permission.service';
 // Repositories
 import { LeagueRepository } from './repositories/league.repository';
 
+// Adapters
+import { LeagueSettingsProviderAdapter } from './adapters/league-settings-provider.adapter';
+
 @Module({
   imports: [
     PrismaModule,
     InfrastructureModule,
-    CommonModule,
     CacheModule.register(),
     AuthModule,
     GuildsModule, // For GuildsService dependency
     PlayersModule, // For PlayerService dependency
     PermissionCheckModule, // For PermissionCheckService dependency
-    forwardRef(() => LeagueMembersModule), // For LeagueMemberRepository dependency (circular dependency resolved)
+    forwardRef(() => LeagueMembersModule), // Circular dependency: LeagueMembersModule also imports LeaguesModule for ILeagueSettingsProvider
     forwardRef(() => OrganizationsModule), // For OrganizationService dependency (circular dependency resolved)
     forwardRef(() => TeamsModule), // For TeamRepository dependency (circular dependency resolved)
   ],
@@ -56,6 +57,11 @@ import { LeagueRepository } from './repositories/league.repository';
     LeagueAccessValidationService,
     LeaguePermissionService,
     LeagueRepository,
+    // Provide adapter with injection token for LeagueMembersModule
+    {
+      provide: 'ILeagueSettingsProvider',
+      useClass: LeagueSettingsProviderAdapter,
+    },
   ],
   exports: [
     LeaguesService,
@@ -63,6 +69,7 @@ import { LeagueRepository } from './repositories/league.repository';
     LeagueSettingsDefaultsService,
     LeaguePermissionService,
     LeagueRepository,
+    'ILeagueSettingsProvider', // Export token for LeagueMembersModule
   ],
 })
 export class LeaguesModule {}

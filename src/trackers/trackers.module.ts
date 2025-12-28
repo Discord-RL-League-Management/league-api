@@ -27,6 +27,7 @@ import { ScheduledTrackerProcessingService } from './services/scheduled-tracker-
 import { AuditModule } from '../audit/audit.module';
 import { MmrCalculationModule } from '../mmr-calculation/mmr-calculation.module';
 import { GuildsModule } from '../guilds/guilds.module';
+import { GuardsModule } from '../guards/guards.module';
 import { TrackerProcessingGuardService } from './services/tracker-processing-guard.service';
 import { TrackerUserOrchestratorService } from './services/tracker-user-orchestrator.service';
 import { TrackerQueueOrchestratorService } from './services/tracker-queue-orchestrator.service';
@@ -39,6 +40,7 @@ import { TrackerBatchProcessorService } from './services/tracker-batch-processor
     forwardRef(() => AuditModule),
     MmrCalculationModule,
     forwardRef(() => GuildsModule),
+    GuardsModule,
     HttpModule,
     BullModule.forRootAsync({
       imports: [ConfigModule],

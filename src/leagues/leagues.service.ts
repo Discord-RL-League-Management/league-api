@@ -245,7 +245,6 @@ export class LeaguesService {
    */
   async remove(id: string): Promise<League> {
     try {
-      // Check if league exists
       const exists = await this.leagueRepository.exists(id);
 
       if (!exists) {
