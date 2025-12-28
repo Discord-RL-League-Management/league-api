@@ -168,7 +168,6 @@ export class OrganizationRepository
     playerId: string,
     leagueId: string,
   ): Promise<OrganizationMember | null> {
-    // Find active membership only (REMOVED members should not block re-joins)
     const membership = await this.prisma.organizationMember.findUnique({
       where: {
         playerId_leagueId: {
@@ -182,7 +181,7 @@ export class OrganizationRepository
       },
     });
 
-    // Return null if membership is REMOVED (treat as not in organization)
+    // REMOVED members should not block re-joins (treat as not in organization)
     if (membership && membership.status === OrganizationMemberStatus.REMOVED) {
       return null;
     }
@@ -222,12 +221,11 @@ export class OrganizationRepository
       approvedBy?: string;
     },
   ): Promise<OrganizationMember> {
-    // Delete any existing REMOVED member and create new membership atomically
     // This prevents race conditions where concurrent requests could both pass validation
     // (filtering out REMOVED members) and then both attempt to create memberships,
     // violating the unique constraint on (playerId, leagueId)
     return this.prisma.$transaction(async (tx) => {
-      // Delete REMOVED members first (allows players to rejoin organizations after being removed)
+      // Allows players to rejoin organizations after being removed
       await tx.organizationMember.deleteMany({
         where: {
           playerId: data.playerId,
@@ -236,7 +234,6 @@ export class OrganizationRepository
         },
       });
 
-      // Create new membership atomically within the same transaction
       return tx.organizationMember.create({
         data: {
           organizationId: data.organizationId,

@@ -295,12 +295,7 @@ export class LeagueMemberRepository
         }),
         // Handle leftAt: null clears the field, date string updates it, undefined is ignored
         ...(data.leftAt !== undefined && {
-          leftAt:
-            data.leftAt === null
-              ? null
-              : data.leftAt
-                ? new Date(data.leftAt)
-                : null,
+          leftAt: data.leftAt === null ? null : new Date(data.leftAt),
         }),
       },
     });

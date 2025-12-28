@@ -78,11 +78,9 @@ export class SettingsDefaultsService {
   normalizeToCurrentSchema(config: Partial<GuildSettings>): GuildSettings {
     const normalized = this.mergeWithDefaults(config);
 
-    // Ensure metadata is present
     if (!normalized._metadata) {
       normalized._metadata = this.getDefaultMetadata();
     } else {
-      // Ensure metadata has current version if missing
       normalized._metadata = {
         ...this.getDefaultMetadata(),
         ...normalized._metadata,

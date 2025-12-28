@@ -70,16 +70,13 @@ export class OrganizationService {
     userId: string,
     settings?: any,
   ) {
-    // Validate organization creation
     await this.validationService.validateCreate(createDto);
 
-    // Validate league organization capacity (use provided settings if available)
     await this.validationService.validateLeagueOrganizationCapacity(
       createDto.leagueId,
       settings as LeagueConfiguration | undefined,
     );
 
-    // Get league to get guildId
     const league = await this.leagueRepository.findById(createDto.leagueId);
     if (!league) {
       throw new NotFoundException(`League ${createDto.leagueId} not found`);
@@ -96,10 +93,8 @@ export class OrganizationService {
       )) as { id: string };
     }
 
-    // Create organization
     const organization = await this.organizationRepository.create(createDto);
 
-    // Add creator as General Manager (only if not system user)
     if (player) {
       await this.organizationMemberService.addMember(
         organization.id,
@@ -109,7 +104,6 @@ export class OrganizationService {
       );
     }
 
-    // Return organization with members
     return this.findOne(organization.id);
   }
 
@@ -117,10 +111,8 @@ export class OrganizationService {
    * Update organization
    */
   async update(id: string, updateDto: UpdateOrganizationDto, userId: string) {
-    // Verify organization exists
     await this.findOne(id);
 
-    // Verify user is General Manager
     const isGM = await this.organizationMemberService.isGeneralManager(
       userId,
       id,
@@ -145,10 +137,8 @@ export class OrganizationService {
    * Delete organization
    */
   async delete(id: string, userId: string) {
-    // Verify organization exists
     await this.findOne(id);
 
-    // Verify user is General Manager (or bot/system user for organizations with no GMs)
     const isGM = await this.organizationMemberService.isGeneralManager(
       userId,
       id,
@@ -166,7 +156,6 @@ export class OrganizationService {
       }
     }
 
-    // Validate can delete (no teams)
     await this.validationService.validateCanDeleteOrganization(id);
 
     return this.organizationRepository.delete(id);
@@ -188,7 +177,6 @@ export class OrganizationService {
     targetOrganizationId: string,
     userId: string,
   ) {
-    // Get team to find source organization
     const team = await this.teamRepository.findById(teamId);
     if (!team) {
       throw new NotFoundException(`Team ${teamId} not found`);
@@ -203,7 +191,6 @@ export class OrganizationService {
     const sourceOrgId = team.organizationId;
     const leagueId = team.leagueId;
 
-    // Verify user is GM of source or target organization
     const isSourceGM = await this.organizationMemberService.isGeneralManager(
       userId,
       sourceOrgId,
@@ -219,7 +206,6 @@ export class OrganizationService {
       );
     }
 
-    // Validate transfer
     await this.validationService.validateTeamTransfer(
       teamId,
       sourceOrgId,
@@ -227,7 +213,6 @@ export class OrganizationService {
       leagueId,
     );
 
-    // Update team organization
     return this.teamRepository.update(teamId, {
       organizationId: targetOrganizationId,
     });
@@ -265,7 +250,6 @@ export class OrganizationService {
     teamIds: string[],
     settings?: LeagueConfiguration,
   ) {
-    // Verify organization exists in league
     const organization = await this.organizationRepository.findByIdAndLeague(
       organizationId,
       leagueId,
@@ -274,18 +258,15 @@ export class OrganizationService {
       throw new OrganizationNotFoundException(organizationId);
     }
 
-    // Get settings for capacity validation
     // Use provided settings if available (for validation during settings updates before persistence),
     // otherwise fall back to getSettings() which may return cached data
     const leagueSettings =
       settings || (await this.leagueSettingsService.getSettings(leagueId));
     const maxTeamsPerOrg = leagueSettings.membership.maxTeamsPerOrganization;
 
-    // Update all teams atomically in a database transaction
     // Capacity validation occurs inside the transaction to prevent race conditions where
     // concurrent requests could add teams between the validation check and the actual updates
     return this.prisma.$transaction(async (tx) => {
-      // Validate capacity within transaction to prevent race conditions
       // Count teams using transaction client to ensure consistent view of data
       if (maxTeamsPerOrg !== null && maxTeamsPerOrg !== undefined) {
         const currentTeamCount = await tx.team.count({
@@ -301,7 +282,6 @@ export class OrganizationService {
         }
       }
 
-      // Update all teams atomically
       // This ensures all-or-nothing semantics: if any update fails, all updates are rolled back
       const results = [];
       for (const teamId of teamIds) {

@@ -54,7 +54,6 @@ export class SettingsValidationService {
     channels: ChannelConfig[],
     guildId: string,
   ): Promise<void> {
-    // Check for duplicate channel IDs
     const seenIds = new Set<string>();
 
     for (const channel of channels) {
@@ -77,7 +76,6 @@ export class SettingsValidationService {
       }
       seenIds.add(channel.id);
 
-      // Validate channel exists in Discord
       const isValidChannel = await this.discordValidation.validateChannelId(
         guildId,
         channel.id,
@@ -123,19 +121,16 @@ export class SettingsValidationService {
    * @throws BadRequestException if structure is invalid
    */
   validateStructure(config: GuildSettings | Record<string, unknown>): void {
-    // Validate that config is an object
     if (!config || typeof config !== 'object') {
       throw new BadRequestException('Configuration must be an object');
     }
 
-    // Validate required top-level sections
     if (!('bot_command_channels' in config)) {
       throw new BadRequestException(
         'Missing required section: bot_command_channels',
       );
     }
 
-    // Validate bot_command_channels structure
     const botCommandChannels =
       'bot_command_channels' in config
         ? config.bot_command_channels
@@ -188,7 +183,6 @@ export class SettingsValidationService {
         );
       }
 
-      // Validate formula syntax
       const validation = this.formulaValidation.validateFormula(
         config.customFormula,
       );
@@ -197,7 +191,6 @@ export class SettingsValidationService {
       }
     }
 
-    // Validate weights if using WEIGHTED_AVERAGE
     if (config.algorithm === 'WEIGHTED_AVERAGE' && config.weights) {
       const weights = config.weights;
       const totalWeight =
@@ -220,7 +213,6 @@ export class SettingsValidationService {
       }
     }
 
-    // Validate ascendancyWeights if using ASCENDANCY
     if (config.algorithm === 'ASCENDANCY' && config.ascendancyWeights) {
       const weights = config.ascendancyWeights;
       if (
@@ -253,7 +245,6 @@ export class SettingsValidationService {
    * Single Responsibility: Tracker processing config validation
    */
   private validateTrackerProcessing(config: { enabled?: boolean }): void {
-    // Validate that enabled is a boolean if provided
     // Note: class-validator decorators handle most validation,
     // but this provides explicit validation for consistency
     if (config.enabled !== undefined && typeof config.enabled !== 'boolean') {

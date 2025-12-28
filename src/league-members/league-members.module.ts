@@ -2,11 +2,11 @@ import { Module, forwardRef } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuthModule } from '../auth/auth.module';
 import { PlayersModule } from '../players/players.module';
-import { LeaguesModule } from '../leagues/leagues.module';
 import { TrackersModule } from '../trackers/trackers.module';
 import { GuildMembersModule } from '../guild-members/guild-members.module';
 import { InfrastructureModule } from '../infrastructure/infrastructure.module';
 import { PlayerRatingsModule } from '../player-ratings/player-ratings.module';
+import { LeaguesModule } from '../leagues/leagues.module';
 
 // Controllers
 import { LeagueMembersController } from './league-members.controller';
@@ -19,27 +19,36 @@ import { LeagueJoinValidationService } from './services/league-join-validation.s
 // Repositories
 import { LeagueMemberRepository } from './repositories/league-member.repository';
 
+// Adapters
+import { LeagueMemberAccessAdapter } from './adapters/league-member-access.adapter';
+
 @Module({
   imports: [
     PrismaModule,
     AuthModule,
     PlayersModule,
-    forwardRef(() => LeaguesModule), // For LeagueSettingsService dependency (circular dependency resolved)
     TrackersModule,
     GuildMembersModule,
     InfrastructureModule,
     PlayerRatingsModule,
+    forwardRef(() => LeaguesModule), // Required for ILeagueSettingsProvider
   ],
   controllers: [LeagueMembersController, InternalLeagueMembersController],
   providers: [
     LeagueMemberService,
     LeagueJoinValidationService,
     LeagueMemberRepository,
+    // Provide adapter with injection token for LeaguesModule
+    {
+      provide: 'ILeagueMemberAccess',
+      useClass: LeagueMemberAccessAdapter,
+    },
   ],
   exports: [
     LeagueMemberService,
     LeagueJoinValidationService,
     LeagueMemberRepository,
+    'ILeagueMemberAccess', // Export token for LeaguesModule
   ],
 })
 export class LeagueMembersModule {}

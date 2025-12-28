@@ -56,7 +56,6 @@ export class ConfigMigrationService {
 
     // Future migrations follow the pattern: if (schemaVersion < N) { migrated = await this.migrateToVN(migrated); }
 
-    // Final normalization ensures current structure
     return this.normalizeToCurrentSchema(migrated);
   }
 
@@ -68,7 +67,6 @@ export class ConfigMigrationService {
    * @returns Schema version number (0 if not found/legacy)
    */
   getSchemaVersion(config: unknown): number {
-    // Check JSON metadata first
     const configObj = config as Record<string, unknown>;
     if (
       configObj?._metadata &&
@@ -114,7 +112,6 @@ export class ConfigMigrationService {
       config as Record<string, unknown>,
     );
 
-    // Ensure metadata is present with migration info
     if (!migrated._metadata) {
       migrated._metadata = {
         version: CURRENT_CONFIG_VERSION,

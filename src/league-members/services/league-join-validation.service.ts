@@ -1,6 +1,6 @@
-import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { LeagueSettingsService } from '../../leagues/league-settings.service';
+import type { ILeagueSettingsProvider } from '../interfaces/league-settings-provider.interface';
 import { LeagueMemberRepository } from '../repositories/league-member.repository';
 import { PlayerService } from '../../players/services/player.service';
 import { PlayerValidationService } from '../../players/services/player-validation.service';
@@ -21,8 +21,8 @@ export class LeagueJoinValidationService {
 
   constructor(
     private prisma: PrismaService,
-    @Inject(forwardRef(() => LeagueSettingsService))
-    private leagueSettingsService: LeagueSettingsService,
+    @Inject('ILeagueSettingsProvider')
+    private leagueSettingsProvider: ILeagueSettingsProvider,
     private leagueMemberRepository: LeagueMemberRepository,
     private playerService: PlayerService,
     private playerValidationService: PlayerValidationService,
@@ -35,7 +35,7 @@ export class LeagueJoinValidationService {
    * Single Responsibility: Complete join validation
    */
   async validateJoin(playerId: string, leagueId: string): Promise<void> {
-    const settings = await this.leagueSettingsService.getSettings(leagueId);
+    const settings = await this.leagueSettingsProvider.getSettings(leagueId);
     const membershipConfig = settings.membership;
     const skillConfig = settings.skill;
 
@@ -162,7 +162,7 @@ export class LeagueJoinValidationService {
         );
     }
 
-    if (skillValue === null || skillValue === undefined) {
+    if (skillValue == null) {
       throw new LeagueJoinValidationException(
         `Unable to determine ${skillRequirements.skillMetric} value from tracker`,
       );

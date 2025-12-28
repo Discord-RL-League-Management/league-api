@@ -1,14 +1,8 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-  Inject,
-  forwardRef,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, Inject } from '@nestjs/common';
 import { LeagueRepository } from '../repositories/league.repository';
 import { GuildsService } from '../../guilds/guilds.service';
 import { PlayerService } from '../../players/services/player.service';
-import { LeagueMemberRepository } from '../../league-members/repositories/league-member.repository';
+import type { ILeagueMemberAccess } from '../interfaces/league-member-access.interface';
 import {
   LeagueNotFoundException,
   LeagueAccessDeniedException,
@@ -29,8 +23,8 @@ export class LeagueAccessValidationService {
     private leagueRepository: LeagueRepository,
     private guildsService: GuildsService,
     private playerService: PlayerService,
-    @Inject(forwardRef(() => LeagueMemberRepository))
-    private leagueMemberRepository: LeagueMemberRepository,
+    @Inject('ILeagueMemberAccess')
+    private leagueMemberAccess: ILeagueMemberAccess,
   ) {}
 
   /**
@@ -74,10 +68,8 @@ export class LeagueAccessValidationService {
         throw new LeagueNotFoundException(leagueId);
       }
 
-      // Validate user has access to the guild that owns the league
       await this.validateGuildAccess(userId, league.guildId);
 
-      // Check if user is a player in the guild
       const player = await this.playerService.findByUserIdAndGuildId(
         userId,
         league.guildId,
@@ -89,7 +81,7 @@ export class LeagueAccessValidationService {
         // Not a player yet - that's okay, they can still view public leagues
       } else {
         // Check if player is a league member (optional - depends on league visibility settings)
-        const member = await this.leagueMemberRepository.findByPlayerAndLeague(
+        const member = await this.leagueMemberAccess.findByPlayerAndLeague(
           player.id,
           leagueId,
         );
