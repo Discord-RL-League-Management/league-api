@@ -208,12 +208,10 @@ export class LeagueRepository
   ): Promise<League> {
     if (tx) {
       // If transaction client provided, use it directly
-      // Create league
       const league = await tx.league.create({
         data: leagueData,
       });
 
-      // Create settings
       await tx.settings.upsert({
         where: {
           ownerType_ownerId: {
@@ -237,12 +235,10 @@ export class LeagueRepository
 
     // Otherwise, create a new transaction
     return this.prisma.$transaction(async (transaction) => {
-      // Create league
       const league = await transaction.league.create({
         data: leagueData,
       });
 
-      // Create settings
       await transaction.settings.upsert({
         where: {
           ownerType_ownerId: {

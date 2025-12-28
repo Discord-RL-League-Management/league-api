@@ -29,11 +29,9 @@ export class GetSchedulesQueryDto {
     if (value === undefined || value === null) {
       return undefined;
     }
-    // Handle string values from query parameters
     if (typeof value === 'string') {
       return value === 'true' || value === '1';
     }
-    // Already a boolean
     return Boolean(value);
   })
   includeCompleted?: boolean;

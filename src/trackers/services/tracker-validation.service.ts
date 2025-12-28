@@ -213,13 +213,11 @@ export class TrackerValidationService {
       },
     });
 
-    // Create a map of existing URLs to their tracker IDs
     const existingUrlMap = new Map<string, string>();
     for (const tracker of existingTrackers) {
       existingUrlMap.set(tracker.url, tracker.id);
     }
 
-    // Create exclude set for fast lookup
     const excludeSet = new Set(excludeTrackerIds || []);
 
     // Build result map

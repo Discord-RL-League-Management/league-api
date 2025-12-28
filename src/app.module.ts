@@ -93,17 +93,12 @@ export const VALIDATION_FAILED_MESSAGE = 'Validation failed';
       provide: APP_PIPE,
       useFactory: (configService: ConfigService) => {
         return new ValidationPipe({
-          // Strip properties that don't have decorators to prevent injection attacks
           whitelist: true,
-          // Reject requests with non-whitelisted properties to catch typos and malicious input
           forbidNonWhitelisted: true,
-          // Automatically transform payloads to match DTO types for type safety
           transform: true,
-          // Enable automatic type conversion to reduce manual parsing and improve developer experience
           transformOptions: {
             enableImplicitConversion: true,
           },
-          // Format validation errors consistently for better API consumer experience
           exceptionFactory: (errors) => {
             const formattedErrors: Array<{
               property: string;
@@ -125,15 +120,10 @@ export const VALIDATION_FAILED_MESSAGE = 'Validation failed';
               }>,
             });
           },
-          // Stop validation on first error to improve performance for invalid requests
           stopAtFirstError: true,
-          // Explicitly require all properties to prevent silent failures from missing data
           skipMissingProperties: false,
-          // Validate null values to ensure data integrity
           skipNullProperties: false,
-          // Validate undefined values to catch missing required fields
           skipUndefinedProperties: false,
-          // Hide detailed error messages in production to avoid exposing internal structure
           disableErrorMessages:
             configService.get<string>('app.nodeEnv') === 'production',
         });
