@@ -13,22 +13,16 @@ import { Test } from '@nestjs/testing';
 import { ForbiddenException } from '@nestjs/common';
 import { GuildsController } from '@/guilds/guilds.controller';
 import { GuildsService } from '@/guilds/guilds.service';
-import { GuildMembersService } from '@/guild-members/guild-members.service';
 import { GuildAccessValidationService } from '@/guilds/services/guild-access-validation.service';
-import { PermissionCheckService } from '@/permissions/modules/permission-check/permission-check.service';
 import { GuildSettingsService } from '@/guilds/guild-settings.service';
-import { UserGuildsService } from '@/user-guilds/user-guilds.service';
 import { DiscordBotService } from '@/discord/discord-bot.service';
 import type { AuthenticatedUser } from '@/common/interfaces/user.interface';
 
 describe('GuildsController', () => {
   let controller: GuildsController;
   let mockGuildsService: GuildsService;
-  let mockGuildMembersService: GuildMembersService;
   let mockGuildAccessValidationService: GuildAccessValidationService;
-  let mockPermissionCheckService: PermissionCheckService;
   let mockGuildSettingsService: GuildSettingsService;
-  let mockUserGuildsService: UserGuildsService;
   let mockDiscordBotService: DiscordBotService;
 
   const mockUser: AuthenticatedUser = {
@@ -37,7 +31,9 @@ describe('GuildsController', () => {
     globalName: 'Test User',
     avatar: 'avatar_hash',
     email: 'test@example.com',
-    guilds: ['guild-1'],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    lastLoginAt: new Date(),
   };
 
   const mockGuild = {
@@ -61,28 +57,16 @@ describe('GuildsController', () => {
     // ARRANGE: Setup test dependencies with mocks
     mockGuildsService = {
       findOne: vi.fn(),
-      findActiveGuildIds: vi.fn(),
+      getSettings: vi.fn(),
     } as unknown as GuildsService;
-
-    mockGuildMembersService = {
-      findOne: vi.fn(),
-    } as unknown as GuildMembersService;
 
     mockGuildAccessValidationService = {
       validateUserGuildAccess: vi.fn(),
     } as unknown as GuildAccessValidationService;
 
-    mockPermissionCheckService = {
-      checkAdminRoles: vi.fn(),
-    } as unknown as PermissionCheckService;
-
     mockGuildSettingsService = {
       getSettings: vi.fn(),
     } as unknown as GuildSettingsService;
-
-    mockUserGuildsService = {
-      syncUserGuildMembershipsWithRoles: vi.fn(),
-    } as unknown as UserGuildsService;
 
     mockDiscordBotService = {
       getGuildChannels: vi.fn(),
@@ -93,17 +77,11 @@ describe('GuildsController', () => {
       controllers: [GuildsController],
       providers: [
         { provide: GuildsService, useValue: mockGuildsService },
-        { provide: GuildMembersService, useValue: mockGuildMembersService },
         {
           provide: GuildAccessValidationService,
           useValue: mockGuildAccessValidationService,
         },
-        {
-          provide: PermissionCheckService,
-          useValue: mockPermissionCheckService,
-        },
         { provide: GuildSettingsService, useValue: mockGuildSettingsService },
-        { provide: UserGuildsService, useValue: mockUserGuildsService },
         { provide: DiscordBotService, useValue: mockDiscordBotService },
       ],
     }).compile();
@@ -118,10 +96,12 @@ describe('GuildsController', () => {
   describe('getGuild', () => {
     it('should_return_guild_when_user_has_access', async () => {
       // ARRANGE
-      mockGuildAccessValidationService.validateUserGuildAccess.mockResolvedValue(
-        undefined,
+      vi.mocked(
+        mockGuildAccessValidationService.validateUserGuildAccess,
+      ).mockResolvedValue(undefined);
+      vi.mocked(mockGuildsService.findOne).mockResolvedValue(
+        mockGuild as never,
       );
-      mockGuildsService.findOne.mockResolvedValue(mockGuild as never);
 
       // ACT
       const result = await controller.getGuild('guild-1', mockUser);
@@ -135,9 +115,9 @@ describe('GuildsController', () => {
 
     it('should_throw_when_user_lacks_access', async () => {
       // ARRANGE
-      mockGuildAccessValidationService.validateUserGuildAccess.mockRejectedValue(
-        new ForbiddenException('Access denied'),
-      );
+      vi.mocked(
+        mockGuildAccessValidationService.validateUserGuildAccess,
+      ).mockRejectedValue(new ForbiddenException('Access denied'));
 
       // ACT & ASSERT
       await expect(controller.getGuild('guild-1', mockUser)).rejects.toThrow(
@@ -149,42 +129,20 @@ describe('GuildsController', () => {
   describe('getGuildSettings', () => {
     it('should_return_settings_when_user_is_admin', async () => {
       // ARRANGE
-      mockGuildAccessValidationService.validateUserGuildAccess.mockResolvedValue(
-        undefined,
-      );
-      mockGuildMembersService.findOne.mockResolvedValue({
-        roles: ['admin-role'],
-      } as never);
-      mockGuildSettingsService.getSettings.mockResolvedValue(
+      // Note: GuildAdminGuard is applied, so we skip permission checks here
+      // The guard handles validation, so the controller just returns settings
+      vi.mocked(mockGuildSettingsService.getSettings).mockResolvedValue(
         mockSettings as never,
       );
-      mockPermissionCheckService.checkAdminRoles.mockResolvedValue(true);
 
       // ACT
       const result = await controller.getGuildSettings('guild-1', mockUser);
 
       // ASSERT
       expect(result).toEqual(mockSettings);
-      expect(mockPermissionCheckService.checkAdminRoles).toHaveBeenCalled();
-    });
-
-    it('should_throw_when_user_is_not_admin', async () => {
-      // ARRANGE
-      mockGuildAccessValidationService.validateUserGuildAccess.mockResolvedValue(
-        undefined,
+      expect(mockGuildSettingsService.getSettings).toHaveBeenCalledWith(
+        'guild-1',
       );
-      mockGuildMembersService.findOne.mockResolvedValue({
-        roles: ['member-role'],
-      } as never);
-      mockGuildSettingsService.getSettings.mockResolvedValue(
-        mockSettings as never,
-      );
-      mockPermissionCheckService.checkAdminRoles.mockResolvedValue(false);
-
-      // ACT & ASSERT
-      await expect(
-        controller.getGuildSettings('guild-1', mockUser),
-      ).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -192,17 +150,8 @@ describe('GuildsController', () => {
     it('should_return_channels_when_user_is_admin', async () => {
       // ARRANGE
       const mockChannels = [{ id: 'channel-1', name: 'General' }];
-      mockGuildAccessValidationService.validateUserGuildAccess.mockResolvedValue(
-        undefined,
-      );
-      mockGuildMembersService.findOne.mockResolvedValue({
-        roles: ['admin-role'],
-      } as never);
-      mockGuildSettingsService.getSettings.mockResolvedValue(
-        mockSettings as never,
-      );
-      mockPermissionCheckService.checkAdminRoles.mockResolvedValue(true);
-      mockDiscordBotService.getGuildChannels.mockResolvedValue(
+      // Note: GuildAdminGuard is applied, so we skip permission checks here
+      vi.mocked(mockDiscordBotService.getGuildChannels).mockResolvedValue(
         mockChannels as never,
       );
 
@@ -221,17 +170,10 @@ describe('GuildsController', () => {
     it('should_return_roles_when_user_is_admin', async () => {
       // ARRANGE
       const mockRoles = [{ id: 'role-1', name: 'Admin' }];
-      mockGuildAccessValidationService.validateUserGuildAccess.mockResolvedValue(
-        undefined,
+      // Note: GuildAdminGuard is applied, so we skip permission checks here
+      vi.mocked(mockDiscordBotService.getGuildRoles).mockResolvedValue(
+        mockRoles as never,
       );
-      mockGuildMembersService.findOne.mockResolvedValue({
-        roles: ['admin-role'],
-      } as never);
-      mockGuildSettingsService.getSettings.mockResolvedValue(
-        mockSettings as never,
-      );
-      mockPermissionCheckService.checkAdminRoles.mockResolvedValue(true);
-      mockDiscordBotService.getGuildRoles.mockResolvedValue(mockRoles as never);
 
       // ACT
       const result = await controller.getGuildRoles('guild-1', mockUser);

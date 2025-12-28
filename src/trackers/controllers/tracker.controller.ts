@@ -22,6 +22,7 @@ import {
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { TrackerService } from '../services/tracker.service';
+import { TrackerProcessingService } from '../services/tracker-processing.service';
 import { TrackerSnapshotService } from '../services/tracker-snapshot.service';
 import {
   UpdateTrackerDto,
@@ -41,6 +42,7 @@ export class TrackerController {
 
   constructor(
     private readonly trackerService: TrackerService,
+    private readonly trackerProcessingService: TrackerProcessingService,
     private readonly snapshotService: TrackerSnapshotService,
   ) {}
 
@@ -60,7 +62,11 @@ export class TrackerController {
       globalName: user.globalName,
       avatar: user.avatar,
     };
-    return this.trackerService.registerTrackers(user.id, dto.urls, userData);
+    return this.trackerProcessingService.registerTrackers(
+      user.id,
+      dto.urls,
+      userData,
+    );
   }
 
   @Get('me')
@@ -150,7 +156,7 @@ export class TrackerController {
       throw new ForbiddenException('You can only refresh your own tracker');
     }
 
-    await this.trackerService.refreshTrackerData(id);
+    await this.trackerProcessingService.refreshTrackerData(id);
     return { message: 'Refresh job enqueued successfully' };
   }
 
@@ -236,6 +242,6 @@ export class TrackerController {
       globalName: user.globalName,
       avatar: user.avatar,
     };
-    return this.trackerService.addTracker(user.id, dto.url, userData);
+    return this.trackerProcessingService.addTracker(user.id, dto.url, userData);
   }
 }

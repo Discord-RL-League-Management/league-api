@@ -1,7 +1,7 @@
 import { Controller, Post, Body, UseGuards, Logger } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { BotAuthGuard } from '../auth/guards/bot-auth.guard';
-import { TrackerService } from '../trackers/services/tracker.service';
+import { TrackerProcessingService } from '../trackers/services/tracker-processing.service';
 import {
   ApiTags,
   ApiOperation,
@@ -20,13 +20,15 @@ import { ProcessTrackersDto } from './dto/process-trackers.dto';
 export class InternalTrackerController {
   private readonly logger = new Logger(InternalTrackerController.name);
 
-  constructor(private readonly trackerService: TrackerService) {}
+  constructor(
+    private readonly trackerProcessingService: TrackerProcessingService,
+  ) {}
 
   @Post('register-multiple')
   @ApiOperation({ summary: 'Register multiple trackers (Bot only)' })
   @ApiResponse({ status: 201, description: 'Trackers registered successfully' })
   async registerTrackers(@Body() body: InternalRegisterTrackersDto) {
-    return this.trackerService.registerTrackers(
+    return this.trackerProcessingService.registerTrackers(
       body.userId,
       body.urls,
       body.userData,
@@ -39,7 +41,7 @@ export class InternalTrackerController {
   @ApiOperation({ summary: 'Add an additional tracker (Bot only)' })
   @ApiResponse({ status: 201, description: 'Tracker added successfully' })
   async addTracker(@Body() body: InternalAddTrackerDto) {
-    return this.trackerService.addTracker(
+    return this.trackerProcessingService.addTracker(
       body.userId,
       body.url,
       body.userData,
@@ -55,7 +57,7 @@ export class InternalTrackerController {
     description: 'Pending trackers processed successfully',
   })
   async processPendingTrackers() {
-    return this.trackerService.processPendingTrackers();
+    return this.trackerProcessingService.processPendingTrackers();
   }
 
   @Post('process')
@@ -72,6 +74,8 @@ export class InternalTrackerController {
     this.logger.log(
       `Processing trackers for guild ${body.guildId} (requested by bot)`,
     );
-    return this.trackerService.processPendingTrackersForGuild(body.guildId);
+    return this.trackerProcessingService.processPendingTrackersForGuild(
+      body.guildId,
+    );
   }
 }

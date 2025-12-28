@@ -13,6 +13,7 @@ import { Test } from '@nestjs/testing';
 import { ForbiddenException } from '@nestjs/common';
 import { TrackerController } from '@/trackers/controllers/tracker.controller';
 import { TrackerService } from '@/trackers/services/tracker.service';
+import { TrackerProcessingService } from '@/trackers/services/tracker-processing.service';
 import { TrackerSnapshotService } from '@/trackers/services/tracker-snapshot.service';
 import {
   RegisterTrackersDto,
@@ -23,6 +24,7 @@ import type { AuthenticatedUser } from '@/common/interfaces/user.interface';
 describe('TrackerController', () => {
   let controller: TrackerController;
   let mockTrackerService: TrackerService;
+  let mockTrackerProcessingService: TrackerProcessingService;
   let mockSnapshotService: TrackerSnapshotService;
 
   const mockUser: AuthenticatedUser = {
@@ -31,7 +33,9 @@ describe('TrackerController', () => {
     globalName: 'Test User',
     avatar: 'avatar_hash',
     email: 'test@example.com',
-    guilds: ['guild-1'],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    lastLoginAt: new Date(),
   };
 
   const mockTracker = {
@@ -45,17 +49,20 @@ describe('TrackerController', () => {
   beforeEach(async () => {
     // ARRANGE: Setup test dependencies with mocks
     mockTrackerService = {
-      registerTrackers: vi.fn(),
       getTrackersByUserId: vi.fn(),
       getTrackersByGuild: vi.fn(),
       getTrackerById: vi.fn(),
       getTrackerSeasons: vi.fn(),
       getScrapingStatus: vi.fn(),
-      refreshTrackerData: vi.fn(),
       updateTracker: vi.fn(),
       deleteTracker: vi.fn(),
-      addTracker: vi.fn(),
     } as unknown as TrackerService;
+
+    mockTrackerProcessingService = {
+      registerTrackers: vi.fn(),
+      addTracker: vi.fn(),
+      refreshTrackerData: vi.fn(),
+    } as unknown as TrackerProcessingService;
 
     mockSnapshotService = {
       getSnapshotsByTracker: vi.fn(),
@@ -67,6 +74,10 @@ describe('TrackerController', () => {
       controllers: [TrackerController],
       providers: [
         { provide: TrackerService, useValue: mockTrackerService },
+        {
+          provide: TrackerProcessingService,
+          useValue: mockTrackerProcessingService,
+        },
         { provide: TrackerSnapshotService, useValue: mockSnapshotService },
       ],
     }).compile();
@@ -85,24 +96,22 @@ describe('TrackerController', () => {
         urls: ['https://tracker.gg/profile/test'],
       };
       const mockResult = [mockTracker];
-      mockTrackerService.registerTrackers.mockResolvedValue(
-        mockResult as never,
-      );
+      vi.mocked(
+        mockTrackerProcessingService.registerTrackers,
+      ).mockResolvedValue(mockResult as never);
 
       // ACT
       const result = await controller.registerTrackers(dto, mockUser);
 
       // ASSERT
       expect(result).toEqual(mockResult);
-      expect(mockTrackerService.registerTrackers).toHaveBeenCalledWith(
-        mockUser.id,
-        dto.urls,
-        {
-          username: mockUser.username,
-          globalName: mockUser.globalName,
-          avatar: mockUser.avatar,
-        },
-      );
+      expect(
+        mockTrackerProcessingService.registerTrackers,
+      ).toHaveBeenCalledWith(mockUser.id, dto.urls, {
+        username: mockUser.username,
+        globalName: mockUser.globalName,
+        avatar: mockUser.avatar,
+      });
     });
   });
 
@@ -110,7 +119,7 @@ describe('TrackerController', () => {
     it('should_return_user_trackers_when_authenticated', async () => {
       // ARRANGE
       const mockTrackers = [mockTracker];
-      mockTrackerService.getTrackersByUserId.mockResolvedValue(
+      vi.mocked(mockTrackerService.getTrackersByUserId).mockResolvedValue(
         mockTrackers as never,
       );
 
@@ -129,7 +138,7 @@ describe('TrackerController', () => {
     it('should_return_user_trackers_when_no_guild_filter', async () => {
       // ARRANGE
       const mockTrackers = [mockTracker];
-      mockTrackerService.getTrackersByUserId.mockResolvedValue(
+      vi.mocked(mockTrackerService.getTrackersByUserId).mockResolvedValue(
         mockTrackers as never,
       );
 
@@ -146,7 +155,7 @@ describe('TrackerController', () => {
     it('should_return_guild_trackers_when_guild_filter_provided', async () => {
       // ARRANGE
       const mockTrackers = [mockTracker];
-      mockTrackerService.getTrackersByGuild.mockResolvedValue(
+      vi.mocked(mockTrackerService.getTrackersByGuild).mockResolvedValue(
         mockTrackers as never,
       );
 
@@ -164,7 +173,9 @@ describe('TrackerController', () => {
   describe('getTracker', () => {
     it('should_return_tracker_when_tracker_exists', async () => {
       // ARRANGE
-      mockTrackerService.getTrackerById.mockResolvedValue(mockTracker as never);
+      vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
+        mockTracker as never,
+      );
 
       // ACT
       const result = await controller.getTracker('tracker-123');
@@ -180,23 +191,27 @@ describe('TrackerController', () => {
   describe('refreshTracker', () => {
     it('should_refresh_tracker_when_user_owns_tracker', async () => {
       // ARRANGE
-      mockTrackerService.getTrackerById.mockResolvedValue(mockTracker as never);
-      mockTrackerService.refreshTrackerData.mockResolvedValue(undefined);
+      vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
+        mockTracker as never,
+      );
+      vi.mocked(
+        mockTrackerProcessingService.refreshTrackerData,
+      ).mockResolvedValue(undefined);
 
       // ACT
       const result = await controller.refreshTracker('tracker-123', mockUser);
 
       // ASSERT
       expect(result).toEqual({ message: 'Refresh job enqueued successfully' });
-      expect(mockTrackerService.refreshTrackerData).toHaveBeenCalledWith(
-        'tracker-123',
-      );
+      expect(
+        mockTrackerProcessingService.refreshTrackerData,
+      ).toHaveBeenCalledWith('tracker-123');
     });
 
     it('should_throw_when_user_does_not_own_tracker', async () => {
       // ARRANGE
       const otherTracker = { ...mockTracker, userId: 'other-user' };
-      mockTrackerService.getTrackerById.mockResolvedValue(
+      vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
         otherTracker as never,
       );
 
@@ -215,7 +230,7 @@ describe('TrackerController', () => {
         isActive: false,
       };
       const updatedTracker = { ...mockTracker, ...dto };
-      mockTrackerService.updateTracker.mockResolvedValue(
+      vi.mocked(mockTrackerService.updateTracker).mockResolvedValue(
         updatedTracker as never,
       );
 
@@ -235,7 +250,9 @@ describe('TrackerController', () => {
   describe('deleteTracker', () => {
     it('should_delete_tracker_when_tracker_exists', async () => {
       // ARRANGE
-      mockTrackerService.deleteTracker.mockResolvedValue(mockTracker as never);
+      vi.mocked(mockTrackerService.deleteTracker).mockResolvedValue(
+        mockTracker as never,
+      );
 
       // ACT
       const result = await controller.deleteTracker('tracker-123');

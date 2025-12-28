@@ -407,3 +407,4 @@ This command complements `code-quality-check.md` by:
 | Speed | Sub-second | Seconds to minutes |
 | Detection Depth | Surface-level patterns | Context-aware deep analysis |
 
+

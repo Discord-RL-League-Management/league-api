@@ -5,7 +5,7 @@
  * Focus: Functional core, state verification, fast execution.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { RoleParserService } from '@/permissions/modules/role-parser/role-parser.service';
 
 describe('RoleParserService', () => {

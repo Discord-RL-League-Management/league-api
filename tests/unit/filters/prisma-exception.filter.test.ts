@@ -5,7 +5,7 @@
  * Focus: Functional core, state verification, fast execution.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { HttpStatus } from '@nestjs/common';
 import { PrismaExceptionFilter } from '@/common/filters/prisma-exception.filter';
 import { Prisma } from '@prisma/client';

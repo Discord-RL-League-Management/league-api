@@ -1,21 +1,11 @@
-import {
-  Controller,
-  Get,
-  Param,
-  UseGuards,
-  ForbiddenException,
-  Logger,
-} from '@nestjs/common';
+import { Controller, Get, Param, UseGuards, Logger } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { GuildAdminGuard } from '../common/guards/guild-admin.guard';
 import { GuildsService } from './guilds.service';
-import { GuildMembersService } from '../guild-members/guild-members.service';
-import { GuildAccessValidationService } from './services/guild-access-validation.service';
-import { PermissionCheckService } from '../permissions/modules/permission-check/permission-check.service';
 import { GuildSettingsService } from './guild-settings.service';
-import { UserGuildsService } from '../user-guilds/user-guilds.service';
+import { GuildAccessValidationService } from './services/guild-access-validation.service';
 import { DiscordBotService } from '../discord/discord-bot.service';
-import { GuildSettings } from './interfaces/settings.interface';
 import {
   ApiTags,
   ApiOperation,
@@ -34,11 +24,8 @@ export class GuildsController {
 
   constructor(
     private guildsService: GuildsService,
-    private guildMembersService: GuildMembersService,
-    private guildAccessValidationService: GuildAccessValidationService,
-    private permissionCheckService: PermissionCheckService,
     private guildSettingsService: GuildSettingsService,
-    private userGuildsService: UserGuildsService,
+    private guildAccessValidationService: GuildAccessValidationService,
     private discordBotService: DiscordBotService,
   ) {}
 
@@ -69,6 +56,7 @@ export class GuildsController {
   }
 
   @Get(':id/settings')
+  @UseGuards(GuildAdminGuard)
   @ApiOperation({ summary: 'Get guild settings (admin only)' })
   @ApiResponse({ status: 200, description: 'Guild settings' })
   @ApiResponse({ status: 403, description: 'Admin access required' })
@@ -80,36 +68,12 @@ export class GuildsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     this.logger.log(`User ${user.id} requested settings for guild ${id}`);
-
-    // Validate user and bot have access to guild (security first)
-    await this.guildAccessValidationService.validateUserGuildAccess(
-      user.id,
-      id,
-    );
-
-    // Additional admin check for settings access
-    const membership = await this.guildMembersService.findOne(user.id, id);
-
-    // Ensure settings exist BEFORE permission check (independent of user)
-    // This auto-creates settings if they don't exist
-    const settings = await this.guildSettingsService.getSettings(id);
-
-    // Use persisted settings for permission check
-    const isAdmin = await this.permissionCheckService.checkAdminRoles(
-      membership.roles,
-      id,
-      settings as GuildSettings | Record<string, unknown>,
-      true, // Validate with Discord for authorization
-    );
-
-    if (!isAdmin) {
-      throw new ForbiddenException('Admin access required');
-    }
-
-    return settings;
+    // GuildAdminGuard handles all permission checks
+    return this.guildSettingsService.getSettings(id);
   }
 
   @Get(':id/channels')
+  @UseGuards(GuildAdminGuard)
   @ApiOperation({ summary: 'Get Discord channels for guild (admin only)' })
   @ApiResponse({ status: 200, description: 'List of Discord channels' })
   @ApiResponse({ status: 403, description: 'Admin access required' })
@@ -121,34 +85,12 @@ export class GuildsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     this.logger.log(`User ${user.id} requested channels for guild ${id}`);
-
-    // Validate user and bot have access to guild
-    await this.guildAccessValidationService.validateUserGuildAccess(
-      user.id,
-      id,
-    );
-
-    // Additional admin check
-    const membership = await this.guildMembersService.findOne(user.id, id);
-
-    // Fetch settings separately (settings are not a Prisma relation)
-    const settings = await this.guildSettingsService.getSettings(id);
-
-    const isAdmin = await this.permissionCheckService.checkAdminRoles(
-      membership.roles,
-      id,
-      settings,
-      true, // Validate with Discord for authorization
-    );
-
-    if (!isAdmin) {
-      throw new ForbiddenException('Admin access required');
-    }
-
+    // GuildAdminGuard handles all permission checks
     return this.discordBotService.getGuildChannels(id);
   }
 
   @Get(':id/roles')
+  @UseGuards(GuildAdminGuard)
   @ApiOperation({ summary: 'Get Discord roles for guild (admin only)' })
   @ApiResponse({ status: 200, description: 'List of Discord roles' })
   @ApiResponse({ status: 403, description: 'Admin access required' })
@@ -160,30 +102,7 @@ export class GuildsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     this.logger.log(`User ${user.id} requested roles for guild ${id}`);
-
-    // Validate user and bot have access to guild
-    await this.guildAccessValidationService.validateUserGuildAccess(
-      user.id,
-      id,
-    );
-
-    // Additional admin check
-    const membership = await this.guildMembersService.findOne(user.id, id);
-
-    // Fetch settings separately (settings are not a Prisma relation)
-    const settings = await this.guildSettingsService.getSettings(id);
-
-    const isAdmin = await this.permissionCheckService.checkAdminRoles(
-      membership.roles,
-      id,
-      settings,
-      true, // Validate with Discord for authorization
-    );
-
-    if (!isAdmin) {
-      throw new ForbiddenException('Admin access required');
-    }
-
+    // GuildAdminGuard handles all permission checks
     return this.discordBotService.getGuildRoles(id);
   }
 }

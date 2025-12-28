@@ -5,7 +5,7 @@
  * Focus: Functional core, state verification, fast execution.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { FormulaValidationService } from '@/mmr-calculation/services/formula-validation.service';
 
 describe('FormulaValidationService', () => {

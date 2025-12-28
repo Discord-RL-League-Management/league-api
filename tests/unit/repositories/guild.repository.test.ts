@@ -86,8 +86,9 @@ describe('GuildRepository', () => {
       await repository.findById('guild-123', { includeMembers: true });
 
       // ASSERT
-      const callArgs = vi.mocked(mockPrisma.guild.findUnique).mock.calls[0][0];
-      expect(callArgs.include).toHaveProperty('members');
+      const callArgs = vi.mocked(mockPrisma.guild.findUnique).mock
+        .calls[0]?.[0];
+      expect(callArgs?.include).toHaveProperty('members');
     });
   });
 
@@ -124,9 +125,9 @@ describe('GuildRepository', () => {
       // ASSERT
       expect(result.page).toBe(2);
       expect(result.limit).toBe(10);
-      const callArgs = vi.mocked(mockPrisma.guild.findMany).mock.calls[0][0];
-      expect(callArgs.skip).toBe(10);
-      expect(callArgs.take).toBe(10);
+      const callArgs = vi.mocked(mockPrisma.guild.findMany).mock.calls[0]?.[0];
+      expect(callArgs?.skip).toBe(10);
+      expect(callArgs?.take).toBe(10);
     });
   });
 

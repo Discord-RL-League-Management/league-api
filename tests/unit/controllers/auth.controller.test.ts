@@ -16,9 +16,8 @@ import { AuthController } from '@/auth/auth.controller';
 import { AuthService } from '@/auth/auth.service';
 import { DiscordOAuthService } from '@/auth/services/discord-oauth.service';
 import { DiscordApiService } from '@/discord/discord-api.service';
+import { AuthOrchestrationService } from '@/auth/services/auth-orchestration.service';
 import { TokenManagementService } from '@/auth/services/token-management.service';
-import { UserGuildsService } from '@/user-guilds/user-guilds.service';
-import { GuildsService } from '@/guilds/guilds.service';
 import type { AuthenticatedUser } from '@/common/interfaces/user.interface';
 import type { Response } from 'express';
 
@@ -27,9 +26,8 @@ describe('AuthController', () => {
   let mockAuthService: AuthService;
   let mockDiscordOAuthService: DiscordOAuthService;
   let mockDiscordApiService: DiscordApiService;
+  let mockAuthOrchestrationService: AuthOrchestrationService;
   let mockTokenManagementService: TokenManagementService;
-  let mockUserGuildsService: UserGuildsService;
-  let mockGuildsService: GuildsService;
   let mockConfigService: ConfigService;
   let mockResponse: Response;
 
@@ -39,7 +37,9 @@ describe('AuthController', () => {
     globalName: 'Test User',
     avatar: 'avatar_hash',
     email: 'test@example.com',
-    guilds: ['guild-1'],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    lastLoginAt: new Date(),
   };
 
   beforeEach(async () => {
@@ -49,6 +49,10 @@ describe('AuthController', () => {
       generateJwt: vi.fn(),
       getUserAvailableGuilds: vi.fn(),
     } as unknown as AuthService;
+
+    mockAuthOrchestrationService = {
+      syncUserGuildMemberships: vi.fn(),
+    } as unknown as AuthOrchestrationService;
 
     mockDiscordOAuthService = {
       getAuthorizationUrl: vi.fn().mockReturnValue('https://discord.com/oauth'),
@@ -64,14 +68,6 @@ describe('AuthController', () => {
     mockTokenManagementService = {
       revokeTokens: vi.fn(),
     } as unknown as TokenManagementService;
-
-    mockUserGuildsService = {
-      syncUserGuildMembershipsWithRoles: vi.fn(),
-    } as unknown as UserGuildsService;
-
-    mockGuildsService = {
-      findActiveGuildIds: vi.fn().mockResolvedValue(['guild-1']),
-    } as unknown as GuildsService;
 
     mockConfigService = {
       get: vi.fn().mockReturnValue('http://localhost:3000'),
@@ -91,11 +87,13 @@ describe('AuthController', () => {
         { provide: DiscordOAuthService, useValue: mockDiscordOAuthService },
         { provide: DiscordApiService, useValue: mockDiscordApiService },
         {
+          provide: AuthOrchestrationService,
+          useValue: mockAuthOrchestrationService,
+        },
+        {
           provide: TokenManagementService,
           useValue: mockTokenManagementService,
         },
-        { provide: UserGuildsService, useValue: mockUserGuildsService },
-        { provide: GuildsService, useValue: mockGuildsService },
         { provide: ConfigService, useValue: mockConfigService },
       ],
     }).compile();
@@ -123,7 +121,7 @@ describe('AuthController', () => {
     it('should_return_user_guilds_when_authenticated', async () => {
       // ARRANGE
       const mockGuilds = [{ id: 'guild-1', name: 'Test Guild' }];
-      mockAuthService.getUserAvailableGuilds.mockResolvedValue(
+      vi.mocked(mockAuthService.getUserAvailableGuilds).mockResolvedValue(
         mockGuilds as never[],
       );
 
@@ -140,7 +138,9 @@ describe('AuthController', () => {
     it('should_propagate_error_when_service_fails', async () => {
       // ARRANGE
       const error = new InternalServerErrorException('Service error');
-      mockAuthService.getUserAvailableGuilds.mockRejectedValue(error);
+      vi.mocked(mockAuthService.getUserAvailableGuilds).mockRejectedValue(
+        error,
+      );
 
       // ACT & ASSERT
       await expect(controller.getUserGuilds(mockUser)).rejects.toThrow(
@@ -152,7 +152,9 @@ describe('AuthController', () => {
   describe('logout', () => {
     it('should_clear_cookie_and_revoke_tokens_when_logout_succeeds', async () => {
       // ARRANGE
-      mockTokenManagementService.revokeTokens.mockResolvedValue(undefined);
+      vi.mocked(mockTokenManagementService.revokeTokens).mockResolvedValue(
+        undefined,
+      );
 
       // ACT
       await controller.logout(mockUser, mockResponse);
@@ -170,7 +172,9 @@ describe('AuthController', () => {
     it('should_propagate_error_when_token_revocation_fails', async () => {
       // ARRANGE
       const error = new InternalServerErrorException('Revocation failed');
-      mockTokenManagementService.revokeTokens.mockRejectedValue(error);
+      vi.mocked(mockTokenManagementService.revokeTokens).mockRejectedValue(
+        error,
+      );
 
       // ACT & ASSERT
       await expect(controller.logout(mockUser, mockResponse)).rejects.toThrow(
@@ -201,7 +205,7 @@ describe('AuthController', () => {
 
       // ACT
       await controller.discordCallback(
-        undefined,
+        '' as string,
         error,
         errorDescription,
         mockResponse,
@@ -217,9 +221,9 @@ describe('AuthController', () => {
       // ARRANGE: No code provided
       // ACT
       await controller.discordCallback(
-        undefined,
-        undefined,
-        undefined,
+        '' as string,
+        '' as string,
+        '' as string,
         mockResponse,
       );
 

@@ -83,7 +83,7 @@ describe('MatchRepository', () => {
       // ARRANGE
       const createDto: CreateMatchDto = {
         leagueId: 'league-123',
-        scheduledAt: new Date(),
+        scheduledAt: new Date().toISOString(),
       };
       vi.mocked(mockPrisma.match.create).mockResolvedValue(mockMatch as never);
 

@@ -12,6 +12,7 @@ import { GuildsModule } from '../guilds/guilds.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { DiscordOAuthService } from './services/discord-oauth.service';
+import { AuthOrchestrationService } from './services/auth-orchestration.service';
 import { TokenManagementModule } from './services/token-management.module';
 import { BotApiKeyStrategy } from './strategies/bot-api-key.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
@@ -43,6 +44,7 @@ import { UserOrchestratorService } from '../users/services/user-orchestrator.ser
   providers: [
     AuthService,
     DiscordOAuthService,
+    AuthOrchestrationService,
     BotApiKeyStrategy,
     JwtStrategy,
     UserOrchestratorService,

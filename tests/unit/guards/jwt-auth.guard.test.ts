@@ -27,7 +27,9 @@ describe('JwtAuthGuard', () => {
     globalName: 'Test User',
     avatar: 'avatar_hash',
     email: 'test@example.com',
-    guilds: ['guild-1'],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    lastLoginAt: new Date(),
   };
 
   beforeEach(() => {

@@ -32,7 +32,9 @@ describe('LeaguesController', () => {
     globalName: 'Test User',
     avatar: 'avatar_hash',
     email: 'test@example.com',
-    guilds: ['guild-1'],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    lastLoginAt: new Date(),
   };
 
   const mockLeague = {
@@ -91,10 +93,12 @@ describe('LeaguesController', () => {
     it('should_return_leagues_when_user_has_guild_access', async () => {
       // ARRANGE
       const mockLeagues = { leagues: [mockLeague], pagination: {} };
-      mockLeagueAccessValidationService.validateGuildAccess.mockResolvedValue(
-        undefined,
+      vi.mocked(
+        mockLeagueAccessValidationService.validateGuildAccess,
+      ).mockResolvedValue(undefined);
+      vi.mocked(mockLeaguesService.findByGuild).mockResolvedValue(
+        mockLeagues as never,
       );
-      mockLeaguesService.findByGuild.mockResolvedValue(mockLeagues as never);
 
       // ACT
       const result = await controller.getLeaguesByGuild('guild-1', mockUser);
@@ -110,10 +114,12 @@ describe('LeaguesController', () => {
   describe('getLeague', () => {
     it('should_return_league_when_user_has_access', async () => {
       // ARRANGE
-      mockLeagueAccessValidationService.validateLeagueAccess.mockResolvedValue(
-        undefined,
+      vi.mocked(
+        mockLeagueAccessValidationService.validateLeagueAccess,
+      ).mockResolvedValue(undefined);
+      vi.mocked(mockLeaguesService.findOne).mockResolvedValue(
+        mockLeague as never,
       );
-      mockLeaguesService.findOne.mockResolvedValue(mockLeague as never);
 
       // ACT
       const result = await controller.getLeague('league-123', mockUser);
@@ -127,9 +133,9 @@ describe('LeaguesController', () => {
 
     it('should_throw_when_user_lacks_access', async () => {
       // ARRANGE
-      mockLeagueAccessValidationService.validateLeagueAccess.mockRejectedValue(
-        new ForbiddenException('Access denied'),
-      );
+      vi.mocked(
+        mockLeagueAccessValidationService.validateLeagueAccess,
+      ).mockRejectedValue(new ForbiddenException('Access denied'));
 
       // ACT & ASSERT
       await expect(
@@ -146,13 +152,15 @@ describe('LeaguesController', () => {
         guildId: 'guild-1',
         game: Game.ROCKET_LEAGUE,
       };
-      mockLeagueAccessValidationService.validateGuildAccess.mockResolvedValue(
-        undefined,
+      vi.mocked(
+        mockLeagueAccessValidationService.validateGuildAccess,
+      ).mockResolvedValue(undefined);
+      vi.mocked(
+        mockLeaguePermissionService.checkGuildAdminAccessForGuild,
+      ).mockResolvedValue(undefined);
+      vi.mocked(mockLeaguesService.create).mockResolvedValue(
+        mockLeague as never,
       );
-      mockLeaguePermissionService.checkGuildAdminAccessForGuild.mockResolvedValue(
-        undefined,
-      );
-      mockLeaguesService.create.mockResolvedValue(mockLeague as never);
 
       // ACT
       const result = await controller.createLeague(createDto, mockUser);
@@ -167,13 +175,13 @@ describe('LeaguesController', () => {
     it('should_update_league_when_user_is_admin_or_moderator', async () => {
       // ARRANGE
       const updateDto: UpdateLeagueDto = { name: 'Updated League' };
-      mockLeagueAccessValidationService.validateLeagueAccess.mockResolvedValue(
-        undefined,
-      );
-      mockLeaguePermissionService.checkLeagueAdminOrModeratorAccess.mockResolvedValue(
-        undefined,
-      );
-      mockLeaguesService.update.mockResolvedValue({
+      vi.mocked(
+        mockLeagueAccessValidationService.validateLeagueAccess,
+      ).mockResolvedValue(undefined);
+      vi.mocked(
+        mockLeaguePermissionService.checkLeagueAdminOrModeratorAccess,
+      ).mockResolvedValue(undefined);
+      vi.mocked(mockLeaguesService.update).mockResolvedValue({
         ...mockLeague,
         ...updateDto,
       } as never);
@@ -197,13 +205,13 @@ describe('LeaguesController', () => {
   describe('updateLeagueStatus', () => {
     it('should_update_status_when_user_is_admin', async () => {
       // ARRANGE
-      mockLeagueAccessValidationService.validateLeagueAccess.mockResolvedValue(
-        undefined,
-      );
-      mockLeaguePermissionService.checkLeagueAdminAccess.mockResolvedValue(
-        undefined,
-      );
-      mockLeaguesService.updateStatus.mockResolvedValue({
+      vi.mocked(
+        mockLeagueAccessValidationService.validateLeagueAccess,
+      ).mockResolvedValue(undefined);
+      vi.mocked(
+        mockLeaguePermissionService.checkLeagueAdminAccess,
+      ).mockResolvedValue(undefined);
+      vi.mocked(mockLeaguesService.updateStatus).mockResolvedValue({
         ...mockLeague,
         status: LeagueStatus.ARCHIVED,
       } as never);
@@ -227,13 +235,15 @@ describe('LeaguesController', () => {
   describe('deleteLeague', () => {
     it('should_delete_league_when_user_is_admin', async () => {
       // ARRANGE
-      mockLeagueAccessValidationService.validateLeagueAccess.mockResolvedValue(
-        undefined,
+      vi.mocked(
+        mockLeagueAccessValidationService.validateLeagueAccess,
+      ).mockResolvedValue(undefined);
+      vi.mocked(
+        mockLeaguePermissionService.checkLeagueAdminAccess,
+      ).mockResolvedValue(undefined);
+      vi.mocked(mockLeaguesService.remove).mockResolvedValue(
+        mockLeague as never,
       );
-      mockLeaguePermissionService.checkLeagueAdminAccess.mockResolvedValue(
-        undefined,
-      );
-      mockLeaguesService.remove.mockResolvedValue(mockLeague as never);
 
       // ACT
       const result = await controller.deleteLeague('league-123', mockUser);

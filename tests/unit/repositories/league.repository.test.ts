@@ -84,8 +84,9 @@ describe('LeagueRepository', () => {
       await repository.findById('league-123', { includeGuild: true });
 
       // ASSERT
-      const callArgs = vi.mocked(mockPrisma.league.findUnique).mock.calls[0][0];
-      expect(callArgs.include).toHaveProperty('guild');
+      const callArgs = vi.mocked(mockPrisma.league.findUnique).mock
+        .calls[0]?.[0];
+      expect(callArgs?.include).toHaveProperty('guild');
     });
   });
 
@@ -120,8 +121,8 @@ describe('LeagueRepository', () => {
       await repository.findAll({ guildId: 'guild-123' });
 
       // ASSERT
-      const callArgs = vi.mocked(mockPrisma.league.findMany).mock.calls[0][0];
-      expect(callArgs.where).toHaveProperty('guildId', 'guild-123');
+      const callArgs = vi.mocked(mockPrisma.league.findMany).mock.calls[0]?.[0];
+      expect(callArgs?.where).toHaveProperty('guildId', 'guild-123');
     });
 
     it('should_filter_by_status_when_provided', async () => {
@@ -136,8 +137,8 @@ describe('LeagueRepository', () => {
       await repository.findAll({ status: LeagueStatus.ACTIVE });
 
       // ASSERT
-      const callArgs = vi.mocked(mockPrisma.league.findMany).mock.calls[0][0];
-      expect(callArgs.where).toHaveProperty('status', LeagueStatus.ACTIVE);
+      const callArgs = vi.mocked(mockPrisma.league.findMany).mock.calls[0]?.[0];
+      expect(callArgs?.where).toHaveProperty('status', LeagueStatus.ACTIVE);
     });
   });
 

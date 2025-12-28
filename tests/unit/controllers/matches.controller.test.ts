@@ -55,7 +55,7 @@ describe('MatchesController', () => {
   describe('getMatch', () => {
     it('should_return_match_when_match_exists', async () => {
       // ARRANGE
-      mockMatchService.findOne.mockResolvedValue(mockMatch as never);
+      vi.mocked(mockMatchService.findOne).mockResolvedValue(mockMatch as never);
 
       // ACT
       const result = await controller.getMatch('match-123');
@@ -67,7 +67,7 @@ describe('MatchesController', () => {
 
     it('should_throw_when_match_not_found', async () => {
       // ARRANGE
-      mockMatchService.findOne.mockRejectedValue(
+      vi.mocked(mockMatchService.findOne).mockRejectedValue(
         new NotFoundException('Match not found'),
       );
 
@@ -83,9 +83,9 @@ describe('MatchesController', () => {
       // ARRANGE
       const createDto: CreateMatchDto = {
         leagueId: 'league-123',
-        scheduledAt: new Date(),
+        scheduledAt: new Date().toISOString(),
       };
-      mockMatchService.create.mockResolvedValue(mockMatch as never);
+      vi.mocked(mockMatchService.create).mockResolvedValue(mockMatch as never);
 
       // ACT
       const result = await controller.createMatch(createDto);
@@ -102,9 +102,12 @@ describe('MatchesController', () => {
       const participantDto: CreateMatchParticipantDto = {
         playerId: 'player-123',
         teamId: 'team-123',
+        isWinner: false,
       };
       const updatedMatch = { ...mockMatch, participants: [participantDto] };
-      mockMatchService.addParticipant.mockResolvedValue(updatedMatch as never);
+      vi.mocked(mockMatchService.addParticipant).mockResolvedValue(
+        updatedMatch as never,
+      );
 
       // ACT
       const result = await controller.addParticipant(
@@ -128,7 +131,9 @@ describe('MatchesController', () => {
         status: MatchStatus.IN_PROGRESS,
       };
       const updatedMatch = { ...mockMatch, status: MatchStatus.IN_PROGRESS };
-      mockMatchService.updateStatus.mockResolvedValue(updatedMatch as never);
+      vi.mocked(mockMatchService.updateStatus).mockResolvedValue(
+        updatedMatch as never,
+      );
 
       // ACT
       const result = await controller.updateStatus('match-123', updateDto);
@@ -147,7 +152,9 @@ describe('MatchesController', () => {
       // ARRANGE
       const completeDto: CompleteMatchDto = { winnerId: 'team-123' };
       const completedMatch = { ...mockMatch, status: MatchStatus.COMPLETED };
-      mockMatchService.completeMatch.mockResolvedValue(completedMatch as never);
+      vi.mocked(mockMatchService.completeMatch).mockResolvedValue(
+        completedMatch as never,
+      );
 
       // ACT
       const result = await controller.completeMatch('match-123', completeDto);

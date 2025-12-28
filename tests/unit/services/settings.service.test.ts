@@ -5,7 +5,7 @@
  * Focus: Functional core, state verification, fast execution.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { SettingsService } from '@/infrastructure/settings/services/settings.service';
 import { SettingsRepository } from '@/infrastructure/settings/repositories/settings.repository';
 import { Settings } from '@prisma/client';

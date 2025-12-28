@@ -9,7 +9,7 @@ import {
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { CronJob } from 'cron';
 import { PrismaService } from '../../prisma/prisma.service';
-import { TrackerService } from './tracker.service';
+import { TrackerProcessingService } from './tracker-processing.service';
 import { ScheduledProcessingStatus, Prisma } from '@prisma/client';
 
 /**
@@ -29,7 +29,7 @@ export class ScheduledTrackerProcessingService
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly trackerService: TrackerService,
+    private readonly trackerProcessingService: TrackerProcessingService,
     private readonly schedulerRegistry: SchedulerRegistry,
   ) {}
 
@@ -270,7 +270,9 @@ export class ScheduledTrackerProcessingService
           },
         });
 
-        await this.trackerService.processPendingTrackersForGuild(guildId);
+        await this.trackerProcessingService.processPendingTrackersForGuild(
+          guildId,
+        );
 
         await this.prisma.scheduledTrackerProcessing.update({
           where: { id: scheduleId },

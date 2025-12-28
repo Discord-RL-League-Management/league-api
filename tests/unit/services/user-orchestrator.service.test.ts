@@ -8,7 +8,7 @@
  * Tests verify inputs, outputs, and observable side effects only.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { InternalServerErrorException } from '@nestjs/common';
 import { UserOrchestratorService } from '@/users/services/user-orchestrator.service';
 import { UsersService } from '@/users/users.service';

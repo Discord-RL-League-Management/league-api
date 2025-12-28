@@ -8,7 +8,7 @@
  * Tests verify inputs, outputs, and observable side effects only.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { InternalServerErrorException } from '@nestjs/common';
 import { createTestTokenPair } from '../../factories/token.factory';
 import { AuthService } from '@/auth/auth.service';

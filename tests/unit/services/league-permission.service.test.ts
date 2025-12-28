@@ -5,7 +5,7 @@
  * Focus: Functional core, state verification, fast execution.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ForbiddenException } from '@nestjs/common';
 import { LeaguePermissionService } from '@/leagues/services/league-permission.service';
 import { LeagueRepository } from '@/leagues/repositories/league.repository';
