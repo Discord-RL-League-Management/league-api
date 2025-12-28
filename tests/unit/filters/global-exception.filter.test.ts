@@ -5,7 +5,7 @@
  * Focus: Functional core, state verification, fast execution.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   HttpStatus,
   BadRequestException,
@@ -50,6 +50,10 @@ describe('GlobalExceptionFilter', () => {
     } as unknown as ArgumentsHost;
 
     filter = new GlobalExceptionFilter(mockConfigService);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe('catch', () => {

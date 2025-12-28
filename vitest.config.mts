@@ -1,13 +1,29 @@
 import { defineConfig } from 'vitest/config';
 import path from 'path';
+import swc from 'unplugin-swc';
 
 /**
  * Vitest Configuration
  * 
  * Aligned with ISO/IEC/IEEE 29119 standards for unit testing.
  * Focuses on TDD methodology with fast execution and state verification.
+ * 
+ * Uses SWC instead of esbuild to support emitDecoratorMetadata required for NestJS DI.
  */
 export default defineConfig({
+  plugins: [
+    swc.vite({
+      jsc: {
+        parser: {
+          syntax: 'typescript',
+          decorators: true,
+        },
+        transform: {
+          decoratorMetadata: true,
+        },
+      },
+    }),
+  ],
   test: {
     // Test environment
     environment: 'node',

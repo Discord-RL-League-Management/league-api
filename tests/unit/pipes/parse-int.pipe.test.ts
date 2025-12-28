@@ -5,11 +5,15 @@
  * Focus: Functional core, state verification, fast execution.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { BadRequestException } from '@nestjs/common';
 import { ParseIntPipeWithError } from '@/common/pipes/parse-int.pipe';
 
 describe('ParseIntPipeWithError', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('should_parse_valid_integer_string', async () => {
     // ARRANGE
     const pipe = new ParseIntPipeWithError();

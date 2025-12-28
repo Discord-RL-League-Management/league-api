@@ -20,9 +20,8 @@ import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { DiscordOAuthService } from './services/discord-oauth.service';
 import { DiscordApiService } from '../discord/discord-api.service';
+import { AuthOrchestrationService } from './services/auth-orchestration.service';
 import { TokenManagementService } from './services/token-management.service';
-import { UserGuildsService } from '../user-guilds/user-guilds.service';
-import { GuildsService } from '../guilds/guilds.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Public } from '../common/decorators';
@@ -38,9 +37,8 @@ export class AuthController {
     private authService: AuthService,
     private discordOAuthService: DiscordOAuthService,
     private discordApiService: DiscordApiService,
+    private authOrchestrationService: AuthOrchestrationService,
     private tokenManagementService: TokenManagementService,
-    private userGuildsService: UserGuildsService,
-    private guildsService: GuildsService,
     private configService: ConfigService,
   ) {}
 
@@ -108,48 +106,9 @@ export class AuthController {
 
       // Sync guild memberships during OAuth to ensure user roles are current when they first log in
       try {
-        const userGuilds = await this.discordApiService.getUserGuilds(
-          tokenResponse.access_token,
-        );
-
-        // Filter to guilds where bot is present to avoid storing data for inaccessible guilds
-        const botGuildIds = await this.guildsService.findActiveGuildIds();
-        const botGuildIdsSet = new Set(botGuildIds);
-
-        const mutualGuildsWithRoles = await Promise.all(
-          userGuilds
-            .filter((guild) => botGuildIdsSet.has(guild.id))
-            .map(async (guild) => {
-              try {
-                const memberData = await this.discordApiService.getGuildMember(
-                  tokenResponse.access_token,
-                  guild.id,
-                );
-                return {
-                  ...guild,
-                  roles: memberData?.roles || [],
-                };
-              } catch (error) {
-                this.logger.warn(
-                  `Failed to fetch roles for guild ${guild.id}:`,
-                  error,
-                );
-                // Continue with empty roles if fetch fails to prevent OAuth failure from partial role fetch errors
-                return {
-                  ...guild,
-                  roles: [],
-                };
-              }
-            }),
-        );
-
-        await this.userGuildsService.syncUserGuildMembershipsWithRoles(
+        await this.authOrchestrationService.syncUserGuildMemberships(
           user.id,
-          mutualGuildsWithRoles,
-        );
-
-        this.logger.log(
-          `Synced ${mutualGuildsWithRoles.length} guild memberships with roles for user ${user.id}`,
+          tokenResponse.access_token,
         );
       } catch (error) {
         // Log error but don't fail OAuth callback - role sync is not critical

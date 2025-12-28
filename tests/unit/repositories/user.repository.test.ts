@@ -5,7 +5,7 @@
  * Focus: Functional core, state verification, fast execution.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createTestTokenPair } from '../../factories/token.factory';
 import { UserRepository } from '@/users/repositories/user.repository';
 import { PrismaService } from '@/prisma/prisma.service';
@@ -38,6 +38,10 @@ describe('UserRepository', () => {
     } as unknown as UserTransformer;
 
     repository = new UserRepository(mockPrisma, mockTransformer);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe('findById', () => {

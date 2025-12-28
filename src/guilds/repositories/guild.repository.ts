@@ -160,12 +160,10 @@ export class GuildRepository
     defaultSettings: Record<string, unknown>,
   ): Promise<Guild> {
     return this.prisma.$transaction(async (tx) => {
-      // Create guild
       const guild = await tx.guild.create({
         data: guildData,
       });
 
-      // Initialize default settings atomically
       await tx.settings.create({
         data: {
           ownerType: 'guild',
@@ -186,7 +184,6 @@ export class GuildRepository
    */
   async removeWithCleanup(guildId: string): Promise<Guild> {
     return this.prisma.$transaction(async (tx) => {
-      // Soft delete guild
       const updatedGuild = await tx.guild.update({
         where: { id: guildId },
         data: {
@@ -195,7 +192,6 @@ export class GuildRepository
         },
       });
 
-      // Optionally update all members (soft delete)
       await tx.guildMember.updateMany({
         where: { guildId },
         data: { updatedAt: new Date() },

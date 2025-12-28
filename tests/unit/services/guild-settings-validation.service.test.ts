@@ -5,7 +5,7 @@
  * Focus: Functional core, state verification, fast execution.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { BadRequestException } from '@nestjs/common';
 import { SettingsValidationService } from '@/guilds/services/settings-validation.service';
 import { DiscordBotService } from '@/discord/discord-bot.service';
@@ -30,6 +30,10 @@ describe('SettingsValidationService (Guilds)', () => {
       mockDiscordValidation,
       mockFormulaValidation,
     );
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe('validate', () => {

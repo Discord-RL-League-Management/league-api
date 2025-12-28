@@ -4,6 +4,7 @@ import { EncryptionService } from './encryption.service';
 import { ResourceOwnershipGuard } from './guards/resource-ownership.guard';
 import { AdminGuard } from './guards/admin.guard';
 import { SystemAdminGuard } from './guards/system-admin.guard';
+import { GuildAdminGuard } from './guards/guild-admin.guard';
 import { AuditModule } from '../audit/audit.module';
 import { PermissionCheckModule } from '../permissions/modules/permission-check/permission-check.module';
 import { GuildsModule } from '../guilds/guilds.module';
@@ -105,12 +106,14 @@ import { GuildMembersService } from '../guild-members/guild-members.service';
     },
     AdminGuard,
     SystemAdminGuard,
+    GuildAdminGuard,
   ],
   exports: [
     EncryptionService,
     ResourceOwnershipGuard,
     AdminGuard,
     SystemAdminGuard,
+    GuildAdminGuard,
     // Export provider tokens so AdminGuard dependencies are available to modules that import CommonModule
     'IPermissionProvider',
     'IAuditProvider',

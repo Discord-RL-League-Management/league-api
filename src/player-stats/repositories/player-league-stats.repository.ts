@@ -18,7 +18,6 @@ export class PlayerLeagueStatsRepository {
     data: Partial<PlayerLeagueStats>,
     tx?: Prisma.TransactionClient,
   ) {
-    // Calculate winRate if matchesPlayed > 0
     const winRate =
       data.matchesPlayed && data.matchesPlayed > 0 && data.wins !== undefined
         ? Number((data.wins / data.matchesPlayed).toFixed(4))

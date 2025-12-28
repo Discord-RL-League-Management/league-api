@@ -5,7 +5,7 @@
  * Focus: Functional core, state verification, fast execution.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { PermissionCheckService } from '@/permissions/modules/permission-check/permission-check.service';
 import { GuildMembersService } from '@/guild-members/guild-members.service';
 import { DiscordBotService } from '@/discord/discord-bot.service';
@@ -38,6 +38,10 @@ describe('PermissionCheckService', () => {
       mockDiscordValidation,
       mockRoleParser,
     );
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe('checkGuildAccess', () => {

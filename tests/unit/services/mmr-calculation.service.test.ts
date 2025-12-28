@@ -7,7 +7,7 @@
  * Aligned with ISO/IEC/IEEE 29119 standards.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { BadRequestException } from '@nestjs/common';
 import { MmrCalculationService } from '@/mmr-calculation/services/mmr-calculation.service';
 import { FormulaValidationService } from '@/mmr-calculation/services/formula-validation.service';
@@ -26,6 +26,10 @@ describe('MmrCalculationService', () => {
     } as unknown as FormulaValidationService;
 
     service = new MmrCalculationService(mockFormulaValidation);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe('calculateMmr - WEIGHTED_AVERAGE algorithm', () => {

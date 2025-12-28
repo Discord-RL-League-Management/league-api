@@ -5,7 +5,7 @@
  * Focus: Functional core, state verification, fast execution.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createTestAccessToken } from '../../factories/token.factory';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
 import { GuildAccessValidationService } from '@/guilds/services/guild-access-validation.service';
@@ -47,6 +47,10 @@ describe('GuildAccessValidationService', () => {
       mockTokenManagementService,
       mockDiscordApiService,
     );
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe('validateUserGuildAccess', () => {

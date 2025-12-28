@@ -94,7 +94,7 @@
 ### E2E Tests (Playwright/BDD)
 - **Naming:** `should_<user_journey>`
 - **Structure:** Given-When-Then
-- **Locators:** `data-testid` or user-facing locators
+- **Focus:** Complete API workflows across multiple endpoints
 - **Target:** Critical paths only (10% of total tests)
 
 ## Estimated Effort

@@ -7,7 +7,7 @@
  * Aligned with ISO/IEC/IEEE 29119 standards and Black Box Axiom.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { NotFoundException } from '@nestjs/common';
 import { LeagueMemberService } from '@/league-members/services/league-member.service';
 import { LeagueMemberRepository } from '@/league-members/repositories/league-member.repository';
@@ -140,6 +140,10 @@ describe('LeagueMemberService', () => {
       mockActivityLog,
       mockRatingService,
     );
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe('findOne', () => {

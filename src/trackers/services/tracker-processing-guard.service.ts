@@ -175,7 +175,6 @@ export class TrackerProcessingGuardService {
       return true;
     }
 
-    // Check the enabled flag
     return settings.trackerProcessing.enabled !== false;
   }
 }

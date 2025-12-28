@@ -5,7 +5,7 @@
  * Focus: Functional core, state verification, fast execution.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { LeagueSettingsDefaultsService } from '@/leagues/services/league-settings-defaults.service';
 
 describe('LeagueSettingsDefaultsService', () => {
@@ -14,6 +14,10 @@ describe('LeagueSettingsDefaultsService', () => {
   beforeEach(() => {
     // ARRANGE: Setup test dependencies
     service = new LeagueSettingsDefaultsService();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe('getDefaults', () => {

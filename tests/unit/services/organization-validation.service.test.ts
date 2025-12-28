@@ -5,7 +5,7 @@
  * Focus: Functional core, state verification, fast execution.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { OrganizationValidationService } from '@/organizations/services/organization-validation.service';
 import { OrganizationRepository } from '@/organizations/repositories/organization.repository';
 import { LeagueRepository } from '@/leagues/repositories/league.repository';
@@ -60,6 +60,10 @@ describe('OrganizationValidationService', () => {
       mockPlayerService,
       mockLeagueSettingsService,
     );
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe('validateCreate', () => {

@@ -7,7 +7,7 @@
  * Aligned with ISO/IEC/IEEE 29119 standards.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { PlayerValidationService } from '@/players/services/player-validation.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import { TrackerService } from '@/trackers/services/tracker.service';
@@ -46,6 +46,10 @@ describe('PlayerValidationService', () => {
       mockTrackerService,
       mockGuildMembersService,
     );
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe('validatePlayerStatus', () => {

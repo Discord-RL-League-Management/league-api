@@ -216,6 +216,56 @@ curl -H "Authorization: Bearer JWT_TOKEN" \
 | `PATCH` | `/internal/organizations/:id/members/:memberId` | Update organization member (Bot only) | ✅ API Key |
 | `DELETE` | `/internal/organizations/:id/members/:memberId` | Remove organization member (Bot only) | ✅ API Key |
 
+### Tracker Management (Bot)
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/internal/trackers/register-multiple` | Register multiple trackers (Bot only) | ✅ API Key |
+| `POST` | `/internal/trackers/add` | Add an additional tracker (Bot only) | ✅ API Key |
+| `POST` | `/internal/trackers/process-pending` | Process all pending trackers (Bot only) | ✅ API Key |
+| `POST` | `/internal/trackers/process` | Process pending trackers for a specific guild (Bot only) | ✅ API Key |
+
+**Example Bot Request:**
+```bash
+# Register multiple trackers
+curl -H "Authorization: Bearer BOT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{"userId":"123456789012345678","urls":["https://tracker.network/profile/steam/123"],"userData":{},"channelId":"987654321098765432"}' \
+  http://localhost:3000/internal/trackers/register-multiple
+```
+
+### Scheduled Tracker Processing (Bot)
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/internal/trackers/schedule` | Schedule tracker processing for a specific guild (Bot only) | ✅ API Key |
+| `GET` | `/internal/trackers/schedule/guild/:guildId` | Get all scheduled tracker processing jobs for a guild (Bot only) | ✅ API Key |
+| `POST` | `/internal/trackers/schedule/:id/cancel` | Cancel a scheduled tracker processing job (Bot only) | ✅ API Key |
+
+**Query Parameters for `/internal/trackers/schedule/guild/:guildId`:**
+- `status` (optional): Filter by status (PENDING, COMPLETED, CANCELLED, FAILED)
+- `includeCompleted` (optional): Include completed schedules (default: true). Ignored if status is provided.
+
+**Example Bot Request:**
+```bash
+# Schedule tracker processing
+curl -H "Authorization: Bearer BOT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{"guildId":"987654321098765432","scheduledAt":"2025-02-01T10:00:00Z","createdBy":"123456789012345678","metadata":{"reason":"Season 15 start"}}' \
+  http://localhost:3000/internal/trackers/schedule
+
+# Get scheduled jobs for a guild
+curl -H "Authorization: Bearer BOT_API_KEY" \
+  "http://localhost:3000/internal/trackers/schedule/guild/987654321098765432?status=PENDING"
+
+# Cancel a scheduled job
+curl -H "Authorization: Bearer BOT_API_KEY" \
+  -X POST \
+  http://localhost:3000/internal/trackers/schedule/clxyz1234567890/cancel
+```
+
 ---
 
 ## Error Responses

@@ -8,7 +8,7 @@
  * Tests verify inputs, outputs, and observable side effects only.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { InternalServerErrorException } from '@nestjs/common';
 import { GuildsService } from '@/guilds/guilds.service';
 import { GuildRepository } from '@/guilds/repositories/guild.repository';
@@ -77,6 +77,10 @@ describe('GuildsService', () => {
       mockGuildRepository,
       mockErrorHandler,
     );
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe('create', () => {

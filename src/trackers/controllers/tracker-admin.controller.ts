@@ -19,6 +19,7 @@ import {
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { SystemAdminGuard } from '../../common/guards/system-admin.guard';
 import { TrackerService } from '../services/tracker.service';
+import { TrackerProcessingService } from '../services/tracker-processing.service';
 import { TrackerRefreshSchedulerService } from '../services/tracker-refresh-scheduler.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BatchRefreshDto } from '../dto/batch-refresh.dto';
@@ -34,6 +35,7 @@ export class TrackerAdminController {
 
   constructor(
     private readonly trackerService: TrackerService,
+    private readonly trackerProcessingService: TrackerProcessingService,
     private readonly refreshScheduler: TrackerRefreshSchedulerService,
     private readonly prisma: PrismaService,
   ) {}
@@ -209,7 +211,7 @@ export class TrackerAdminController {
   @ApiResponse({ status: 200, description: 'Refresh job enqueued' })
   @ApiResponse({ status: 404, description: 'Tracker not found' })
   async refreshTracker(@Param('id', ParseCUIDPipe) id: string) {
-    await this.trackerService.refreshTrackerData(id);
+    await this.trackerProcessingService.refreshTrackerData(id);
     return { message: 'Refresh job enqueued successfully' };
   }
 

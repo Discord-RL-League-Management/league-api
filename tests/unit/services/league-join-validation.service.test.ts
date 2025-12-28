@@ -5,7 +5,7 @@
  * Focus: Functional core, state verification, fast execution.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { LeagueJoinValidationService } from '@/league-members/services/league-join-validation.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import { LeagueSettingsService } from '@/leagues/league-settings.service';
@@ -68,6 +68,10 @@ describe('LeagueJoinValidationService', () => {
       mockGuildMembersService,
       mockTrackerService,
     );
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe('validateJoin', () => {

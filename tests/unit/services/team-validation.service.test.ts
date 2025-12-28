@@ -5,7 +5,7 @@
  * Focus: Functional core, state verification, fast execution.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { TeamValidationService } from '@/teams/services/team-validation.service';
 import { LeagueSettingsService } from '@/leagues/league-settings.service';
@@ -37,6 +37,10 @@ describe('TeamValidationService', () => {
       mockOrganizationRepository,
       mockOrganizationValidationService,
     );
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe('validateOrganizationRequirement', () => {

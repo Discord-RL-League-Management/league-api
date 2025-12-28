@@ -7,6 +7,7 @@ import { TRACKER_SCRAPING_QUEUE } from './queues/tracker-scraping.queue';
 import { TrackerScrapingQueueService } from './queues/tracker-scraping.queue';
 import { TrackerScrapingProcessor } from './queues/tracker-scraping.processor';
 import { TrackerService } from './services/tracker.service';
+import { TrackerProcessingService } from './services/tracker-processing.service';
 import { TrackerSnapshotService } from './services/tracker-snapshot.service';
 import { TrackerNotificationService } from './services/tracker-notification.service';
 import { TrackerRepository } from './repositories/tracker.repository';
@@ -85,6 +86,7 @@ import { TrackerBatchProcessorService } from './services/tracker-batch-processor
   controllers: [TrackerController, TrackerAdminController],
   providers: [
     TrackerService,
+    TrackerProcessingService,
     TrackerSnapshotService,
     TrackerNotificationService,
     TrackerValidationService,
@@ -107,6 +109,7 @@ import { TrackerBatchProcessorService } from './services/tracker-batch-processor
   ],
   exports: [
     TrackerService,
+    TrackerProcessingService,
     TrackerSnapshotService,
     TrackerScrapingQueueService,
     TrackerSeasonService,
