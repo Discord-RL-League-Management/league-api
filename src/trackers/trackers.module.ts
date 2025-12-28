@@ -40,7 +40,7 @@ import { TrackerBatchProcessorService } from './services/tracker-batch-processor
     forwardRef(() => AuditModule),
     MmrCalculationModule,
     forwardRef(() => GuildsModule),
-    GuardsModule,
+    forwardRef(() => GuardsModule), // Use forwardRef to break circular dependency with GuardsModule <-> GuildsModule
     HttpModule,
     BullModule.forRootAsync({
       imports: [ConfigModule],

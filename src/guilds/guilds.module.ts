@@ -24,13 +24,15 @@ import { cacheModuleOptions } from '../common/config/cache.config';
 import { PrismaModule } from '../prisma/prisma.module';
 import { UsersModule } from '../users/users.module';
 import { FormulaValidationAdapterModule } from './adapters/formula-validation-adapter.module';
+import { PermissionCheckModule } from '../permissions/modules/permission-check/permission-check.module';
 
 @Module({
   imports: [
     TokenManagementModule,
     GuildMembersModule,
     DiscordModule,
-    GuardsModule,
+    PermissionCheckModule, // Required for GuildAdminGuard (PermissionCheckService) - import before GuardsModule
+    forwardRef(() => GuardsModule), // Use forwardRef to break circular dependency with GuardsModule <-> GuildsModule
     forwardRef(() => GuildAccessAdapterModule), // Required for AdminGuard (IGuildAccessProvider)
     PrismaModule,
     SettingsModule, // Required for GuildSettingsService (SettingsService)
