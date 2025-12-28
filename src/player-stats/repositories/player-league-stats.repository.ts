@@ -166,14 +166,12 @@ export class PlayerLeagueStatsRepository {
   ) {
     const client = tx || this.prisma;
 
-    // First upsert using atomic increments for counters
     const updated = await client.playerLeagueStats.upsert({
       where: { playerId_leagueId: { playerId, leagueId } },
       create: this.createInitialStats(playerId, leagueId, data),
       update: this.getIncrementOperations(data),
     });
 
-    // Recalculate derived stats from updated values
     const derived = this.calculateDerivedStats(
       updated.matchesPlayed,
       updated.wins,

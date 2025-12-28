@@ -118,29 +118,25 @@ describe('FormulaValidationService', () => {
       expect(result.error).toContain('finite number');
     });
 
-    it('should_allow_all_valid_variables', () => {
+    it.each([
+      'ones',
+      'twos',
+      'threes',
+      'fours',
+      'onesGames',
+      'twosGames',
+      'threesGames',
+      'foursGames',
+      'totalGames',
+    ])('should_return_valid_for_%s_variable', (variable) => {
       // ARRANGE
-      const validVariables = [
-        'ones',
-        'twos',
-        'threes',
-        'fours',
-        'onesGames',
-        'twosGames',
-        'threesGames',
-        'foursGames',
-        'totalGames',
-      ];
+      const formula = variable;
 
-      for (const variable of validVariables) {
-        const formula = variable;
+      // ACT
+      const result = service.validateFormula(formula);
 
-        // ACT
-        const result = service.validateFormula(formula);
-
-        // ASSERT
-        expect(result.valid).toBe(true);
-      }
+      // ASSERT
+      expect(result.valid).toBe(true);
     });
 
     it('should_allow_math_functions', () => {
