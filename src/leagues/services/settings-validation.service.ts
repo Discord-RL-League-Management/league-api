@@ -32,7 +32,6 @@ export class SettingsValidationService {
       errors.push(...this.validateSkillConfig(config.skill));
     }
 
-    // If there are errors, throw validation exception
     if (errors.length > 0) {
       throw new LeagueValidationException(errors.join('; '));
     }
@@ -101,7 +100,6 @@ export class SettingsValidationService {
       }
     }
 
-    // Validate skill requirements
     if (config.skillRequirements) {
       const skillErrors = this.validateSkillRequirements(
         config.skillRequirements,
@@ -186,7 +184,6 @@ export class SettingsValidationService {
       }
     }
 
-    // Validate skill metric
     const validMetrics = ['MMR', 'RANK', 'ELO', 'CUSTOM'];
     if (!validMetrics.includes(requirements.skillMetric)) {
       errors.push(

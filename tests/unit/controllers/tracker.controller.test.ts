@@ -86,7 +86,7 @@ describe('TrackerController', () => {
   });
 
   afterEach(() => {
-    vi.resetAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe('registerTrackers', () => {

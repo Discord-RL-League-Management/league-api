@@ -49,7 +49,7 @@ describe('MatchesController', () => {
   });
 
   afterEach(() => {
-    vi.resetAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe('getMatch', () => {

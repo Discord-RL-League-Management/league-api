@@ -82,7 +82,6 @@ export class DiscordMessageService {
 
       const channelId = (dmChannelResponse.data as { id: string }).id;
 
-      // Then send the message to the DM channel
       await this.sendMessage(channelId, payload);
 
       this.logger.debug(`Sent DM to user ${userId}`);

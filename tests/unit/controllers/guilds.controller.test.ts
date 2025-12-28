@@ -16,6 +16,7 @@ import { GuildsService } from '@/guilds/guilds.service';
 import { GuildAccessValidationService } from '@/guilds/services/guild-access-validation.service';
 import { GuildSettingsService } from '@/guilds/guild-settings.service';
 import { DiscordBotService } from '@/discord/discord-bot.service';
+import { GuildAdminGuard } from '@/common/guards/guild-admin.guard';
 import type { AuthenticatedUser } from '@/common/interfaces/user.interface';
 
 describe('GuildsController', () => {
@@ -84,13 +85,18 @@ describe('GuildsController', () => {
         { provide: GuildSettingsService, useValue: mockGuildSettingsService },
         { provide: DiscordBotService, useValue: mockDiscordBotService },
       ],
-    }).compile();
+    })
+      .overrideGuard(GuildAdminGuard)
+      .useValue({
+        canActivate: vi.fn().mockResolvedValue(true),
+      } as unknown as GuildAdminGuard)
+      .compile();
 
     controller = module.get<GuildsController>(GuildsController);
   });
 
   afterEach(() => {
-    vi.resetAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe('getGuild', () => {

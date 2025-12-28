@@ -67,7 +67,6 @@ export class TrackerValidationService {
     }
 
     // 6. Check URL uniqueness in database (excluding current tracker if replacing)
-    // Skip if uniqueness was already validated in batch operation
     if (!skipUniquenessCheck) {
       const isUnique = await this.checkUrlUniqueness(url, excludeTrackerId);
       if (!isUnique) {
@@ -220,18 +219,14 @@ export class TrackerValidationService {
 
     const excludeSet = new Set(excludeTrackerIds || []);
 
-    // Build result map
     const resultMap = new Map<string, boolean>();
     for (const url of urls) {
       const existingTrackerId = existingUrlMap.get(url);
       if (!existingTrackerId) {
-        // URL doesn't exist, it's unique
         resultMap.set(url, true);
       } else if (excludeSet.has(existingTrackerId)) {
-        // URL exists but is excluded (for replacement), consider it unique
         resultMap.set(url, true);
       } else {
-        // URL exists and is not excluded, it's not unique
         resultMap.set(url, false);
       }
     }

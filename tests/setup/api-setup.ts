@@ -12,7 +12,7 @@ export const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3000';
 // Create axios instance for API tests
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 5000, // TQA: Maximum 5s timeout for integration tests
   validateStatus: (status) => status < 500, // Don't throw on 4xx errors
 });
 

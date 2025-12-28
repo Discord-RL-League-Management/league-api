@@ -86,7 +86,7 @@ describe('LeaguesController', () => {
   });
 
   afterEach(() => {
-    vi.resetAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe('getLeaguesByGuild', () => {

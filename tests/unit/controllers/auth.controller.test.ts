@@ -102,7 +102,7 @@ describe('AuthController', () => {
   });
 
   afterEach(() => {
-    vi.resetAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe('getCurrentUser', () => {

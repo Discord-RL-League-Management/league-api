@@ -175,7 +175,6 @@ export class UserGuildsService {
    */
   private async filterUserGuilds(userId: string): Promise<DiscordGuild[]> {
     try {
-      // Check cache first
       const cacheKey = `user:${userId}:guilds`;
       const cachedGuilds =
         await this.cacheManager.get<DiscordGuild[]>(cacheKey);

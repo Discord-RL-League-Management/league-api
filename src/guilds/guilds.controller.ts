@@ -42,7 +42,6 @@ export class GuildsController {
   ) {
     this.logger.log(`User ${user.id} requested guild ${id}`);
 
-    // Validate user and bot have access to guild
     await this.guildAccessValidationService.validateUserGuildAccess(
       user.id,
       id,

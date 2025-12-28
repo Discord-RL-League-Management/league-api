@@ -56,7 +56,7 @@ describe('InternalScheduledProcessingController', () => {
   });
 
   afterEach(() => {
-    vi.resetAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe('scheduleTrackerProcessing', () => {
