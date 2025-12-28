@@ -10,12 +10,10 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
 import { OrganizationsModule } from '../organizations/organizations.module';
 import { TeamsModule } from '../teams/teams.module';
 
-// Controllers
 import { LeaguesController } from './leagues.controller';
 import { InternalLeaguesController } from './internal-leagues.controller';
 import { LeagueSettingsController } from './league-settings.controller';
 
-// Services
 import { LeaguesService } from './leagues.service';
 import { LeagueSettingsService } from './league-settings.service';
 import { LeagueSettingsDefaultsService } from './services/league-settings-defaults.service';
@@ -24,10 +22,8 @@ import { ConfigMigrationService } from './services/config-migration.service';
 import { LeagueAccessValidationService } from './services/league-access-validation.service';
 import { LeaguePermissionService } from './services/league-permission.service';
 
-// Repositories
 import { LeagueRepository } from './repositories/league.repository';
 
-// Adapters
 import { LeagueSettingsProviderAdapter } from './adapters/league-settings-provider.adapter';
 
 @Module({

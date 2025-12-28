@@ -25,7 +25,7 @@ import { GuildAccessAdapterModule } from '../guilds/adapters/guild-access-adapte
   imports: [
     PrismaModule,
     forwardRef(() => GuildsModule),
-    GuardsModule,
+    forwardRef(() => GuardsModule), // Use forwardRef to break circular dependency with GuardsModule <-> GuildsModule
     forwardRef(() => GuildAccessAdapterModule), // Required for AdminGuard (IGuildAccessProvider)
   ],
   controllers: [MmrCalculationController, MMRCalculatorDemoController],

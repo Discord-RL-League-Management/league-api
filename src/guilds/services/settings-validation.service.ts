@@ -1,8 +1,13 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  Logger,
+  Inject,
+} from '@nestjs/common';
 import { DiscordBotService } from '../../discord/discord-bot.service';
 import { GuildSettingsDto } from '../dto/guild-settings.dto';
 import { MAX_CHANNEL_NAME_LENGTH } from '../constants/settings.constants';
-import { FormulaValidationService } from '../../mmr-calculation/services/formula-validation.service';
+import type { IFormulaValidationService } from '../interfaces/formula-validation.interface';
 import {
   ChannelConfig,
   MmrCalculationConfig,
@@ -15,7 +20,8 @@ export class SettingsValidationService {
 
   constructor(
     private discordValidation: DiscordBotService,
-    private formulaValidation: FormulaValidationService,
+    @Inject('IFormulaValidationService')
+    private formulaValidation: IFormulaValidationService,
   ) {}
 
   /**
@@ -106,7 +112,6 @@ export class SettingsValidationService {
     channels: ChannelConfig[],
     guildId: string,
   ): Promise<void> {
-    // Reuse the same validation logic as bot_command_channels
     await this.validateBotCommandChannels(channels, guildId);
   }
 

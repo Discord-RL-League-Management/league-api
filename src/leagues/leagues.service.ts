@@ -192,7 +192,6 @@ export class LeaguesService {
    */
   async update(id: string, updateLeagueDto: UpdateLeagueDto): Promise<League> {
     try {
-      // Check if league exists
       const exists = await this.leagueRepository.exists(id);
 
       if (!exists) {
@@ -215,7 +214,6 @@ export class LeaguesService {
    */
   async updateStatus(id: string, status: LeagueStatus): Promise<League> {
     try {
-      // Check if league exists
       const league = await this.findOne(id);
 
       // Validate status transition (can be enhanced with specific rules later)
@@ -285,7 +283,6 @@ export class LeaguesService {
     currentStatus: LeagueStatus,
     newStatus: LeagueStatus,
   ): void {
-    // Define valid transitions
     const validTransitions: Record<LeagueStatus, LeagueStatus[]> = {
       [LeagueStatus.ACTIVE]: [
         LeagueStatus.PAUSED,
@@ -301,7 +298,6 @@ export class LeaguesService {
       [LeagueStatus.CANCELLED]: [], // Cancelled leagues cannot transition
     };
 
-    // Check if transition is valid
     const allowedTransitions = validTransitions[currentStatus] || [];
     if (
       !allowedTransitions.includes(newStatus) &&
