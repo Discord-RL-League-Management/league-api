@@ -36,37 +36,31 @@ export class TrackerValidationService {
     excludeTrackerId?: string,
     skipUniquenessCheck?: boolean,
   ): Promise<ParsedTrackerUrl> {
-    // 1. Basic URL format validation
     if (!this.isValidUrlFormat(url)) {
       throw new BadRequestException(
         'Invalid tracker URL format. Must be: https://rocketleague.tracker.network/rocket-league/profile/{platform}/{username}/overview',
       );
     }
 
-    // 2. Validate URL format using converter service
     if (!this.urlConverter.isValidTrnUrl(url)) {
       throw new BadRequestException('Invalid tracker URL format');
     }
 
-    // 3. Parse URL to extract platform and username
     const parsed = this.parseTrackerUrl(url);
     if (!parsed) {
       throw new BadRequestException('Failed to parse tracker URL');
     }
 
-    // 4. Validate platform is supported
     if (!this.isValidPlatform(parsed.platform)) {
       throw new BadRequestException(
         `Unsupported platform: ${parsed.platform}. Supported platforms: steam, epic, xbl, psn, switch`,
       );
     }
 
-    // 5. Validate username format (basic validation)
     if (!this.isValidUsername(parsed.username)) {
       throw new BadRequestException('Invalid username format in tracker URL');
     }
 
-    // 6. Check URL uniqueness in database (excluding current tracker if replacing)
     if (!skipUniquenessCheck) {
       const isUnique = await this.checkUrlUniqueness(url, excludeTrackerId);
       if (!isUnique) {

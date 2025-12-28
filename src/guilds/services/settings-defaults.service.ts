@@ -136,13 +136,12 @@ export class SettingsDefaultsService {
       const sourceValue = source[keyTyped];
       const targetValue = result[keyTyped];
 
-      // Handle arrays - replace completely (no merging of role arrays)
+      // Arrays are replaced completely (no merging of role arrays)
       if (sourceValue && Array.isArray(sourceValue)) {
         (result[keyTyped] as unknown) = sourceValue;
         continue;
       }
 
-      // Handle nested objects - recursive merge
       if (
         sourceValue &&
         typeof sourceValue === 'object' &&
@@ -155,7 +154,6 @@ export class SettingsDefaultsService {
         continue;
       }
 
-      // Handle primitives
       (result[keyTyped] as unknown) = sourceValue;
     }
 
@@ -178,13 +176,11 @@ export class SettingsDefaultsService {
 
       const sourceValue = source[key];
 
-      // Handle arrays - replace completely
       if (Array.isArray(sourceValue)) {
         result[key] = sourceValue;
         continue;
       }
 
-      // Handle nested objects - recursive merge
       if (
         sourceValue &&
         typeof sourceValue === 'object' &&
@@ -197,7 +193,6 @@ export class SettingsDefaultsService {
         continue;
       }
 
-      // Handle primitives
       result[key] = sourceValue;
     }
 

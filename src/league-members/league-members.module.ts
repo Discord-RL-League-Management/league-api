@@ -8,18 +8,14 @@ import { InfrastructureModule } from '../infrastructure/infrastructure.module';
 import { PlayerRatingsModule } from '../player-ratings/player-ratings.module';
 import { LeaguesModule } from '../leagues/leagues.module';
 
-// Controllers
 import { LeagueMembersController } from './league-members.controller';
 import { InternalLeagueMembersController } from './internal-league-members.controller';
 
-// Services
 import { LeagueMemberService } from './services/league-member.service';
 import { LeagueJoinValidationService } from './services/league-join-validation.service';
 
-// Repositories
 import { LeagueMemberRepository } from './repositories/league-member.repository';
 
-// Adapters
 import { LeagueMemberAccessAdapter } from './adapters/league-member-access.adapter';
 
 @Module({

@@ -124,7 +124,6 @@ export class OrganizationRepository
     return count > 0;
   }
 
-  // Organization-specific methods
   async findTeamsByOrganization(organizationId: string) {
     return this.prisma.team.findMany({
       where: { organizationId },
@@ -137,7 +136,6 @@ export class OrganizationRepository
     return this.prisma.team.count({ where: { organizationId } });
   }
 
-  // OrganizationMember methods
   async findMemberById(memberId: string): Promise<OrganizationMember | null> {
     return this.prisma.organizationMember.findUnique({
       where: { id: memberId },
