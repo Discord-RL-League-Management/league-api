@@ -10,7 +10,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Test } from '@nestjs/testing';
-import { ForbiddenException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { TrackerController } from '@/trackers/controllers/tracker.controller';
 import { TrackerService } from '@/trackers/services/tracker.service';
 import { TrackerProcessingService } from '@/trackers/services/tracker-processing.service';
@@ -48,6 +48,10 @@ describe('TrackerController', () => {
     url: 'https://tracker.gg/profile/test',
     displayName: 'Test Tracker',
     isActive: true,
+    scrapingStatus: 'COMPLETED' as const,
+    scrapingError: null,
+    lastScrapedAt: new Date(),
+    scrapingAttempts: 1,
   };
 
   beforeEach(async () => {
@@ -304,25 +308,86 @@ describe('TrackerController', () => {
   });
 
   describe('getTracker', () => {
-    it('should_return_tracker_when_tracker_exists', async () => {
+    it('should_return_tracker_when_user_is_owner', async () => {
       // ARRANGE
       vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
         mockTracker as never,
       );
+      vi.mocked(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).mockResolvedValue(undefined);
 
       // ACT
-      const result = await controller.getTracker('tracker-123');
+      const result = await controller.getTracker('tracker-123', mockUser);
 
       // ASSERT
       expect(result).toEqual(mockTracker);
       expect(mockTrackerService.getTrackerById).toHaveBeenCalledWith(
         'tracker-123',
       );
+      expect(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).toHaveBeenCalledWith(mockUser.id, mockTracker.userId);
+    });
+
+    it('should_return_tracker_when_user_is_guild_admin', async () => {
+      // ARRANGE
+      const otherUserTracker = { ...mockTracker, userId: 'user-456' };
+      vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
+        otherUserTracker as never,
+      );
+      vi.mocked(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).mockResolvedValue(undefined);
+
+      // ACT
+      const result = await controller.getTracker('tracker-123', mockUser);
+
+      // ASSERT
+      expect(result).toEqual(otherUserTracker);
+      expect(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).toHaveBeenCalledWith(mockUser.id, 'user-456');
+    });
+
+    it('should_throw_ForbiddenException_when_user_has_no_access', async () => {
+      // ARRANGE
+      const otherUserTracker = { ...mockTracker, userId: 'user-456' };
+      vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
+        otherUserTracker as never,
+      );
+      vi.mocked(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).mockRejectedValue(
+        new ForbiddenException(
+          'You can only view trackers for yourself or members of guilds where you are an admin',
+        ),
+      );
+
+      // ACT & ASSERT
+      await expect(
+        controller.getTracker('tracker-123', mockUser),
+      ).rejects.toThrow(ForbiddenException);
+      expect(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).toHaveBeenCalledWith(mockUser.id, 'user-456');
+    });
+
+    it('should_throw_NotFoundException_when_tracker_not_found', async () => {
+      // ARRANGE
+      vi.mocked(mockTrackerService.getTrackerById).mockRejectedValue(
+        new NotFoundException('Tracker not found'),
+      );
+
+      // ACT & ASSERT
+      await expect(
+        controller.getTracker('tracker-123', mockUser),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('getTrackerDetail', () => {
-    it('should_return_transformed_tracker_detail_when_tracker_exists', async () => {
+    it('should_return_tracker_detail_when_user_is_owner', async () => {
       // ARRANGE
       const trackerWithSeasons = {
         ...mockTracker,
@@ -339,21 +404,474 @@ describe('TrackerController', () => {
       vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
         trackerWithSeasons as never,
       );
+      vi.mocked(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).mockResolvedValue(undefined);
       vi.mocked(mockResponseMapper.transformTrackerDetail).mockReturnValue(
         transformedResult as any,
       );
 
       // ACT
-      const result = await controller.getTrackerDetail('tracker-123');
+      const result = await controller.getTrackerDetail('tracker-123', mockUser);
 
       // ASSERT
       expect(result).toEqual(transformedResult);
-      expect(mockTrackerService.getTrackerById).toHaveBeenCalledWith(
-        'tracker-123',
-      );
+      expect(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).toHaveBeenCalledWith(mockUser.id, mockTracker.userId);
       expect(mockResponseMapper.transformTrackerDetail).toHaveBeenCalledWith(
         trackerWithSeasons,
       );
+    });
+
+    it('should_return_tracker_detail_when_user_is_guild_admin', async () => {
+      // ARRANGE
+      const otherUserTracker = {
+        ...mockTracker,
+        userId: 'user-456',
+        seasons: [
+          { id: 'season-1', seasonNumber: 1, trackerId: 'tracker-123' },
+        ],
+      };
+      const transformedResult = {
+        tracker: { ...otherUserTracker, seasons: undefined },
+        seasons: otherUserTracker.seasons,
+      };
+      vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
+        otherUserTracker as never,
+      );
+      vi.mocked(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).mockResolvedValue(undefined);
+      vi.mocked(mockResponseMapper.transformTrackerDetail).mockReturnValue(
+        transformedResult as any,
+      );
+
+      // ACT
+      const result = await controller.getTrackerDetail('tracker-123', mockUser);
+
+      // ASSERT
+      expect(result).toEqual(transformedResult);
+      expect(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).toHaveBeenCalledWith(mockUser.id, 'user-456');
+    });
+
+    it('should_throw_ForbiddenException_when_user_has_no_access', async () => {
+      // ARRANGE
+      const otherUserTracker = {
+        ...mockTracker,
+        userId: 'user-456',
+      };
+      vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
+        otherUserTracker as never,
+      );
+      vi.mocked(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).mockRejectedValue(
+        new ForbiddenException(
+          'You can only view trackers for yourself or members of guilds where you are an admin',
+        ),
+      );
+
+      // ACT & ASSERT
+      await expect(
+        controller.getTrackerDetail('tracker-123', mockUser),
+      ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('getScrapingStatus', () => {
+    it('should_return_status_when_user_is_owner', async () => {
+      // ARRANGE
+      const statusResult = {
+        status: 'COMPLETED',
+        error: null,
+        lastScrapedAt: new Date(),
+        attempts: 1,
+      };
+      vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
+        mockTracker as never,
+      );
+      vi.mocked(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).mockResolvedValue(undefined);
+      vi.mocked(mockTrackerService.getScrapingStatus).mockResolvedValue(
+        statusResult as never,
+      );
+
+      // ACT
+      const result = await controller.getScrapingStatus(
+        'tracker-123',
+        mockUser,
+      );
+
+      // ASSERT
+      expect(result).toEqual(statusResult);
+      expect(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).toHaveBeenCalledWith(mockUser.id, mockTracker.userId);
+      expect(mockTrackerService.getScrapingStatus).toHaveBeenCalledWith(
+        'tracker-123',
+        {
+          scrapingStatus: mockTracker.scrapingStatus,
+          scrapingError: mockTracker.scrapingError,
+          lastScrapedAt: mockTracker.lastScrapedAt,
+          scrapingAttempts: mockTracker.scrapingAttempts,
+        },
+      );
+    });
+
+    it('should_return_status_when_user_is_guild_admin', async () => {
+      // ARRANGE
+      const otherUserTracker = { ...mockTracker, userId: 'user-456' };
+      const statusResult = {
+        status: 'COMPLETED',
+        error: null,
+        lastScrapedAt: new Date(),
+        attempts: 1,
+      };
+      vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
+        otherUserTracker as never,
+      );
+      vi.mocked(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).mockResolvedValue(undefined);
+      vi.mocked(mockTrackerService.getScrapingStatus).mockResolvedValue(
+        statusResult as never,
+      );
+
+      // ACT
+      const result = await controller.getScrapingStatus(
+        'tracker-123',
+        mockUser,
+      );
+
+      // ASSERT
+      expect(result).toEqual(statusResult);
+      expect(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).toHaveBeenCalledWith(mockUser.id, 'user-456');
+    });
+
+    it('should_throw_ForbiddenException_when_user_has_no_access', async () => {
+      // ARRANGE
+      const otherUserTracker = { ...mockTracker, userId: 'user-456' };
+      vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
+        otherUserTracker as never,
+      );
+      vi.mocked(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).mockRejectedValue(
+        new ForbiddenException(
+          'You can only view trackers for yourself or members of guilds where you are an admin',
+        ),
+      );
+
+      // ACT & ASSERT
+      await expect(
+        controller.getScrapingStatus('tracker-123', mockUser),
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockTrackerService.getScrapingStatus).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getTrackerSeasons', () => {
+    it('should_return_seasons_when_user_is_owner', async () => {
+      // ARRANGE
+      const mockSeasons = [
+        { id: 'season-1', seasonNumber: 1, trackerId: 'tracker-123' },
+      ];
+      vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
+        mockTracker as never,
+      );
+      vi.mocked(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).mockResolvedValue(undefined);
+      vi.mocked(mockTrackerService.getTrackerSeasons).mockResolvedValue(
+        mockSeasons as never,
+      );
+
+      // ACT
+      const result = await controller.getTrackerSeasons(
+        'tracker-123',
+        mockUser,
+      );
+
+      // ASSERT
+      expect(result).toEqual(mockSeasons);
+      expect(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).toHaveBeenCalledWith(mockUser.id, mockTracker.userId);
+      expect(mockTrackerService.getTrackerSeasons).toHaveBeenCalledWith(
+        'tracker-123',
+      );
+    });
+
+    it('should_return_seasons_when_user_is_guild_admin', async () => {
+      // ARRANGE
+      const otherUserTracker = { ...mockTracker, userId: 'user-456' };
+      const mockSeasons = [
+        { id: 'season-1', seasonNumber: 1, trackerId: 'tracker-123' },
+      ];
+      vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
+        otherUserTracker as never,
+      );
+      vi.mocked(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).mockResolvedValue(undefined);
+      vi.mocked(mockTrackerService.getTrackerSeasons).mockResolvedValue(
+        mockSeasons as never,
+      );
+
+      // ACT
+      const result = await controller.getTrackerSeasons(
+        'tracker-123',
+        mockUser,
+      );
+
+      // ASSERT
+      expect(result).toEqual(mockSeasons);
+      expect(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).toHaveBeenCalledWith(mockUser.id, 'user-456');
+    });
+
+    it('should_throw_ForbiddenException_when_user_has_no_access', async () => {
+      // ARRANGE
+      const otherUserTracker = { ...mockTracker, userId: 'user-456' };
+      vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
+        otherUserTracker as never,
+      );
+      vi.mocked(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).mockRejectedValue(
+        new ForbiddenException(
+          'You can only view trackers for yourself or members of guilds where you are an admin',
+        ),
+      );
+
+      // ACT & ASSERT
+      await expect(
+        controller.getTrackerSeasons('tracker-123', mockUser),
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockTrackerService.getTrackerSeasons).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getSnapshots', () => {
+    it('should_return_snapshots_when_user_is_owner', async () => {
+      // ARRANGE
+      const mockSnapshots = [{ id: 'snapshot-1', trackerId: 'tracker-123' }];
+      vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
+        mockTracker as never,
+      );
+      vi.mocked(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).mockResolvedValue(undefined);
+      vi.mocked(mockSnapshotService.getSnapshotsByTracker).mockResolvedValue(
+        mockSnapshots as never,
+      );
+
+      // ACT
+      const result = await controller.getSnapshots('tracker-123', mockUser);
+
+      // ASSERT
+      expect(result).toEqual(mockSnapshots);
+      expect(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).toHaveBeenCalledWith(mockUser.id, mockTracker.userId);
+      expect(mockSnapshotService.getSnapshotsByTracker).toHaveBeenCalledWith(
+        'tracker-123',
+        true,
+      );
+    });
+
+    it('should_return_snapshots_when_user_is_guild_admin', async () => {
+      // ARRANGE
+      const otherUserTracker = { ...mockTracker, userId: 'user-456' };
+      const mockSnapshots = [{ id: 'snapshot-1', trackerId: 'tracker-123' }];
+      vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
+        otherUserTracker as never,
+      );
+      vi.mocked(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).mockResolvedValue(undefined);
+      vi.mocked(mockSnapshotService.getSnapshotsByTracker).mockResolvedValue(
+        mockSnapshots as never,
+      );
+
+      // ACT
+      const result = await controller.getSnapshots('tracker-123', mockUser);
+
+      // ASSERT
+      expect(result).toEqual(mockSnapshots);
+      expect(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).toHaveBeenCalledWith(mockUser.id, 'user-456');
+    });
+
+    it('should_return_season_snapshots_when_user_is_owner_and_season_provided', async () => {
+      // ARRANGE
+      const season = 1;
+      const mockSnapshots = [
+        { id: 'snapshot-1', trackerId: 'tracker-123', seasonNumber: season },
+      ];
+      vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
+        mockTracker as never,
+      );
+      vi.mocked(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).mockResolvedValue(undefined);
+      vi.mocked(
+        mockSnapshotService.getSnapshotsByTrackerAndSeason,
+      ).mockResolvedValue(mockSnapshots as never);
+
+      // ACT
+      const result = await controller.getSnapshots(
+        'tracker-123',
+        mockUser,
+        season,
+      );
+
+      // ASSERT
+      expect(result).toEqual(mockSnapshots);
+      expect(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).toHaveBeenCalledWith(mockUser.id, mockTracker.userId);
+      expect(
+        mockSnapshotService.getSnapshotsByTrackerAndSeason,
+      ).toHaveBeenCalledWith('tracker-123', season, true);
+      expect(mockSnapshotService.getSnapshotsByTracker).not.toHaveBeenCalled();
+    });
+
+    it('should_return_season_snapshots_when_user_is_guild_admin_and_season_provided', async () => {
+      // ARRANGE
+      const season = 1;
+      const otherUserTracker = { ...mockTracker, userId: 'user-456' };
+      const mockSnapshots = [
+        { id: 'snapshot-1', trackerId: 'tracker-123', seasonNumber: season },
+      ];
+      vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
+        otherUserTracker as never,
+      );
+      vi.mocked(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).mockResolvedValue(undefined);
+      vi.mocked(
+        mockSnapshotService.getSnapshotsByTrackerAndSeason,
+      ).mockResolvedValue(mockSnapshots as never);
+
+      // ACT
+      const result = await controller.getSnapshots(
+        'tracker-123',
+        mockUser,
+        season,
+      );
+
+      // ASSERT
+      expect(result).toEqual(mockSnapshots);
+      expect(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).toHaveBeenCalledWith(mockUser.id, 'user-456');
+      expect(
+        mockSnapshotService.getSnapshotsByTrackerAndSeason,
+      ).toHaveBeenCalledWith('tracker-123', season, true);
+      expect(mockSnapshotService.getSnapshotsByTracker).not.toHaveBeenCalled();
+    });
+
+    it('should_throw_ForbiddenException_when_user_has_no_access', async () => {
+      // ARRANGE
+      const otherUserTracker = { ...mockTracker, userId: 'user-456' };
+      vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
+        otherUserTracker as never,
+      );
+      vi.mocked(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).mockRejectedValue(
+        new ForbiddenException(
+          'You can only view trackers for yourself or members of guilds where you are an admin',
+        ),
+      );
+
+      // ACT & ASSERT
+      await expect(
+        controller.getSnapshots('tracker-123', mockUser),
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockSnapshotService.getSnapshotsByTracker).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('createSnapshot', () => {
+    it('should_create_snapshot_when_user_is_owner', async () => {
+      // ARRANGE
+      const dto = {
+        trackerId: 'tracker-123',
+        capturedAt: new Date(),
+        seasonNumber: 1,
+        ones: 1000,
+        twos: 2000,
+        threes: 3000,
+        fours: 4000,
+        onesGamesPlayed: 10,
+        twosGamesPlayed: 20,
+        threesGamesPlayed: 30,
+        foursGamesPlayed: 40,
+        guildIds: ['guild-1'],
+      };
+      const mockSnapshot = { id: 'snapshot-1', trackerId: 'tracker-123' };
+      vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
+        mockTracker as never,
+      );
+      vi.mocked(mockSnapshotService.createSnapshot).mockResolvedValue(
+        mockSnapshot as never,
+      );
+
+      // ACT
+      const result = await controller.createSnapshot(
+        'tracker-123',
+        dto,
+        mockUser,
+      );
+
+      // ASSERT
+      expect(result).toEqual(mockSnapshot);
+      expect(mockSnapshotService.createSnapshot).toHaveBeenCalledWith(
+        'tracker-123',
+        mockUser.id,
+        expect.objectContaining({
+          capturedAt: dto.capturedAt,
+          seasonNumber: dto.seasonNumber,
+        }),
+      );
+    });
+
+    it('should_throw_ForbiddenException_when_user_is_not_owner', async () => {
+      // ARRANGE
+      const dto = {
+        trackerId: 'tracker-123',
+        capturedAt: new Date(),
+        seasonNumber: 1,
+        ones: 1000,
+        twos: 2000,
+        threes: 3000,
+        fours: 4000,
+        onesGamesPlayed: 10,
+        twosGamesPlayed: 20,
+        threesGamesPlayed: 30,
+        foursGamesPlayed: 40,
+        guildIds: ['guild-1'],
+      };
+      const otherUserTracker = { ...mockTracker, userId: 'user-456' };
+      vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
+        otherUserTracker as never,
+      );
+
+      // ACT & ASSERT
+      await expect(
+        controller.createSnapshot('tracker-123', dto, mockUser),
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockSnapshotService.createSnapshot).not.toHaveBeenCalled();
     });
   });
 
@@ -392,45 +910,159 @@ describe('TrackerController', () => {
   });
 
   describe('updateTracker', () => {
-    it('should_update_tracker_when_data_is_valid', async () => {
+    it('should_update_tracker_when_user_is_owner', async () => {
       // ARRANGE
       const dto: UpdateTrackerDto = {
         displayName: 'Updated Name',
         isActive: false,
       };
       const updatedTracker = { ...mockTracker, ...dto };
+      vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
+        mockTracker as never,
+      );
       vi.mocked(mockTrackerService.updateTracker).mockResolvedValue(
         updatedTracker as never,
       );
 
       // ACT
-      const result = await controller.updateTracker('tracker-123', dto);
+      const result = await controller.updateTracker(
+        'tracker-123',
+        dto,
+        mockUser,
+      );
 
       // ASSERT
       expect(result).toEqual(updatedTracker);
+      expect(mockTrackerService.getTrackerById).toHaveBeenCalledWith(
+        'tracker-123',
+      );
       expect(mockTrackerService.updateTracker).toHaveBeenCalledWith(
         'tracker-123',
         dto.displayName,
         dto.isActive,
       );
     });
+
+    it('should_throw_ForbiddenException_when_user_is_not_owner', async () => {
+      // ARRANGE
+      const dto: UpdateTrackerDto = {
+        displayName: 'Updated Name',
+        isActive: false,
+      };
+      const otherUserTracker = { ...mockTracker, userId: 'user-456' };
+      vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
+        otherUserTracker as never,
+      );
+
+      // ACT & ASSERT
+      await expect(
+        controller.updateTracker('tracker-123', dto, mockUser),
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockTrackerService.updateTracker).not.toHaveBeenCalled();
+    });
+
+    it('should_throw_ForbiddenException_when_user_is_guild_admin_but_not_owner', async () => {
+      // ARRANGE
+      const dto: UpdateTrackerDto = {
+        displayName: 'Updated Name',
+        isActive: false,
+      };
+      const otherUserTracker = { ...mockTracker, userId: 'user-456' };
+      vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
+        otherUserTracker as never,
+      );
+      // Note: updateTracker uses direct userId check, not validateTrackerAccess
+      // Even if user is guild admin, they cannot update (owner-only operation)
+
+      // ACT & ASSERT
+      await expect(
+        controller.updateTracker('tracker-123', dto, mockUser),
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockTrackerService.updateTracker).not.toHaveBeenCalled();
+    });
+
+    it('should_throw_NotFoundException_when_tracker_not_found', async () => {
+      // ARRANGE
+      const dto: UpdateTrackerDto = {
+        displayName: 'Updated Name',
+        isActive: false,
+      };
+      vi.mocked(mockTrackerService.getTrackerById).mockRejectedValue(
+        new NotFoundException('Tracker not found'),
+      );
+
+      // ACT & ASSERT
+      await expect(
+        controller.updateTracker('tracker-123', dto, mockUser),
+      ).rejects.toThrow(NotFoundException);
+      expect(mockTrackerService.updateTracker).not.toHaveBeenCalled();
+    });
   });
 
   describe('deleteTracker', () => {
-    it('should_delete_tracker_when_tracker_exists', async () => {
+    it('should_delete_tracker_when_user_is_owner', async () => {
       // ARRANGE
+      vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
+        mockTracker as never,
+      );
       vi.mocked(mockTrackerService.deleteTracker).mockResolvedValue(
         mockTracker as never,
       );
 
       // ACT
-      const result = await controller.deleteTracker('tracker-123');
+      const result = await controller.deleteTracker('tracker-123', mockUser);
 
       // ASSERT
       expect(result).toEqual(mockTracker);
+      expect(mockTrackerService.getTrackerById).toHaveBeenCalledWith(
+        'tracker-123',
+      );
       expect(mockTrackerService.deleteTracker).toHaveBeenCalledWith(
         'tracker-123',
       );
+    });
+
+    it('should_throw_ForbiddenException_when_user_is_not_owner', async () => {
+      // ARRANGE
+      const otherUserTracker = { ...mockTracker, userId: 'user-456' };
+      vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
+        otherUserTracker as never,
+      );
+
+      // ACT & ASSERT
+      await expect(
+        controller.deleteTracker('tracker-123', mockUser),
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockTrackerService.deleteTracker).not.toHaveBeenCalled();
+    });
+
+    it('should_throw_ForbiddenException_when_user_is_guild_admin_but_not_owner', async () => {
+      // ARRANGE
+      const otherUserTracker = { ...mockTracker, userId: 'user-456' };
+      vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
+        otherUserTracker as never,
+      );
+      // Note: deleteTracker uses direct userId check, not validateTrackerAccess
+      // Even if user is guild admin, they cannot delete (owner-only operation)
+
+      // ACT & ASSERT
+      await expect(
+        controller.deleteTracker('tracker-123', mockUser),
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockTrackerService.deleteTracker).not.toHaveBeenCalled();
+    });
+
+    it('should_throw_NotFoundException_when_tracker_not_found', async () => {
+      // ARRANGE
+      vi.mocked(mockTrackerService.getTrackerById).mockRejectedValue(
+        new NotFoundException('Tracker not found'),
+      );
+
+      // ACT & ASSERT
+      await expect(
+        controller.deleteTracker('tracker-123', mockUser),
+      ).rejects.toThrow(NotFoundException);
+      expect(mockTrackerService.deleteTracker).not.toHaveBeenCalled();
     });
   });
 });

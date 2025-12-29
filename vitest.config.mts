@@ -59,6 +59,7 @@ export default defineConfig({
     },
     
     // Test timeout (100ms target per test)
+    // TQA Compliance: Unit tests must have timeout < 100ms per TQA Quality Gates
     testTimeout: 100,
     
     // Parallel execution support

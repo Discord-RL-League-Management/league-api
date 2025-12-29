@@ -11,3 +11,4 @@ docs/reports/
 
 # Cursor IDE workspace files
 .cursor/worktrees.json
+.cursor/rules/

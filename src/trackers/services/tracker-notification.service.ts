@@ -32,7 +32,6 @@ export class TrackerNotificationService {
     seasonsFailed?: number,
   ): Promise<void> {
     try {
-      // Get user info
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
       });
@@ -42,13 +41,12 @@ export class TrackerNotificationService {
         return;
       }
 
-      // Get tracker info
       const tracker = await this.prisma.tracker.findUnique({
         where: { id: trackerId },
         include: {
           seasons: {
             orderBy: { seasonNumber: 'desc' },
-            take: 1, // Get latest season for info
+            take: 1,
           },
         },
       });
@@ -60,7 +58,6 @@ export class TrackerNotificationService {
         return;
       }
 
-      // Build success embed
       const embed = this.notificationBuilderService.buildScrapingCompleteEmbed(
         tracker,
         user,
@@ -110,7 +107,6 @@ export class TrackerNotificationService {
         return;
       }
 
-      // Get user info for embed
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
       });
