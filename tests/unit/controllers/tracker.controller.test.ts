@@ -15,6 +15,8 @@ import { TrackerController } from '@/trackers/controllers/tracker.controller';
 import { TrackerService } from '@/trackers/services/tracker.service';
 import { TrackerProcessingService } from '@/trackers/services/tracker-processing.service';
 import { TrackerSnapshotService } from '@/trackers/services/tracker-snapshot.service';
+import { TrackerAuthorizationService } from '@/trackers/services/tracker-authorization.service';
+import { TrackerResponseMapperService } from '@/trackers/services/tracker-response-mapper.service';
 import {
   RegisterTrackersDto,
   UpdateTrackerDto,
@@ -26,6 +28,8 @@ describe('TrackerController', () => {
   let mockTrackerService: TrackerService;
   let mockTrackerProcessingService: TrackerProcessingService;
   let mockSnapshotService: TrackerSnapshotService;
+  let mockTrackerAuthorizationService: TrackerAuthorizationService;
+  let mockResponseMapper: TrackerResponseMapperService;
 
   const mockUser: AuthenticatedUser = {
     id: 'user-123',
@@ -70,6 +74,14 @@ describe('TrackerController', () => {
       createSnapshot: vi.fn(),
     } as unknown as TrackerSnapshotService;
 
+    mockTrackerAuthorizationService = {
+      validateTrackerAccess: vi.fn(),
+    } as unknown as TrackerAuthorizationService;
+
+    mockResponseMapper = {
+      transformTrackerDetail: vi.fn(),
+    } as unknown as TrackerResponseMapperService;
+
     const module = await Test.createTestingModule({
       controllers: [TrackerController],
       providers: [
@@ -79,6 +91,14 @@ describe('TrackerController', () => {
           useValue: mockTrackerProcessingService,
         },
         { provide: TrackerSnapshotService, useValue: mockSnapshotService },
+        {
+          provide: TrackerAuthorizationService,
+          useValue: mockTrackerAuthorizationService,
+        },
+        {
+          provide: TrackerResponseMapperService,
+          useValue: mockResponseMapper,
+        },
       ],
     }).compile();
 
@@ -119,17 +139,27 @@ describe('TrackerController', () => {
     it('should_return_user_trackers_when_authenticated', async () => {
       // ARRANGE
       const mockTrackers = [mockTracker];
+      const paginatedResult = {
+        data: mockTrackers,
+        pagination: {
+          page: 1,
+          limit: 50,
+          total: 1,
+          pages: 1,
+        },
+      };
       vi.mocked(mockTrackerService.getTrackersByUserId).mockResolvedValue(
-        mockTrackers as never,
+        paginatedResult as never,
       );
 
       // ACT
-      const result = await controller.getMyTrackers(mockUser);
+      const result = await controller.getMyTrackers(mockUser, {});
 
       // ASSERT
-      expect(result).toEqual(mockTrackers);
+      expect(result).toEqual(paginatedResult);
       expect(mockTrackerService.getTrackersByUserId).toHaveBeenCalledWith(
         mockUser.id,
+        {},
       );
     });
   });
@@ -138,17 +168,27 @@ describe('TrackerController', () => {
     it('should_return_user_trackers_when_no_guild_filter', async () => {
       // ARRANGE
       const mockTrackers = [mockTracker];
+      const paginatedResult = {
+        data: mockTrackers,
+        pagination: {
+          page: 1,
+          limit: 50,
+          total: 1,
+          pages: 1,
+        },
+      };
       vi.mocked(mockTrackerService.getTrackersByUserId).mockResolvedValue(
-        mockTrackers as never,
+        paginatedResult as never,
       );
 
       // ACT
       const result = await controller.getTrackers(mockUser);
 
       // ASSERT
-      expect(result).toEqual(mockTrackers);
+      expect(result).toEqual(paginatedResult);
       expect(mockTrackerService.getTrackersByUserId).toHaveBeenCalledWith(
         mockUser.id,
+        undefined,
       );
     });
 
@@ -170,6 +210,99 @@ describe('TrackerController', () => {
     });
   });
 
+  describe('getTrackersByUser', () => {
+    it('should_return_trackers_when_user_has_access', async () => {
+      // ARRANGE
+      const targetUserId = 'user-456';
+      const mockTrackers = [mockTracker];
+      const paginatedResult = {
+        data: mockTrackers,
+        pagination: {
+          page: 1,
+          limit: 50,
+          total: 1,
+          pages: 1,
+        },
+      };
+      vi.mocked(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).mockResolvedValue(undefined);
+      vi.mocked(mockTrackerService.getTrackersByUserId).mockResolvedValue(
+        paginatedResult as never,
+      );
+
+      // ACT
+      const result = await controller.getTrackersByUser(
+        targetUserId,
+        mockUser,
+        {},
+      );
+
+      // ASSERT
+      expect(result).toEqual(paginatedResult);
+      expect(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).toHaveBeenCalledWith(mockUser.id, targetUserId);
+      expect(mockTrackerService.getTrackersByUserId).toHaveBeenCalledWith(
+        targetUserId,
+        {},
+      );
+    });
+
+    it('should_call_authorization_service_when_accessing_other_user_trackers', async () => {
+      // ARRANGE
+      const targetUserId = 'user-456';
+      const paginatedResult = {
+        data: [],
+        pagination: {
+          page: 1,
+          limit: 50,
+          total: 0,
+          pages: 0,
+        },
+      };
+      vi.mocked(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).mockResolvedValue(undefined);
+      vi.mocked(mockTrackerService.getTrackersByUserId).mockResolvedValue(
+        paginatedResult as never,
+      );
+
+      // ACT
+      await controller.getTrackersByUser(targetUserId, mockUser, {});
+
+      // ASSERT
+      expect(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).toHaveBeenCalledWith(mockUser.id, targetUserId);
+      expect(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).toHaveBeenCalledTimes(1);
+    });
+
+    it('should_throw_ForbiddenException_when_access_denied', async () => {
+      // ARRANGE
+      const targetUserId = 'user-456';
+      vi.mocked(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).mockRejectedValue(
+        new ForbiddenException(
+          'You can only view trackers for yourself or members of guilds where you are an admin',
+        ),
+      );
+
+      // ACT & ASSERT
+      await expect(
+        controller.getTrackersByUser(targetUserId, mockUser, {}),
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(
+        mockTrackerAuthorizationService.validateTrackerAccess,
+      ).toHaveBeenCalledWith(mockUser.id, targetUserId);
+      expect(mockTrackerService.getTrackersByUserId).not.toHaveBeenCalled();
+    });
+  });
+
   describe('getTracker', () => {
     it('should_return_tracker_when_tracker_exists', async () => {
       // ARRANGE
@@ -184,6 +317,42 @@ describe('TrackerController', () => {
       expect(result).toEqual(mockTracker);
       expect(mockTrackerService.getTrackerById).toHaveBeenCalledWith(
         'tracker-123',
+      );
+    });
+  });
+
+  describe('getTrackerDetail', () => {
+    it('should_return_transformed_tracker_detail_when_tracker_exists', async () => {
+      // ARRANGE
+      const trackerWithSeasons = {
+        ...mockTracker,
+        seasons: [
+          { id: 'season-1', seasonNumber: 1, trackerId: 'tracker-123' },
+        ],
+      };
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { seasons, ...trackerWithoutSeasons } = trackerWithSeasons;
+      const transformedResult = {
+        tracker: trackerWithoutSeasons,
+        seasons: trackerWithSeasons.seasons,
+      };
+      vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
+        trackerWithSeasons as never,
+      );
+      vi.mocked(mockResponseMapper.transformTrackerDetail).mockReturnValue(
+        transformedResult as any,
+      );
+
+      // ACT
+      const result = await controller.getTrackerDetail('tracker-123');
+
+      // ASSERT
+      expect(result).toEqual(transformedResult);
+      expect(mockTrackerService.getTrackerById).toHaveBeenCalledWith(
+        'tracker-123',
+      );
+      expect(mockResponseMapper.transformTrackerDetail).toHaveBeenCalledWith(
+        trackerWithSeasons,
       );
     });
   });

@@ -8,10 +8,9 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { TrackerService } from '@/trackers/services/tracker.service';
 import { TrackerRepository } from '@/trackers/repositories/tracker.repository';
-import { TrackerValidationService } from '@/trackers/services/tracker-validation.service';
 import { TrackerSeasonService } from '@/trackers/services/tracker-season.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import { Game, GamePlatform, TrackerScrapingStatus } from '@prisma/client';
@@ -19,7 +18,6 @@ import { Game, GamePlatform, TrackerScrapingStatus } from '@prisma/client';
 describe('TrackerService', () => {
   let service: TrackerService;
   let mockRepository: TrackerRepository;
-  let mockValidation: TrackerValidationService;
   let mockSeasonService: TrackerSeasonService;
   let mockPrisma: PrismaService;
 
@@ -56,11 +54,6 @@ describe('TrackerService', () => {
       checkUrlUniqueness: vi.fn(),
       findBestForUser: vi.fn(),
     } as unknown as TrackerRepository;
-
-    mockValidation = {
-      validateTrackerUrl: vi.fn(),
-      batchCheckUrlUniqueness: vi.fn().mockResolvedValue(new Map()),
-    } as unknown as TrackerValidationService;
 
     mockSeasonService = {
       getSeasonsByTracker: vi.fn().mockResolvedValue([]),
@@ -150,29 +143,243 @@ describe('TrackerService', () => {
       // ARRANGE
       const userId = 'user_123';
       const trackers = [mockTracker];
+      const paginatedResult = {
+        data: trackers,
+        pagination: {
+          page: 1,
+          limit: 50,
+          total: 1,
+          pages: 1,
+        },
+      };
 
-      vi.mocked(mockPrisma.tracker.findMany).mockResolvedValue(trackers as any);
+      vi.mocked(mockRepository.findByUserId).mockResolvedValue(
+        paginatedResult as any,
+      );
 
       // ACT
       const result = await service.getTrackersByUserId(userId);
 
       // ASSERT
-      expect(result).toEqual(trackers);
-      expect(result.length).toBe(1);
-      expect(result[0].userId).toBe(userId);
+      expect(result).toEqual(paginatedResult);
+      expect(result.data.length).toBe(1);
+      expect(result.data[0].userId).toBe(userId);
+      expect(mockRepository.findByUserId).toHaveBeenCalledWith(
+        userId,
+        undefined,
+      );
     });
 
     it('should_return_empty_array_when_user_has_no_trackers', async () => {
       // ARRANGE
       const userId = 'user_999';
-      vi.mocked(mockPrisma.tracker.findMany).mockResolvedValue([]);
+      const paginatedResult = {
+        data: [],
+        pagination: {
+          page: 1,
+          limit: 50,
+          total: 0,
+          pages: 0,
+        },
+      };
+
+      vi.mocked(mockRepository.findByUserId).mockResolvedValue(
+        paginatedResult as any,
+      );
 
       // ACT
       const result = await service.getTrackersByUserId(userId);
 
       // ASSERT
-      expect(result).toEqual([]);
-      expect(result.length).toBe(0);
+      expect(result).toEqual(paginatedResult);
+      expect(result.data.length).toBe(0);
+    });
+
+    it('should_pass_query_options_to_repository', async () => {
+      // ARRANGE
+      const userId = 'user_123';
+      const queryOptions = {
+        platform: 'STEAM' as const,
+        page: 2,
+        limit: 10,
+      };
+      const paginatedResult = {
+        data: [mockTracker],
+        pagination: {
+          page: 2,
+          limit: 10,
+          total: 1,
+          pages: 1,
+        },
+      };
+
+      vi.mocked(mockRepository.findByUserId).mockResolvedValue(
+        paginatedResult as any,
+      );
+
+      // ACT
+      const result = await service.getTrackersByUserId(userId, queryOptions);
+
+      // ASSERT
+      expect(mockRepository.findByUserId).toHaveBeenCalledWith(
+        userId,
+        queryOptions,
+      );
+      expect(result.pagination.page).toBe(2);
+      expect(result.pagination.limit).toBe(10);
+    });
+
+    it('should_filter_by_platform_when_platform_provided', async () => {
+      // ARRANGE
+      const userId = 'user_123';
+      const queryOptions = {
+        platform: GamePlatform.STEAM,
+      };
+      const paginatedResult = {
+        data: [mockTracker],
+        pagination: {
+          page: 1,
+          limit: 50,
+          total: 1,
+          pages: 1,
+        },
+      };
+
+      vi.mocked(mockRepository.findByUserId).mockResolvedValue(
+        paginatedResult as any,
+      );
+
+      // ACT
+      await service.getTrackersByUserId(userId, queryOptions);
+
+      // ASSERT
+      expect(mockRepository.findByUserId).toHaveBeenCalledWith(
+        userId,
+        queryOptions,
+      );
+    });
+
+    it('should_filter_by_status_when_status_provided', async () => {
+      // ARRANGE
+      const userId = 'user_123';
+      const queryOptions = {
+        status: TrackerScrapingStatus.PENDING,
+      };
+      const paginatedResult = {
+        data: [],
+        pagination: {
+          page: 1,
+          limit: 50,
+          total: 0,
+          pages: 0,
+        },
+      };
+
+      vi.mocked(mockRepository.findByUserId).mockResolvedValue(
+        paginatedResult as any,
+      );
+
+      // ACT
+      await service.getTrackersByUserId(userId, queryOptions);
+
+      // ASSERT
+      expect(mockRepository.findByUserId).toHaveBeenCalledWith(
+        userId,
+        queryOptions,
+      );
+    });
+
+    it('should_filter_by_active_status_when_isActive_provided', async () => {
+      // ARRANGE
+      const userId = 'user_123';
+      const queryOptions = {
+        isActive: true,
+      };
+      const paginatedResult = {
+        data: [mockTracker],
+        pagination: {
+          page: 1,
+          limit: 50,
+          total: 1,
+          pages: 1,
+        },
+      };
+
+      vi.mocked(mockRepository.findByUserId).mockResolvedValue(
+        paginatedResult as any,
+      );
+
+      // ACT
+      await service.getTrackersByUserId(userId, queryOptions);
+
+      // ASSERT
+      expect(mockRepository.findByUserId).toHaveBeenCalledWith(
+        userId,
+        queryOptions,
+      );
+    });
+
+    it('should_sort_by_specified_field_when_sortBy_provided', async () => {
+      // ARRANGE
+      const userId = 'user_123';
+      const queryOptions = {
+        sortBy: 'createdAt' as const,
+        sortOrder: 'desc' as const,
+      };
+      const paginatedResult = {
+        data: [mockTracker],
+        pagination: {
+          page: 1,
+          limit: 50,
+          total: 1,
+          pages: 1,
+        },
+      };
+
+      vi.mocked(mockRepository.findByUserId).mockResolvedValue(
+        paginatedResult as any,
+      );
+
+      // ACT
+      await service.getTrackersByUserId(userId, queryOptions);
+
+      // ASSERT
+      expect(mockRepository.findByUserId).toHaveBeenCalledWith(
+        userId,
+        queryOptions,
+      );
+    });
+
+    it('should_respect_pagination_limit_when_limit_provided', async () => {
+      // ARRANGE
+      const userId = 'user_123';
+      const queryOptions = {
+        page: 1,
+        limit: 25,
+      };
+      const paginatedResult = {
+        data: [mockTracker],
+        pagination: {
+          page: 1,
+          limit: 25,
+          total: 1,
+          pages: 1,
+        },
+      };
+
+      vi.mocked(mockRepository.findByUserId).mockResolvedValue(
+        paginatedResult as any,
+      );
+
+      // ACT
+      const result = await service.getTrackersByUserId(userId, queryOptions);
+
+      // ASSERT
+      expect(result.pagination.limit).toBe(25);
+      expect(mockRepository.findByUserId).toHaveBeenCalledWith(
+        userId,
+        queryOptions,
+      );
     });
   });
 
@@ -335,177 +542,7 @@ describe('TrackerService', () => {
 
   // NOTE: registerTrackers was moved to TrackerProcessingService - tests removed
 
-  describe.skip('registerTrackers', () => {
-    it('should_register_multiple_trackers_when_user_has_no_existing_trackers', async () => {
-      // ARRANGE
-      const userId = 'user_123';
-      const urls = [
-        'https://rocketleague.tracker.network/rocket-league/profile/steam/testuser1/overview',
-        'https://rocketleague.tracker.network/rocket-league/profile/steam/testuser2/overview',
-      ];
-      const userData = {
-        username: 'testuser',
-        globalName: 'Test User',
-        avatar: 'avatar_hash',
-      };
-
-      const parsedUrl = {
-        platform: GamePlatform.STEAM,
-        username: 'testuser',
-        game: Game.ROCKET_LEAGUE,
-        isValid: true,
-      };
-
-      const createdTrackers = urls.map((url, i) => ({
-        ...mockTracker,
-        id: `tracker_${i}`,
-        url,
-      }));
-
-      vi.mocked(mockPrisma.tracker.findMany).mockResolvedValue([]);
-      vi.mocked(mockValidation.validateTrackerUrl).mockResolvedValue(
-        parsedUrl as any,
-      );
-      vi.mocked(mockValidation.batchCheckUrlUniqueness).mockResolvedValue(
-        new Map(urls.map((url) => [url, true])),
-      );
-      vi.mocked(mockRepository.create).mockImplementation((data) => {
-        const index = urls.indexOf(data.url);
-        return Promise.resolve(createdTrackers[index]);
-      });
-
-      // ACT
-      const result = await (service as any).registerTrackers(
-        userId,
-        urls,
-        userData,
-      );
-
-      // ASSERT: Verify all trackers were created
-      expect(result).toHaveLength(2);
-      expect(result[0].url).toBe(urls[0]);
-      expect(result[1].url).toBe(urls[1]);
-    });
-
-    it.skip('should_throw_BadRequestException_when_urls_count_is_zero', async () => {
-      // ARRANGE
-      const userId = 'user_123';
-      const urls: string[] = [];
-
-      // ACT & ASSERT
-      await expect(
-        (service as any).registerTrackers(userId, urls),
-      ).rejects.toThrow(BadRequestException);
-    });
-
-    it.skip('should_throw_BadRequestException_when_urls_count_exceeds_four', async () => {
-      // ARRANGE
-      const userId = 'user_123';
-      const urls = Array(5).fill('https://example.com');
-
-      // ACT & ASSERT
-      await expect(
-        (service as any).registerTrackers(userId, urls),
-      ).rejects.toThrow(BadRequestException);
-    });
-
-    it.skip('should_throw_BadRequestException_when_user_already_has_trackers', async () => {
-      // ARRANGE
-      const userId = 'user_123';
-      const urls = ['https://example.com'];
-      const existingTrackers = [mockTracker];
-
-      vi.mocked(mockPrisma.tracker.findMany).mockResolvedValue(
-        existingTrackers as any,
-      );
-
-      // ACT & ASSERT
-      await expect(
-        (service as any).registerTrackers(userId, urls),
-      ).rejects.toThrow(BadRequestException);
-    });
-
-    it.skip('should_throw_BadRequestException_when_duplicate_urls_provided', async () => {
-      // ARRANGE
-      const userId = 'user_123';
-      const url = 'https://example.com';
-      const urls = [url, url]; // Duplicate URLs
-
-      vi.mocked(mockPrisma.tracker.findMany).mockResolvedValue([]);
-
-      // ACT & ASSERT
-      await expect(
-        (service as any).registerTrackers(userId, urls),
-      ).rejects.toThrow(BadRequestException);
-    });
-
-    it.skip('should_throw_BadRequestException_when_url_already_registered', async () => {
-      // ARRANGE
-      const userId = 'user_123';
-      const urls = ['https://existing.url'];
-
-      vi.mocked(mockPrisma.tracker.findMany).mockResolvedValue([]);
-      vi.mocked(mockValidation.batchCheckUrlUniqueness).mockResolvedValue(
-        new Map([['https://existing.url', false]]),
-      );
-
-      // ACT & ASSERT
-      await expect(
-        (service as any).registerTrackers(userId, urls),
-      ).rejects.toThrow(BadRequestException);
-    });
-  });
-
   // NOTE: addTracker was moved to TrackerProcessingService - tests removed
-
-  describe.skip('addTracker', () => {
-    it.skip('should_add_tracker_when_user_has_less_than_four_trackers', async () => {
-      // ARRANGE
-      const userId = 'user_123';
-      const url =
-        'https://rocketleague.tracker.network/rocket-league/profile/steam/testuser/overview';
-      const userData = {
-        username: 'testuser',
-        globalName: 'Test User',
-      };
-
-      const parsedUrl = {
-        platform: GamePlatform.STEAM,
-        username: 'testuser',
-        game: Game.ROCKET_LEAGUE,
-        isValid: true,
-      };
-
-      vi.mocked(mockPrisma.tracker.findMany).mockResolvedValue([]);
-      vi.mocked(mockValidation.validateTrackerUrl).mockResolvedValue(
-        parsedUrl as any,
-      );
-      vi.mocked(mockRepository.create).mockResolvedValue(mockTracker);
-
-      // ACT
-      const result = await (service as any).addTracker(userId, url, userData);
-
-      // ASSERT
-      expect(result).toEqual(mockTracker);
-      expect(result.url).toBe(url);
-    });
-
-    it.skip('should_throw_BadRequestException_when_user_has_four_trackers', async () => {
-      // ARRANGE
-      const userId = 'user_123';
-      const url = 'https://example.com';
-      const existingTrackers = Array(4).fill(mockTracker);
-
-      vi.mocked(mockPrisma.tracker.findMany).mockResolvedValue(
-        existingTrackers as any,
-      );
-
-      // ACT & ASSERT
-      await expect((service as any).addTracker(userId, url)).rejects.toThrow(
-        BadRequestException,
-      );
-    });
-  });
 
   describe('findBestTrackerForUser', () => {
     it('should_delegate_to_repository_findBestForUser', async () => {

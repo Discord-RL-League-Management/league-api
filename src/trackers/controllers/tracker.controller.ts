@@ -32,6 +32,10 @@ import {
 import { CreateTrackerSnapshotDto } from '../dto/tracker-snapshot.dto';
 import type { AuthenticatedUser } from '../../common/interfaces/user.interface';
 import { ParseCUIDPipe } from '../../common/pipes';
+import type { TrackerQueryOptions } from '../interfaces/tracker-query.options';
+import { TrackerQueryDto } from '../dto/tracker-query.dto';
+import { TrackerAuthorizationService } from '../services/tracker-authorization.service';
+import { TrackerResponseMapperService } from '../services/tracker-response-mapper.service';
 
 @ApiTags('Trackers')
 @Controller('api/trackers')
@@ -44,6 +48,8 @@ export class TrackerController {
     private readonly trackerService: TrackerService,
     private readonly trackerProcessingService: TrackerProcessingService,
     private readonly snapshotService: TrackerSnapshotService,
+    private readonly trackerAuthorizationService: TrackerAuthorizationService,
+    private readonly responseMapper: TrackerResponseMapperService,
   ) {}
 
   @Post('register')
@@ -71,11 +77,36 @@ export class TrackerController {
 
   @Get('me')
   @ApiOperation({ summary: "Get current user's trackers" })
-  @ApiResponse({ status: 200, description: "User's trackers (array)" })
+  @ApiResponse({ status: 200, description: "User's trackers (paginated)" })
   @ApiResponse({ status: 404, description: 'No trackers found for user' })
-  async getMyTrackers(@CurrentUser() user: AuthenticatedUser) {
-    const trackers = await this.trackerService.getTrackersByUserId(user.id);
-    return trackers;
+  async getMyTrackers(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: TrackerQueryDto,
+  ) {
+    const options: TrackerQueryOptions = { ...query };
+    return this.trackerService.getTrackersByUserId(user.id, options);
+  }
+
+  @Get('user/:userId')
+  @ApiOperation({ summary: 'Get trackers for a user' })
+  @ApiParam({ name: 'userId', description: 'Discord user ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated list of trackers for user',
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getTrackersByUser(
+    @Param('userId') userId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: TrackerQueryDto,
+  ) {
+    await this.trackerAuthorizationService.validateTrackerAccess(
+      user.id,
+      userId,
+    );
+    const options: TrackerQueryOptions = { ...query };
+    return this.trackerService.getTrackersByUserId(userId, options);
   }
 
   @Get()
@@ -89,12 +120,15 @@ export class TrackerController {
   async getTrackers(
     @CurrentUser() user: AuthenticatedUser,
     @Query('guildId') guildId?: string,
+    @Query() query?: TrackerQueryDto,
   ) {
     if (guildId) {
       return this.trackerService.getTrackersByGuild(guildId);
     }
-    // JwtAuthGuard ensures user is always present, preventing null reference errors
-    return this.trackerService.getTrackersByUserId(user.id);
+    const options: TrackerQueryOptions | undefined = query
+      ? { ...query }
+      : undefined;
+    return this.trackerService.getTrackersByUserId(user.id, options);
   }
 
   @Get(':id')
@@ -113,15 +147,7 @@ export class TrackerController {
   @ApiResponse({ status: 404, description: 'Tracker not found' })
   async getTrackerDetail(@Param('id', ParseCUIDPipe) id: string) {
     const tracker = await this.trackerService.getTrackerById(id);
-    // Separate seasons into root-level property to match frontend API contract
-    const seasons = tracker.seasons || [];
-    return {
-      tracker: {
-        ...tracker,
-        seasons: undefined,
-      },
-      seasons,
-    };
+    return this.responseMapper.transformTrackerDetail(tracker);
   }
 
   @Get(':id/status')

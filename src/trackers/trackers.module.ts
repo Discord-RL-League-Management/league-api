@@ -32,6 +32,10 @@ import { TrackerProcessingGuardService } from './services/tracker-processing-gua
 import { TrackerUserOrchestratorService } from './services/tracker-user-orchestrator.service';
 import { TrackerQueueOrchestratorService } from './services/tracker-queue-orchestrator.service';
 import { TrackerBatchProcessorService } from './services/tracker-batch-processor.service';
+import { TrackerAuthorizationService } from './services/tracker-authorization.service';
+import { TrackerResponseMapperService } from './services/tracker-response-mapper.service';
+import { GuildMembersModule } from '../guild-members/guild-members.module';
+import { PermissionCheckModule } from '../permissions/modules/permission-check/permission-check.module';
 
 @Module({
   imports: [
@@ -41,6 +45,8 @@ import { TrackerBatchProcessorService } from './services/tracker-batch-processor
     MmrCalculationModule,
     forwardRef(() => GuildsModule),
     forwardRef(() => GuardsModule), // Use forwardRef to break circular dependency with GuardsModule <-> GuildsModule
+    GuildMembersModule,
+    PermissionCheckModule,
     HttpModule,
     BullModule.forRootAsync({
       imports: [ConfigModule],
@@ -51,13 +57,14 @@ import { TrackerBatchProcessorService } from './services/tracker-batch-processor
           password?: string;
           db?: number;
         }>('redis');
+        const connectionConfig = {
+          host: redisConfig?.host || 'localhost',
+          port: redisConfig?.port || 6379,
+          password: redisConfig?.password,
+          db: redisConfig?.db || 0,
+        };
         return {
-          connection: {
-            host: redisConfig?.host || 'localhost',
-            port: redisConfig?.port || 6379,
-            password: redisConfig?.password,
-            db: redisConfig?.db || 0,
-          },
+          connection: connectionConfig,
         };
       },
       inject: [ConfigService],
@@ -108,6 +115,8 @@ import { TrackerBatchProcessorService } from './services/tracker-batch-processor
     TrackerSnapshotRepository,
     DiscordMessageService,
     NotificationBuilderService,
+    TrackerAuthorizationService,
+    TrackerResponseMapperService,
   ],
   exports: [
     TrackerService,

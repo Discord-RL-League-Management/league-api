@@ -122,9 +122,11 @@ export class TrackerProcessingService {
   ) {
     await this.userOrchestrator.ensureUserExists(userId, userData);
 
-    const existingTrackers =
+    const existingTrackersResult =
       await this.trackerService.getTrackersByUserId(userId);
-    const activeTrackers = existingTrackers.filter((t) => !t.isDeleted);
+    const activeTrackers = existingTrackersResult.data.filter(
+      (t) => !t.isDeleted,
+    );
 
     if (activeTrackers.length > 0) {
       throw new BadRequestException(
@@ -170,9 +172,11 @@ export class TrackerProcessingService {
   ) {
     await this.userOrchestrator.ensureUserExists(userId, userData);
 
-    const existingTrackers =
+    const existingTrackersResult =
       await this.trackerService.getTrackersByUserId(userId);
-    const activeTrackers = existingTrackers.filter((t) => !t.isDeleted);
+    const activeTrackers = existingTrackersResult.data.filter(
+      (t) => !t.isDeleted,
+    );
 
     this.validateTrackerCount(
       activeTrackers.length,

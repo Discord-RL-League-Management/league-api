@@ -2,7 +2,14 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TrackerRepository } from '../repositories/tracker.repository';
 import { TrackerSeasonService } from './tracker-season.service';
-import { GamePlatform, Game, TrackerSeason, Prisma } from '@prisma/client';
+import {
+  GamePlatform,
+  Game,
+  TrackerSeason,
+  Tracker,
+  Prisma,
+} from '@prisma/client';
+import { TrackerQueryOptions } from '../interfaces/tracker-query.options';
 
 @Injectable()
 export class TrackerService {
@@ -58,21 +65,26 @@ export class TrackerService {
   }
 
   /**
-   * Get trackers for a user with seasons relationship
+   * Get trackers for a user with optional query options and pagination
+   * Single Responsibility: User tracker retrieval with query options
+   *
+   * @param userId - User ID to find trackers for
+   * @param options - Optional query options for filtering, sorting, and pagination
+   * @returns Paginated response with trackers data and pagination metadata
    */
-  async getTrackersByUserId(userId: string) {
-    return this.prisma.tracker.findMany({
-      where: {
-        userId,
-        isDeleted: false,
-      },
-      include: {
-        seasons: {
-          orderBy: { seasonNumber: 'desc' },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+  async getTrackersByUserId(
+    userId: string,
+    options?: TrackerQueryOptions,
+  ): Promise<{
+    data: Tracker[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      pages: number;
+    };
+  }> {
+    return this.trackerRepository.findByUserId(userId, options);
   }
 
   /**

@@ -8,6 +8,10 @@ import {
   TrackerSeason,
   TrackerScrapingStatus,
 } from '@prisma/client';
+import {
+  TrackerQueryOptions,
+  defaultTrackerQueryOptions,
+} from '../interfaces/tracker-query.options';
 
 @Injectable()
 export class TrackerRepository {
@@ -47,14 +51,87 @@ export class TrackerRepository {
     });
   }
 
-  async findByUserId(userId: string): Promise<Tracker[]> {
-    return this.prisma.tracker.findMany({
-      where: {
-        userId,
-        isDeleted: false,
+  /**
+   * Find all trackers for a user with optional filtering, sorting, and pagination
+   * Single Responsibility: User tracker retrieval with query options
+   *
+   * @param userId - User ID to find trackers for
+   * @param options - Query options for filtering, sorting, and pagination
+   * @returns Paginated response with trackers data and pagination metadata
+   */
+  async findByUserId(
+    userId: string,
+    options?: TrackerQueryOptions,
+  ): Promise<{
+    data: Tracker[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      pages: number;
+    };
+  }> {
+    const opts = { ...defaultTrackerQueryOptions, ...options };
+    const page = opts.page ?? 1;
+    const limit = opts.limit ?? 50;
+    const skip = (page - 1) * limit;
+    const maxLimit = Math.min(limit, 100);
+
+    const where: Prisma.TrackerWhereInput = {
+      userId,
+      isDeleted: false,
+    };
+
+    // Filter by platform
+    if (opts.platform) {
+      if (Array.isArray(opts.platform)) {
+        where.platform = { in: opts.platform };
+      } else {
+        where.platform = opts.platform;
+      }
+    }
+
+    // Filter by scraping status
+    if (opts.status) {
+      if (Array.isArray(opts.status)) {
+        where.scrapingStatus = { in: opts.status };
+      } else {
+        where.scrapingStatus = opts.status;
+      }
+    }
+
+    // Filter by active status
+    if (opts.isActive !== undefined) {
+      where.isActive = opts.isActive;
+    }
+
+    // Sort options
+    const orderBy: Prisma.TrackerOrderByWithRelationInput = {};
+    if (opts.sortBy) {
+      orderBy[opts.sortBy] = opts.sortOrder || 'desc';
+    } else {
+      orderBy.createdAt = 'desc';
+    }
+
+    const [trackers, total] = await Promise.all([
+      this.prisma.tracker.findMany({
+        where,
+        orderBy,
+        skip,
+        take: maxLimit,
+      }),
+      this.prisma.tracker.count({ where }),
+    ]);
+
+    return {
+      data: trackers,
+      pagination: {
+        page,
+        limit: maxLimit,
+        total,
+        pages: maxLimit > 0 ? Math.ceil(total / maxLimit) : 0,
       },
-      orderBy: { createdAt: 'desc' },
-    });
+    };
   }
 
   async findByGuildId(guildId: string): Promise<Tracker[]> {

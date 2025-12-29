@@ -148,4 +148,6 @@ async function bootstrap() {
     );
   }
 }
-void bootstrap();
+void bootstrap().catch(() => {
+  process.exit(1);
+});
