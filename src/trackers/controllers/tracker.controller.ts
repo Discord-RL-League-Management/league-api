@@ -135,18 +135,35 @@ export class TrackerController {
   @ApiOperation({ summary: 'Get tracker details' })
   @ApiParam({ name: 'id', description: 'Tracker ID' })
   @ApiResponse({ status: 200, description: 'Tracker details' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Tracker not found' })
-  async getTracker(@Param('id', ParseCUIDPipe) id: string) {
-    return this.trackerService.getTrackerById(id);
+  async getTracker(
+    @Param('id', ParseCUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const tracker = await this.trackerService.getTrackerById(id);
+    await this.trackerAuthorizationService.validateTrackerAccess(
+      user.id,
+      tracker.userId,
+    );
+    return tracker;
   }
 
   @Get(':id/detail')
   @ApiOperation({ summary: 'Get tracker details with all seasons' })
   @ApiParam({ name: 'id', description: 'Tracker ID' })
   @ApiResponse({ status: 200, description: 'Tracker details with seasons' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Tracker not found' })
-  async getTrackerDetail(@Param('id', ParseCUIDPipe) id: string) {
+  async getTrackerDetail(
+    @Param('id', ParseCUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     const tracker = await this.trackerService.getTrackerById(id);
+    await this.trackerAuthorizationService.validateTrackerAccess(
+      user.id,
+      tracker.userId,
+    );
     return this.responseMapper.transformTrackerDetail(tracker);
   }
 
@@ -154,17 +171,41 @@ export class TrackerController {
   @ApiOperation({ summary: 'Get scraping status for a tracker' })
   @ApiParam({ name: 'id', description: 'Tracker ID' })
   @ApiResponse({ status: 200, description: 'Scraping status' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Tracker not found' })
-  async getScrapingStatus(@Param('id', ParseCUIDPipe) id: string) {
-    return this.trackerService.getScrapingStatus(id);
+  async getScrapingStatus(
+    @Param('id', ParseCUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const tracker = await this.trackerService.getTrackerById(id);
+    await this.trackerAuthorizationService.validateTrackerAccess(
+      user.id,
+      tracker.userId,
+    );
+    // Pass pre-fetched tracker to avoid redundant database query
+    return this.trackerService.getScrapingStatus(id, {
+      scrapingStatus: tracker.scrapingStatus,
+      scrapingError: tracker.scrapingError,
+      lastScrapedAt: tracker.lastScrapedAt,
+      scrapingAttempts: tracker.scrapingAttempts,
+    });
   }
 
   @Get(':id/seasons')
   @ApiOperation({ summary: 'Get all seasons for a tracker' })
   @ApiParam({ name: 'id', description: 'Tracker ID' })
   @ApiResponse({ status: 200, description: 'List of seasons' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Tracker not found' })
-  async getTrackerSeasons(@Param('id', ParseCUIDPipe) id: string) {
+  async getTrackerSeasons(
+    @Param('id', ParseCUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const tracker = await this.trackerService.getTrackerById(id);
+    await this.trackerAuthorizationService.validateTrackerAccess(
+      user.id,
+      tracker.userId,
+    );
     return this.trackerService.getTrackerSeasons(id);
   }
 
@@ -195,27 +236,46 @@ export class TrackerController {
     description: 'Filter by season number',
   })
   @ApiResponse({ status: 200, description: 'List of snapshots' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Tracker not found' })
   async getSnapshots(
     @Param('id', ParseCUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
     @Query('season') season?: number,
   ) {
+    const tracker = await this.trackerService.getTrackerById(id);
+    await this.trackerAuthorizationService.validateTrackerAccess(
+      user.id,
+      tracker.userId,
+    );
+    // Skip validation since tracker already validated above
     if (season) {
-      return this.snapshotService.getSnapshotsByTrackerAndSeason(id, season);
+      return this.snapshotService.getSnapshotsByTrackerAndSeason(
+        id,
+        season,
+        true,
+      );
     }
-    return this.snapshotService.getSnapshotsByTracker(id);
+    return this.snapshotService.getSnapshotsByTracker(id, true);
   }
 
   @Post(':id/snapshots')
   @ApiOperation({ summary: 'Create a new snapshot for a tracker' })
   @ApiParam({ name: 'id', description: 'Tracker ID' })
   @ApiResponse({ status: 201, description: 'Snapshot created' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Tracker not found' })
   async createSnapshot(
     @Param('id', ParseCUIDPipe) trackerId: string,
     @Body() dto: CreateTrackerSnapshotDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
+    const tracker = await this.trackerService.getTrackerById(trackerId);
+    if (tracker.userId !== user.id) {
+      throw new ForbiddenException(
+        'You can only create snapshots for your own trackers',
+      );
+    }
     return this.snapshotService.createSnapshot(trackerId, user.id, {
       capturedAt: dto.capturedAt,
       seasonNumber: dto.seasonNumber,
@@ -235,11 +295,17 @@ export class TrackerController {
   @ApiOperation({ summary: 'Update tracker metadata' })
   @ApiParam({ name: 'id', description: 'Tracker ID' })
   @ApiResponse({ status: 200, description: 'Tracker updated' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Tracker not found' })
   async updateTracker(
     @Param('id', ParseCUIDPipe) id: string,
     @Body() dto: UpdateTrackerDto,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
+    const tracker = await this.trackerService.getTrackerById(id);
+    if (tracker.userId !== user.id) {
+      throw new ForbiddenException('You can only update your own trackers');
+    }
     return this.trackerService.updateTracker(id, dto.displayName, dto.isActive);
   }
 
@@ -247,8 +313,16 @@ export class TrackerController {
   @ApiOperation({ summary: 'Soft delete a tracker' })
   @ApiParam({ name: 'id', description: 'Tracker ID' })
   @ApiResponse({ status: 200, description: 'Tracker deleted' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Tracker not found' })
-  async deleteTracker(@Param('id', ParseCUIDPipe) id: string) {
+  async deleteTracker(
+    @Param('id', ParseCUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const tracker = await this.trackerService.getTrackerById(id);
+    if (tracker.userId !== user.id) {
+      throw new ForbiddenException('You can only delete your own trackers');
+    }
     return this.trackerService.deleteTracker(id);
   }
 

@@ -51,7 +51,6 @@ export class TrackerAuthorizationService {
       return;
     }
 
-    // Get all guild memberships for both users
     const currentUserMemberships =
       (await this.guildMembersService.findMembersByUser(
         currentUserId,
@@ -61,7 +60,6 @@ export class TrackerAuthorizationService {
         targetUserId,
       )) as GuildMembershipWithGuild[];
 
-    // Extract guild IDs from memberships
     const currentUserGuildIds = new Set(
       currentUserMemberships.map((m) => m.guildId),
     );
@@ -69,7 +67,6 @@ export class TrackerAuthorizationService {
       targetUserMemberships.map((m) => m.guildId),
     );
 
-    // Find common guilds where both users are members
     const commonGuildIds = Array.from(currentUserGuildIds).filter((guildId) =>
       targetUserGuildIds.has(guildId),
     );
@@ -83,7 +80,6 @@ export class TrackerAuthorizationService {
       );
     }
 
-    // Check if current user is admin in any common guild
     for (const guildId of commonGuildIds) {
       try {
         const settings = await this.guildSettingsService.getSettings(guildId);

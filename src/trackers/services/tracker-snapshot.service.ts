@@ -40,7 +40,6 @@ export class TrackerSnapshotService {
       guildIds?: string[];
     },
   ) {
-    // Verify tracker exists
     const tracker = await this.trackerRepository.findById(trackerId);
     if (!tracker) {
       throw new NotFoundException('Tracker not found');
@@ -52,14 +51,12 @@ export class TrackerSnapshotService {
       );
     }
 
-    // Create snapshot
     const snapshot = await this.snapshotRepository.create({
       trackerId,
       enteredBy,
       ...data,
     });
 
-    // Add guild visibility if provided
     if (data.guildIds && data.guildIds.length > 0) {
       for (const guildId of data.guildIds) {
         await this.visibilityService.addVisibility(
@@ -89,12 +86,15 @@ export class TrackerSnapshotService {
 
   /**
    * Get all snapshots for a tracker
+   * @param trackerId - Tracker ID
+   * @param skipValidation - If true, skips tracker existence check (use when tracker already validated)
    */
-  async getSnapshotsByTracker(trackerId: string) {
-    // Verify tracker exists
-    const tracker = await this.trackerRepository.findById(trackerId);
-    if (!tracker) {
-      throw new NotFoundException('Tracker not found');
+  async getSnapshotsByTracker(trackerId: string, skipValidation = false) {
+    if (!skipValidation) {
+      const tracker = await this.trackerRepository.findById(trackerId);
+      if (!tracker) {
+        throw new NotFoundException('Tracker not found');
+      }
     }
 
     return this.snapshotRepository.findByTrackerId(trackerId);
@@ -102,15 +102,20 @@ export class TrackerSnapshotService {
 
   /**
    * Get snapshots for a tracker filtered by season
+   * @param trackerId - Tracker ID
+   * @param seasonNumber - Season number to filter by
+   * @param skipValidation - If true, skips tracker existence check (use when tracker already validated)
    */
   async getSnapshotsByTrackerAndSeason(
     trackerId: string,
     seasonNumber: number,
+    skipValidation = false,
   ) {
-    // Verify tracker exists
-    const tracker = await this.trackerRepository.findById(trackerId);
-    if (!tracker) {
-      throw new NotFoundException('Tracker not found');
+    if (!skipValidation) {
+      const tracker = await this.trackerRepository.findById(trackerId);
+      if (!tracker) {
+        throw new NotFoundException('Tracker not found');
+      }
     }
 
     return this.snapshotRepository.findByTrackerIdAndSeason(

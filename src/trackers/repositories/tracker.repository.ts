@@ -82,7 +82,6 @@ export class TrackerRepository {
       isDeleted: false,
     };
 
-    // Filter by platform
     if (opts.platform) {
       if (Array.isArray(opts.platform)) {
         where.platform = { in: opts.platform };
@@ -91,7 +90,6 @@ export class TrackerRepository {
       }
     }
 
-    // Filter by scraping status
     if (opts.status) {
       if (Array.isArray(opts.status)) {
         where.scrapingStatus = { in: opts.status };
@@ -100,12 +98,9 @@ export class TrackerRepository {
       }
     }
 
-    // Filter by active status
     if (opts.isActive !== undefined) {
       where.isActive = opts.isActive;
     }
-
-    // Sort options
     const orderBy: Prisma.TrackerOrderByWithRelationInput = {};
     if (opts.sortBy) {
       orderBy[opts.sortBy] = opts.sortOrder || 'desc';

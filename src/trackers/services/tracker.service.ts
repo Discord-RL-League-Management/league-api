@@ -149,8 +149,25 @@ export class TrackerService {
 
   /**
    * Get scraping status for a tracker
+   * @param trackerId - Tracker ID
+   * @param preFetchedTracker - Optional pre-fetched tracker object with scraping fields. If provided, skips database fetch.
    */
-  async getScrapingStatus(trackerId: string) {
+  async getScrapingStatus(
+    trackerId: string,
+    preFetchedTracker?: Pick<
+      Tracker,
+      'scrapingStatus' | 'scrapingError' | 'lastScrapedAt' | 'scrapingAttempts'
+    >,
+  ) {
+    if (preFetchedTracker) {
+      return {
+        status: preFetchedTracker.scrapingStatus,
+        error: preFetchedTracker.scrapingError,
+        lastScrapedAt: preFetchedTracker.lastScrapedAt,
+        attempts: preFetchedTracker.scrapingAttempts,
+      };
+    }
+
     const tracker = await this.prisma.tracker.findUnique({
       where: { id: trackerId },
       select: {
