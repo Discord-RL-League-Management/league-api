@@ -118,7 +118,6 @@ curl -H "Authorization: Bearer JWT_TOKEN" \
 | `GET` | `/api/trackers/:id/detail` | Get tracker details with all seasons | ✅ JWT |
 | `GET` | `/api/trackers/:id/status` | Get scraping status for a tracker | ✅ JWT |
 | `GET` | `/api/trackers/:id/seasons` | Get all seasons for a tracker | ✅ JWT |
-| `POST` | `/api/trackers/:id/refresh` | Trigger manual refresh for a tracker | ✅ JWT |
 | `GET` | `/api/trackers/:id/snapshots` | Get snapshots for a tracker | ✅ JWT |
 | `POST` | `/api/trackers/:id/snapshots` | Create a new snapshot for a tracker | ✅ JWT |
 | `PUT` | `/api/trackers/:id` | Update tracker metadata | ✅ JWT |
@@ -143,11 +142,6 @@ curl -H "Authorization: Bearer JWT_TOKEN" \
 # Get my trackers
 curl -H "Authorization: Bearer JWT_TOKEN" \
   http://localhost:3000/api/trackers/me
-
-# Refresh tracker
-curl -H "Authorization: Bearer JWT_TOKEN" \
-  -X POST \
-  http://localhost:3000/api/trackers/clxyz1234567890/refresh
 ```
 
 ### Guilds

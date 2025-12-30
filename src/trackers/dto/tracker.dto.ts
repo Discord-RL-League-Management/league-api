@@ -103,13 +103,3 @@ export class AddTrackerDto {
   @IsUrl()
   url!: string;
 }
-
-export class RefreshTrackerDto {
-  @ApiPropertyOptional({
-    description: 'Force refresh even if recently scraped',
-    example: false,
-  })
-  @IsOptional()
-  @IsBoolean()
-  force?: boolean;
-}

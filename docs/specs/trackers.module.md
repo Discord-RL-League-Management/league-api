@@ -68,7 +68,6 @@ Manages game tracker profiles (e.g., Rocket League Tracker Network), including r
   - `GET /api/trackers/:id/detail`: Returns tracker with seasons
   - `GET /api/trackers/:id/status`: Returns scraping status
   - `GET /api/trackers/:id/seasons`: Returns tracker seasons
-  - `POST /api/trackers/:id/refresh`: Triggers manual refresh
   - `PUT /api/trackers/:id`: Updates tracker
   - `DELETE /api/trackers/:id`: Deletes tracker
 

@@ -321,4 +321,53 @@ describe('TrackerAuthorizationService', () => {
       expect(mockGuildSettingsService.getSettings).toHaveBeenCalled();
     });
   });
+
+  describe('validateTrackerOwnership', () => {
+    it('should_allow_access_when_user_is_owner', () => {
+      // ARRANGE
+      const userId = 'user-123';
+
+      // ACT
+      service.validateTrackerOwnership(userId, userId);
+
+      // ASSERT
+      // Should not throw - owner access granted
+      expect(mockGuildMembersService.findMembersByUser).not.toHaveBeenCalled();
+      expect(mockPermissionCheckService.checkAdminRoles).not.toHaveBeenCalled();
+      expect(mockGuildSettingsService.getSettings).not.toHaveBeenCalled();
+    });
+
+    it('should_throw_ForbiddenException_when_user_is_not_owner', () => {
+      // ARRANGE
+      const ownerUserId = 'user-123';
+      const nonOwnerUserId = 'user-456';
+
+      // ACT & ASSERT
+      expect(() =>
+        service.validateTrackerOwnership(nonOwnerUserId, ownerUserId),
+      ).toThrow(ForbiddenException);
+
+      // Should not check guild memberships - owner-only operation
+      expect(mockGuildMembersService.findMembersByUser).not.toHaveBeenCalled();
+      expect(mockPermissionCheckService.checkAdminRoles).not.toHaveBeenCalled();
+      expect(mockGuildSettingsService.getSettings).not.toHaveBeenCalled();
+    });
+
+    it('should_throw_ForbiddenException_when_guild_admin_but_not_owner', () => {
+      // ARRANGE
+      const ownerUserId = 'user-123';
+      const guildAdminUserId = 'user-456';
+
+      // ACT & ASSERT
+      // Even if the user is a guild admin, owner-only operations should fail
+      expect(() =>
+        service.validateTrackerOwnership(guildAdminUserId, ownerUserId),
+      ).toThrow(ForbiddenException);
+
+      // Should not check guild memberships - owner-only operation
+      expect(mockGuildMembersService.findMembersByUser).not.toHaveBeenCalled();
+      expect(mockPermissionCheckService.checkAdminRoles).not.toHaveBeenCalled();
+      expect(mockGuildSettingsService.getSettings).not.toHaveBeenCalled();
+    });
+  });
 });

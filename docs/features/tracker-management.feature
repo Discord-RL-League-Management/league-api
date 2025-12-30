@@ -81,23 +81,6 @@ Feature: Tracker Management
     Then the API should return all seasons for the tracker
     And seasons should be ordered by season number
 
-  @tracker @refresh
-  Scenario: User triggers manual tracker refresh
-    Given a tracker exists with ID "tracker123"
-    And the tracker belongs to the authenticated user
-    When the user requests "POST /api/trackers/tracker123/refresh"
-    Then the API should validate user owns the tracker
-    And the API should enqueue tracker for scraping
-    And the API should return refresh job information
-
-  @tracker @refresh @permission
-  Scenario: User tries to refresh another user's tracker
-    Given a tracker exists with ID "tracker123"
-    And the tracker belongs to a different user
-    When the authenticated user requests "POST /api/trackers/tracker123/refresh"
-    Then the API should return 403 Forbidden
-    And the error message should indicate ownership requirement
-
   @tracker @update
   Scenario: User updates tracker information
     Given a tracker exists with ID "tracker123"

@@ -121,4 +121,29 @@ export class TrackerAuthorizationService {
       'You can only view trackers for yourself or members of guilds where you are an admin',
     );
   }
+
+  /**
+   * Check if current user is the owner of a tracker
+   * Single Responsibility: Tracker ownership validation (owner-only operations)
+   *
+   * This method is for write operations (update, delete, create snapshot) which
+   * should only be allowed by the tracker owner, not guild admins.
+   *
+   * @param currentUserId - ID of the user making the request
+   * @param trackerUserId - ID of the user who owns the tracker
+   * @throws ForbiddenException if user is not the owner
+   */
+  validateTrackerOwnership(currentUserId: string, trackerUserId: string): void {
+    if (currentUserId !== trackerUserId) {
+      this.logger.warn(
+        `User ${currentUserId} attempted owner-only operation on tracker owned by ${trackerUserId}`,
+      );
+      throw new ForbiddenException(
+        'You can only perform this operation on your own trackers',
+      );
+    }
+    this.logger.debug(
+      `User ${currentUserId} confirmed as owner - operation allowed`,
+    );
+  }
 }
