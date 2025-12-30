@@ -19,7 +19,6 @@ describe('TeamValidationService', () => {
   let mockOrganizationValidationService: OrganizationValidationService;
 
   beforeEach(() => {
-    // ARRANGE: Setup test dependencies
     mockLeagueSettingsService = {
       getSettings: vi.fn(),
     } as unknown as LeagueSettingsService;
@@ -45,7 +44,6 @@ describe('TeamValidationService', () => {
 
   describe('validateOrganizationRequirement', () => {
     it('should_pass_when_organization_not_required', async () => {
-      // ARRANGE
       const leagueId = 'league123';
       const settings = {
         membership: {
@@ -57,17 +55,14 @@ describe('TeamValidationService', () => {
         settings as any,
       );
 
-      // ACT
       await service.validateOrganizationRequirement(leagueId);
 
-      // ASSERT
       expect(mockLeagueSettingsService.getSettings).toHaveBeenCalledWith(
         leagueId,
       );
     });
 
     it('should_pass_when_organization_required_and_provided', async () => {
-      // ARRANGE
       const leagueId = 'league123';
       const organizationId = 'org123';
       const settings = {
@@ -80,17 +75,14 @@ describe('TeamValidationService', () => {
         settings as any,
       );
 
-      // ACT
       await service.validateOrganizationRequirement(leagueId, organizationId);
 
-      // ASSERT
       expect(mockLeagueSettingsService.getSettings).toHaveBeenCalledWith(
         leagueId,
       );
     });
 
     it('should_throw_BadRequestException_when_organization_required_but_not_provided', async () => {
-      // ARRANGE
       const leagueId = 'league123';
       const settings = {
         membership: {
@@ -102,7 +94,6 @@ describe('TeamValidationService', () => {
         settings as any,
       );
 
-      // ACT & ASSERT
       await expect(
         service.validateOrganizationRequirement(leagueId),
       ).rejects.toThrow(BadRequestException);
@@ -114,7 +105,6 @@ describe('TeamValidationService', () => {
 
   describe('validateOrganizationExists', () => {
     it('should_pass_when_organization_exists_in_league', async () => {
-      // ARRANGE
       const organizationId = 'org123';
       const leagueId = 'league123';
       const organization = { id: organizationId, leagueId };
@@ -123,10 +113,8 @@ describe('TeamValidationService', () => {
         organization as any,
       );
 
-      // ACT
       await service.validateOrganizationExists(organizationId, leagueId);
 
-      // ASSERT
       expect(mockOrganizationRepository.findByIdAndLeague).toHaveBeenCalledWith(
         organizationId,
         leagueId,
@@ -134,7 +122,6 @@ describe('TeamValidationService', () => {
     });
 
     it('should_throw_NotFoundException_when_organization_not_found', async () => {
-      // ARRANGE
       const organizationId = 'org123';
       const leagueId = 'league123';
 
@@ -142,7 +129,6 @@ describe('TeamValidationService', () => {
         null,
       );
 
-      // ACT & ASSERT
       await expect(
         service.validateOrganizationExists(organizationId, leagueId),
       ).rejects.toThrow(NotFoundException);
@@ -156,7 +142,6 @@ describe('TeamValidationService', () => {
 
   describe('validateOrganizationCapacity', () => {
     it('should_pass_when_organization_capacity_is_valid', async () => {
-      // ARRANGE
       const organizationId = 'org123';
       const leagueId = 'league123';
 
@@ -164,10 +149,8 @@ describe('TeamValidationService', () => {
         mockOrganizationValidationService.validateOrganizationCapacity,
       ).mockResolvedValue(undefined);
 
-      // ACT
       await service.validateOrganizationCapacity(organizationId, leagueId);
 
-      // ASSERT
       expect(
         mockOrganizationValidationService.validateOrganizationCapacity,
       ).toHaveBeenCalledWith(leagueId, organizationId);

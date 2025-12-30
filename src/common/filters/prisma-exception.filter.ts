@@ -139,7 +139,6 @@ export class PrismaExceptionFilter implements ExceptionFilter {
       };
     }
 
-    // Log error for debugging
     this.logger.error(`${method} ${path} - Prisma error: ${errorInfo.code}`, {
       error: exception,
       errorInfo,

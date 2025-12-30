@@ -82,7 +82,6 @@ describe('GuildSyncService', () => {
   ];
 
   beforeEach(() => {
-    // ARRANGE: Setup test dependencies with mocks
     mockSettingsDefaults = {
       getDefaults: vi.fn().mockReturnValue(mockDefaultSettings),
     } as unknown as SettingsDefaultsService;
@@ -138,7 +137,6 @@ describe('GuildSyncService', () => {
 
   describe('syncGuildWithMembers', () => {
     it('should_sync_new_guild_with_members_successfully', async () => {
-      // ARRANGE
       vi.mocked(mockPrisma.$transaction).mockImplementation(
         async (callback) => {
           const mockTx = {
@@ -163,20 +161,17 @@ describe('GuildSyncService', () => {
         },
       );
 
-      // ACT
       const result = await service.syncGuildWithMembers(
         guildId,
         mockGuildData,
         mockMembers,
       );
 
-      // ASSERT
       expect(result.guild).toEqual(mockGuild);
       expect(result.membersSynced).toBe(2);
     });
 
     it('should_sync_existing_guild_with_members_successfully', async () => {
-      // ARRANGE
       const existingGuild = { ...mockGuild, name: 'Existing Guild' };
       vi.mocked(mockPrisma.$transaction).mockImplementation(
         async (callback) => {
@@ -207,20 +202,17 @@ describe('GuildSyncService', () => {
         },
       );
 
-      // ACT
       const result = await service.syncGuildWithMembers(
         guildId,
         mockGuildData,
         mockMembers,
       );
 
-      // ASSERT
       expect(result.guild).toEqual(existingGuild);
       expect(result.membersSynced).toBe(2);
     });
 
     it('should_create_settings_when_settings_do_not_exist', async () => {
-      // ARRANGE
       vi.mocked(mockPrisma.$transaction).mockImplementation(
         async (callback) => {
           const mockTx = {
@@ -245,20 +237,17 @@ describe('GuildSyncService', () => {
         },
       );
 
-      // ACT
       const result = await service.syncGuildWithMembers(
         guildId,
         mockGuildData,
         [],
       );
 
-      // ASSERT
       expect(result.guild).toEqual(mockGuild);
       expect(result.membersSynced).toBe(0);
     });
 
     it('should_include_admin_roles_in_settings_when_provided', async () => {
-      // ARRANGE
       const rolesData = {
         admin: [
           { id: 'admin-role-1', name: 'Admin Role 1' },
@@ -296,7 +285,6 @@ describe('GuildSyncService', () => {
         },
       );
 
-      // ACT
       const result = await service.syncGuildWithMembers(
         guildId,
         mockGuildData,
@@ -304,12 +292,10 @@ describe('GuildSyncService', () => {
         rolesData,
       );
 
-      // ASSERT
       expect(result.guild).toEqual(mockGuild);
     });
 
     it('should_upsert_users_during_member_sync', async () => {
-      // ARRANGE
       vi.mocked(mockPrisma.$transaction).mockImplementation(
         async (callback) => {
           const mockTx = {
@@ -335,15 +321,12 @@ describe('GuildSyncService', () => {
         },
       );
 
-      // ACT
       await service.syncGuildWithMembers(guildId, mockGuildData, mockMembers);
 
-      // ASSERT: Verify users upserted (state verification through transaction completion)
       expect(mockPrisma.$transaction).toHaveBeenCalled();
     });
 
     it('should_remove_duplicate_members_before_syncing', async () => {
-      // ARRANGE
       const duplicateMembers = [
         ...mockMembers,
         { ...mockMembers[0] }, // Duplicate
@@ -373,19 +356,16 @@ describe('GuildSyncService', () => {
         },
       );
 
-      // ACT
       const result = await service.syncGuildWithMembers(
         guildId,
         mockGuildData,
         duplicateMembers,
       );
 
-      // ASSERT: Service returns original members.length, deduplication happens internally for user upsert
       expect(result.membersSynced).toBe(3); // Original array length
     });
 
     it('should_delete_existing_members_before_creating_new_ones', async () => {
-      // ARRANGE
       vi.mocked(mockPrisma.$transaction).mockImplementation(
         async (callback) => {
           const mockTx = {
@@ -410,19 +390,16 @@ describe('GuildSyncService', () => {
         },
       );
 
-      // ACT
       const result = await service.syncGuildWithMembers(
         guildId,
         mockGuildData,
         mockMembers,
       );
 
-      // ASSERT
       expect(result.membersSynced).toBe(2);
     });
 
     it('should_throw_NotFoundException_when_user_foreign_key_constraint_fails', async () => {
-      // ARRANGE
       const prismaError = new Prisma.PrismaClientKnownRequestError(
         'Foreign key constraint failed',
         {
@@ -434,14 +411,12 @@ describe('GuildSyncService', () => {
 
       vi.mocked(mockPrisma.$transaction).mockRejectedValue(prismaError);
 
-      // ACT & ASSERT
       await expect(
         service.syncGuildWithMembers(guildId, mockGuildData, mockMembers),
       ).rejects.toThrow(NotFoundException);
     });
 
     it('should_throw_NotFoundException_when_guild_foreign_key_constraint_fails', async () => {
-      // ARRANGE
       const prismaError = new Prisma.PrismaClientKnownRequestError(
         'Foreign key constraint failed',
         {
@@ -453,25 +428,21 @@ describe('GuildSyncService', () => {
 
       vi.mocked(mockPrisma.$transaction).mockRejectedValue(prismaError);
 
-      // ACT & ASSERT
       await expect(
         service.syncGuildWithMembers(guildId, mockGuildData, mockMembers),
       ).rejects.toThrow(NotFoundException);
     });
 
     it('should_throw_InternalServerErrorException_when_unexpected_error_occurs', async () => {
-      // ARRANGE
       const error = new Error('Unexpected database error');
       vi.mocked(mockPrisma.$transaction).mockRejectedValue(error);
 
-      // ACT & ASSERT
       await expect(
         service.syncGuildWithMembers(guildId, mockGuildData, mockMembers),
       ).rejects.toThrow(InternalServerErrorException);
     });
 
     it('should_extract_error_info_when_error_handler_available', async () => {
-      // ARRANGE
       const error = new Error('Database error');
       vi.mocked(mockPrisma.$transaction).mockRejectedValue(error);
       vi.mocked(mockErrorHandler.extractErrorInfo).mockReturnValue({
@@ -480,14 +451,12 @@ describe('GuildSyncService', () => {
         details: { guildId },
       });
 
-      // ACT & ASSERT
       await expect(
         service.syncGuildWithMembers(guildId, mockGuildData, mockMembers),
       ).rejects.toThrow(InternalServerErrorException);
     });
 
     it('should_handle_empty_members_array', async () => {
-      // ARRANGE
       vi.mocked(mockPrisma.$transaction).mockImplementation(
         async (callback) => {
           const mockTx = {
@@ -512,20 +481,17 @@ describe('GuildSyncService', () => {
         },
       );
 
-      // ACT
       const result = await service.syncGuildWithMembers(
         guildId,
         mockGuildData,
         [],
       );
 
-      // ASSERT
       expect(result.guild).toEqual(mockGuild);
       expect(result.membersSynced).toBe(0);
     });
 
     it('should_update_existing_settings_when_admin_roles_provided', async () => {
-      // ARRANGE
       const rolesData = {
         admin: [{ id: 'admin-role-1', name: 'Admin Role 1' }],
       };
@@ -561,7 +527,6 @@ describe('GuildSyncService', () => {
         },
       );
 
-      // ACT
       const result = await service.syncGuildWithMembers(
         guildId,
         mockGuildData,
@@ -569,7 +534,6 @@ describe('GuildSyncService', () => {
         rolesData,
       );
 
-      // ASSERT
       expect(result.guild).toEqual(mockGuild);
     });
   });

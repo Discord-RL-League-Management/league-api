@@ -48,7 +48,6 @@ describe('GuildsService', () => {
   };
 
   beforeEach(() => {
-    // ARRANGE: Setup test dependencies with mocks
     mockGuildRepository = {
       exists: vi.fn(),
       createWithSettings: vi.fn(),
@@ -85,7 +84,6 @@ describe('GuildsService', () => {
 
   describe('create', () => {
     it('should_create_guild_with_default_settings_when_guild_does_not_exist', async () => {
-      // ARRANGE
       const createDto: CreateGuildDto = {
         id: '123456789012345678',
         name: 'Test Guild',
@@ -98,17 +96,14 @@ describe('GuildsService', () => {
         mockGuild,
       );
 
-      // ACT
       const result = await service.create(createDto);
 
-      // ASSERT: Verify the result (state verification)
       expect(result).toEqual(mockGuild);
       expect(result.id).toBe(createDto.id);
       expect(result.name).toBe(createDto.name);
     });
 
     it('should_throw_GuildAlreadyExistsException_when_guild_already_exists', async () => {
-      // ARRANGE
       const createDto: CreateGuildDto = {
         id: '123456789012345678',
         name: 'Test Guild',
@@ -117,14 +112,12 @@ describe('GuildsService', () => {
 
       vi.mocked(mockGuildRepository.exists).mockResolvedValue(true);
 
-      // ACT & ASSERT
       await expect(service.create(createDto)).rejects.toThrow(
         GuildAlreadyExistsException,
       );
     });
 
     it('should_throw_InternalServerErrorException_when_repository_throws_unexpected_error', async () => {
-      // ARRANGE
       const createDto: CreateGuildDto = {
         id: '123456789012345678',
         name: 'Test Guild',
@@ -136,14 +129,12 @@ describe('GuildsService', () => {
         new Error('Database error'),
       );
 
-      // ACT & ASSERT
       await expect(service.create(createDto)).rejects.toThrow(
         InternalServerErrorException,
       );
     });
 
     it('should_propagate_ConflictException_when_repository_throws_conflict', async () => {
-      // ARRANGE
       const createDto: CreateGuildDto = {
         id: '123456789012345678',
         name: 'Test Guild',
@@ -161,7 +152,6 @@ describe('GuildsService', () => {
         conflictError,
       );
 
-      // ACT & ASSERT
       await expect(service.create(createDto)).rejects.toThrow(
         ConflictException as unknown as Error,
       );
@@ -170,7 +160,6 @@ describe('GuildsService', () => {
 
   describe('findAll', () => {
     it('should_return_paginated_guilds_with_default_pagination', async () => {
-      // ARRANGE
       const mockGuilds = [
         mockGuild,
         { ...mockGuild, id: '999999999999999999' },
@@ -184,10 +173,8 @@ describe('GuildsService', () => {
 
       vi.mocked(mockGuildRepository.findAll).mockResolvedValue(mockResult);
 
-      // ACT
       const result = await service.findAll();
 
-      // ASSERT: Verify pagination structure and data
       expect(result.guilds).toEqual(mockGuilds);
       expect(result.pagination).toEqual({
         page: 1,
@@ -198,7 +185,6 @@ describe('GuildsService', () => {
     });
 
     it('should_return_paginated_guilds_with_custom_pagination', async () => {
-      // ARRANGE
       const mockGuilds = Array.from({ length: 10 }, (_, i) => ({
         ...mockGuild,
         id: `${i}`.padStart(18, '0'),
@@ -212,10 +198,8 @@ describe('GuildsService', () => {
 
       vi.mocked(mockGuildRepository.findAll).mockResolvedValue(mockResult);
 
-      // ACT
       const result = await service.findAll(2, 5);
 
-      // ASSERT: Verify pagination calculation
       expect(result.pagination).toEqual({
         page: 2,
         limit: 5,
@@ -225,12 +209,10 @@ describe('GuildsService', () => {
     });
 
     it('should_throw_InternalServerErrorException_when_repository_fails', async () => {
-      // ARRANGE
       vi.mocked(mockGuildRepository.findAll).mockRejectedValue(
         new Error('Database error'),
       );
 
-      // ACT & ASSERT
       await expect(service.findAll()).rejects.toThrow(
         InternalServerErrorException,
       );
@@ -239,49 +221,40 @@ describe('GuildsService', () => {
 
   describe('findOne', () => {
     it('should_return_guild_when_guild_exists', async () => {
-      // ARRANGE
       const guildId = '123456789012345678';
       vi.mocked(mockGuildRepository.findOne).mockResolvedValue(mockGuild);
 
-      // ACT
       const result = await service.findOne(guildId);
 
-      // ASSERT
       expect(result).toEqual(mockGuild);
       expect(result.id).toBe(guildId);
     });
 
     it('should_throw_GuildNotFoundException_when_guild_does_not_exist', async () => {
-      // ARRANGE
       const guildId = '999999999999999999';
       vi.mocked(mockGuildRepository.findOne).mockResolvedValue(null);
 
-      // ACT & ASSERT
       await expect(service.findOne(guildId)).rejects.toThrow(
         GuildNotFoundException,
       );
     });
 
     it('should_throw_InternalServerErrorException_when_repository_fails', async () => {
-      // ARRANGE
       const guildId = '123456789012345678';
       vi.mocked(mockGuildRepository.findOne).mockRejectedValue(
         new Error('Database error'),
       );
 
-      // ACT & ASSERT
       await expect(service.findOne(guildId)).rejects.toThrow(
         InternalServerErrorException,
       );
     });
 
     it('should_propagate_GuildNotFoundException_when_repository_throws_it', async () => {
-      // ARRANGE
       const guildId = '999999999999999999';
       const notFoundError = new GuildNotFoundException(guildId);
       vi.mocked(mockGuildRepository.findOne).mockRejectedValue(notFoundError);
 
-      // ACT & ASSERT
       await expect(service.findOne(guildId)).rejects.toThrow(
         GuildNotFoundException,
       );
@@ -290,7 +263,6 @@ describe('GuildsService', () => {
 
   describe('update', () => {
     it('should_update_guild_when_guild_exists', async () => {
-      // ARRANGE
       const guildId = '123456789012345678';
       const updateDto: UpdateGuildDto = {
         name: 'Updated Guild Name',
@@ -301,30 +273,25 @@ describe('GuildsService', () => {
       vi.mocked(mockGuildRepository.exists).mockResolvedValue(true);
       vi.mocked(mockGuildRepository.update).mockResolvedValue(updatedGuild);
 
-      // ACT
       const result = await service.update(guildId, updateDto);
 
-      // ASSERT: Verify updated values
       expect(result).toEqual(updatedGuild);
       expect(result.name).toBe(updateDto.name);
       expect(result.memberCount).toBe(updateDto.memberCount);
     });
 
     it('should_throw_GuildNotFoundException_when_guild_does_not_exist', async () => {
-      // ARRANGE
       const guildId = '999999999999999999';
       const updateDto: UpdateGuildDto = { name: 'Updated Name' };
 
       vi.mocked(mockGuildRepository.exists).mockResolvedValue(false);
 
-      // ACT & ASSERT
       await expect(service.update(guildId, updateDto)).rejects.toThrow(
         GuildNotFoundException,
       );
     });
 
     it('should_throw_InternalServerErrorException_when_repository_fails', async () => {
-      // ARRANGE
       const guildId = '123456789012345678';
       const updateDto: UpdateGuildDto = { name: 'Updated Name' };
 
@@ -333,7 +300,6 @@ describe('GuildsService', () => {
         new Error('Database error'),
       );
 
-      // ACT & ASSERT
       await expect(service.update(guildId, updateDto)).rejects.toThrow(
         InternalServerErrorException,
       );
@@ -342,7 +308,6 @@ describe('GuildsService', () => {
 
   describe('remove', () => {
     it('should_soft_delete_guild_when_guild_exists', async () => {
-      // ARRANGE
       const guildId = '123456789012345678';
       const deletedGuild = { ...mockGuild, isActive: false };
 
@@ -351,28 +316,23 @@ describe('GuildsService', () => {
         deletedGuild,
       );
 
-      // ACT
       const result = await service.remove(guildId);
 
-      // ASSERT: Verify soft delete (isActive = false)
       expect(result).toEqual(deletedGuild);
       expect(result.isActive).toBe(false);
     });
 
     it('should_throw_GuildNotFoundException_when_guild_does_not_exist', async () => {
-      // ARRANGE
       const guildId = '999999999999999999';
 
       vi.mocked(mockGuildRepository.exists).mockResolvedValue(false);
 
-      // ACT & ASSERT
       await expect(service.remove(guildId)).rejects.toThrow(
         GuildNotFoundException,
       );
     });
 
     it('should_throw_InternalServerErrorException_when_repository_fails', async () => {
-      // ARRANGE
       const guildId = '123456789012345678';
 
       vi.mocked(mockGuildRepository.exists).mockResolvedValue(true);
@@ -380,7 +340,6 @@ describe('GuildsService', () => {
         new Error('Database error'),
       );
 
-      // ACT & ASSERT
       await expect(service.remove(guildId)).rejects.toThrow(
         InternalServerErrorException,
       );
@@ -389,7 +348,6 @@ describe('GuildsService', () => {
 
   describe('findActiveGuildIds', () => {
     it('should_return_array_of_active_guild_ids', async () => {
-      // ARRANGE
       const activeGuildIds = [
         '123456789012345678',
         '987654321098765432',
@@ -400,34 +358,27 @@ describe('GuildsService', () => {
         activeGuildIds,
       );
 
-      // ACT
       const result = await service.findActiveGuildIds();
 
-      // ASSERT
       expect(result).toEqual(activeGuildIds);
       expect(Array.isArray(result)).toBe(true);
       expect(result.length).toBe(3);
     });
 
     it('should_return_empty_array_when_no_active_guilds_exist', async () => {
-      // ARRANGE
       vi.mocked(mockGuildRepository.findActiveGuildIds).mockResolvedValue([]);
 
-      // ACT
       const result = await service.findActiveGuildIds();
 
-      // ASSERT
       expect(result).toEqual([]);
       expect(result.length).toBe(0);
     });
 
     it('should_throw_InternalServerErrorException_when_repository_fails', async () => {
-      // ARRANGE
       vi.mocked(mockGuildRepository.findActiveGuildIds).mockRejectedValue(
         new Error('Database error'),
       );
 
-      // ACT & ASSERT
       await expect(service.findActiveGuildIds()).rejects.toThrow(
         InternalServerErrorException,
       );
@@ -436,33 +387,26 @@ describe('GuildsService', () => {
 
   describe('exists', () => {
     it('should_return_true_when_guild_exists', async () => {
-      // ARRANGE
       const guildId = '123456789012345678';
       vi.mocked(mockGuildRepository.exists).mockResolvedValue(true);
 
-      // ACT
       const result = await service.exists(guildId);
 
-      // ASSERT
       expect(result).toBe(true);
     });
 
     it('should_return_false_when_guild_does_not_exist', async () => {
-      // ARRANGE
       const guildId = '999999999999999999';
       vi.mocked(mockGuildRepository.exists).mockResolvedValue(false);
 
-      // ACT
       const result = await service.exists(guildId);
 
-      // ASSERT
       expect(result).toBe(false);
     });
   });
 
   describe('upsert', () => {
     it('should_create_guild_when_guild_does_not_exist', async () => {
-      // ARRANGE
       const createDto: CreateGuildDto = {
         id: '123456789012345678',
         name: 'Test Guild',
@@ -473,16 +417,13 @@ describe('GuildsService', () => {
         mockGuild,
       );
 
-      // ACT
       const result = await service.upsert(createDto);
 
-      // ASSERT: Verify guild was created/updated
       expect(result).toEqual(mockGuild);
       expect(result.id).toBe(createDto.id);
     });
 
     it('should_update_guild_when_guild_already_exists', async () => {
-      // ARRANGE
       const createDto: CreateGuildDto = {
         id: '123456789012345678',
         name: 'Updated Guild Name',
@@ -494,16 +435,13 @@ describe('GuildsService', () => {
         updatedGuild,
       );
 
-      // ACT
       const result = await service.upsert(createDto);
 
-      // ASSERT: Verify guild was updated
       expect(result).toEqual(updatedGuild);
       expect(result.name).toBe(createDto.name);
     });
 
     it('should_throw_InternalServerErrorException_with_error_details_when_repository_fails', async () => {
-      // ARRANGE
       const createDto: CreateGuildDto = {
         id: '123456789012345678',
         name: 'Test Guild',
@@ -520,7 +458,6 @@ describe('GuildsService', () => {
         details: { constraint: 'unique_guild_id' },
       });
 
-      // ACT & ASSERT
       await expect(service.upsert(createDto)).rejects.toThrow(
         InternalServerErrorException,
       );

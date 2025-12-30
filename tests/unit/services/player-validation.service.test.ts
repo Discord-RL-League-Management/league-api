@@ -25,7 +25,6 @@ describe('PlayerValidationService', () => {
   let mockGuildMembersService: GuildMembersService;
 
   beforeEach(() => {
-    // ARRANGE: Setup test dependencies
     mockPrisma = {
       player: {
         findUnique: vi.fn(),
@@ -54,26 +53,20 @@ describe('PlayerValidationService', () => {
 
   describe('validatePlayerStatus', () => {
     it('should_pass_when_player_status_is_ACTIVE', () => {
-      // ARRANGE
       const status = PlayerStatus.ACTIVE;
 
-      // ACT & ASSERT
       expect(() => service.validatePlayerStatus(status)).not.toThrow();
     });
 
     it('should_pass_when_player_status_is_INACTIVE', () => {
-      // ARRANGE
       const status = PlayerStatus.INACTIVE;
 
-      // ACT & ASSERT
       expect(() => service.validatePlayerStatus(status)).not.toThrow();
     });
 
     it('should_throw_InvalidPlayerStatusException_when_player_status_is_BANNED', () => {
-      // ARRANGE
       const status = PlayerStatus.BANNED;
 
-      // ACT & ASSERT
       expect(() => service.validatePlayerStatus(status)).toThrow(
         InvalidPlayerStatusException,
       );
@@ -83,10 +76,8 @@ describe('PlayerValidationService', () => {
     });
 
     it('should_throw_InvalidPlayerStatusException_when_player_status_is_SUSPENDED', () => {
-      // ARRANGE
       const status = PlayerStatus.SUSPENDED;
 
-      // ACT & ASSERT
       expect(() => service.validatePlayerStatus(status)).toThrow(
         InvalidPlayerStatusException,
       );
@@ -98,31 +89,24 @@ describe('PlayerValidationService', () => {
 
   describe('validateTrackerLink', () => {
     it('should_pass_when_tracker_id_is_null', async () => {
-      // ARRANGE
       const trackerId = null;
       const userId = 'user123';
 
-      // ACT
       await service.validateTrackerLink(trackerId, userId);
 
-      // ASSERT
       expect(mockTrackerService.getTrackerById).not.toHaveBeenCalled();
     });
 
     it('should_pass_when_tracker_id_is_undefined', async () => {
-      // ARRANGE
       const trackerId = undefined;
       const userId = 'user123';
 
-      // ACT
       await service.validateTrackerLink(trackerId, userId);
 
-      // ASSERT
       expect(mockTrackerService.getTrackerById).not.toHaveBeenCalled();
     });
 
     it('should_pass_when_tracker_belongs_to_user_and_is_active', async () => {
-      // ARRANGE
       const trackerId = 'tracker123';
       const userId = 'user123';
       const tracker = {
@@ -136,15 +120,12 @@ describe('PlayerValidationService', () => {
         tracker as any,
       );
 
-      // ACT
       await service.validateTrackerLink(trackerId, userId);
 
-      // ASSERT
       expect(mockTrackerService.getTrackerById).toHaveBeenCalledWith(trackerId);
     });
 
     it('should_throw_PlayerValidationException_when_tracker_does_not_belong_to_user', async () => {
-      // ARRANGE
       const trackerId = 'tracker123';
       const userId = 'user123';
       const differentUserId = 'user456';
@@ -159,7 +140,6 @@ describe('PlayerValidationService', () => {
         tracker as any,
       );
 
-      // ACT & ASSERT
       await expect(
         service.validateTrackerLink(trackerId, userId),
       ).rejects.toThrow(PlayerValidationException);
@@ -171,7 +151,6 @@ describe('PlayerValidationService', () => {
     });
 
     it('should_throw_PlayerValidationException_when_tracker_is_not_active', async () => {
-      // ARRANGE
       const trackerId = 'tracker123';
       const userId = 'user123';
       const tracker = {
@@ -185,7 +164,6 @@ describe('PlayerValidationService', () => {
         tracker as any,
       );
 
-      // ACT & ASSERT
       await expect(
         service.validateTrackerLink(trackerId, userId),
       ).rejects.toThrow(PlayerValidationException);
@@ -195,7 +173,6 @@ describe('PlayerValidationService', () => {
     });
 
     it('should_throw_PlayerValidationException_when_tracker_is_deleted', async () => {
-      // ARRANGE
       const trackerId = 'tracker123';
       const userId = 'user123';
       const tracker = {
@@ -209,7 +186,6 @@ describe('PlayerValidationService', () => {
         tracker as any,
       );
 
-      // ACT & ASSERT
       await expect(
         service.validateTrackerLink(trackerId, userId),
       ).rejects.toThrow(PlayerValidationException);
@@ -219,7 +195,6 @@ describe('PlayerValidationService', () => {
     });
 
     it('should_throw_PlayerValidationException_when_tracker_not_found', async () => {
-      // ARRANGE
       const trackerId = 'tracker123';
       const userId = 'user123';
 
@@ -227,7 +202,6 @@ describe('PlayerValidationService', () => {
         new Error('Tracker not found'),
       );
 
-      // ACT & ASSERT
       await expect(
         service.validateTrackerLink(trackerId, userId),
       ).rejects.toThrow(PlayerValidationException);
@@ -239,7 +213,6 @@ describe('PlayerValidationService', () => {
 
   describe('validateGuildMembership', () => {
     it('should_pass_when_user_is_member_of_guild', async () => {
-      // ARRANGE
       const userId = 'user123';
       const guildId = 'guild123';
       const membership = {
@@ -251,10 +224,8 @@ describe('PlayerValidationService', () => {
         membership as any,
       );
 
-      // ACT
       await service.validateGuildMembership(userId, guildId);
 
-      // ASSERT
       expect(mockGuildMembersService.findOne).toHaveBeenCalledWith(
         userId,
         guildId,
@@ -262,7 +233,6 @@ describe('PlayerValidationService', () => {
     });
 
     it('should_throw_PlayerValidationException_when_user_is_not_member_of_guild', async () => {
-      // ARRANGE
       const userId = 'user123';
       const guildId = 'guild123';
 
@@ -270,7 +240,6 @@ describe('PlayerValidationService', () => {
         new Error('Not found'),
       );
 
-      // ACT & ASSERT
       await expect(
         service.validateGuildMembership(userId, guildId),
       ).rejects.toThrow(PlayerValidationException);
@@ -282,72 +251,60 @@ describe('PlayerValidationService', () => {
 
   describe('validateCooldown', () => {
     it('should_pass_when_lastLeftLeagueAt_is_null', () => {
-      // ARRANGE
       const lastLeftLeagueAt = null;
       const cooldownDays = 7;
 
-      // ACT & ASSERT
       expect(() =>
         service.validateCooldown(lastLeftLeagueAt, cooldownDays),
       ).not.toThrow();
     });
 
     it('should_pass_when_cooldownDays_is_null', () => {
-      // ARRANGE
       const lastLeftLeagueAt = new Date();
       const cooldownDays = null;
 
-      // ACT & ASSERT
       expect(() =>
         service.validateCooldown(lastLeftLeagueAt, cooldownDays),
       ).not.toThrow();
     });
 
     it('should_pass_when_cooldownDays_is_zero', () => {
-      // ARRANGE
       const lastLeftLeagueAt = new Date();
       const cooldownDays = 0;
 
-      // ACT & ASSERT
       expect(() =>
         service.validateCooldown(lastLeftLeagueAt, cooldownDays),
       ).not.toThrow();
     });
 
     it('should_pass_when_cooldownDays_is_negative', () => {
-      // ARRANGE
       const lastLeftLeagueAt = new Date();
       const cooldownDays = -1;
 
-      // ACT & ASSERT
       expect(() =>
         service.validateCooldown(lastLeftLeagueAt, cooldownDays),
       ).not.toThrow();
     });
 
     it('should_pass_when_cooldown_period_has_expired', () => {
-      // ARRANGE
       const now = new Date();
       const lastLeftLeagueAt = new Date(
         now.getTime() - 8 * 24 * 60 * 60 * 1000,
       ); // 8 days ago
       const cooldownDays = 7;
 
-      // ACT & ASSERT
       expect(() =>
         service.validateCooldown(lastLeftLeagueAt, cooldownDays),
       ).not.toThrow();
     });
 
     it('should_throw_PlayerValidationException_when_cooldown_period_is_active', () => {
-      // ARRANGE
       const now = new Date();
       const lastLeftLeagueAt = new Date(
         now.getTime() - 3 * 24 * 60 * 60 * 1000,
       ); // 3 days ago
       const cooldownDays = 7;
 
-      // ACT & ASSERT
       expect(() =>
         service.validateCooldown(lastLeftLeagueAt, cooldownDays),
       ).toThrow(PlayerValidationException);
@@ -357,14 +314,12 @@ describe('PlayerValidationService', () => {
     });
 
     it('should_include_days_remaining_in_error_message', () => {
-      // ARRANGE
       const now = new Date();
       const lastLeftLeagueAt = new Date(
         now.getTime() - 3 * 24 * 60 * 60 * 1000,
       ); // 3 days ago
       const cooldownDays = 7;
 
-      // ACT & ASSERT
       expect(() =>
         service.validateCooldown(lastLeftLeagueAt, cooldownDays),
       ).toThrow(/day\(s\) remaining/);
@@ -373,7 +328,6 @@ describe('PlayerValidationService', () => {
 
   describe('validatePlayerForLeague', () => {
     it('should_pass_when_player_exists_and_has_valid_status', async () => {
-      // ARRANGE
       const playerId = 'player123';
       const userId = 'user123';
       const player = {
@@ -384,22 +338,18 @@ describe('PlayerValidationService', () => {
 
       vi.mocked(mockPrisma.player.findUnique).mockResolvedValue(player as any);
 
-      // ACT
       await service.validatePlayerForLeague(playerId, false);
 
-      // ASSERT
       expect(mockPrisma.player.findUnique).toHaveBeenCalledWith({
         where: { id: playerId },
       });
     });
 
     it('should_throw_PlayerValidationException_when_player_not_found', async () => {
-      // ARRANGE
       const playerId = 'player123';
 
       vi.mocked(mockPrisma.player.findUnique).mockResolvedValue(null);
 
-      // ACT & ASSERT
       await expect(
         service.validatePlayerForLeague(playerId, false),
       ).rejects.toThrow(PlayerValidationException);
@@ -409,7 +359,6 @@ describe('PlayerValidationService', () => {
     });
 
     it('should_throw_InvalidPlayerStatusException_when_player_status_is_BANNED', async () => {
-      // ARRANGE
       const playerId = 'player123';
       const userId = 'user123';
       const player = {
@@ -420,14 +369,12 @@ describe('PlayerValidationService', () => {
 
       vi.mocked(mockPrisma.player.findUnique).mockResolvedValue(player as any);
 
-      // ACT & ASSERT
       await expect(
         service.validatePlayerForLeague(playerId, false),
       ).rejects.toThrow(InvalidPlayerStatusException);
     });
 
     it('should_throw_PlayerValidationException_when_tracker_required_but_not_present', async () => {
-      // ARRANGE
       const playerId = 'player123';
       const userId = 'user123';
       const player = {
@@ -441,7 +388,6 @@ describe('PlayerValidationService', () => {
         null,
       );
 
-      // ACT & ASSERT
       await expect(
         service.validatePlayerForLeague(playerId, true),
       ).rejects.toThrow(PlayerValidationException);
@@ -456,7 +402,6 @@ describe('PlayerValidationService', () => {
     });
 
     it('should_pass_when_tracker_required_and_active_tracker_exists', async () => {
-      // ARRANGE
       const playerId = 'player123';
       const userId = 'user123';
       const trackerId = 'tracker123';
@@ -477,10 +422,8 @@ describe('PlayerValidationService', () => {
         tracker as any,
       );
 
-      // ACT
       await service.validatePlayerForLeague(playerId, true);
 
-      // ASSERT
       expect(mockTrackerService.findBestTrackerForUser).toHaveBeenCalledWith(
         userId,
       );

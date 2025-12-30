@@ -42,7 +42,6 @@ describe('TrackerService', () => {
   };
 
   beforeEach(() => {
-    // ARRANGE: Setup test dependencies
     mockRepository = {
       create: vi.fn(),
       findById: vi.fn(),
@@ -78,7 +77,6 @@ describe('TrackerService', () => {
 
   describe('createTracker', () => {
     it('should_create_tracker_with_valid_data', async () => {
-      // ARRANGE
       const url =
         'https://rocketleague.tracker.network/rocket-league/profile/steam/testuser/overview';
       const game = Game.ROCKET_LEAGUE;
@@ -88,7 +86,6 @@ describe('TrackerService', () => {
 
       vi.mocked(mockRepository.create).mockResolvedValue(mockTracker);
 
-      // ACT
       const result = await service.createTracker(
         url,
         game,
@@ -97,7 +94,6 @@ describe('TrackerService', () => {
         userId,
       );
 
-      // ASSERT
       expect(result).toEqual(mockTracker);
       expect(result.url).toBe(url);
       expect(result.game).toBe(game);
@@ -107,7 +103,6 @@ describe('TrackerService', () => {
 
   describe('getTrackerById', () => {
     it('should_return_tracker_with_seasons_when_tracker_exists', async () => {
-      // ARRANGE
       const trackerId = 'tracker_123';
       const trackerWithSeasons = {
         ...mockTracker,
@@ -118,20 +113,16 @@ describe('TrackerService', () => {
         trackerWithSeasons as any,
       );
 
-      // ACT
       const result = await service.getTrackerById(trackerId);
 
-      // ASSERT
       expect(result).toEqual(trackerWithSeasons);
       expect(result.id).toBe(trackerId);
     });
 
     it('should_throw_NotFoundException_when_tracker_does_not_exist', async () => {
-      // ARRANGE
       const trackerId = 'nonexistent';
       vi.mocked(mockPrisma.tracker.findUnique).mockResolvedValue(null);
 
-      // ACT & ASSERT
       await expect(service.getTrackerById(trackerId)).rejects.toThrow(
         NotFoundException,
       );
@@ -140,7 +131,6 @@ describe('TrackerService', () => {
 
   describe('getTrackersByUserId', () => {
     it('should_return_active_trackers_for_user', async () => {
-      // ARRANGE
       const userId = 'user_123';
       const trackers = [mockTracker];
       const paginatedResult = {
@@ -157,10 +147,8 @@ describe('TrackerService', () => {
         paginatedResult as any,
       );
 
-      // ACT
       const result = await service.getTrackersByUserId(userId);
 
-      // ASSERT
       expect(result).toEqual(paginatedResult);
       expect(result.data.length).toBe(1);
       expect(result.data[0].userId).toBe(userId);
@@ -171,7 +159,6 @@ describe('TrackerService', () => {
     });
 
     it('should_return_empty_array_when_user_has_no_trackers', async () => {
-      // ARRANGE
       const userId = 'user_999';
       const paginatedResult = {
         data: [],
@@ -187,16 +174,13 @@ describe('TrackerService', () => {
         paginatedResult as any,
       );
 
-      // ACT
       const result = await service.getTrackersByUserId(userId);
 
-      // ASSERT
       expect(result).toEqual(paginatedResult);
       expect(result.data.length).toBe(0);
     });
 
     it('should_pass_query_options_to_repository', async () => {
-      // ARRANGE
       const userId = 'user_123';
       const queryOptions = {
         platform: 'STEAM' as const,
@@ -217,10 +201,8 @@ describe('TrackerService', () => {
         paginatedResult as any,
       );
 
-      // ACT
       const result = await service.getTrackersByUserId(userId, queryOptions);
 
-      // ASSERT
       expect(mockRepository.findByUserId).toHaveBeenCalledWith(
         userId,
         queryOptions,
@@ -230,7 +212,6 @@ describe('TrackerService', () => {
     });
 
     it('should_filter_by_platform_when_platform_provided', async () => {
-      // ARRANGE
       const userId = 'user_123';
       const queryOptions = {
         platform: GamePlatform.STEAM,
@@ -249,10 +230,8 @@ describe('TrackerService', () => {
         paginatedResult as any,
       );
 
-      // ACT
       await service.getTrackersByUserId(userId, queryOptions);
 
-      // ASSERT
       expect(mockRepository.findByUserId).toHaveBeenCalledWith(
         userId,
         queryOptions,
@@ -260,7 +239,6 @@ describe('TrackerService', () => {
     });
 
     it('should_filter_by_status_when_status_provided', async () => {
-      // ARRANGE
       const userId = 'user_123';
       const queryOptions = {
         status: TrackerScrapingStatus.PENDING,
@@ -279,10 +257,8 @@ describe('TrackerService', () => {
         paginatedResult as any,
       );
 
-      // ACT
       await service.getTrackersByUserId(userId, queryOptions);
 
-      // ASSERT
       expect(mockRepository.findByUserId).toHaveBeenCalledWith(
         userId,
         queryOptions,
@@ -290,7 +266,6 @@ describe('TrackerService', () => {
     });
 
     it('should_filter_by_active_status_when_isActive_provided', async () => {
-      // ARRANGE
       const userId = 'user_123';
       const queryOptions = {
         isActive: true,
@@ -309,10 +284,8 @@ describe('TrackerService', () => {
         paginatedResult as any,
       );
 
-      // ACT
       await service.getTrackersByUserId(userId, queryOptions);
 
-      // ASSERT
       expect(mockRepository.findByUserId).toHaveBeenCalledWith(
         userId,
         queryOptions,
@@ -320,7 +293,6 @@ describe('TrackerService', () => {
     });
 
     it('should_sort_by_specified_field_when_sortBy_provided', async () => {
-      // ARRANGE
       const userId = 'user_123';
       const queryOptions = {
         sortBy: 'createdAt' as const,
@@ -340,10 +312,8 @@ describe('TrackerService', () => {
         paginatedResult as any,
       );
 
-      // ACT
       await service.getTrackersByUserId(userId, queryOptions);
 
-      // ASSERT
       expect(mockRepository.findByUserId).toHaveBeenCalledWith(
         userId,
         queryOptions,
@@ -351,7 +321,6 @@ describe('TrackerService', () => {
     });
 
     it('should_respect_pagination_limit_when_limit_provided', async () => {
-      // ARRANGE
       const userId = 'user_123';
       const queryOptions = {
         page: 1,
@@ -371,10 +340,8 @@ describe('TrackerService', () => {
         paginatedResult as any,
       );
 
-      // ACT
       const result = await service.getTrackersByUserId(userId, queryOptions);
 
-      // ASSERT
       expect(result.pagination.limit).toBe(25);
       expect(mockRepository.findByUserId).toHaveBeenCalledWith(
         userId,
@@ -385,51 +352,41 @@ describe('TrackerService', () => {
 
   describe('getTrackersByGuild', () => {
     it('should_return_trackers_accessible_to_guild', async () => {
-      // ARRANGE
       const guildId = 'guild_123';
       const trackers = [mockTracker];
 
       vi.mocked(mockRepository.findByGuildId).mockResolvedValue(trackers);
 
-      // ACT
       const result = await service.getTrackersByGuild(guildId);
 
-      // ASSERT
       expect(result).toEqual(trackers);
     });
   });
 
   describe('getTrackerByUrl', () => {
     it('should_return_tracker_when_url_exists', async () => {
-      // ARRANGE
       const url =
         'https://rocketleague.tracker.network/rocket-league/profile/steam/testuser/overview';
       vi.mocked(mockRepository.findByUrl).mockResolvedValue(mockTracker);
 
-      // ACT
       const result = await service.getTrackerByUrl(url);
 
-      // ASSERT
       expect(result).toEqual(mockTracker);
       expect(result?.url).toBe(url);
     });
 
     it('should_return_null_when_url_does_not_exist', async () => {
-      // ARRANGE
       const url = 'https://nonexistent.url';
       vi.mocked(mockRepository.findByUrl).mockResolvedValue(null);
 
-      // ACT
       const result = await service.getTrackerByUrl(url);
 
-      // ASSERT
       expect(result).toBeNull();
     });
   });
 
   describe('updateTracker', () => {
     it('should_update_display_name_when_provided', async () => {
-      // ARRANGE
       const trackerId = 'tracker_123';
       const displayName = 'Updated Display Name';
       const updatedTracker = { ...mockTracker, displayName };
@@ -439,16 +396,13 @@ describe('TrackerService', () => {
       );
       vi.mocked(mockRepository.update).mockResolvedValue(updatedTracker);
 
-      // ACT
       const result = await service.updateTracker(trackerId, displayName);
 
-      // ASSERT
       expect(result).toEqual(updatedTracker);
       expect(result.displayName).toBe(displayName);
     });
 
     it('should_update_is_active_status_when_provided', async () => {
-      // ARRANGE
       const trackerId = 'tracker_123';
       const isActive = false;
       const updatedTracker = { ...mockTracker, isActive };
@@ -458,24 +412,20 @@ describe('TrackerService', () => {
       );
       vi.mocked(mockRepository.update).mockResolvedValue(updatedTracker);
 
-      // ACT
       const result = await service.updateTracker(
         trackerId,
         undefined,
         isActive,
       );
 
-      // ASSERT
       expect(result).toEqual(updatedTracker);
       expect(result.isActive).toBe(isActive);
     });
 
     it('should_throw_NotFoundException_when_tracker_does_not_exist', async () => {
-      // ARRANGE
       const trackerId = 'nonexistent';
       vi.mocked(mockPrisma.tracker.findUnique).mockResolvedValue(null);
 
-      // ACT & ASSERT
       await expect(
         service.updateTracker(trackerId, 'New Name'),
       ).rejects.toThrow(NotFoundException);
@@ -484,7 +434,6 @@ describe('TrackerService', () => {
 
   describe('deleteTracker', () => {
     it('should_soft_delete_tracker_when_tracker_exists', async () => {
-      // ARRANGE
       const trackerId = 'tracker_123';
       const deletedTracker = { ...mockTracker, isDeleted: true };
 
@@ -493,20 +442,16 @@ describe('TrackerService', () => {
       );
       vi.mocked(mockRepository.softDelete).mockResolvedValue(deletedTracker);
 
-      // ACT
       const result = await service.deleteTracker(trackerId);
 
-      // ASSERT
       expect(result).toEqual(deletedTracker);
       expect(result.isDeleted).toBe(true);
     });
 
     it('should_throw_NotFoundException_when_tracker_does_not_exist', async () => {
-      // ARRANGE
       const trackerId = 'nonexistent';
       vi.mocked(mockPrisma.tracker.findUnique).mockResolvedValue(null);
 
-      // ACT & ASSERT
       await expect(service.deleteTracker(trackerId)).rejects.toThrow(
         NotFoundException,
       );
@@ -515,27 +460,21 @@ describe('TrackerService', () => {
 
   describe('checkUrlUniqueness', () => {
     it('should_return_true_when_url_is_unique', async () => {
-      // ARRANGE
       const url =
         'https://rocketleague.tracker.network/rocket-league/profile/steam/testuser/overview';
       vi.mocked(mockRepository.checkUrlUniqueness).mockResolvedValue(true);
 
-      // ACT
       const result = await service.checkUrlUniqueness(url);
 
-      // ASSERT
       expect(result).toBe(true);
     });
 
     it('should_return_false_when_url_already_exists', async () => {
-      // ARRANGE
       const url = 'https://existing.url';
       vi.mocked(mockRepository.checkUrlUniqueness).mockResolvedValue(false);
 
-      // ACT
       const result = await service.checkUrlUniqueness(url);
 
-      // ASSERT
       expect(result).toBe(false);
     });
   });
@@ -546,7 +485,6 @@ describe('TrackerService', () => {
 
   describe('findBestTrackerForUser', () => {
     it('should_delegate_to_repository_findBestForUser', async () => {
-      // ARRANGE
       const userId = 'user_123';
       const expectedTracker = {
         ...mockTracker,
@@ -557,25 +495,20 @@ describe('TrackerService', () => {
         expectedTracker as any,
       );
 
-      // ACT
       const result = await service.findBestTrackerForUser(userId);
 
-      // ASSERT
       expect(result).toEqual(expectedTracker);
       expect(mockRepository.findBestForUser).toHaveBeenCalledWith(userId);
       expect(mockRepository.findBestForUser).toHaveBeenCalledTimes(1);
     });
 
     it('should_return_null_when_repository_returns_null', async () => {
-      // ARRANGE
       const userId = 'user_123';
 
       vi.mocked(mockRepository.findBestForUser).mockResolvedValue(null);
 
-      // ACT
       const result = await service.findBestTrackerForUser(userId);
 
-      // ASSERT
       expect(result).toBeNull();
       expect(mockRepository.findBestForUser).toHaveBeenCalledWith(userId);
     });

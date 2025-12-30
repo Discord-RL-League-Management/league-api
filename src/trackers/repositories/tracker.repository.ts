@@ -72,10 +72,10 @@ export class TrackerRepository {
     };
   }> {
     const opts = { ...defaultTrackerQueryOptions, ...options };
-    const page = opts.page ?? 1;
-    const limit = opts.limit ?? 50;
-    const skip = (page - 1) * limit;
+    const page = opts.page ?? defaultTrackerQueryOptions.page;
+    const limit = opts.limit ?? defaultTrackerQueryOptions.limit;
     const maxLimit = Math.min(limit, 100);
+    const skip = (page - 1) * maxLimit;
 
     const where: Prisma.TrackerWhereInput = {
       userId,

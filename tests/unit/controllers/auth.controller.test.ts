@@ -43,7 +43,6 @@ describe('AuthController', () => {
   };
 
   beforeEach(async () => {
-    // ARRANGE: Setup test dependencies with mocks
     mockAuthService = {
       validateDiscordUser: vi.fn(),
       generateJwt: vi.fn(),
@@ -107,11 +106,8 @@ describe('AuthController', () => {
 
   describe('getCurrentUser', () => {
     it('should_return_current_user_when_authenticated', () => {
-      // ARRANGE: User is already authenticated (from guard)
-      // ACT
       const result = controller.getCurrentUser(mockUser);
 
-      // ASSERT
       expect(result).toEqual(mockUser);
       expect(result.id).toBe('user-123');
     });
@@ -119,16 +115,13 @@ describe('AuthController', () => {
 
   describe('getUserGuilds', () => {
     it('should_return_user_guilds_when_authenticated', async () => {
-      // ARRANGE
       const mockGuilds = [{ id: 'guild-1', name: 'Test Guild' }];
       vi.mocked(mockAuthService.getUserAvailableGuilds).mockResolvedValue(
         mockGuilds as never[],
       );
 
-      // ACT
       const result = await controller.getUserGuilds(mockUser);
 
-      // ASSERT
       expect(result).toEqual(mockGuilds);
       expect(mockAuthService.getUserAvailableGuilds).toHaveBeenCalledWith(
         mockUser.id,
@@ -136,13 +129,11 @@ describe('AuthController', () => {
     });
 
     it('should_propagate_error_when_service_fails', async () => {
-      // ARRANGE
       const error = new InternalServerErrorException('Service error');
       vi.mocked(mockAuthService.getUserAvailableGuilds).mockRejectedValue(
         error,
       );
 
-      // ACT & ASSERT
       await expect(controller.getUserGuilds(mockUser)).rejects.toThrow(
         InternalServerErrorException,
       );
@@ -151,15 +142,12 @@ describe('AuthController', () => {
 
   describe('logout', () => {
     it('should_clear_cookie_and_revoke_tokens_when_logout_succeeds', async () => {
-      // ARRANGE
       vi.mocked(mockTokenManagementService.revokeTokens).mockResolvedValue(
         undefined,
       );
 
-      // ACT
       await controller.logout(mockUser, mockResponse);
 
-      // ASSERT
       expect(mockResponse.clearCookie).toHaveBeenCalled();
       expect(mockTokenManagementService.revokeTokens).toHaveBeenCalledWith(
         mockUser.id,
@@ -170,13 +158,11 @@ describe('AuthController', () => {
     });
 
     it('should_propagate_error_when_token_revocation_fails', async () => {
-      // ARRANGE
       const error = new InternalServerErrorException('Revocation failed');
       vi.mocked(mockTokenManagementService.revokeTokens).mockRejectedValue(
         error,
       );
 
-      // ACT & ASSERT
       await expect(controller.logout(mockUser, mockResponse)).rejects.toThrow(
         InternalServerErrorException,
       );
@@ -185,11 +171,8 @@ describe('AuthController', () => {
 
   describe('discordLogin', () => {
     it('should_redirect_to_discord_oauth_when_initiated', () => {
-      // ARRANGE: OAuth URL already mocked in beforeEach
-      // ACT
       controller.discordLogin(mockResponse);
 
-      // ASSERT
       expect(mockDiscordOAuthService.getAuthorizationUrl).toHaveBeenCalled();
       expect(mockResponse.redirect).toHaveBeenCalledWith(
         'https://discord.com/oauth',
@@ -199,11 +182,9 @@ describe('AuthController', () => {
 
   describe('discordCallback', () => {
     it('should_redirect_to_error_when_oauth_error_present', async () => {
-      // ARRANGE
       const error = 'access_denied';
       const errorDescription = 'User denied access';
 
-      // ACT
       await controller.discordCallback(
         '' as string,
         error,
@@ -211,15 +192,12 @@ describe('AuthController', () => {
         mockResponse,
       );
 
-      // ASSERT
       expect(mockResponse.redirect).toHaveBeenCalledWith(
         expect.stringContaining('/auth/error'),
       );
     });
 
     it('should_redirect_to_error_when_code_missing', async () => {
-      // ARRANGE: No code provided
-      // ACT
       await controller.discordCallback(
         '' as string,
         '' as string,
@@ -227,7 +205,6 @@ describe('AuthController', () => {
         mockResponse,
       );
 
-      // ASSERT
       expect(mockResponse.redirect).toHaveBeenCalledWith(
         expect.stringContaining('/auth/error'),
       );

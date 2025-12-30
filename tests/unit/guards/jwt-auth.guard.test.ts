@@ -33,7 +33,6 @@ describe('JwtAuthGuard', () => {
   };
 
   beforeEach(() => {
-    // ARRANGE: Setup test dependencies with mocks
     mockReflector = {
       getAllAndOverride: vi.fn(),
     } as unknown as Reflector;
@@ -56,7 +55,6 @@ describe('JwtAuthGuard', () => {
 
   describe('canActivate', () => {
     it('should_allow_access_when_route_is_public', () => {
-      // ARRANGE
       vi.mocked(mockReflector.getAllAndOverride).mockReturnValue(true);
       // Mock the parent's canActivate to avoid calling the real passport strategy
       const parentPrototype = Object.getPrototypeOf(
@@ -66,10 +64,8 @@ describe('JwtAuthGuard', () => {
         .spyOn(parentPrototype, 'canActivate')
         .mockReturnValue(true);
 
-      // ACT
       const result = guard.canActivate(mockContext);
 
-      // ASSERT
       expect(result).toBe(true);
       expect(mockReflector.getAllAndOverride).toHaveBeenCalledWith(
         IS_PUBLIC_KEY,
@@ -79,7 +75,6 @@ describe('JwtAuthGuard', () => {
     });
 
     it('should_call_parent_canActivate_when_route_is_not_public', () => {
-      // ARRANGE
       vi.mocked(mockReflector.getAllAndOverride).mockReturnValue(false);
       // Mock the parent's canActivate
       const parentPrototype = Object.getPrototypeOf(
@@ -89,29 +84,22 @@ describe('JwtAuthGuard', () => {
         .spyOn(parentPrototype, 'canActivate')
         .mockReturnValue(true);
 
-      // ACT
       void guard.canActivate(mockContext);
 
-      // ASSERT
       expect(parentCanActivateSpy).toHaveBeenCalledWith(mockContext);
     });
   });
 
   describe('handleRequest', () => {
     it('should_return_user_when_authentication_succeeds', () => {
-      // ARRANGE: No errors, valid user
-      // ACT
       const result = guard.handleRequest(null, mockUser, null, mockContext);
 
-      // ASSERT
       expect(result).toEqual(mockUser);
     });
 
     it('should_throw_when_token_is_expired', () => {
-      // ARRANGE
       const expiredError = new TokenExpiredError('Token expired', new Date());
 
-      // ACT & ASSERT
       expect(() =>
         guard.handleRequest(null, null, expiredError, mockContext),
       ).toThrow(UnauthorizedException);
@@ -121,10 +109,8 @@ describe('JwtAuthGuard', () => {
     });
 
     it('should_throw_when_token_is_invalid', () => {
-      // ARRANGE
       const invalidError = new JsonWebTokenError('Invalid token');
 
-      // ACT & ASSERT
       expect(() =>
         guard.handleRequest(null, null, invalidError, mockContext),
       ).toThrow(UnauthorizedException);
@@ -134,8 +120,6 @@ describe('JwtAuthGuard', () => {
     });
 
     it('should_throw_when_user_is_null', () => {
-      // ARRANGE: User is null
-      // ACT & ASSERT
       expect(() => guard.handleRequest(null, null, null, mockContext)).toThrow(
         UnauthorizedException,
       );
@@ -145,10 +129,8 @@ describe('JwtAuthGuard', () => {
     });
 
     it('should_throw_when_error_occurs', () => {
-      // ARRANGE
       const error = new Error('Authentication failed');
 
-      // ACT & ASSERT
       expect(() => guard.handleRequest(error, null, null, mockContext)).toThrow(
         UnauthorizedException,
       );

@@ -15,7 +15,6 @@ describe('BotAuthGuard', () => {
   let guard: BotAuthGuard;
 
   beforeEach(() => {
-    // ARRANGE: Setup test dependencies
     guard = new BotAuthGuard();
   });
 
@@ -25,16 +24,12 @@ describe('BotAuthGuard', () => {
 
   describe('constructor', () => {
     it('should_create_guard_instance', () => {
-      // ARRANGE: Guard is created in beforeEach
-      // ACT & ASSERT
       expect(guard).toBeInstanceOf(BotAuthGuard);
     });
   });
 
   describe('inheritance', () => {
     it('should_extend_AuthGuard', () => {
-      // ARRANGE: Guard is created in beforeEach
-      // ACT & ASSERT
       expect(guard).toBeInstanceOf(BotAuthGuard);
       // BotAuthGuard extends AuthGuard('bot-api-key')
       // This is verified by the class structure

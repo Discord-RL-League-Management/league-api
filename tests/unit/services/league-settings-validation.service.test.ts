@@ -13,7 +13,6 @@ describe('SettingsValidationService (Leagues)', () => {
   let service: SettingsValidationService;
 
   beforeEach(() => {
-    // ARRANGE: Setup test dependencies
     service = new SettingsValidationService();
   });
 
@@ -23,7 +22,6 @@ describe('SettingsValidationService (Leagues)', () => {
 
   describe('validate', () => {
     it('should_pass_when_all_validations_pass', () => {
-      // ARRANGE
       const config = {
         membership: {
           joinMethod: 'OPEN' as const,
@@ -52,13 +50,11 @@ describe('SettingsValidationService (Leagues)', () => {
         },
       };
 
-      // ACT & ASSERT
       // Should not throw - verify validation passes
       expect(() => service.validate(config)).not.toThrow();
     });
 
     it('should_throw_LeagueValidationException_when_minPlayers_less_than_one', () => {
-      // ARRANGE
       const config = {
         membership: {
           joinMethod: 'OPEN' as const,
@@ -74,7 +70,6 @@ describe('SettingsValidationService (Leagues)', () => {
         },
       };
 
-      // ACT & ASSERT
       expect(() => service.validate(config)).toThrow(LeagueValidationException);
       expect(() => service.validate(config)).toThrow(
         'minPlayers must be at least 1',
@@ -82,7 +77,6 @@ describe('SettingsValidationService (Leagues)', () => {
     });
 
     it('should_throw_LeagueValidationException_when_maxPlayers_less_than_minPlayers', () => {
-      // ARRANGE
       const config = {
         membership: {
           joinMethod: 'OPEN' as const,
@@ -99,7 +93,6 @@ describe('SettingsValidationService (Leagues)', () => {
         },
       };
 
-      // ACT & ASSERT
       expect(() => service.validate(config)).toThrow(LeagueValidationException);
       expect(() => service.validate(config)).toThrow(
         'maxPlayers must be greater than or equal to minPlayers',
@@ -107,7 +100,6 @@ describe('SettingsValidationService (Leagues)', () => {
     });
 
     it('should_throw_LeagueValidationException_when_registrationStartDate_after_registrationEndDate', () => {
-      // ARRANGE
       const config = {
         membership: {
           joinMethod: 'OPEN' as const,
@@ -124,7 +116,6 @@ describe('SettingsValidationService (Leagues)', () => {
         },
       };
 
-      // ACT & ASSERT
       expect(() => service.validate(config)).toThrow(LeagueValidationException);
       expect(() => service.validate(config)).toThrow(
         'registrationStartDate must be before registrationEndDate',
@@ -132,7 +123,6 @@ describe('SettingsValidationService (Leagues)', () => {
     });
 
     it('should_throw_LeagueValidationException_when_cooldownAfterLeave_negative', () => {
-      // ARRANGE
       const config = {
         membership: {
           joinMethod: 'OPEN' as const,
@@ -148,7 +138,6 @@ describe('SettingsValidationService (Leagues)', () => {
         },
       };
 
-      // ACT & ASSERT
       expect(() => service.validate(config)).toThrow(LeagueValidationException);
       expect(() => service.validate(config)).toThrow(
         'cooldownAfterLeave cannot be negative',
@@ -156,7 +145,6 @@ describe('SettingsValidationService (Leagues)', () => {
     });
 
     it('should_throw_LeagueValidationException_when_maxOrganizations_less_than_one', () => {
-      // ARRANGE
       const config = {
         membership: {
           joinMethod: 'OPEN' as const,
@@ -172,7 +160,6 @@ describe('SettingsValidationService (Leagues)', () => {
         },
       };
 
-      // ACT & ASSERT
       expect(() => service.validate(config)).toThrow(LeagueValidationException);
       expect(() => service.validate(config)).toThrow(
         'maxOrganizations must be at least 1',
@@ -180,7 +167,6 @@ describe('SettingsValidationService (Leagues)', () => {
     });
 
     it('should_throw_LeagueValidationException_when_maxTeamsPerOrganization_less_than_one', () => {
-      // ARRANGE
       const config = {
         membership: {
           joinMethod: 'OPEN' as const,
@@ -196,7 +182,6 @@ describe('SettingsValidationService (Leagues)', () => {
         },
       };
 
-      // ACT & ASSERT
       expect(() => service.validate(config)).toThrow(LeagueValidationException);
       expect(() => service.validate(config)).toThrow(
         'maxTeamsPerOrganization must be at least 1',
@@ -204,7 +189,6 @@ describe('SettingsValidationService (Leagues)', () => {
     });
 
     it('should_throw_LeagueValidationException_when_skillRequirements_minSkill_less_than_maxSkill', () => {
-      // ARRANGE
       const config = {
         membership: {
           joinMethod: 'OPEN' as const,
@@ -224,7 +208,6 @@ describe('SettingsValidationService (Leagues)', () => {
         },
       };
 
-      // ACT & ASSERT
       expect(() => service.validate(config)).toThrow(LeagueValidationException);
       expect(() => service.validate(config)).toThrow(
         'skillRequirements.maxSkill must be greater than or equal to minSkill',
@@ -232,7 +215,6 @@ describe('SettingsValidationService (Leagues)', () => {
     });
 
     it('should_throw_LeagueValidationException_when_skillRequirements_has_invalid_metric', () => {
-      // ARRANGE
       const config = {
         membership: {
           joinMethod: 'OPEN' as const,
@@ -252,7 +234,6 @@ describe('SettingsValidationService (Leagues)', () => {
         },
       };
 
-      // ACT & ASSERT
       expect(() => service.validate(config)).toThrow(LeagueValidationException);
       expect(() => service.validate(config)).toThrow(
         'skillRequirements.skillMetric must be one of',
@@ -260,7 +241,6 @@ describe('SettingsValidationService (Leagues)', () => {
     });
 
     it('should_throw_LeagueValidationException_when_minSkillLevel_less_than_zero', () => {
-      // ARRANGE
       const config = {
         skill: {
           isSkillBased: true,
@@ -269,7 +249,6 @@ describe('SettingsValidationService (Leagues)', () => {
         },
       };
 
-      // ACT & ASSERT
       expect(() => service.validate(config)).toThrow(LeagueValidationException);
       expect(() => service.validate(config)).toThrow(
         'minSkillLevel cannot be negative',
@@ -277,7 +256,6 @@ describe('SettingsValidationService (Leagues)', () => {
     });
 
     it('should_throw_LeagueValidationException_when_maxSkillLevel_less_than_minSkillLevel', () => {
-      // ARRANGE
       const config = {
         skill: {
           isSkillBased: true,
@@ -287,7 +265,6 @@ describe('SettingsValidationService (Leagues)', () => {
         },
       };
 
-      // ACT & ASSERT
       expect(() => service.validate(config)).toThrow(LeagueValidationException);
       expect(() => service.validate(config)).toThrow(
         'maxSkillLevel must be greater than or equal to minSkillLevel',
@@ -295,7 +272,6 @@ describe('SettingsValidationService (Leagues)', () => {
     });
 
     it('should_throw_LeagueValidationException_when_isSkillBased_true_but_skillMetric_missing', () => {
-      // ARRANGE
       const config = {
         skill: {
           isSkillBased: true,
@@ -303,7 +279,6 @@ describe('SettingsValidationService (Leagues)', () => {
         },
       };
 
-      // ACT & ASSERT
       expect(() => service.validate(config)).toThrow(LeagueValidationException);
       expect(() => service.validate(config)).toThrow(
         'skillMetric is required when isSkillBased is true',

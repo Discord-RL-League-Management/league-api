@@ -83,10 +83,8 @@ describe.skipIf(!isServerAvailable)(
 
     describe('GET /api/guilds/:id - Get Guild Details', () => {
       it('should_return_200_with_guild_details_when_user_is_owner', async () => {
-        // ARRANGE: Test guild and user already created in beforeEach
         // User is the owner of the guild
 
-        // ACT: Get guild details
         const response = await apiClient.get(`/api/guilds/${testGuildId}`, {
           headers: {
             Authorization: `Bearer ${testToken}`,
@@ -94,18 +92,15 @@ describe.skipIf(!isServerAvailable)(
           validateStatus: (status) => status < 500,
         });
 
-        // ASSERT: Verify API contract
         expect(response.status).toBe(200);
         expect(response.data).toHaveProperty('id', testGuildId);
         expect(response.data).toHaveProperty('name');
       });
 
       it('should_return_403_when_user_is_not_a_member', async () => {
-        // ARRANGE: Create another user who is not a member
         const otherUserResult = await createTestUserWithToken(apiClient);
         const otherToken = otherUserResult.token;
 
-        // ACT: Try to get guild details as non-member
         const response = await apiClient.get(`/api/guilds/${testGuildId}`, {
           headers: {
             Authorization: `Bearer ${otherToken}`,
@@ -113,7 +108,6 @@ describe.skipIf(!isServerAvailable)(
           validateStatus: (status) => status < 500,
         });
 
-        // ASSERT: Verify permission contract
         expect(response.status).toBe(403);
 
         // Cleanup
@@ -122,22 +116,16 @@ describe.skipIf(!isServerAvailable)(
       });
 
       it('should_return_401_when_authentication_is_missing', async () => {
-        // ARRANGE: No authentication header
-
-        // ACT: Try to get guild without token
         const response = await apiClient.get(`/api/guilds/${testGuildId}`, {
           validateStatus: (status) => status < 500,
         });
 
-        // ASSERT: Verify authentication contract
         expect(response.status).toBe(401);
       });
 
       it('should_return_404_when_guild_does_not_exist', async () => {
-        // ARRANGE: Non-existent guild ID
         const nonExistentGuildId = '999999999999999999';
 
-        // ACT: Try to get non-existent guild
         const response = await apiClient.get(
           `/api/guilds/${nonExistentGuildId}`,
           {
@@ -148,17 +136,14 @@ describe.skipIf(!isServerAvailable)(
           },
         );
 
-        // ASSERT: Verify error contract
         expect(response.status).toBe(404);
       });
     });
 
     describe('GET /api/guilds/:id/settings - Get Guild Settings', () => {
       it('should_return_403_when_user_is_not_admin', async () => {
-        // ARRANGE: Test guild and user already created in beforeEach
         // User is not an admin by default
 
-        // ACT: Try to get guild settings
         const response = await apiClient.get(
           `/api/guilds/${testGuildId}/settings`,
           {
@@ -169,15 +154,11 @@ describe.skipIf(!isServerAvailable)(
           },
         );
 
-        // ASSERT: Verify permission contract
         // May return 403 (not admin) or 404 (not a member)
         expect([403, 404]).toContain(response.status);
       });
 
       it('should_return_401_when_authentication_is_missing', async () => {
-        // ARRANGE: No authentication header
-
-        // ACT: Try to get settings without token
         const response = await apiClient.get(
           `/api/guilds/${testGuildId}/settings`,
           {
@@ -185,17 +166,14 @@ describe.skipIf(!isServerAvailable)(
           },
         );
 
-        // ASSERT: Verify authentication contract
         expect(response.status).toBe(401);
       });
     });
 
     describe('GET /api/guilds/:id/channels - Get Guild Channels', () => {
       it('should_return_403_when_user_is_not_admin', async () => {
-        // ARRANGE: Test guild and user already created in beforeEach
         // User is not an admin by default
 
-        // ACT: Try to get guild channels
         const response = await apiClient.get(
           `/api/guilds/${testGuildId}/channels`,
           {
@@ -206,15 +184,11 @@ describe.skipIf(!isServerAvailable)(
           },
         );
 
-        // ASSERT: Verify permission contract
         // May return 403 (not admin) or 404 (not a member)
         expect([403, 404]).toContain(response.status);
       });
 
       it('should_return_401_when_authentication_is_missing', async () => {
-        // ARRANGE: No authentication header
-
-        // ACT: Try to get channels without token
         const response = await apiClient.get(
           `/api/guilds/${testGuildId}/channels`,
           {
@@ -222,17 +196,14 @@ describe.skipIf(!isServerAvailable)(
           },
         );
 
-        // ASSERT: Verify authentication contract
         expect(response.status).toBe(401);
       });
     });
 
     describe('GET /api/guilds/:id/roles - Get Guild Roles', () => {
       it('should_return_403_when_user_is_not_admin', async () => {
-        // ARRANGE: Test guild and user already created in beforeEach
         // User is not an admin by default
 
-        // ACT: Try to get guild roles
         const response = await apiClient.get(
           `/api/guilds/${testGuildId}/roles`,
           {
@@ -243,15 +214,11 @@ describe.skipIf(!isServerAvailable)(
           },
         );
 
-        // ASSERT: Verify permission contract
         // May return 403 (not admin) or 404 (not a member)
         expect([403, 404]).toContain(response.status);
       });
 
       it('should_return_401_when_authentication_is_missing', async () => {
-        // ARRANGE: No authentication header
-
-        // ACT: Try to get roles without token
         const response = await apiClient.get(
           `/api/guilds/${testGuildId}/roles`,
           {
@@ -259,17 +226,14 @@ describe.skipIf(!isServerAvailable)(
           },
         );
 
-        // ASSERT: Verify authentication contract
         expect(response.status).toBe(401);
       });
     });
 
     describe('PATCH /internal/guilds/:id/settings - Update Tracker Processing', () => {
       it('should_update_tracker_processing_enabled_to_false', async () => {
-        // ARRANGE: Test guild already created in beforeEach
         const botApiKey = process.env.BOT_API_KEY || '';
 
-        // ACT: Update tracker processing via internal API
         const updateResponse = await apiClient.patch(
           `/internal/guilds/${testGuildId}/settings`,
           {
@@ -285,10 +249,8 @@ describe.skipIf(!isServerAvailable)(
           },
         );
 
-        // ASSERT: Verify update succeeded
         expect(updateResponse.status).toBe(200);
 
-        // ACT: Get settings to verify update
         const getResponse = await apiClient.get(
           `/internal/guilds/${testGuildId}/settings`,
           {
@@ -299,7 +261,6 @@ describe.skipIf(!isServerAvailable)(
           },
         );
 
-        // ASSERT: Verify trackerProcessing was updated
         expect(getResponse.status).toBe(200);
         expect(getResponse.data).toHaveProperty('trackerProcessing');
         expect(getResponse.data.trackerProcessing).toHaveProperty('enabled');
@@ -307,10 +268,8 @@ describe.skipIf(!isServerAvailable)(
       });
 
       it('should_update_tracker_processing_enabled_to_true', async () => {
-        // ARRANGE: Test guild already created in beforeEach
         const botApiKey = process.env.BOT_API_KEY || '';
 
-        // ACT: Update tracker processing via internal API
         const updateResponse = await apiClient.patch(
           `/internal/guilds/${testGuildId}/settings`,
           {
@@ -326,10 +285,8 @@ describe.skipIf(!isServerAvailable)(
           },
         );
 
-        // ASSERT: Verify update succeeded
         expect(updateResponse.status).toBe(200);
 
-        // ACT: Get settings to verify update
         const getResponse = await apiClient.get(
           `/internal/guilds/${testGuildId}/settings`,
           {
@@ -340,7 +297,6 @@ describe.skipIf(!isServerAvailable)(
           },
         );
 
-        // ASSERT: Verify trackerProcessing was updated
         expect(getResponse.status).toBe(200);
         expect(getResponse.data).toHaveProperty('trackerProcessing');
         expect(getResponse.data.trackerProcessing).toHaveProperty('enabled');
@@ -348,10 +304,8 @@ describe.skipIf(!isServerAvailable)(
       });
 
       it('should_return_tracker_processing_in_get_settings', async () => {
-        // ARRANGE: Test guild already created in beforeEach
         const botApiKey = process.env.BOT_API_KEY || '';
 
-        // ACT: Get settings
         const response = await apiClient.get(
           `/internal/guilds/${testGuildId}/settings`,
           {
@@ -362,7 +316,6 @@ describe.skipIf(!isServerAvailable)(
           },
         );
 
-        // ASSERT: Verify trackerProcessing is present in response
         expect(response.status).toBe(200);
         expect(response.data).toHaveProperty('trackerProcessing');
         expect(response.data.trackerProcessing).toBeDefined();
@@ -371,10 +324,8 @@ describe.skipIf(!isServerAvailable)(
       });
 
       it('should_validate_tracker_processing_enabled_must_be_boolean', async () => {
-        // ARRANGE: Test guild already created in beforeEach
         const botApiKey = process.env.BOT_API_KEY || '';
 
-        // ACT: Try to update with invalid type
         const response = await apiClient.patch(
           `/internal/guilds/${testGuildId}/settings`,
           {
@@ -390,7 +341,6 @@ describe.skipIf(!isServerAvailable)(
           },
         );
 
-        // ASSERT: Verify validation error
         expect(response.status).toBe(400);
       });
     });

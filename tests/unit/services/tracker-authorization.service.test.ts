@@ -39,7 +39,6 @@ describe('TrackerAuthorizationService', () => {
   };
 
   beforeEach(() => {
-    // ARRANGE: Setup test dependencies
     mockGuildMembersService = {
       findMembersByUser: vi.fn(),
     } as unknown as GuildMembersService;
@@ -65,19 +64,15 @@ describe('TrackerAuthorizationService', () => {
 
   describe('validateTrackerAccess', () => {
     it('should_allow_access_when_user_accesses_own_trackers', async () => {
-      // ARRANGE
       const userId = 'user-123';
 
-      // ACT
       await service.validateTrackerAccess(userId, userId);
 
-      // ASSERT
       expect(mockGuildMembersService.findMembersByUser).not.toHaveBeenCalled();
       expect(mockPermissionCheckService.checkAdminRoles).not.toHaveBeenCalled();
     });
 
     it('should_allow_access_when_user_is_admin_in_common_guild', async () => {
-      // ARRANGE
       const currentUserMemberships = [
         { guildId: guildId1, roles: ['admin-role-1'] },
       ];
@@ -95,10 +90,8 @@ describe('TrackerAuthorizationService', () => {
         true,
       );
 
-      // ACT
       await service.validateTrackerAccess(currentUserId, targetUserId);
 
-      // ASSERT
       expect(mockGuildMembersService.findMembersByUser).toHaveBeenCalledTimes(
         2,
       );
@@ -120,7 +113,6 @@ describe('TrackerAuthorizationService', () => {
     });
 
     it('should_throw_ForbiddenException_when_no_common_guilds', async () => {
-      // ARRANGE
       const currentUserMemberships = [{ guildId: guildId1, roles: [] }];
       const targetUserMemberships = [{ guildId: guildId2, roles: [] }];
 
@@ -128,7 +120,6 @@ describe('TrackerAuthorizationService', () => {
         .mockResolvedValueOnce(currentUserMemberships as any)
         .mockResolvedValueOnce(targetUserMemberships as any);
 
-      // ACT & ASSERT
       await expect(
         service.validateTrackerAccess(currentUserId, targetUserId),
       ).rejects.toThrow(ForbiddenException);
@@ -141,7 +132,6 @@ describe('TrackerAuthorizationService', () => {
     });
 
     it('should_throw_ForbiddenException_when_user_not_admin_in_common_guild', async () => {
-      // ARRANGE
       const currentUserMemberships = [
         { guildId: guildId1, roles: ['regular-role'] },
       ];
@@ -159,7 +149,6 @@ describe('TrackerAuthorizationService', () => {
         false,
       );
 
-      // ACT & ASSERT
       await expect(
         service.validateTrackerAccess(currentUserId, targetUserId),
       ).rejects.toThrow(ForbiddenException);
@@ -176,7 +165,6 @@ describe('TrackerAuthorizationService', () => {
     });
 
     it('should_allow_access_when_admin_in_any_common_guild', async () => {
-      // ARRANGE
       const currentUserMemberships = [
         { guildId: guildId1, roles: ['regular-role'] },
         { guildId: guildId2, roles: ['admin-role-1'] },
@@ -198,10 +186,8 @@ describe('TrackerAuthorizationService', () => {
         .mockResolvedValueOnce(false) // Not admin in guild1
         .mockResolvedValueOnce(true); // Admin in guild2
 
-      // ACT
       await service.validateTrackerAccess(currentUserId, targetUserId);
 
-      // ASSERT
       expect(mockGuildSettingsService.getSettings).toHaveBeenCalledWith(
         guildId1,
       );
@@ -214,7 +200,6 @@ describe('TrackerAuthorizationService', () => {
     });
 
     it('should_continue_checking_other_guilds_when_one_check_fails', async () => {
-      // ARRANGE
       const currentUserMemberships = [
         { guildId: guildId1, roles: ['admin-role-1'] },
         { guildId: guildId2, roles: ['admin-role-1'] },
@@ -236,10 +221,8 @@ describe('TrackerAuthorizationService', () => {
         true,
       );
 
-      // ACT
       await service.validateTrackerAccess(currentUserId, targetUserId);
 
-      // ASSERT
       expect(mockGuildSettingsService.getSettings).toHaveBeenCalledWith(
         guildId1,
       );
@@ -256,7 +239,6 @@ describe('TrackerAuthorizationService', () => {
     });
 
     it('should_throw_ForbiddenException_when_all_guild_checks_fail', async () => {
-      // ARRANGE
       const currentUserMemberships = [
         { guildId: guildId1, roles: ['regular-role'] },
         { guildId: guildId2, roles: ['regular-role'] },
@@ -278,7 +260,6 @@ describe('TrackerAuthorizationService', () => {
         false,
       );
 
-      // ACT & ASSERT
       await expect(
         service.validateTrackerAccess(currentUserId, targetUserId),
       ).rejects.toThrow(ForbiddenException);
@@ -290,7 +271,6 @@ describe('TrackerAuthorizationService', () => {
     });
 
     it('should_skip_membership_when_membership_not_found', async () => {
-      // ARRANGE
       const currentUserMemberships = [
         { guildId: guildId1, roles: ['admin-role-1'] },
         { guildId: guildId2, roles: ['admin-role-1'] },
@@ -313,10 +293,8 @@ describe('TrackerAuthorizationService', () => {
         true,
       );
 
-      // ACT
       await service.validateTrackerAccess(currentUserId, targetUserId);
 
-      // ASSERT
       // Should still work even if one membership lookup fails
       expect(mockGuildSettingsService.getSettings).toHaveBeenCalled();
     });
@@ -324,13 +302,10 @@ describe('TrackerAuthorizationService', () => {
 
   describe('validateTrackerOwnership', () => {
     it('should_allow_access_when_user_is_owner', () => {
-      // ARRANGE
       const userId = 'user-123';
 
-      // ACT
       service.validateTrackerOwnership(userId, userId);
 
-      // ASSERT
       // Should not throw - owner access granted
       expect(mockGuildMembersService.findMembersByUser).not.toHaveBeenCalled();
       expect(mockPermissionCheckService.checkAdminRoles).not.toHaveBeenCalled();
@@ -338,11 +313,9 @@ describe('TrackerAuthorizationService', () => {
     });
 
     it('should_throw_ForbiddenException_when_user_is_not_owner', () => {
-      // ARRANGE
       const ownerUserId = 'user-123';
       const nonOwnerUserId = 'user-456';
 
-      // ACT & ASSERT
       expect(() =>
         service.validateTrackerOwnership(nonOwnerUserId, ownerUserId),
       ).toThrow(ForbiddenException);
@@ -354,11 +327,9 @@ describe('TrackerAuthorizationService', () => {
     });
 
     it('should_throw_ForbiddenException_when_guild_admin_but_not_owner', () => {
-      // ARRANGE
       const ownerUserId = 'user-123';
       const guildAdminUserId = 'user-456';
 
-      // ACT & ASSERT
       // Even if the user is a guild admin, owner-only operations should fail
       expect(() =>
         service.validateTrackerOwnership(guildAdminUserId, ownerUserId),

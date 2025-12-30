@@ -29,7 +29,6 @@ describe('MatchRepository', () => {
   };
 
   beforeEach(() => {
-    // ARRANGE: Setup test dependencies
     mockPrisma = {
       match: {
         findUnique: vi.fn(),
@@ -50,15 +49,12 @@ describe('MatchRepository', () => {
 
   describe('findById', () => {
     it('should_return_match_when_match_exists', async () => {
-      // ARRANGE
       vi.mocked(mockPrisma.match.findUnique).mockResolvedValue(
         mockMatch as never,
       );
 
-      // ACT
       const result = await repository.findById('match-123');
 
-      // ASSERT
       expect(result).toEqual(mockMatch);
       expect(mockPrisma.match.findUnique).toHaveBeenCalledWith({
         where: { id: 'match-123' },
@@ -67,30 +63,24 @@ describe('MatchRepository', () => {
     });
 
     it('should_return_null_when_match_not_found', async () => {
-      // ARRANGE
       vi.mocked(mockPrisma.match.findUnique).mockResolvedValue(null);
 
-      // ACT
       const result = await repository.findById('match-999');
 
-      // ASSERT
       expect(result).toBeNull();
     });
   });
 
   describe('create', () => {
     it('should_create_match_when_data_is_valid', async () => {
-      // ARRANGE
       const createDto: CreateMatchDto = {
         leagueId: 'league-123',
         scheduledAt: new Date().toISOString(),
       };
       vi.mocked(mockPrisma.match.create).mockResolvedValue(mockMatch as never);
 
-      // ACT
       const result = await repository.create(createDto);
 
-      // ASSERT
       expect(result).toEqual(mockMatch);
       expect(mockPrisma.match.create).toHaveBeenCalled();
     });
@@ -98,17 +88,14 @@ describe('MatchRepository', () => {
 
   describe('update', () => {
     it('should_update_match_when_data_is_provided', async () => {
-      // ARRANGE
       const updateData = { status: MatchStatus.IN_PROGRESS };
       const updatedMatch = { ...mockMatch, ...updateData };
       vi.mocked(mockPrisma.match.update).mockResolvedValue(
         updatedMatch as never,
       );
 
-      // ACT
       const result = await repository.update('match-123', updateData);
 
-      // ASSERT
       expect(result).toEqual(updatedMatch);
       expect(mockPrisma.match.update).toHaveBeenCalledWith({
         where: { id: 'match-123' },
@@ -119,13 +106,10 @@ describe('MatchRepository', () => {
 
   describe('exists', () => {
     it('should_return_true_when_match_exists', async () => {
-      // ARRANGE
       vi.mocked(mockPrisma.match.count).mockResolvedValue(1);
 
-      // ACT
       const result = await repository.exists('match-123');
 
-      // ASSERT
       expect(result).toBe(true);
       expect(mockPrisma.match.count).toHaveBeenCalledWith({
         where: { id: 'match-123' },
@@ -133,13 +117,10 @@ describe('MatchRepository', () => {
     });
 
     it('should_return_false_when_match_not_found', async () => {
-      // ARRANGE
       vi.mocked(mockPrisma.match.count).mockResolvedValue(0);
 
-      // ACT
       const result = await repository.exists('match-999');
 
-      // ASSERT
       expect(result).toBe(false);
     });
   });

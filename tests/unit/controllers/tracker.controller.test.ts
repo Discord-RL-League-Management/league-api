@@ -55,7 +55,6 @@ describe('TrackerController', () => {
   };
 
   beforeEach(async () => {
-    // ARRANGE: Setup test dependencies with mocks
     mockTrackerService = {
       getTrackersByUserId: vi.fn(),
       getTrackersByGuild: vi.fn(),
@@ -116,7 +115,6 @@ describe('TrackerController', () => {
 
   describe('registerTrackers', () => {
     it('should_register_trackers_when_urls_are_valid', async () => {
-      // ARRANGE
       const dto: RegisterTrackersDto = {
         urls: ['https://tracker.gg/profile/test'],
       };
@@ -125,10 +123,8 @@ describe('TrackerController', () => {
         mockTrackerProcessingService.registerTrackers,
       ).mockResolvedValue(mockResult as never);
 
-      // ACT
       const result = await controller.registerTrackers(dto, mockUser);
 
-      // ASSERT
       expect(result).toEqual(mockResult);
       expect(
         mockTrackerProcessingService.registerTrackers,
@@ -142,7 +138,6 @@ describe('TrackerController', () => {
 
   describe('getMyTrackers', () => {
     it('should_return_user_trackers_when_authenticated', async () => {
-      // ARRANGE
       const mockTrackers = [mockTracker];
       const paginatedResult = {
         data: mockTrackers,
@@ -157,10 +152,8 @@ describe('TrackerController', () => {
         paginatedResult as never,
       );
 
-      // ACT
       const result = await controller.getMyTrackers(mockUser, {});
 
-      // ASSERT
       expect(result).toEqual(paginatedResult);
       expect(mockTrackerService.getTrackersByUserId).toHaveBeenCalledWith(
         mockUser.id,
@@ -171,7 +164,6 @@ describe('TrackerController', () => {
 
   describe('getTrackers', () => {
     it('should_return_user_trackers_when_no_guild_filter', async () => {
-      // ARRANGE
       const mockTrackers = [mockTracker];
       const paginatedResult = {
         data: mockTrackers,
@@ -186,38 +178,18 @@ describe('TrackerController', () => {
         paginatedResult as never,
       );
 
-      // ACT
       const result = await controller.getTrackers(mockUser);
 
-      // ASSERT
       expect(result).toEqual(paginatedResult);
       expect(mockTrackerService.getTrackersByUserId).toHaveBeenCalledWith(
         mockUser.id,
         undefined,
       );
     });
-
-    it('should_return_guild_trackers_when_guild_filter_provided', async () => {
-      // ARRANGE
-      const mockTrackers = [mockTracker];
-      vi.mocked(mockTrackerService.getTrackersByGuild).mockResolvedValue(
-        mockTrackers as never,
-      );
-
-      // ACT
-      const result = await controller.getTrackers(mockUser, 'guild-1');
-
-      // ASSERT
-      expect(result).toEqual(mockTrackers);
-      expect(mockTrackerService.getTrackersByGuild).toHaveBeenCalledWith(
-        'guild-1',
-      );
-    });
   });
 
   describe('getTrackersByUser', () => {
     it('should_return_trackers_when_user_has_access', async () => {
-      // ARRANGE
       const targetUserId = 'user-456';
       const mockTrackers = [mockTracker];
       const paginatedResult = {
@@ -236,14 +208,12 @@ describe('TrackerController', () => {
         paginatedResult as never,
       );
 
-      // ACT
       const result = await controller.getTrackersByUser(
         targetUserId,
         mockUser,
         {},
       );
 
-      // ASSERT
       expect(result).toEqual(paginatedResult);
       expect(
         mockTrackerAuthorizationService.validateTrackerAccess,
@@ -255,7 +225,6 @@ describe('TrackerController', () => {
     });
 
     it('should_call_authorization_service_when_accessing_other_user_trackers', async () => {
-      // ARRANGE
       const targetUserId = 'user-456';
       const paginatedResult = {
         data: [],
@@ -273,10 +242,8 @@ describe('TrackerController', () => {
         paginatedResult as never,
       );
 
-      // ACT
       await controller.getTrackersByUser(targetUserId, mockUser, {});
 
-      // ASSERT
       expect(
         mockTrackerAuthorizationService.validateTrackerAccess,
       ).toHaveBeenCalledWith(mockUser.id, targetUserId);
@@ -286,7 +253,6 @@ describe('TrackerController', () => {
     });
 
     it('should_throw_ForbiddenException_when_access_denied', async () => {
-      // ARRANGE
       const targetUserId = 'user-456';
       vi.mocked(
         mockTrackerAuthorizationService.validateTrackerAccess,
@@ -296,7 +262,6 @@ describe('TrackerController', () => {
         ),
       );
 
-      // ACT & ASSERT
       await expect(
         controller.getTrackersByUser(targetUserId, mockUser, {}),
       ).rejects.toThrow(ForbiddenException);
@@ -310,7 +275,6 @@ describe('TrackerController', () => {
 
   describe('getTracker', () => {
     it('should_return_tracker_when_user_is_owner', async () => {
-      // ARRANGE
       vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
         mockTracker as never,
       );
@@ -318,10 +282,8 @@ describe('TrackerController', () => {
         mockTrackerAuthorizationService.validateTrackerAccess,
       ).mockResolvedValue(undefined);
 
-      // ACT
       const result = await controller.getTracker('tracker-123', mockUser);
 
-      // ASSERT
       expect(result).toEqual(mockTracker);
       expect(mockTrackerService.getTrackerById).toHaveBeenCalledWith(
         'tracker-123',
@@ -332,7 +294,6 @@ describe('TrackerController', () => {
     });
 
     it('should_return_tracker_when_user_is_guild_admin', async () => {
-      // ARRANGE
       const otherUserTracker = { ...mockTracker, userId: 'user-456' };
       vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
         otherUserTracker as never,
@@ -341,10 +302,8 @@ describe('TrackerController', () => {
         mockTrackerAuthorizationService.validateTrackerAccess,
       ).mockResolvedValue(undefined);
 
-      // ACT
       const result = await controller.getTracker('tracker-123', mockUser);
 
-      // ASSERT
       expect(result).toEqual(otherUserTracker);
       expect(
         mockTrackerAuthorizationService.validateTrackerAccess,
@@ -352,7 +311,6 @@ describe('TrackerController', () => {
     });
 
     it('should_throw_ForbiddenException_when_user_has_no_access', async () => {
-      // ARRANGE
       const otherUserTracker = { ...mockTracker, userId: 'user-456' };
       vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
         otherUserTracker as never,
@@ -365,7 +323,6 @@ describe('TrackerController', () => {
         ),
       );
 
-      // ACT & ASSERT
       await expect(
         controller.getTracker('tracker-123', mockUser),
       ).rejects.toThrow(ForbiddenException);
@@ -375,12 +332,10 @@ describe('TrackerController', () => {
     });
 
     it('should_throw_NotFoundException_when_tracker_not_found', async () => {
-      // ARRANGE
       vi.mocked(mockTrackerService.getTrackerById).mockRejectedValue(
         new NotFoundException('Tracker not found'),
       );
 
-      // ACT & ASSERT
       await expect(
         controller.getTracker('tracker-123', mockUser),
       ).rejects.toThrow(NotFoundException);
@@ -389,7 +344,6 @@ describe('TrackerController', () => {
 
   describe('getTrackerDetail', () => {
     it('should_return_tracker_detail_when_user_is_owner', async () => {
-      // ARRANGE
       const trackerWithSeasons = {
         ...mockTracker,
         seasons: [
@@ -412,10 +366,8 @@ describe('TrackerController', () => {
         transformedResult as any,
       );
 
-      // ACT
       const result = await controller.getTrackerDetail('tracker-123', mockUser);
 
-      // ASSERT
       expect(result).toEqual(transformedResult);
       expect(
         mockTrackerAuthorizationService.validateTrackerAccess,
@@ -426,7 +378,6 @@ describe('TrackerController', () => {
     });
 
     it('should_return_tracker_detail_when_user_is_guild_admin', async () => {
-      // ARRANGE
       const otherUserTracker = {
         ...mockTracker,
         userId: 'user-456',
@@ -448,10 +399,8 @@ describe('TrackerController', () => {
         transformedResult as any,
       );
 
-      // ACT
       const result = await controller.getTrackerDetail('tracker-123', mockUser);
 
-      // ASSERT
       expect(result).toEqual(transformedResult);
       expect(
         mockTrackerAuthorizationService.validateTrackerAccess,
@@ -459,7 +408,6 @@ describe('TrackerController', () => {
     });
 
     it('should_throw_ForbiddenException_when_user_has_no_access', async () => {
-      // ARRANGE
       const otherUserTracker = {
         ...mockTracker,
         userId: 'user-456',
@@ -475,7 +423,6 @@ describe('TrackerController', () => {
         ),
       );
 
-      // ACT & ASSERT
       await expect(
         controller.getTrackerDetail('tracker-123', mockUser),
       ).rejects.toThrow(ForbiddenException);
@@ -484,7 +431,6 @@ describe('TrackerController', () => {
 
   describe('getScrapingStatus', () => {
     it('should_return_status_when_user_is_owner', async () => {
-      // ARRANGE
       const statusResult = {
         status: 'COMPLETED',
         error: null,
@@ -501,13 +447,11 @@ describe('TrackerController', () => {
         statusResult as never,
       );
 
-      // ACT
       const result = await controller.getScrapingStatus(
         'tracker-123',
         mockUser,
       );
 
-      // ASSERT
       expect(result).toEqual(statusResult);
       expect(
         mockTrackerAuthorizationService.validateTrackerAccess,
@@ -524,7 +468,6 @@ describe('TrackerController', () => {
     });
 
     it('should_return_status_when_user_is_guild_admin', async () => {
-      // ARRANGE
       const otherUserTracker = { ...mockTracker, userId: 'user-456' };
       const statusResult = {
         status: 'COMPLETED',
@@ -542,13 +485,11 @@ describe('TrackerController', () => {
         statusResult as never,
       );
 
-      // ACT
       const result = await controller.getScrapingStatus(
         'tracker-123',
         mockUser,
       );
 
-      // ASSERT
       expect(result).toEqual(statusResult);
       expect(
         mockTrackerAuthorizationService.validateTrackerAccess,
@@ -556,7 +497,6 @@ describe('TrackerController', () => {
     });
 
     it('should_throw_ForbiddenException_when_user_has_no_access', async () => {
-      // ARRANGE
       const otherUserTracker = { ...mockTracker, userId: 'user-456' };
       vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
         otherUserTracker as never,
@@ -569,7 +509,6 @@ describe('TrackerController', () => {
         ),
       );
 
-      // ACT & ASSERT
       await expect(
         controller.getScrapingStatus('tracker-123', mockUser),
       ).rejects.toThrow(ForbiddenException);
@@ -579,7 +518,6 @@ describe('TrackerController', () => {
 
   describe('getTrackerSeasons', () => {
     it('should_return_seasons_when_user_is_owner', async () => {
-      // ARRANGE
       const mockSeasons = [
         { id: 'season-1', seasonNumber: 1, trackerId: 'tracker-123' },
       ];
@@ -593,13 +531,11 @@ describe('TrackerController', () => {
         mockSeasons as never,
       );
 
-      // ACT
       const result = await controller.getTrackerSeasons(
         'tracker-123',
         mockUser,
       );
 
-      // ASSERT
       expect(result).toEqual(mockSeasons);
       expect(
         mockTrackerAuthorizationService.validateTrackerAccess,
@@ -610,7 +546,6 @@ describe('TrackerController', () => {
     });
 
     it('should_return_seasons_when_user_is_guild_admin', async () => {
-      // ARRANGE
       const otherUserTracker = { ...mockTracker, userId: 'user-456' };
       const mockSeasons = [
         { id: 'season-1', seasonNumber: 1, trackerId: 'tracker-123' },
@@ -625,13 +560,11 @@ describe('TrackerController', () => {
         mockSeasons as never,
       );
 
-      // ACT
       const result = await controller.getTrackerSeasons(
         'tracker-123',
         mockUser,
       );
 
-      // ASSERT
       expect(result).toEqual(mockSeasons);
       expect(
         mockTrackerAuthorizationService.validateTrackerAccess,
@@ -639,7 +572,6 @@ describe('TrackerController', () => {
     });
 
     it('should_throw_ForbiddenException_when_user_has_no_access', async () => {
-      // ARRANGE
       const otherUserTracker = { ...mockTracker, userId: 'user-456' };
       vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
         otherUserTracker as never,
@@ -652,7 +584,6 @@ describe('TrackerController', () => {
         ),
       );
 
-      // ACT & ASSERT
       await expect(
         controller.getTrackerSeasons('tracker-123', mockUser),
       ).rejects.toThrow(ForbiddenException);
@@ -662,7 +593,6 @@ describe('TrackerController', () => {
 
   describe('getSnapshots', () => {
     it('should_return_snapshots_when_user_is_owner', async () => {
-      // ARRANGE
       const mockSnapshots = [{ id: 'snapshot-1', trackerId: 'tracker-123' }];
       vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
         mockTracker as never,
@@ -674,10 +604,8 @@ describe('TrackerController', () => {
         mockSnapshots as never,
       );
 
-      // ACT
       const result = await controller.getSnapshots('tracker-123', mockUser);
 
-      // ASSERT
       expect(result).toEqual(mockSnapshots);
       expect(
         mockTrackerAuthorizationService.validateTrackerAccess,
@@ -689,7 +617,6 @@ describe('TrackerController', () => {
     });
 
     it('should_return_snapshots_when_user_is_guild_admin', async () => {
-      // ARRANGE
       const otherUserTracker = { ...mockTracker, userId: 'user-456' };
       const mockSnapshots = [{ id: 'snapshot-1', trackerId: 'tracker-123' }];
       vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
@@ -702,10 +629,8 @@ describe('TrackerController', () => {
         mockSnapshots as never,
       );
 
-      // ACT
       const result = await controller.getSnapshots('tracker-123', mockUser);
 
-      // ASSERT
       expect(result).toEqual(mockSnapshots);
       expect(
         mockTrackerAuthorizationService.validateTrackerAccess,
@@ -713,7 +638,6 @@ describe('TrackerController', () => {
     });
 
     it('should_return_season_snapshots_when_user_is_owner_and_season_provided', async () => {
-      // ARRANGE
       const season = 1;
       const mockSnapshots = [
         { id: 'snapshot-1', trackerId: 'tracker-123', seasonNumber: season },
@@ -728,14 +652,12 @@ describe('TrackerController', () => {
         mockSnapshotService.getSnapshotsByTrackerAndSeason,
       ).mockResolvedValue(mockSnapshots as never);
 
-      // ACT
       const result = await controller.getSnapshots(
         'tracker-123',
         mockUser,
         season,
       );
 
-      // ASSERT
       expect(result).toEqual(mockSnapshots);
       expect(
         mockTrackerAuthorizationService.validateTrackerAccess,
@@ -747,7 +669,6 @@ describe('TrackerController', () => {
     });
 
     it('should_return_season_snapshots_when_user_is_guild_admin_and_season_provided', async () => {
-      // ARRANGE
       const season = 1;
       const otherUserTracker = { ...mockTracker, userId: 'user-456' };
       const mockSnapshots = [
@@ -763,14 +684,12 @@ describe('TrackerController', () => {
         mockSnapshotService.getSnapshotsByTrackerAndSeason,
       ).mockResolvedValue(mockSnapshots as never);
 
-      // ACT
       const result = await controller.getSnapshots(
         'tracker-123',
         mockUser,
         season,
       );
 
-      // ASSERT
       expect(result).toEqual(mockSnapshots);
       expect(
         mockTrackerAuthorizationService.validateTrackerAccess,
@@ -782,7 +701,6 @@ describe('TrackerController', () => {
     });
 
     it('should_throw_ForbiddenException_when_user_has_no_access', async () => {
-      // ARRANGE
       const otherUserTracker = { ...mockTracker, userId: 'user-456' };
       vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
         otherUserTracker as never,
@@ -795,7 +713,6 @@ describe('TrackerController', () => {
         ),
       );
 
-      // ACT & ASSERT
       await expect(
         controller.getSnapshots('tracker-123', mockUser),
       ).rejects.toThrow(ForbiddenException);
@@ -805,7 +722,6 @@ describe('TrackerController', () => {
 
   describe('createSnapshot', () => {
     it('should_create_snapshot_when_user_is_owner', async () => {
-      // ARRANGE
       const dto = {
         trackerId: 'tracker-123',
         capturedAt: new Date(),
@@ -831,14 +747,12 @@ describe('TrackerController', () => {
         mockSnapshot as never,
       );
 
-      // ACT
       const result = await controller.createSnapshot(
         'tracker-123',
         dto,
         mockUser,
       );
 
-      // ASSERT
       expect(result).toEqual(mockSnapshot);
       expect(
         mockTrackerAuthorizationService.validateTrackerOwnership,
@@ -854,7 +768,6 @@ describe('TrackerController', () => {
     });
 
     it('should_throw_ForbiddenException_when_user_is_not_owner', async () => {
-      // ARRANGE
       const dto = {
         trackerId: 'tracker-123',
         capturedAt: new Date(),
@@ -879,7 +792,6 @@ describe('TrackerController', () => {
         throw new ForbiddenException();
       });
 
-      // ACT & ASSERT
       await expect(
         controller.createSnapshot('tracker-123', dto, mockUser),
       ).rejects.toThrow(ForbiddenException);
@@ -892,7 +804,6 @@ describe('TrackerController', () => {
 
   describe('updateTracker', () => {
     it('should_update_tracker_when_user_is_owner', async () => {
-      // ARRANGE
       const dto: UpdateTrackerDto = {
         displayName: 'Updated Name',
         isActive: false,
@@ -908,14 +819,12 @@ describe('TrackerController', () => {
         updatedTracker as never,
       );
 
-      // ACT
       const result = await controller.updateTracker(
         'tracker-123',
         dto,
         mockUser,
       );
 
-      // ASSERT
       expect(result).toEqual(updatedTracker);
       expect(mockTrackerService.getTrackerById).toHaveBeenCalledWith(
         'tracker-123',
@@ -931,7 +840,6 @@ describe('TrackerController', () => {
     });
 
     it('should_throw_ForbiddenException_when_user_is_not_owner', async () => {
-      // ARRANGE
       const dto: UpdateTrackerDto = {
         displayName: 'Updated Name',
         isActive: false,
@@ -946,7 +854,6 @@ describe('TrackerController', () => {
         throw new ForbiddenException();
       });
 
-      // ACT & ASSERT
       await expect(
         controller.updateTracker('tracker-123', dto, mockUser),
       ).rejects.toThrow(ForbiddenException);
@@ -957,7 +864,6 @@ describe('TrackerController', () => {
     });
 
     it('should_throw_ForbiddenException_when_user_is_guild_admin_but_not_owner', async () => {
-      // ARRANGE
       const dto: UpdateTrackerDto = {
         displayName: 'Updated Name',
         isActive: false,
@@ -974,7 +880,6 @@ describe('TrackerController', () => {
       // Note: updateTracker uses validateTrackerOwnership (owner-only operation)
       // Even if user is guild admin, they cannot update
 
-      // ACT & ASSERT
       await expect(
         controller.updateTracker('tracker-123', dto, mockUser),
       ).rejects.toThrow(ForbiddenException);
@@ -985,7 +890,6 @@ describe('TrackerController', () => {
     });
 
     it('should_throw_NotFoundException_when_tracker_not_found', async () => {
-      // ARRANGE
       const dto: UpdateTrackerDto = {
         displayName: 'Updated Name',
         isActive: false,
@@ -994,7 +898,6 @@ describe('TrackerController', () => {
         new NotFoundException('Tracker not found'),
       );
 
-      // ACT & ASSERT
       await expect(
         controller.updateTracker('tracker-123', dto, mockUser),
       ).rejects.toThrow(NotFoundException);
@@ -1004,7 +907,6 @@ describe('TrackerController', () => {
 
   describe('deleteTracker', () => {
     it('should_delete_tracker_when_user_is_owner', async () => {
-      // ARRANGE
       vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
         mockTracker as never,
       );
@@ -1015,10 +917,8 @@ describe('TrackerController', () => {
         mockTracker as never,
       );
 
-      // ACT
       const result = await controller.deleteTracker('tracker-123', mockUser);
 
-      // ASSERT
       expect(result).toEqual(mockTracker);
       expect(mockTrackerService.getTrackerById).toHaveBeenCalledWith(
         'tracker-123',
@@ -1032,7 +932,6 @@ describe('TrackerController', () => {
     });
 
     it('should_throw_ForbiddenException_when_user_is_not_owner', async () => {
-      // ARRANGE
       const otherUserTracker = { ...mockTracker, userId: 'user-456' };
       vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
         otherUserTracker as never,
@@ -1043,7 +942,6 @@ describe('TrackerController', () => {
         throw new ForbiddenException();
       });
 
-      // ACT & ASSERT
       await expect(
         controller.deleteTracker('tracker-123', mockUser),
       ).rejects.toThrow(ForbiddenException);
@@ -1054,7 +952,6 @@ describe('TrackerController', () => {
     });
 
     it('should_throw_ForbiddenException_when_user_is_guild_admin_but_not_owner', async () => {
-      // ARRANGE
       const otherUserTracker = { ...mockTracker, userId: 'user-456' };
       vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
         otherUserTracker as never,
@@ -1067,7 +964,6 @@ describe('TrackerController', () => {
       // Note: deleteTracker uses validateTrackerOwnership (owner-only operation)
       // Even if user is guild admin, they cannot delete
 
-      // ACT & ASSERT
       await expect(
         controller.deleteTracker('tracker-123', mockUser),
       ).rejects.toThrow(ForbiddenException);
@@ -1078,12 +974,10 @@ describe('TrackerController', () => {
     });
 
     it('should_throw_NotFoundException_when_tracker_not_found', async () => {
-      // ARRANGE
       vi.mocked(mockTrackerService.getTrackerById).mockRejectedValue(
         new NotFoundException('Tracker not found'),
       );
 
-      // ACT & ASSERT
       await expect(
         controller.deleteTracker('tracker-123', mockUser),
       ).rejects.toThrow(NotFoundException);

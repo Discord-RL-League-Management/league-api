@@ -51,7 +51,6 @@ describe('PlayerService', () => {
   };
 
   beforeEach(() => {
-    // ARRANGE: Setup test dependencies with mocks
     mockPlayerRepository = {
       findById: vi.fn(),
       findByUserIdAndGuildId: vi.fn(),
@@ -100,22 +99,17 @@ describe('PlayerService', () => {
 
   describe('findOne', () => {
     it('should_return_player_when_player_exists', async () => {
-      // ARRANGE
       vi.mocked(mockPlayerRepository.findById).mockResolvedValue(mockPlayer);
 
-      // ACT
       const result = await service.findOne(playerId);
 
-      // ASSERT
       expect(result).toEqual(mockPlayer);
       expect(result.id).toBe(playerId);
     });
 
     it('should_throw_PlayerNotFoundException_when_player_does_not_exist', async () => {
-      // ARRANGE
       vi.mocked(mockPlayerRepository.findById).mockResolvedValue(null);
 
-      // ACT & ASSERT
       await expect(service.findOne(playerId)).rejects.toThrow(
         PlayerNotFoundException,
       );
@@ -124,35 +118,28 @@ describe('PlayerService', () => {
 
   describe('findByUserIdAndGuildId', () => {
     it('should_return_player_when_player_exists', async () => {
-      // ARRANGE
       vi.mocked(mockPlayerRepository.findByUserIdAndGuildId).mockResolvedValue(
         mockPlayer,
       );
 
-      // ACT
       const result = await service.findByUserIdAndGuildId(userId, guildId);
 
-      // ASSERT
       expect(result).toEqual(mockPlayer);
     });
 
     it('should_return_null_when_player_does_not_exist', async () => {
-      // ARRANGE
       vi.mocked(mockPlayerRepository.findByUserIdAndGuildId).mockResolvedValue(
         null,
       );
 
-      // ACT
       const result = await service.findByUserIdAndGuildId(userId, guildId);
 
-      // ASSERT
       expect(result).toBeNull();
     });
   });
 
   describe('findByGuildId', () => {
     it('should_return_paginated_players_for_guild', async () => {
-      // ARRANGE
       const mockResult = {
         data: [mockPlayer],
         total: 1,
@@ -163,16 +150,13 @@ describe('PlayerService', () => {
         mockResult,
       );
 
-      // ACT
       const result = await service.findByGuildId(guildId);
 
-      // ASSERT
       expect(result).toEqual(mockResult);
       expect(result.data).toHaveLength(1);
     });
 
     it('should_use_pagination_options_when_provided', async () => {
-      // ARRANGE
       const mockResult = {
         data: [mockPlayer],
         total: 1,
@@ -183,13 +167,11 @@ describe('PlayerService', () => {
         mockResult,
       );
 
-      // ACT
       const result = await service.findByGuildId(guildId, {
         page: 2,
         limit: 10,
       });
 
-      // ASSERT
       expect(result.page).toBe(2);
       expect(result.limit).toBe(10);
     });
@@ -197,7 +179,6 @@ describe('PlayerService', () => {
 
   describe('findByUserId', () => {
     it('should_return_paginated_players_for_user', async () => {
-      // ARRANGE
       const mockResult = {
         data: [mockPlayer],
         total: 1,
@@ -208,10 +189,8 @@ describe('PlayerService', () => {
         mockResult,
       );
 
-      // ACT
       const result = await service.findByUserId(userId);
 
-      // ASSERT
       expect(result).toEqual(mockResult);
       expect(result.data).toHaveLength(1);
     });
@@ -219,7 +198,6 @@ describe('PlayerService', () => {
 
   describe('findAll', () => {
     it('should_return_paginated_all_players', async () => {
-      // ARRANGE
       const mockResult = {
         data: [mockPlayer],
         total: 1,
@@ -228,17 +206,14 @@ describe('PlayerService', () => {
       };
       vi.mocked(mockPlayerRepository.findAll).mockResolvedValue(mockResult);
 
-      // ACT
       const result = await service.findAll();
 
-      // ASSERT
       expect(result).toEqual(mockResult);
     });
   });
 
   describe('create', () => {
     it('should_create_player_successfully_when_validation_passes', async () => {
-      // ARRANGE
       const createDto: CreatePlayerDto = {
         userId,
         guildId,
@@ -259,17 +234,14 @@ describe('PlayerService', () => {
         },
       );
 
-      // ACT
       const result = await service.create(createDto);
 
-      // ASSERT
       expect(result).toEqual(mockPlayer);
       expect(result.userId).toBe(userId);
       expect(result.guildId).toBe(guildId);
     });
 
     it('should_throw_PlayerAlreadyExistsException_when_player_already_exists', async () => {
-      // ARRANGE
       const createDto: CreatePlayerDto = {
         userId,
         guildId,
@@ -279,14 +251,12 @@ describe('PlayerService', () => {
         mockPlayer,
       );
 
-      // ACT & ASSERT
       await expect(service.create(createDto)).rejects.toThrow(
         PlayerAlreadyExistsException,
       );
     });
 
     it('should_validate_guild_membership_before_creating', async () => {
-      // ARRANGE
       const createDto: CreatePlayerDto = {
         userId,
         guildId,
@@ -301,14 +271,12 @@ describe('PlayerService', () => {
         null,
       );
 
-      // ACT & ASSERT
       await expect(service.create(createDto)).rejects.toThrow(
         NotFoundException,
       );
     });
 
     it('should_throw_PlayerAlreadyExistsException_on_prisma_unique_constraint', async () => {
-      // ARRANGE
       const createDto: CreatePlayerDto = {
         userId,
         guildId,
@@ -326,14 +294,12 @@ describe('PlayerService', () => {
       );
       vi.mocked(mockPrisma.$transaction).mockRejectedValue(prismaError);
 
-      // ACT & ASSERT
       await expect(service.create(createDto)).rejects.toThrow(
         PlayerAlreadyExistsException,
       );
     });
 
     it('should_throw_InternalServerErrorException_on_unexpected_error', async () => {
-      // ARRANGE
       const createDto: CreatePlayerDto = {
         userId,
         guildId,
@@ -346,7 +312,6 @@ describe('PlayerService', () => {
         new Error('Database error'),
       );
 
-      // ACT & ASSERT
       await expect(service.create(createDto)).rejects.toThrow(
         InternalServerErrorException,
       );
@@ -355,20 +320,16 @@ describe('PlayerService', () => {
 
   describe('ensurePlayerExists', () => {
     it('should_return_existing_player_when_player_exists', async () => {
-      // ARRANGE
       vi.mocked(mockPlayerRepository.findByUserIdAndGuildId).mockResolvedValue(
         mockPlayer,
       );
 
-      // ACT
       const result = await service.ensurePlayerExists(userId, guildId);
 
-      // ASSERT
       expect(result).toEqual(mockPlayer);
     });
 
     it('should_auto_create_player_when_player_does_not_exist', async () => {
-      // ARRANGE
       vi.mocked(mockPlayerRepository.findByUserIdAndGuildId).mockResolvedValue(
         null,
       );
@@ -384,16 +345,13 @@ describe('PlayerService', () => {
         },
       );
 
-      // ACT
       const result = await service.ensurePlayerExists(userId, guildId);
 
-      // ASSERT
       expect(result).toEqual(mockPlayer);
       expect(result.status).toBe(PlayerStatus.ACTIVE);
     });
 
     it('should_return_existing_player_from_transaction_when_created_concurrently', async () => {
-      // ARRANGE
       vi.mocked(mockPlayerRepository.findByUserIdAndGuildId).mockResolvedValue(
         null,
       );
@@ -409,15 +367,12 @@ describe('PlayerService', () => {
         },
       );
 
-      // ACT
       const result = await service.ensurePlayerExists(userId, guildId);
 
-      // ASSERT
       expect(result).toEqual(mockPlayer);
     });
 
     it('should_validate_guild_membership_before_creating', async () => {
-      // ARRANGE
       const validationError = new NotFoundException(
         'Guild membership not found',
       );
@@ -428,7 +383,6 @@ describe('PlayerService', () => {
         mockValidationService.validateGuildMembership,
       ).mockRejectedValue(validationError);
 
-      // ACT & ASSERT
       await expect(service.ensurePlayerExists(userId, guildId)).rejects.toThrow(
         NotFoundException,
       );
@@ -437,7 +391,6 @@ describe('PlayerService', () => {
 
   describe('update', () => {
     it('should_update_player_status_successfully', async () => {
-      // ARRANGE
       const updateDto: UpdatePlayerDto = {
         status: PlayerStatus.INACTIVE,
       };
@@ -455,30 +408,25 @@ describe('PlayerService', () => {
         },
       );
 
-      // ACT
       const result = await service.update(playerId, updateDto);
 
-      // ASSERT
       expect(result).toEqual(updatedPlayer);
       expect(result.status).toBe(PlayerStatus.INACTIVE);
     });
 
     it('should_throw_PlayerNotFoundException_when_player_does_not_exist', async () => {
-      // ARRANGE
       const updateDto: UpdatePlayerDto = {
         status: PlayerStatus.INACTIVE,
       };
 
       vi.mocked(mockPlayerRepository.findById).mockResolvedValue(null);
 
-      // ACT & ASSERT
       await expect(service.update(playerId, updateDto)).rejects.toThrow(
         PlayerNotFoundException,
       );
     });
 
     it('should_validate_status_transition_when_status_changes', async () => {
-      // ARRANGE
       const updateDto: UpdatePlayerDto = {
         status: PlayerStatus.INACTIVE,
       };
@@ -493,14 +441,12 @@ describe('PlayerService', () => {
         },
       );
 
-      // ACT & ASSERT
       await expect(service.update(playerId, updateDto)).rejects.toThrow(
         InvalidPlayerStatusException,
       );
     });
 
     it('should_throw_InternalServerErrorException_on_unexpected_error', async () => {
-      // ARRANGE
       const updateDto: UpdatePlayerDto = {
         status: PlayerStatus.INACTIVE,
       };
@@ -510,7 +456,6 @@ describe('PlayerService', () => {
         new Error('Database error'),
       );
 
-      // ACT & ASSERT
       await expect(service.update(playerId, updateDto)).rejects.toThrow(
         InternalServerErrorException,
       );
@@ -519,7 +464,6 @@ describe('PlayerService', () => {
 
   describe('updateCooldown', () => {
     it('should_update_cooldown_successfully', async () => {
-      // ARRANGE
       const lastLeftLeagueId = 'league-123';
       const updatedPlayer = {
         ...mockPlayer,
@@ -532,19 +476,15 @@ describe('PlayerService', () => {
         updatedPlayer as any,
       );
 
-      // ACT
       const result = await service.updateCooldown(playerId, lastLeftLeagueId);
 
-      // ASSERT
       expect(result).toEqual(updatedPlayer);
       expect(result.lastLeftLeagueId).toBe(lastLeftLeagueId);
     });
 
     it('should_throw_PlayerNotFoundException_when_player_does_not_exist', async () => {
-      // ARRANGE
       vi.mocked(mockPlayerRepository.findById).mockResolvedValue(null);
 
-      // ACT & ASSERT
       await expect(
         service.updateCooldown(playerId, 'league-123'),
       ).rejects.toThrow(PlayerNotFoundException);
@@ -553,22 +493,17 @@ describe('PlayerService', () => {
 
   describe('delete', () => {
     it('should_delete_player_successfully', async () => {
-      // ARRANGE
       vi.mocked(mockPlayerRepository.findById).mockResolvedValue(mockPlayer);
       vi.mocked(mockPlayerRepository.delete).mockResolvedValue(mockPlayer);
 
-      // ACT
       const result = await service.delete(playerId);
 
-      // ASSERT
       expect(result).toEqual(mockPlayer);
     });
 
     it('should_throw_PlayerNotFoundException_when_player_does_not_exist', async () => {
-      // ARRANGE
       vi.mocked(mockPlayerRepository.findById).mockResolvedValue(null);
 
-      // ACT & ASSERT
       await expect(service.delete(playerId)).rejects.toThrow(
         PlayerNotFoundException,
       );
@@ -577,24 +512,18 @@ describe('PlayerService', () => {
 
   describe('exists', () => {
     it('should_return_true_when_player_exists', async () => {
-      // ARRANGE
       vi.mocked(mockPlayerRepository.exists).mockResolvedValue(true);
 
-      // ACT
       const result = await service.exists(playerId);
 
-      // ASSERT
       expect(result).toBe(true);
     });
 
     it('should_return_false_when_player_does_not_exist', async () => {
-      // ARRANGE
       vi.mocked(mockPlayerRepository.exists).mockResolvedValue(false);
 
-      // ACT
       const result = await service.exists(playerId);
 
-      // ASSERT
       expect(result).toBe(false);
     });
   });

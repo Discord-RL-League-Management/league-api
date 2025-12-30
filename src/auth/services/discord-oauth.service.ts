@@ -29,7 +29,6 @@ export class DiscordOAuthService {
     this.clientSecret = this.configService.get<string>('discord.clientSecret')!;
     this.redirectUri = this.configService.get<string>('discord.callbackUrl')!;
 
-    // Debug logging
     this.logger.debug('DiscordOAuthService Config', {
       clientId: this.clientId,
       redirectUri: this.redirectUri,

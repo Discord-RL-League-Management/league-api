@@ -81,7 +81,6 @@ describe('OrganizationService', () => {
   };
 
   beforeEach(() => {
-    // ARRANGE: Setup test dependencies with mocks
     mockOrganizationRepository = {
       findById: vi.fn(),
       findByLeagueId: vi.fn(),
@@ -155,24 +154,19 @@ describe('OrganizationService', () => {
 
   describe('findOne', () => {
     it('should_return_organization_when_organization_exists', async () => {
-      // ARRANGE
       vi.mocked(mockOrganizationRepository.findById).mockResolvedValue(
         mockOrganization,
       );
 
-      // ACT
       const result = await service.findOne(organizationId);
 
-      // ASSERT
       expect(result).toEqual(mockOrganization);
       expect(result.id).toBe(organizationId);
     });
 
     it('should_throw_OrganizationNotFoundException_when_organization_does_not_exist', async () => {
-      // ARRANGE
       vi.mocked(mockOrganizationRepository.findById).mockResolvedValue(null);
 
-      // ACT & ASSERT
       await expect(service.findOne(organizationId)).rejects.toThrow(
         OrganizationNotFoundException,
       );
@@ -181,30 +175,24 @@ describe('OrganizationService', () => {
 
   describe('findByLeagueId', () => {
     it('should_return_organizations_for_league', async () => {
-      // ARRANGE
       const organizations = [mockOrganization];
       vi.mocked(mockOrganizationRepository.findByLeagueId).mockResolvedValue(
         organizations,
       );
 
-      // ACT
       const result = await service.findByLeagueId(leagueId);
 
-      // ASSERT
       expect(result).toEqual(organizations);
       expect(result).toHaveLength(1);
     });
 
     it('should_return_empty_array_when_no_organizations_exist', async () => {
-      // ARRANGE
       vi.mocked(mockOrganizationRepository.findByLeagueId).mockResolvedValue(
         [],
       );
 
-      // ACT
       const result = await service.findByLeagueId(leagueId);
 
-      // ASSERT
       expect(result).toEqual([]);
       expect(result).toHaveLength(0);
     });
@@ -212,7 +200,6 @@ describe('OrganizationService', () => {
 
   describe('create', () => {
     it('should_create_organization_with_gm_when_user_is_not_system', async () => {
-      // ARRANGE
       const createDto: CreateOrganizationDto = {
         leagueId,
         name: 'New Organization',
@@ -231,16 +218,13 @@ describe('OrganizationService', () => {
         createdOrg,
       );
 
-      // ACT
       const result = await service.create(createDto, userId);
 
-      // ASSERT: Verify organization created with GM
       expect(result).toEqual(createdOrg);
       expect(result.name).toBe(createDto.name);
     });
 
     it('should_create_organization_without_gm_when_user_is_system', async () => {
-      // ARRANGE
       const createDto: CreateOrganizationDto = {
         leagueId,
         name: 'System Organization',
@@ -255,30 +239,25 @@ describe('OrganizationService', () => {
         createdOrg,
       );
 
-      // ACT
       const result = await service.create(createDto, 'system');
 
-      // ASSERT: Verify organization created without GM
       expect(result).toEqual(createdOrg);
       expect(mockPlayerService.ensurePlayerExists).not.toHaveBeenCalled();
     });
 
     it('should_throw_NotFoundException_when_league_does_not_exist', async () => {
-      // ARRANGE
       const createDto: CreateOrganizationDto = {
         leagueId: 'non-existent',
         name: 'Test Org',
       };
       vi.mocked(mockLeagueRepository.findById).mockResolvedValue(null);
 
-      // ACT & ASSERT
       await expect(service.create(createDto, userId)).rejects.toThrow(
         NotFoundException,
       );
     });
 
     it('should_validate_organization_creation_before_creating', async () => {
-      // ARRANGE
       const createDto: CreateOrganizationDto = {
         leagueId,
         name: 'Test Org',
@@ -289,14 +268,12 @@ describe('OrganizationService', () => {
       );
       vi.mocked(mockLeagueRepository.findById).mockResolvedValue(mockLeague);
 
-      // ACT & ASSERT
       await expect(service.create(createDto, userId)).rejects.toThrow(
         BadRequestException,
       );
     });
 
     it('should_validate_league_capacity_before_creating', async () => {
-      // ARRANGE
       const createDto: CreateOrganizationDto = {
         leagueId,
         name: 'Test Org',
@@ -307,7 +284,6 @@ describe('OrganizationService', () => {
       ).mockRejectedValue(capacityError);
       vi.mocked(mockLeagueRepository.findById).mockResolvedValue(mockLeague);
 
-      // ACT & ASSERT
       await expect(service.create(createDto, userId)).rejects.toThrow(
         BadRequestException,
       );
@@ -316,7 +292,6 @@ describe('OrganizationService', () => {
 
   describe('update', () => {
     it('should_update_organization_when_user_is_gm', async () => {
-      // ARRANGE
       const updateDto: UpdateOrganizationDto = {
         name: 'Updated Name',
       };
@@ -332,16 +307,13 @@ describe('OrganizationService', () => {
         updatedOrg,
       );
 
-      // ACT
       const result = await service.update(organizationId, updateDto, userId);
 
-      // ASSERT
       expect(result).toEqual(updatedOrg);
       expect(result.name).toBe(updateDto.name);
     });
 
     it('should_throw_NotGeneralManagerException_when_user_is_not_gm', async () => {
-      // ARRANGE
       const updateDto: UpdateOrganizationDto = {
         name: 'Updated Name',
       };
@@ -356,14 +328,12 @@ describe('OrganizationService', () => {
         mockOrganizationMemberService.hasGeneralManagers,
       ).mockResolvedValue(true);
 
-      // ACT & ASSERT
       await expect(
         service.update(organizationId, updateDto, userId),
       ).rejects.toThrow(NotGeneralManagerException);
     });
 
     it('should_allow_bot_user_to_update_organization_with_no_gms', async () => {
-      // ARRANGE
       const updateDto: UpdateOrganizationDto = {
         name: 'Updated Name',
       };
@@ -382,22 +352,18 @@ describe('OrganizationService', () => {
         updatedOrg,
       );
 
-      // ACT
       const result = await service.update(organizationId, updateDto, 'bot');
 
-      // ASSERT
       expect(result).toEqual(updatedOrg);
     });
 
     it('should_throw_OrganizationNotFoundException_when_organization_does_not_exist', async () => {
-      // ARRANGE
       const updateDto: UpdateOrganizationDto = {
         name: 'Updated Name',
       };
 
       vi.mocked(mockOrganizationRepository.findById).mockResolvedValue(null);
 
-      // ACT & ASSERT
       await expect(
         service.update(organizationId, updateDto, userId),
       ).rejects.toThrow(OrganizationNotFoundException);
@@ -406,7 +372,6 @@ describe('OrganizationService', () => {
 
   describe('delete', () => {
     it('should_delete_organization_when_user_is_gm', async () => {
-      // ARRANGE
       vi.mocked(mockOrganizationRepository.findById).mockResolvedValue(
         mockOrganization,
       );
@@ -417,15 +382,12 @@ describe('OrganizationService', () => {
         mockOrganization,
       );
 
-      // ACT
       const result = await service.delete(organizationId, userId);
 
-      // ASSERT
       expect(result).toEqual(mockOrganization);
     });
 
     it('should_throw_NotGeneralManagerException_when_user_is_not_gm', async () => {
-      // ARRANGE
       vi.mocked(mockOrganizationRepository.findById).mockResolvedValue(
         mockOrganization,
       );
@@ -436,14 +398,12 @@ describe('OrganizationService', () => {
         mockOrganizationMemberService.hasGeneralManagers,
       ).mockResolvedValue(true);
 
-      // ACT & ASSERT
       await expect(service.delete(organizationId, userId)).rejects.toThrow(
         NotGeneralManagerException,
       );
     });
 
     it('should_validate_can_delete_before_deleting', async () => {
-      // ARRANGE
       const validationError = new BadRequestException('Has teams');
       vi.mocked(mockOrganizationRepository.findById).mockResolvedValue(
         mockOrganization,
@@ -455,7 +415,6 @@ describe('OrganizationService', () => {
         mockValidationService.validateCanDeleteOrganization,
       ).mockRejectedValue(validationError);
 
-      // ACT & ASSERT
       await expect(service.delete(organizationId, userId)).rejects.toThrow(
         BadRequestException,
       );
@@ -464,7 +423,6 @@ describe('OrganizationService', () => {
 
   describe('findTeams', () => {
     it('should_return_teams_for_organization', async () => {
-      // ARRANGE
       const teams = [
         {
           id: 'team-1',
@@ -479,19 +437,15 @@ describe('OrganizationService', () => {
         mockOrganizationRepository.findTeamsByOrganization,
       ).mockResolvedValue(teams as any);
 
-      // ACT
       const result = await service.findTeams(organizationId);
 
-      // ASSERT
       expect(result).toEqual(teams);
       expect(result).toHaveLength(1);
     });
 
     it('should_throw_OrganizationNotFoundException_when_organization_does_not_exist', async () => {
-      // ARRANGE
       vi.mocked(mockOrganizationRepository.findById).mockResolvedValue(null);
 
-      // ACT & ASSERT
       await expect(service.findTeams(organizationId)).rejects.toThrow(
         OrganizationNotFoundException,
       );
@@ -500,7 +454,6 @@ describe('OrganizationService', () => {
 
   describe('transferTeam', () => {
     it('should_transfer_team_when_user_is_source_gm', async () => {
-      // ARRANGE
       const teamId = 'team-123';
       const targetOrgId = 'org-456';
       const team = {
@@ -521,16 +474,13 @@ describe('OrganizationService', () => {
         updatedTeam as any,
       );
 
-      // ACT
       const result = await service.transferTeam(teamId, targetOrgId, userId);
 
-      // ASSERT
       expect(result).toEqual(updatedTeam);
       expect(result.organizationId).toBe(targetOrgId);
     });
 
     it('should_transfer_team_when_user_is_target_gm', async () => {
-      // ARRANGE
       const teamId = 'team-123';
       const targetOrgId = 'org-456';
       const team = {
@@ -551,15 +501,12 @@ describe('OrganizationService', () => {
         updatedTeam as any,
       );
 
-      // ACT
       const result = await service.transferTeam(teamId, targetOrgId, userId);
 
-      // ASSERT
       expect(result).toEqual(updatedTeam);
     });
 
     it('should_throw_ForbiddenException_when_user_is_neither_source_nor_target_gm', async () => {
-      // ARRANGE
       const teamId = 'team-123';
       const targetOrgId = 'org-456';
       const team = {
@@ -573,27 +520,23 @@ describe('OrganizationService', () => {
         .mockResolvedValueOnce(false) // Source GM check
         .mockResolvedValueOnce(false); // Target GM check
 
-      // ACT & ASSERT
       await expect(
         service.transferTeam(teamId, targetOrgId, userId),
       ).rejects.toThrow(ForbiddenException);
     });
 
     it('should_throw_NotFoundException_when_team_does_not_exist', async () => {
-      // ARRANGE
       const teamId = 'non-existent';
       const targetOrgId = 'org-456';
 
       vi.mocked(mockTeamRepository.findById).mockResolvedValue(null);
 
-      // ACT & ASSERT
       await expect(
         service.transferTeam(teamId, targetOrgId, userId),
       ).rejects.toThrow(NotFoundException);
     });
 
     it('should_throw_BadRequestException_when_team_has_no_organization', async () => {
-      // ARRANGE
       const teamId = 'team-123';
       const targetOrgId = 'org-456';
       const team = {
@@ -604,7 +547,6 @@ describe('OrganizationService', () => {
 
       vi.mocked(mockTeamRepository.findById).mockResolvedValue(team as any);
 
-      // ACT & ASSERT
       await expect(
         service.transferTeam(teamId, targetOrgId, userId),
       ).rejects.toThrow(BadRequestException);
@@ -613,7 +555,6 @@ describe('OrganizationService', () => {
 
   describe('getOrganizationStats', () => {
     it('should_return_organization_statistics', async () => {
-      // ARRANGE
       vi.mocked(mockOrganizationRepository.findById).mockResolvedValue(
         mockOrganization,
       );
@@ -627,10 +568,8 @@ describe('OrganizationService', () => {
         mockOrganizationRepository.countGeneralManagers,
       ).mockResolvedValue(2);
 
-      // ACT
       const result = await service.getOrganizationStats(organizationId);
 
-      // ASSERT
       expect(result).toEqual({
         organizationId,
         name: mockOrganization.name,
@@ -641,10 +580,8 @@ describe('OrganizationService', () => {
     });
 
     it('should_throw_OrganizationNotFoundException_when_organization_does_not_exist', async () => {
-      // ARRANGE
       vi.mocked(mockOrganizationRepository.findById).mockResolvedValue(null);
 
-      // ACT & ASSERT
       await expect(
         service.getOrganizationStats(organizationId),
       ).rejects.toThrow(OrganizationNotFoundException);
@@ -653,7 +590,6 @@ describe('OrganizationService', () => {
 
   describe('assignTeamsToOrganization', () => {
     it('should_assign_teams_successfully_when_capacity_allows', async () => {
-      // ARRANGE
       const teamIds = ['team-1', 'team-2'];
       const leagueSettings = {
         membership: {
@@ -683,20 +619,17 @@ describe('OrganizationService', () => {
         },
       );
 
-      // ACT
       const result = await service.assignTeamsToOrganization(
         leagueId,
         organizationId,
         teamIds,
       );
 
-      // ASSERT
       expect(result).toHaveLength(2);
       expect(result[0].organizationId).toBe(organizationId);
     });
 
     it('should_throw_OrganizationCapacityExceededException_when_capacity_exceeded', async () => {
-      // ARRANGE
       const teamIds = ['team-1', 'team-2'];
       const leagueSettings = {
         membership: {
@@ -722,28 +655,24 @@ describe('OrganizationService', () => {
         },
       );
 
-      // ACT & ASSERT
       await expect(
         service.assignTeamsToOrganization(leagueId, organizationId, teamIds),
       ).rejects.toThrow(OrganizationCapacityExceededException);
     });
 
     it('should_throw_OrganizationNotFoundException_when_organization_not_in_league', async () => {
-      // ARRANGE
       const teamIds = ['team-1'];
 
       vi.mocked(mockOrganizationRepository.findByIdAndLeague).mockResolvedValue(
         null,
       );
 
-      // ACT & ASSERT
       await expect(
         service.assignTeamsToOrganization(leagueId, organizationId, teamIds),
       ).rejects.toThrow(OrganizationNotFoundException);
     });
 
     it('should_allow_unlimited_teams_when_maxTeamsPerOrganization_is_null', async () => {
-      // ARRANGE
       const teamIds = ['team-1', 'team-2'];
       const leagueSettings = {
         membership: {
@@ -773,14 +702,12 @@ describe('OrganizationService', () => {
         },
       );
 
-      // ACT
       const result = await service.assignTeamsToOrganization(
         leagueId,
         organizationId,
         teamIds,
       );
 
-      // ASSERT
       expect(result).toHaveLength(2);
     });
   });

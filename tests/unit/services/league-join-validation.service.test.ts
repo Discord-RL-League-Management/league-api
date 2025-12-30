@@ -28,7 +28,6 @@ describe('LeagueJoinValidationService', () => {
   let mockTrackerService: TrackerService;
 
   beforeEach(() => {
-    // ARRANGE: Setup test dependencies
     mockPrisma = {} as PrismaService;
 
     mockLeagueSettingsService = {
@@ -76,7 +75,6 @@ describe('LeagueJoinValidationService', () => {
 
   describe('validateJoin', () => {
     it('should_pass_when_all_validations_pass', async () => {
-      // ARRANGE
       const playerId = 'player123';
       const leagueId = 'league123';
       const settings = {
@@ -107,17 +105,14 @@ describe('LeagueJoinValidationService', () => {
         mockLeagueMemberRepository.countActiveMembers,
       ).mockResolvedValue(0);
 
-      // ACT
       await service.validateJoin(playerId, leagueId);
 
-      // ASSERT
       expect(mockLeagueSettingsService.getSettings).toHaveBeenCalledWith(
         leagueId,
       );
     });
 
     it('should_validate_guild_membership_when_required', async () => {
-      // ARRANGE
       const playerId = 'player123';
       const leagueId = 'league123';
       const settings = {
@@ -149,10 +144,8 @@ describe('LeagueJoinValidationService', () => {
         mockLeagueMemberRepository.countActiveMembers,
       ).mockResolvedValue(0);
 
-      // ACT
       await service.validateJoin(playerId, leagueId);
 
-      // ASSERT
       expect(mockGuildMembersService.findOne).toHaveBeenCalledWith(
         player.userId,
         player.guildId,
@@ -160,7 +153,6 @@ describe('LeagueJoinValidationService', () => {
     });
 
     it('should_validate_player_status_when_required', async () => {
-      // ARRANGE
       const playerId = 'player123';
       const leagueId = 'league123';
       const settings = {
@@ -194,17 +186,14 @@ describe('LeagueJoinValidationService', () => {
         mockLeagueMemberRepository.countActiveMembers,
       ).mockResolvedValue(0);
 
-      // ACT
       await service.validateJoin(playerId, leagueId);
 
-      // ASSERT
       expect(
         mockPlayerValidationService.validatePlayerStatus,
       ).toHaveBeenCalledWith(player.status);
     });
 
     it('should_throw_LeagueJoinValidationException_when_tracker_required_but_not_present', async () => {
-      // ARRANGE
       const playerId = 'player123';
       const leagueId = 'league123';
       const settings = {
@@ -232,7 +221,6 @@ describe('LeagueJoinValidationService', () => {
       );
       vi.mocked(mockPlayerService.findOne).mockResolvedValue(player as any);
 
-      // ACT & ASSERT
       await expect(service.validateJoin(playerId, leagueId)).rejects.toThrow(
         LeagueJoinValidationException,
       );
@@ -242,7 +230,6 @@ describe('LeagueJoinValidationService', () => {
     });
 
     it('should_throw_LeagueJoinValidationException_when_registration_is_closed', async () => {
-      // ARRANGE
       const playerId = 'player123';
       const leagueId = 'league123';
       const settings = {
@@ -270,7 +257,6 @@ describe('LeagueJoinValidationService', () => {
       );
       vi.mocked(mockPlayerService.findOne).mockResolvedValue(player as any);
 
-      // ACT & ASSERT
       await expect(service.validateJoin(playerId, leagueId)).rejects.toThrow(
         LeagueJoinValidationException,
       );
@@ -280,7 +266,6 @@ describe('LeagueJoinValidationService', () => {
     });
 
     it('should_throw_LeagueJoinValidationException_when_league_is_full', async () => {
-      // ARRANGE
       const playerId = 'player123';
       const leagueId = 'league123';
       const settings = {
@@ -312,7 +297,6 @@ describe('LeagueJoinValidationService', () => {
         mockLeagueMemberRepository.countActiveMembers,
       ).mockResolvedValue(10);
 
-      // ACT & ASSERT
       await expect(service.validateJoin(playerId, leagueId)).rejects.toThrow(
         LeagueJoinValidationException,
       );
@@ -322,7 +306,6 @@ describe('LeagueJoinValidationService', () => {
     });
 
     it('should_throw_LeagueJoinValidationException_when_player_already_in_another_league', async () => {
-      // ARRANGE
       const playerId = 'player123';
       const leagueId = 'league123';
       const settings = {
@@ -357,7 +340,6 @@ describe('LeagueJoinValidationService', () => {
         mockLeagueMemberRepository.countActiveMembers,
       ).mockResolvedValue(0);
 
-      // ACT & ASSERT
       await expect(service.validateJoin(playerId, leagueId)).rejects.toThrow(
         LeagueJoinValidationException,
       );
@@ -367,7 +349,6 @@ describe('LeagueJoinValidationService', () => {
     });
 
     it('should_validate_cooldown_when_configured', async () => {
-      // ARRANGE
       const playerId = 'player123';
       const leagueId = 'league123';
       const settings = {
@@ -402,10 +383,8 @@ describe('LeagueJoinValidationService', () => {
         mockLeagueMemberRepository.countActiveMembers,
       ).mockResolvedValue(0);
 
-      // ACT
       await service.validateJoin(playerId, leagueId);
 
-      // ASSERT
       expect(mockPlayerValidationService.validateCooldown).toHaveBeenCalledWith(
         player.lastLeftLeagueAt,
         settings.membership.cooldownAfterLeave,

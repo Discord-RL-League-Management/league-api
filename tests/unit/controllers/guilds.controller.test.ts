@@ -55,7 +55,6 @@ describe('GuildsController', () => {
   };
 
   beforeEach(async () => {
-    // ARRANGE: Setup test dependencies with mocks
     mockGuildsService = {
       findOne: vi.fn(),
       getSettings: vi.fn(),
@@ -101,7 +100,6 @@ describe('GuildsController', () => {
 
   describe('getGuild', () => {
     it('should_return_guild_when_user_has_access', async () => {
-      // ARRANGE
       vi.mocked(
         mockGuildAccessValidationService.validateUserGuildAccess,
       ).mockResolvedValue(undefined);
@@ -109,10 +107,8 @@ describe('GuildsController', () => {
         mockGuild as never,
       );
 
-      // ACT
       const result = await controller.getGuild('guild-1', mockUser);
 
-      // ASSERT
       expect(result).toEqual(mockGuild);
       expect(
         mockGuildAccessValidationService.validateUserGuildAccess,
@@ -120,12 +116,10 @@ describe('GuildsController', () => {
     });
 
     it('should_throw_when_user_lacks_access', async () => {
-      // ARRANGE
       vi.mocked(
         mockGuildAccessValidationService.validateUserGuildAccess,
       ).mockRejectedValue(new ForbiddenException('Access denied'));
 
-      // ACT & ASSERT
       await expect(controller.getGuild('guild-1', mockUser)).rejects.toThrow(
         ForbiddenException,
       );
@@ -134,17 +128,14 @@ describe('GuildsController', () => {
 
   describe('getGuildSettings', () => {
     it('should_return_settings_when_user_is_admin', async () => {
-      // ARRANGE
       // Note: GuildAdminGuard is applied, so we skip permission checks here
       // The guard handles validation, so the controller just returns settings
       vi.mocked(mockGuildSettingsService.getSettings).mockResolvedValue(
         mockSettings as never,
       );
 
-      // ACT
       const result = await controller.getGuildSettings('guild-1', mockUser);
 
-      // ASSERT
       expect(result).toEqual(mockSettings);
       expect(mockGuildSettingsService.getSettings).toHaveBeenCalledWith(
         'guild-1',
@@ -154,17 +145,14 @@ describe('GuildsController', () => {
 
   describe('getGuildChannels', () => {
     it('should_return_channels_when_user_is_admin', async () => {
-      // ARRANGE
       const mockChannels = [{ id: 'channel-1', name: 'General' }];
       // Note: GuildAdminGuard is applied, so we skip permission checks here
       vi.mocked(mockDiscordBotService.getGuildChannels).mockResolvedValue(
         mockChannels as never,
       );
 
-      // ACT
       const result = await controller.getGuildChannels('guild-1', mockUser);
 
-      // ASSERT
       expect(result).toEqual(mockChannels);
       expect(mockDiscordBotService.getGuildChannels).toHaveBeenCalledWith(
         'guild-1',
@@ -174,17 +162,14 @@ describe('GuildsController', () => {
 
   describe('getGuildRoles', () => {
     it('should_return_roles_when_user_is_admin', async () => {
-      // ARRANGE
       const mockRoles = [{ id: 'role-1', name: 'Admin' }];
       // Note: GuildAdminGuard is applied, so we skip permission checks here
       vi.mocked(mockDiscordBotService.getGuildRoles).mockResolvedValue(
         mockRoles as never,
       );
 
-      // ACT
       const result = await controller.getGuildRoles('guild-1', mockUser);
 
-      // ASSERT
       expect(result).toEqual(mockRoles);
       expect(mockDiscordBotService.getGuildRoles).toHaveBeenCalledWith(
         'guild-1',
