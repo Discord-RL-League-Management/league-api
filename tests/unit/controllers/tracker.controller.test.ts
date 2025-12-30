@@ -80,6 +80,7 @@ describe('TrackerController', () => {
 
     mockTrackerAuthorizationService = {
       validateTrackerAccess: vi.fn(),
+      validateTrackerOwnership: vi.fn(),
     } as unknown as TrackerAuthorizationService;
 
     mockResponseMapper = {
@@ -823,6 +824,9 @@ describe('TrackerController', () => {
       vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
         mockTracker as never,
       );
+      vi.mocked(
+        mockTrackerAuthorizationService.validateTrackerOwnership,
+      ).mockReturnValue(undefined);
       vi.mocked(mockSnapshotService.createSnapshot).mockResolvedValue(
         mockSnapshot as never,
       );
@@ -836,6 +840,9 @@ describe('TrackerController', () => {
 
       // ASSERT
       expect(result).toEqual(mockSnapshot);
+      expect(
+        mockTrackerAuthorizationService.validateTrackerOwnership,
+      ).toHaveBeenCalledWith(mockUser.id, mockTracker.userId);
       expect(mockSnapshotService.createSnapshot).toHaveBeenCalledWith(
         'tracker-123',
         mockUser.id,
@@ -866,46 +873,20 @@ describe('TrackerController', () => {
       vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
         otherUserTracker as never,
       );
+      vi.mocked(
+        mockTrackerAuthorizationService.validateTrackerOwnership,
+      ).mockImplementation(() => {
+        throw new ForbiddenException();
+      });
 
       // ACT & ASSERT
       await expect(
         controller.createSnapshot('tracker-123', dto, mockUser),
       ).rejects.toThrow(ForbiddenException);
-      expect(mockSnapshotService.createSnapshot).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('refreshTracker', () => {
-    it('should_refresh_tracker_when_user_owns_tracker', async () => {
-      // ARRANGE
-      vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
-        mockTracker as never,
-      );
-      vi.mocked(
-        mockTrackerProcessingService.refreshTrackerData,
-      ).mockResolvedValue(undefined);
-
-      // ACT
-      const result = await controller.refreshTracker('tracker-123', mockUser);
-
-      // ASSERT
-      expect(result).toEqual({ message: 'Refresh job enqueued successfully' });
       expect(
-        mockTrackerProcessingService.refreshTrackerData,
-      ).toHaveBeenCalledWith('tracker-123');
-    });
-
-    it('should_throw_when_user_does_not_own_tracker', async () => {
-      // ARRANGE
-      const otherTracker = { ...mockTracker, userId: 'other-user' };
-      vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
-        otherTracker as never,
-      );
-
-      // ACT & ASSERT
-      await expect(
-        controller.refreshTracker('tracker-123', mockUser),
-      ).rejects.toThrow(ForbiddenException);
+        mockTrackerAuthorizationService.validateTrackerOwnership,
+      ).toHaveBeenCalledWith(mockUser.id, otherUserTracker.userId);
+      expect(mockSnapshotService.createSnapshot).not.toHaveBeenCalled();
     });
   });
 
@@ -920,6 +901,9 @@ describe('TrackerController', () => {
       vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
         mockTracker as never,
       );
+      vi.mocked(
+        mockTrackerAuthorizationService.validateTrackerOwnership,
+      ).mockReturnValue(undefined);
       vi.mocked(mockTrackerService.updateTracker).mockResolvedValue(
         updatedTracker as never,
       );
@@ -936,6 +920,9 @@ describe('TrackerController', () => {
       expect(mockTrackerService.getTrackerById).toHaveBeenCalledWith(
         'tracker-123',
       );
+      expect(
+        mockTrackerAuthorizationService.validateTrackerOwnership,
+      ).toHaveBeenCalledWith(mockUser.id, mockTracker.userId);
       expect(mockTrackerService.updateTracker).toHaveBeenCalledWith(
         'tracker-123',
         dto.displayName,
@@ -953,11 +940,19 @@ describe('TrackerController', () => {
       vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
         otherUserTracker as never,
       );
+      vi.mocked(
+        mockTrackerAuthorizationService.validateTrackerOwnership,
+      ).mockImplementation(() => {
+        throw new ForbiddenException();
+      });
 
       // ACT & ASSERT
       await expect(
         controller.updateTracker('tracker-123', dto, mockUser),
       ).rejects.toThrow(ForbiddenException);
+      expect(
+        mockTrackerAuthorizationService.validateTrackerOwnership,
+      ).toHaveBeenCalledWith(mockUser.id, otherUserTracker.userId);
       expect(mockTrackerService.updateTracker).not.toHaveBeenCalled();
     });
 
@@ -971,13 +966,21 @@ describe('TrackerController', () => {
       vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
         otherUserTracker as never,
       );
-      // Note: updateTracker uses direct userId check, not validateTrackerAccess
-      // Even if user is guild admin, they cannot update (owner-only operation)
+      vi.mocked(
+        mockTrackerAuthorizationService.validateTrackerOwnership,
+      ).mockImplementation(() => {
+        throw new ForbiddenException();
+      });
+      // Note: updateTracker uses validateTrackerOwnership (owner-only operation)
+      // Even if user is guild admin, they cannot update
 
       // ACT & ASSERT
       await expect(
         controller.updateTracker('tracker-123', dto, mockUser),
       ).rejects.toThrow(ForbiddenException);
+      expect(
+        mockTrackerAuthorizationService.validateTrackerOwnership,
+      ).toHaveBeenCalledWith(mockUser.id, otherUserTracker.userId);
       expect(mockTrackerService.updateTracker).not.toHaveBeenCalled();
     });
 
@@ -1005,6 +1008,9 @@ describe('TrackerController', () => {
       vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
         mockTracker as never,
       );
+      vi.mocked(
+        mockTrackerAuthorizationService.validateTrackerOwnership,
+      ).mockReturnValue(undefined);
       vi.mocked(mockTrackerService.deleteTracker).mockResolvedValue(
         mockTracker as never,
       );
@@ -1017,6 +1023,9 @@ describe('TrackerController', () => {
       expect(mockTrackerService.getTrackerById).toHaveBeenCalledWith(
         'tracker-123',
       );
+      expect(
+        mockTrackerAuthorizationService.validateTrackerOwnership,
+      ).toHaveBeenCalledWith(mockUser.id, mockTracker.userId);
       expect(mockTrackerService.deleteTracker).toHaveBeenCalledWith(
         'tracker-123',
       );
@@ -1028,11 +1037,19 @@ describe('TrackerController', () => {
       vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
         otherUserTracker as never,
       );
+      vi.mocked(
+        mockTrackerAuthorizationService.validateTrackerOwnership,
+      ).mockImplementation(() => {
+        throw new ForbiddenException();
+      });
 
       // ACT & ASSERT
       await expect(
         controller.deleteTracker('tracker-123', mockUser),
       ).rejects.toThrow(ForbiddenException);
+      expect(
+        mockTrackerAuthorizationService.validateTrackerOwnership,
+      ).toHaveBeenCalledWith(mockUser.id, otherUserTracker.userId);
       expect(mockTrackerService.deleteTracker).not.toHaveBeenCalled();
     });
 
@@ -1042,13 +1059,21 @@ describe('TrackerController', () => {
       vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
         otherUserTracker as never,
       );
-      // Note: deleteTracker uses direct userId check, not validateTrackerAccess
-      // Even if user is guild admin, they cannot delete (owner-only operation)
+      vi.mocked(
+        mockTrackerAuthorizationService.validateTrackerOwnership,
+      ).mockImplementation(() => {
+        throw new ForbiddenException();
+      });
+      // Note: deleteTracker uses validateTrackerOwnership (owner-only operation)
+      // Even if user is guild admin, they cannot delete
 
       // ACT & ASSERT
       await expect(
         controller.deleteTracker('tracker-123', mockUser),
       ).rejects.toThrow(ForbiddenException);
+      expect(
+        mockTrackerAuthorizationService.validateTrackerOwnership,
+      ).toHaveBeenCalledWith(mockUser.id, otherUserTracker.userId);
       expect(mockTrackerService.deleteTracker).not.toHaveBeenCalled();
     });
 

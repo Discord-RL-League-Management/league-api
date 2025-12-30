@@ -7,17 +7,8 @@
  * Aligned with ISO/IEC/IEEE 29119 standards.
  */
 
-import {
-  describe,
-  it,
-  expect,
-  beforeAll,
-  afterAll,
-  beforeEach,
-  afterEach,
-} from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
 import { apiClient, API_BASE_URL } from '../setup/api-setup';
-import { createTrackerData } from '../factories/tracker.factory';
 import {
   generateTestId,
   createTestUserWithToken,
@@ -31,7 +22,7 @@ beforeAll(async () => {
   try {
     await apiClient.get('/health');
     isServerAvailable = true;
-  } catch (error) {
+  } catch {
     console.warn(
       `API server not available at ${API_BASE_URL}. API tests will be skipped.`,
     );
@@ -45,7 +36,6 @@ describe.skipIf(!isServerAvailable)(
     const testId = generateTestId();
     let testUser: any = null;
     let testToken: string = '';
-    let testTracker: any = null;
     let testTrackerId: string = '';
 
     beforeEach(async () => {
@@ -63,15 +53,15 @@ describe.skipIf(!isServerAvailable)(
             Authorization: `Bearer ${testToken}`,
           },
         });
-      } catch (error) {
-        // Ignore cleanup errors (resource may not exist or already deleted)
+      } catch {
+        // Ignore cleanup errors
       }
 
       // Clean up test user - always attempt, catch errors
       try {
         await cleanupTestUser(apiClient, testUser?.id);
-      } catch (error) {
-        // Ignore cleanup errors (resource may not exist or already deleted)
+      } catch {
+        // Ignore cleanup errors
       }
 
       // Reset state for next test
@@ -103,7 +93,6 @@ describe.skipIf(!isServerAvailable)(
         expect(Array.isArray(response.data)).toBe(true);
         expect(response.data.length).toBeGreaterThan(0);
         testTrackerId = response.data[0].id;
-        testTracker = response.data[0];
       });
 
       it('should_return_400_when_urls_are_invalid', async () => {
@@ -205,8 +194,6 @@ describe.skipIf(!isServerAvailable)(
       });
 
       it('should_return_404_when_user_has_no_trackers', async () => {
-        // ARRANGE: Test user with no trackers (already created in beforeEach)
-
         // ACT: Get user's trackers
         const response = await apiClient.get('/api/trackers/me', {
           headers: {
@@ -266,8 +253,6 @@ describe.skipIf(!isServerAvailable)(
       });
 
       it('should_return_404_when_user_has_no_trackers', async () => {
-        // ARRANGE: Test user with no trackers (already created in beforeEach)
-
         // ACT: Get trackers without guild filter
         const response = await apiClient.get('/api/trackers', {
           headers: {
@@ -368,11 +353,9 @@ describe.skipIf(!isServerAvailable)(
         expect(registerResponse.status).toBe(201);
         expect(registerResponse.data.length).toBeGreaterThan(0);
         testTrackerId = registerResponse.data[0].id;
-        testTracker = registerResponse.data[0];
       });
 
       it('should_return_200_with_tracker_details_when_tracker_exists', async () => {
-        // ARRANGE: Test tracker already created in beforeEach
         expect(testTrackerId).toBeDefined();
 
         // ACT: Get tracker details
@@ -428,11 +411,9 @@ describe.skipIf(!isServerAvailable)(
         expect(registerResponse.status).toBe(201);
         expect(registerResponse.data.length).toBeGreaterThan(0);
         testTrackerId = registerResponse.data[0].id;
-        testTracker = registerResponse.data[0];
       });
 
       it('should_return_200_with_tracker_and_seasons_when_tracker_exists', async () => {
-        // ARRANGE: Test tracker already created in beforeEach
         expect(testTrackerId).toBeDefined();
 
         // ACT: Get tracker detail
@@ -492,11 +473,9 @@ describe.skipIf(!isServerAvailable)(
         expect(registerResponse.status).toBe(201);
         expect(registerResponse.data.length).toBeGreaterThan(0);
         testTrackerId = registerResponse.data[0].id;
-        testTracker = registerResponse.data[0];
       });
 
       it('should_return_200_with_scraping_status_when_tracker_exists', async () => {
-        // ARRANGE: Test tracker already created in beforeEach
         expect(testTrackerId).toBeDefined();
 
         // ACT: Get scraping status
@@ -554,11 +533,9 @@ describe.skipIf(!isServerAvailable)(
         expect(registerResponse.status).toBe(201);
         expect(registerResponse.data.length).toBeGreaterThan(0);
         testTrackerId = registerResponse.data[0].id;
-        testTracker = registerResponse.data[0];
       });
 
       it('should_return_200_with_seasons_array_when_tracker_exists', async () => {
-        // ARRANGE: Test tracker already created in beforeEach
         expect(testTrackerId).toBeDefined();
 
         // ACT: Get tracker seasons
@@ -597,96 +574,6 @@ describe.skipIf(!isServerAvailable)(
       });
     });
 
-    describe('POST /api/trackers/:id/refresh - Refresh Tracker', () => {
-      beforeEach(async () => {
-        // Register a tracker for these tests
-        const trackerUrls = [
-          'https://rocketleague.tracker.network/rocket-league/profile/steam/testuser/overview',
-        ];
-        const registerResponse = await apiClient.post(
-          '/api/trackers/register',
-          { urls: trackerUrls },
-          {
-            headers: {
-              Authorization: `Bearer ${testToken}`,
-            },
-            validateStatus: (status) => status < 500,
-          },
-        );
-        expect(registerResponse.status).toBe(201);
-        expect(registerResponse.data.length).toBeGreaterThan(0);
-        testTrackerId = registerResponse.data[0].id;
-        testTracker = registerResponse.data[0];
-      });
-
-      it('should_refresh_tracker_and_return_200_status', async () => {
-        // ARRANGE: Test tracker already created in beforeEach
-        expect(testTrackerId).toBeDefined();
-
-        // ACT: Refresh tracker
-        const response = await apiClient.post(
-          `/api/trackers/${testTrackerId}/refresh`,
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${testToken}`,
-            },
-            validateStatus: (status) => status < 500,
-          },
-        );
-
-        // ASSERT: Verify API contract
-        expect(response.status).toBe(200);
-        expect(response.data).toHaveProperty('message');
-      });
-
-      it('should_return_403_when_user_does_not_own_tracker', async () => {
-        // ARRANGE: Test tracker already created in beforeEach
-        expect(testTrackerId).toBeDefined();
-
-        const otherUserResult = await createTestUserWithToken(apiClient);
-        const otherToken = otherUserResult.token;
-
-        // ACT: Try to refresh tracker owned by different user
-        const response = await apiClient.post(
-          `/api/trackers/${testTrackerId}/refresh`,
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${otherToken}`,
-            },
-            validateStatus: (status) => status < 500,
-          },
-        );
-
-        // ASSERT: Verify permission contract
-        expect(response.status).toBe(403);
-
-        // Cleanup other user
-        await cleanupTestUser(apiClient, otherUserResult.user.id);
-      });
-
-      it('should_return_404_when_tracker_does_not_exist', async () => {
-        // ARRANGE: Non-existent tracker ID
-        const nonExistentTrackerId = 'clx999999999999999999';
-
-        // ACT: Try to refresh non-existent tracker
-        const response = await apiClient.post(
-          `/api/trackers/${nonExistentTrackerId}/refresh`,
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${testToken}`,
-            },
-            validateStatus: (status) => status < 500,
-          },
-        );
-
-        // ASSERT: Verify error contract
-        expect(response.status).toBe(404);
-      });
-    });
-
     describe('PUT /api/trackers/:id - Update Tracker', () => {
       beforeEach(async () => {
         // Register a tracker for these tests
@@ -706,11 +593,9 @@ describe.skipIf(!isServerAvailable)(
         expect(registerResponse.status).toBe(201);
         expect(registerResponse.data.length).toBeGreaterThan(0);
         testTrackerId = registerResponse.data[0].id;
-        testTracker = registerResponse.data[0];
       });
 
       it('should_update_tracker_and_return_200_status', async () => {
-        // ARRANGE: Test tracker already created in beforeEach
         expect(testTrackerId).toBeDefined();
 
         const updateData = {
@@ -779,11 +664,9 @@ describe.skipIf(!isServerAvailable)(
         expect(registerResponse.status).toBe(201);
         expect(registerResponse.data.length).toBeGreaterThan(0);
         testTrackerId = registerResponse.data[0].id;
-        testTracker = registerResponse.data[0];
       });
 
       it('should_delete_tracker_and_return_200_status', async () => {
-        // ARRANGE: Test tracker already created in beforeEach
         expect(testTrackerId).toBeDefined();
 
         // ACT: Delete tracker

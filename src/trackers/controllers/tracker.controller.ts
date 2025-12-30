@@ -9,7 +9,6 @@ import {
   Query,
   UseGuards,
   Logger,
-  ForbiddenException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -209,24 +208,6 @@ export class TrackerController {
     return this.trackerService.getTrackerSeasons(id);
   }
 
-  @Post(':id/refresh')
-  @ApiOperation({ summary: 'Trigger manual refresh for a tracker' })
-  @ApiParam({ name: 'id', description: 'Tracker ID' })
-  @ApiResponse({ status: 200, description: 'Refresh job enqueued' })
-  @ApiResponse({ status: 404, description: 'Tracker not found' })
-  async refreshTracker(
-    @Param('id', ParseCUIDPipe) id: string,
-    @CurrentUser() user: AuthenticatedUser,
-  ) {
-    const tracker = await this.trackerService.getTrackerById(id);
-    if (tracker.userId !== user.id) {
-      throw new ForbiddenException('You can only refresh your own tracker');
-    }
-
-    await this.trackerProcessingService.refreshTrackerData(id);
-    return { message: 'Refresh job enqueued successfully' };
-  }
-
   @Get(':id/snapshots')
   @ApiOperation({ summary: 'Get snapshots for a tracker' })
   @ApiParam({ name: 'id', description: 'Tracker ID' })
@@ -271,11 +252,10 @@ export class TrackerController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const tracker = await this.trackerService.getTrackerById(trackerId);
-    if (tracker.userId !== user.id) {
-      throw new ForbiddenException(
-        'You can only create snapshots for your own trackers',
-      );
-    }
+    this.trackerAuthorizationService.validateTrackerOwnership(
+      user.id,
+      tracker.userId,
+    );
     return this.snapshotService.createSnapshot(trackerId, user.id, {
       capturedAt: dto.capturedAt,
       seasonNumber: dto.seasonNumber,
@@ -303,9 +283,10 @@ export class TrackerController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const tracker = await this.trackerService.getTrackerById(id);
-    if (tracker.userId !== user.id) {
-      throw new ForbiddenException('You can only update your own trackers');
-    }
+    this.trackerAuthorizationService.validateTrackerOwnership(
+      user.id,
+      tracker.userId,
+    );
     return this.trackerService.updateTracker(id, dto.displayName, dto.isActive);
   }
 
@@ -320,9 +301,10 @@ export class TrackerController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const tracker = await this.trackerService.getTrackerById(id);
-    if (tracker.userId !== user.id) {
-      throw new ForbiddenException('You can only delete your own trackers');
-    }
+    this.trackerAuthorizationService.validateTrackerOwnership(
+      user.id,
+      tracker.userId,
+    );
     return this.trackerService.deleteTracker(id);
   }
 
