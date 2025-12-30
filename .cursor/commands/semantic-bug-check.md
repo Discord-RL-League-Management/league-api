@@ -408,3 +408,4 @@ This command complements `code-quality-check.md` by:
 | Detection Depth | Surface-level patterns | Context-aware deep analysis |
 
 
+
