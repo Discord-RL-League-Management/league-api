@@ -293,7 +293,6 @@ export class LeagueSettingsService {
           // Continue to throw original error
         }
       }
-      // If capacity is exceeded, log warning
       this.logger.warn(
         `Cannot assign all ${teamIds.length} teams to organization ${defaultOrgId} due to capacity limits. ` +
           `Some teams may remain unassigned. Consider creating additional organizations or increasing capacity limits.`,

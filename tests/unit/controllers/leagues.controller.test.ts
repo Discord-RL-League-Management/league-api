@@ -46,7 +46,6 @@ describe('LeaguesController', () => {
   };
 
   beforeEach(async () => {
-    // ARRANGE: Setup test dependencies with mocks
     mockLeaguesService = {
       findByGuild: vi.fn(),
       findOne: vi.fn(),
@@ -91,7 +90,6 @@ describe('LeaguesController', () => {
 
   describe('getLeaguesByGuild', () => {
     it('should_return_leagues_when_user_has_guild_access', async () => {
-      // ARRANGE
       const mockLeagues = { leagues: [mockLeague], pagination: {} };
       vi.mocked(
         mockLeagueAccessValidationService.validateGuildAccess,
@@ -100,10 +98,8 @@ describe('LeaguesController', () => {
         mockLeagues as never,
       );
 
-      // ACT
       const result = await controller.getLeaguesByGuild('guild-1', mockUser);
 
-      // ASSERT
       expect(result).toEqual(mockLeagues);
       expect(
         mockLeagueAccessValidationService.validateGuildAccess,
@@ -113,7 +109,6 @@ describe('LeaguesController', () => {
 
   describe('getLeague', () => {
     it('should_return_league_when_user_has_access', async () => {
-      // ARRANGE
       vi.mocked(
         mockLeagueAccessValidationService.validateLeagueAccess,
       ).mockResolvedValue(undefined);
@@ -121,10 +116,8 @@ describe('LeaguesController', () => {
         mockLeague as never,
       );
 
-      // ACT
       const result = await controller.getLeague('league-123', mockUser);
 
-      // ASSERT
       expect(result).toEqual(mockLeague);
       expect(
         mockLeagueAccessValidationService.validateLeagueAccess,
@@ -132,12 +125,10 @@ describe('LeaguesController', () => {
     });
 
     it('should_throw_when_user_lacks_access', async () => {
-      // ARRANGE
       vi.mocked(
         mockLeagueAccessValidationService.validateLeagueAccess,
       ).mockRejectedValue(new ForbiddenException('Access denied'));
 
-      // ACT & ASSERT
       await expect(
         controller.getLeague('league-123', mockUser),
       ).rejects.toThrow(ForbiddenException);
@@ -146,7 +137,6 @@ describe('LeaguesController', () => {
 
   describe('createLeague', () => {
     it('should_create_league_when_user_is_guild_admin', async () => {
-      // ARRANGE
       const createDto: CreateLeagueDto = {
         name: 'New League',
         guildId: 'guild-1',
@@ -162,10 +152,8 @@ describe('LeaguesController', () => {
         mockLeague as never,
       );
 
-      // ACT
       const result = await controller.createLeague(createDto, mockUser);
 
-      // ASSERT
       expect(result).toEqual(mockLeague);
       expect(mockLeaguesService.create).toHaveBeenCalled();
     });
@@ -173,7 +161,6 @@ describe('LeaguesController', () => {
 
   describe('updateLeague', () => {
     it('should_update_league_when_user_is_admin_or_moderator', async () => {
-      // ARRANGE
       const updateDto: UpdateLeagueDto = { name: 'Updated League' };
       vi.mocked(
         mockLeagueAccessValidationService.validateLeagueAccess,
@@ -186,14 +173,12 @@ describe('LeaguesController', () => {
         ...updateDto,
       } as never);
 
-      // ACT
       const result = await controller.updateLeague(
         'league-123',
         updateDto,
         mockUser,
       );
 
-      // ASSERT
       expect(result.name).toBe('Updated League');
       expect(mockLeaguesService.update).toHaveBeenCalledWith(
         'league-123',
@@ -204,7 +189,6 @@ describe('LeaguesController', () => {
 
   describe('updateLeagueStatus', () => {
     it('should_update_status_when_user_is_admin', async () => {
-      // ARRANGE
       vi.mocked(
         mockLeagueAccessValidationService.validateLeagueAccess,
       ).mockResolvedValue(undefined);
@@ -216,14 +200,12 @@ describe('LeaguesController', () => {
         status: LeagueStatus.ARCHIVED,
       } as never);
 
-      // ACT
       const result = await controller.updateLeagueStatus(
         'league-123',
         { status: LeagueStatus.ARCHIVED },
         mockUser,
       );
 
-      // ASSERT
       expect(result.status).toBe(LeagueStatus.ARCHIVED);
       expect(mockLeaguesService.updateStatus).toHaveBeenCalledWith(
         'league-123',
@@ -234,7 +216,6 @@ describe('LeaguesController', () => {
 
   describe('deleteLeague', () => {
     it('should_delete_league_when_user_is_admin', async () => {
-      // ARRANGE
       vi.mocked(
         mockLeagueAccessValidationService.validateLeagueAccess,
       ).mockResolvedValue(undefined);
@@ -245,10 +226,8 @@ describe('LeaguesController', () => {
         mockLeague as never,
       );
 
-      // ACT
       const result = await controller.deleteLeague('league-123', mockUser);
 
-      // ASSERT
       expect(result).toEqual(mockLeague);
       expect(mockLeaguesService.remove).toHaveBeenCalledWith('league-123');
     });

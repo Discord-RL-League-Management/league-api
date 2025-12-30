@@ -23,7 +23,6 @@ describe('GlobalExceptionFilter', () => {
   let mockArgumentsHost: ArgumentsHost;
 
   beforeEach(() => {
-    // ARRANGE: Setup test dependencies
     mockConfigService = {
       get: vi.fn().mockReturnValue('development'),
     } as unknown as ConfigService;
@@ -58,13 +57,10 @@ describe('GlobalExceptionFilter', () => {
 
   describe('catch', () => {
     it('should_handle_HttpException_with_string_message', () => {
-      // ARRANGE
       const exception = new BadRequestException('Bad request');
 
-      // ACT
       filter.catch(exception, mockArgumentsHost);
 
-      // ASSERT
       expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
       expect(mockResponse.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -77,17 +73,14 @@ describe('GlobalExceptionFilter', () => {
     });
 
     it('should_handle_HttpException_with_object_response', () => {
-      // ARRANGE
       const exception = new InternalServerErrorException({
         message: 'Internal error',
         code: 'INTERNAL_ERROR',
         details: { key: 'value' },
       });
 
-      // ACT
       filter.catch(exception, mockArgumentsHost);
 
-      // ASSERT
       expect(mockResponse.status).toHaveBeenCalledWith(
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
@@ -102,13 +95,10 @@ describe('GlobalExceptionFilter', () => {
     });
 
     it('should_include_stack_trace_in_development', () => {
-      // ARRANGE
       const exception = new Error('Test error');
 
-      // ACT
       filter.catch(exception, mockArgumentsHost);
 
-      // ASSERT
       expect(mockResponse.json).toHaveBeenCalledWith(
         expect.objectContaining({
           stack: expect.any(String),
@@ -117,15 +107,12 @@ describe('GlobalExceptionFilter', () => {
     });
 
     it('should_exclude_stack_trace_in_production', () => {
-      // ARRANGE
       vi.mocked(mockConfigService.get).mockReturnValue('production');
       const filterProd = new GlobalExceptionFilter(mockConfigService);
       const exception = new Error('Test error');
 
-      // ACT
       filterProd.catch(exception, mockArgumentsHost);
 
-      // ASSERT
       expect(mockResponse.json).toHaveBeenCalledWith(
         expect.objectContaining({
           stack: undefined,
@@ -134,13 +121,10 @@ describe('GlobalExceptionFilter', () => {
     });
 
     it('should_handle_null_exception', () => {
-      // ARRANGE
       const exception = null;
 
-      // ACT
       filter.catch(exception, mockArgumentsHost);
 
-      // ASSERT
       expect(mockResponse.status).toHaveBeenCalledWith(
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
@@ -152,13 +136,10 @@ describe('GlobalExceptionFilter', () => {
     });
 
     it('should_handle_undefined_exception', () => {
-      // ARRANGE
       const exception = undefined;
 
-      // ACT
       filter.catch(exception, mockArgumentsHost);
 
-      // ASSERT
       expect(mockResponse.status).toHaveBeenCalledWith(
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
@@ -170,13 +151,10 @@ describe('GlobalExceptionFilter', () => {
     });
 
     it('should_handle_unknown_exception', () => {
-      // ARRANGE
       const exception = { message: 'Unknown error' };
 
-      // ACT
       filter.catch(exception, mockArgumentsHost);
 
-      // ASSERT
       expect(mockResponse.status).toHaveBeenCalledWith(
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
@@ -188,13 +166,10 @@ describe('GlobalExceptionFilter', () => {
     });
 
     it('should_include_timestamp_in_response', () => {
-      // ARRANGE
       const exception = new BadRequestException('Bad request');
 
-      // ACT
       filter.catch(exception, mockArgumentsHost);
 
-      // ASSERT
       expect(mockResponse.json).toHaveBeenCalledWith(
         expect.objectContaining({
           timestamp: expect.any(String),

@@ -18,7 +18,6 @@ describe('PermissionCheckService', () => {
   let mockRoleParser: RoleParserService;
 
   beforeEach(() => {
-    // ARRANGE: Setup test dependencies
     mockGuildMembersService = {
       findMemberWithGuildSettings: vi.fn(),
     } as unknown as GuildMembersService;
@@ -46,7 +45,6 @@ describe('PermissionCheckService', () => {
 
   describe('checkGuildAccess', () => {
     it('should_return_not_member_when_membership_not_found', async () => {
-      // ARRANGE
       const userId = 'user123';
       const guildId = 'guild123';
 
@@ -54,17 +52,14 @@ describe('PermissionCheckService', () => {
         mockGuildMembersService.findMemberWithGuildSettings,
       ).mockResolvedValue(null);
 
-      // ACT
       const result = await service.checkGuildAccess(userId, guildId);
 
-      // ASSERT
       expect(result.isMember).toBe(false);
       expect(result.isAdmin).toBe(false);
       expect(result.permissions).toEqual([]);
     });
 
     it('should_return_member_but_not_admin_when_no_settings_provided', async () => {
-      // ARRANGE
       const userId = 'user123';
       const guildId = 'guild123';
       const membership = {
@@ -77,17 +72,14 @@ describe('PermissionCheckService', () => {
         mockGuildMembersService.findMemberWithGuildSettings,
       ).mockResolvedValue(membership as any);
 
-      // ACT
       const result = await service.checkGuildAccess(userId, guildId);
 
-      // ASSERT
       expect(result.isMember).toBe(true);
       expect(result.isAdmin).toBe(false);
       expect(result.permissions).toEqual([]);
     });
 
     it('should_return_admin_when_user_has_admin_role', async () => {
-      // ARRANGE
       const userId = 'user123';
       const guildId = 'guild123';
       const membership = {
@@ -113,21 +105,18 @@ describe('PermissionCheckService', () => {
         permissions,
       );
 
-      // ACT
       const result = await service.checkGuildAccess(
         userId,
         guildId,
         guildSettings,
       );
 
-      // ASSERT
       expect(result.isMember).toBe(true);
       expect(result.isAdmin).toBe(true);
       expect(result.permissions).toEqual(permissions);
     });
 
     it('should_return_permissions_when_user_has_roles', async () => {
-      // ARRANGE
       const userId = 'user123';
       const guildId = 'guild123';
       const membership = {
@@ -150,21 +139,18 @@ describe('PermissionCheckService', () => {
         permissions,
       );
 
-      // ACT
       const result = await service.checkGuildAccess(
         userId,
         guildId,
         guildSettings,
       );
 
-      // ASSERT
       expect(result.isMember).toBe(true);
       expect(result.isAdmin).toBe(false);
       expect(result.permissions).toEqual(permissions);
     });
 
     it('should_return_not_member_on_error', async () => {
-      // ARRANGE
       const userId = 'user123';
       const guildId = 'guild123';
 
@@ -172,10 +158,8 @@ describe('PermissionCheckService', () => {
         mockGuildMembersService.findMemberWithGuildSettings,
       ).mockRejectedValue(new Error('Database error'));
 
-      // ACT
       const result = await service.checkGuildAccess(userId, guildId);
 
-      // ASSERT
       expect(result.isMember).toBe(false);
       expect(result.isAdmin).toBe(false);
       expect(result.permissions).toEqual([]);
@@ -184,7 +168,6 @@ describe('PermissionCheckService', () => {
 
   describe('hasAdminRole', () => {
     it('should_return_false_when_membership_not_found', async () => {
-      // ARRANGE
       const userId = 'user123';
       const guildId = 'guild123';
 
@@ -192,15 +175,12 @@ describe('PermissionCheckService', () => {
         mockGuildMembersService.findMemberWithGuildSettings,
       ).mockResolvedValue(null);
 
-      // ACT
       const result = await service.hasAdminRole(userId, guildId);
 
-      // ASSERT
       expect(result).toBe(false);
     });
 
     it('should_return_false_when_no_settings_provided', async () => {
-      // ARRANGE
       const userId = 'user123';
       const guildId = 'guild123';
       const membership = {
@@ -213,15 +193,12 @@ describe('PermissionCheckService', () => {
         mockGuildMembersService.findMemberWithGuildSettings,
       ).mockResolvedValue(membership as any);
 
-      // ACT
       const result = await service.hasAdminRole(userId, guildId);
 
-      // ASSERT
       expect(result).toBe(false);
     });
 
     it('should_return_true_when_user_has_admin_role', async () => {
-      // ARRANGE
       const userId = 'user123';
       const guildId = 'guild123';
       const membership = {
@@ -244,7 +221,6 @@ describe('PermissionCheckService', () => {
       );
       vi.mocked(mockDiscordValidation.validateRoleId).mockResolvedValue(true);
 
-      // ACT
       const result = await service.hasAdminRole(
         userId,
         guildId,
@@ -252,7 +228,6 @@ describe('PermissionCheckService', () => {
         guildSettings,
       );
 
-      // ASSERT
       expect(result).toBe(true);
       expect(mockDiscordValidation.validateRoleId).toHaveBeenCalledWith(
         guildId,
@@ -261,7 +236,6 @@ describe('PermissionCheckService', () => {
     });
 
     it('should_return_false_when_discord_validation_fails', async () => {
-      // ARRANGE
       const userId = 'user123';
       const guildId = 'guild123';
       const membership = {
@@ -284,7 +258,6 @@ describe('PermissionCheckService', () => {
       );
       vi.mocked(mockDiscordValidation.validateRoleId).mockResolvedValue(false);
 
-      // ACT
       const result = await service.hasAdminRole(
         userId,
         guildId,
@@ -292,7 +265,6 @@ describe('PermissionCheckService', () => {
         guildSettings,
       );
 
-      // ASSERT
       expect(result).toBe(false);
       expect(mockDiscordValidation.validateRoleId).toHaveBeenCalledWith(
         guildId,
@@ -301,7 +273,6 @@ describe('PermissionCheckService', () => {
     });
 
     it('should_skip_discord_validation_when_validateWithDiscord_is_false', async () => {
-      // ARRANGE
       const userId = 'user123';
       const guildId = 'guild123';
       const membership = {
@@ -323,7 +294,6 @@ describe('PermissionCheckService', () => {
         adminRoles,
       );
 
-      // ACT
       const result = await service.hasAdminRole(
         userId,
         guildId,
@@ -331,7 +301,6 @@ describe('PermissionCheckService', () => {
         guildSettings,
       );
 
-      // ASSERT
       expect(result).toBe(true);
       expect(mockDiscordValidation.validateRoleId).not.toHaveBeenCalled();
     });

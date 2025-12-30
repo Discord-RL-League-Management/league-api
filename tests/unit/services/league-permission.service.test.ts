@@ -27,7 +27,6 @@ describe('LeaguePermissionService', () => {
   let mockGuildSettingsService: GuildSettingsService;
 
   beforeEach(() => {
-    // ARRANGE: Setup test dependencies
     mockLeagueRepository = {
       findOne: vi.fn(),
     } as unknown as LeagueRepository;
@@ -66,7 +65,6 @@ describe('LeaguePermissionService', () => {
 
   describe('checkLeagueAdminAccess', () => {
     it('should_pass_when_user_is_guild_admin', async () => {
-      // ARRANGE
       const userId = 'user123';
       const leagueId = 'league123';
       const guildId = 'guild123';
@@ -81,10 +79,8 @@ describe('LeaguePermissionService', () => {
         true,
       );
 
-      // ACT
       await service.checkLeagueAdminAccess(userId, leagueId);
 
-      // ASSERT
       expect(mockLeagueRepository.findOne).toHaveBeenCalledWith(leagueId);
       expect(mockPermissionCheckService.hasAdminRole).toHaveBeenCalledWith(
         userId,
@@ -95,7 +91,6 @@ describe('LeaguePermissionService', () => {
     });
 
     it('should_pass_when_user_is_league_admin', async () => {
-      // ARRANGE
       const userId = 'user123';
       const leagueId = 'league123';
       const guildId = 'guild123';
@@ -122,10 +117,8 @@ describe('LeaguePermissionService', () => {
         mockLeagueMemberRepository.findByPlayerAndLeague,
       ).mockResolvedValue(leagueMember as any);
 
-      // ACT
       await service.checkLeagueAdminAccess(userId, leagueId);
 
-      // ASSERT
       expect(mockPlayerService.findByUserIdAndGuildId).toHaveBeenCalledWith(
         userId,
         guildId,
@@ -136,20 +129,17 @@ describe('LeaguePermissionService', () => {
     });
 
     it('should_throw_LeagueNotFoundException_when_league_not_found', async () => {
-      // ARRANGE
       const userId = 'user123';
       const leagueId = 'league123';
 
       vi.mocked(mockLeagueRepository.findOne).mockResolvedValue(null);
 
-      // ACT & ASSERT
       await expect(
         service.checkLeagueAdminAccess(userId, leagueId),
       ).rejects.toThrow(LeagueNotFoundException);
     });
 
     it('should_throw_ForbiddenException_when_user_has_no_admin_access', async () => {
-      // ARRANGE
       const userId = 'user123';
       const leagueId = 'league123';
       const guildId = 'guild123';
@@ -176,7 +166,6 @@ describe('LeaguePermissionService', () => {
         mockLeagueMemberRepository.findByPlayerAndLeague,
       ).mockResolvedValue(leagueMember as any);
 
-      // ACT & ASSERT
       await expect(
         service.checkLeagueAdminAccess(userId, leagueId),
       ).rejects.toThrow(ForbiddenException);
@@ -188,7 +177,6 @@ describe('LeaguePermissionService', () => {
 
   describe('checkLeagueAdminOrModeratorAccess', () => {
     it('should_pass_when_user_is_guild_admin', async () => {
-      // ARRANGE
       const userId = 'user123';
       const leagueId = 'league123';
       const guildId = 'guild123';
@@ -203,15 +191,12 @@ describe('LeaguePermissionService', () => {
         true,
       );
 
-      // ACT
       await service.checkLeagueAdminOrModeratorAccess(userId, leagueId);
 
-      // ASSERT
       expect(mockPermissionCheckService.hasAdminRole).toHaveBeenCalled();
     });
 
     it('should_pass_when_user_is_league_admin', async () => {
-      // ARRANGE
       const userId = 'user123';
       const leagueId = 'league123';
       const guildId = 'guild123';
@@ -238,17 +223,14 @@ describe('LeaguePermissionService', () => {
         mockLeagueMemberRepository.findByPlayerAndLeague,
       ).mockResolvedValue(leagueMember as any);
 
-      // ACT
       await service.checkLeagueAdminOrModeratorAccess(userId, leagueId);
 
-      // ASSERT
       expect(
         mockLeagueMemberRepository.findByPlayerAndLeague,
       ).toHaveBeenCalled();
     });
 
     it('should_pass_when_user_is_league_moderator', async () => {
-      // ARRANGE
       const userId = 'user123';
       const leagueId = 'league123';
       const guildId = 'guild123';
@@ -275,17 +257,14 @@ describe('LeaguePermissionService', () => {
         mockLeagueMemberRepository.findByPlayerAndLeague,
       ).mockResolvedValue(leagueMember as any);
 
-      // ACT
       await service.checkLeagueAdminOrModeratorAccess(userId, leagueId);
 
-      // ASSERT
       expect(
         mockLeagueMemberRepository.findByPlayerAndLeague,
       ).toHaveBeenCalled();
     });
 
     it('should_throw_ForbiddenException_when_user_has_no_admin_or_moderator_access', async () => {
-      // ARRANGE
       const userId = 'user123';
       const leagueId = 'league123';
       const guildId = 'guild123';
@@ -312,7 +291,6 @@ describe('LeaguePermissionService', () => {
         mockLeagueMemberRepository.findByPlayerAndLeague,
       ).mockResolvedValue(leagueMember as any);
 
-      // ACT & ASSERT
       await expect(
         service.checkLeagueAdminOrModeratorAccess(userId, leagueId),
       ).rejects.toThrow(ForbiddenException);
@@ -324,7 +302,6 @@ describe('LeaguePermissionService', () => {
 
   describe('checkGuildAdminAccessForGuild', () => {
     it('should_pass_when_user_is_guild_admin', async () => {
-      // ARRANGE
       const userId = 'user123';
       const guildId = 'guild123';
       const settings = { roles: { admin: [] } };
@@ -336,10 +313,8 @@ describe('LeaguePermissionService', () => {
         true,
       );
 
-      // ACT
       await service.checkGuildAdminAccessForGuild(userId, guildId);
 
-      // ASSERT
       expect(mockPermissionCheckService.hasAdminRole).toHaveBeenCalledWith(
         userId,
         guildId,
@@ -349,7 +324,6 @@ describe('LeaguePermissionService', () => {
     });
 
     it('should_throw_ForbiddenException_when_user_is_not_guild_admin', async () => {
-      // ARRANGE
       const userId = 'user123';
       const guildId = 'guild123';
       const settings = { roles: { admin: [] } };
@@ -361,7 +335,6 @@ describe('LeaguePermissionService', () => {
         false,
       );
 
-      // ACT & ASSERT
       await expect(
         service.checkGuildAdminAccessForGuild(userId, guildId),
       ).rejects.toThrow(ForbiddenException);

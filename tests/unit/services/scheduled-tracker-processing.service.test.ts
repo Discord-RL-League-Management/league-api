@@ -59,7 +59,6 @@ describe('ScheduledTrackerProcessingService', () => {
   };
 
   beforeEach(() => {
-    // ARRANGE: Setup test dependencies with fresh mocks for each test
     mockCronJobInstance = {
       start: vi.fn(),
       stop: vi.fn().mockReturnValue(undefined),
@@ -103,7 +102,6 @@ describe('ScheduledTrackerProcessingService', () => {
 
   describe('createSchedule', () => {
     it('should_create_schedule_when_data_is_valid', async () => {
-      // ARRANGE
       const guildId = '987654321098765432';
       const scheduledAt = new Date(Date.now() + 86400000);
       const createdBy = '123456789012345678';
@@ -115,14 +113,12 @@ describe('ScheduledTrackerProcessingService', () => {
         mockSchedule as any,
       );
 
-      // ACT
       const result = await service.createSchedule(
         guildId,
         scheduledAt,
         createdBy,
       );
 
-      // ASSERT
       expect(result).toEqual(mockSchedule);
       expect(mockPrisma.guild.findUnique).toHaveBeenCalledWith({
         where: { id: guildId },
@@ -131,7 +127,6 @@ describe('ScheduledTrackerProcessingService', () => {
     });
 
     it('should_create_schedule_when_date_is_iso_string', async () => {
-      // ARRANGE
       const guildId = '987654321098765432';
       const scheduledAt = new Date(Date.now() + 86400000).toISOString();
       const createdBy = '123456789012345678';
@@ -143,14 +138,12 @@ describe('ScheduledTrackerProcessingService', () => {
         mockSchedule as any,
       );
 
-      // ACT
       const result = await service.createSchedule(
         guildId,
         scheduledAt,
         createdBy,
       );
 
-      // ASSERT
       expect(result).toEqual(mockSchedule);
       expect(mockPrisma.guild.findUnique).toHaveBeenCalledWith({
         where: { id: guildId },
@@ -158,7 +151,6 @@ describe('ScheduledTrackerProcessingService', () => {
     });
 
     it('should_create_schedule_when_metadata_is_provided', async () => {
-      // ARRANGE
       const guildId = '987654321098765432';
       const scheduledAt = new Date(Date.now() + 86400000);
       const createdBy = '123456789012345678';
@@ -171,7 +163,6 @@ describe('ScheduledTrackerProcessingService', () => {
         mockSchedule as any,
       );
 
-      // ACT
       const result = await service.createSchedule(
         guildId,
         scheduledAt,
@@ -179,18 +170,15 @@ describe('ScheduledTrackerProcessingService', () => {
         metadata,
       );
 
-      // ASSERT
       expect(result).toEqual(mockSchedule);
       expect(mockPrisma.scheduledTrackerProcessing.create).toHaveBeenCalled();
     });
 
     it('should_throw_BadRequestException_when_date_is_in_past', async () => {
-      // ARRANGE
       const guildId = '987654321098765432';
       const scheduledAt = new Date(Date.now() - 1000);
       const createdBy = '123456789012345678';
 
-      // ACT & ASSERT
       await expect(
         service.createSchedule(guildId, scheduledAt, createdBy),
       ).rejects.toThrow(BadRequestException);
@@ -198,26 +186,22 @@ describe('ScheduledTrackerProcessingService', () => {
     });
 
     it('should_throw_BadRequestException_when_date_equals_current_time', async () => {
-      // ARRANGE
       const guildId = '987654321098765432';
       const now = new Date();
       const createdBy = '123456789012345678';
 
-      // ACT & ASSERT
       await expect(
         service.createSchedule(guildId, now, createdBy),
       ).rejects.toThrow(BadRequestException);
     });
 
     it('should_throw_NotFoundException_when_guild_does_not_exist', async () => {
-      // ARRANGE
       const guildId = '987654321098765432';
       const scheduledAt = new Date(Date.now() + 86400000);
       const createdBy = '123456789012345678';
 
       vi.mocked(mockPrisma.guild.findUnique).mockResolvedValue(null);
 
-      // ACT & ASSERT
       await expect(
         service.createSchedule(guildId, scheduledAt, createdBy),
       ).rejects.toThrow(NotFoundException);
@@ -227,7 +211,6 @@ describe('ScheduledTrackerProcessingService', () => {
     });
 
     it('should_schedule_job_when_schedule_is_created', async () => {
-      // ARRANGE
       const guildId = '987654321098765432';
       const scheduledAt = new Date(Date.now() + 86400000);
       const createdBy = '123456789012345678';
@@ -239,10 +222,8 @@ describe('ScheduledTrackerProcessingService', () => {
         mockSchedule as any,
       );
 
-      // ACT
       await service.createSchedule(guildId, scheduledAt, createdBy);
 
-      // ASSERT
       expect(CronJob).toHaveBeenCalled();
       expect(mockCronJobInstance.start).toHaveBeenCalled();
       expect(mockSchedulerRegistry.addCronJob).toHaveBeenCalled();
@@ -251,7 +232,6 @@ describe('ScheduledTrackerProcessingService', () => {
 
   describe('getSchedulesForGuild', () => {
     it('should_return_all_schedules_when_no_options_provided', async () => {
-      // ARRANGE
       const guildId = '987654321098765432';
       const schedules = [mockSchedule];
 
@@ -259,10 +239,8 @@ describe('ScheduledTrackerProcessingService', () => {
         mockPrisma.scheduledTrackerProcessing.findMany,
       ).mockResolvedValue(schedules as any);
 
-      // ACT
       const result = await service.getSchedulesForGuild(guildId);
 
-      // ASSERT
       expect(result).toEqual(schedules);
       expect(
         mockPrisma.scheduledTrackerProcessing.findMany,
@@ -273,7 +251,6 @@ describe('ScheduledTrackerProcessingService', () => {
     });
 
     it('should_filter_by_status_when_status_option_provided', async () => {
-      // ARRANGE
       const guildId = '987654321098765432';
       const schedules = [mockSchedule];
 
@@ -281,12 +258,10 @@ describe('ScheduledTrackerProcessingService', () => {
         mockPrisma.scheduledTrackerProcessing.findMany,
       ).mockResolvedValue(schedules as any);
 
-      // ACT
       await service.getSchedulesForGuild(guildId, {
         status: ScheduledProcessingStatus.PENDING,
       });
 
-      // ASSERT
       expect(
         mockPrisma.scheduledTrackerProcessing.findMany,
       ).toHaveBeenCalledWith({
@@ -299,7 +274,6 @@ describe('ScheduledTrackerProcessingService', () => {
     });
 
     it('should_exclude_completed_when_includeCompleted_is_false', async () => {
-      // ARRANGE
       const guildId = '987654321098765432';
       const schedules = [mockSchedule];
 
@@ -307,12 +281,10 @@ describe('ScheduledTrackerProcessingService', () => {
         mockPrisma.scheduledTrackerProcessing.findMany,
       ).mockResolvedValue(schedules as any);
 
-      // ACT
       await service.getSchedulesForGuild(guildId, {
         includeCompleted: false,
       });
 
-      // ASSERT
       expect(
         mockPrisma.scheduledTrackerProcessing.findMany,
       ).toHaveBeenCalledWith({
@@ -325,7 +297,6 @@ describe('ScheduledTrackerProcessingService', () => {
     });
 
     it('should_use_status_when_status_and_includeCompleted_provided', async () => {
-      // ARRANGE
       const guildId = '987654321098765432';
       const schedules = [mockSchedule];
 
@@ -333,13 +304,11 @@ describe('ScheduledTrackerProcessingService', () => {
         mockPrisma.scheduledTrackerProcessing.findMany,
       ).mockResolvedValue(schedules as any);
 
-      // ACT
       await service.getSchedulesForGuild(guildId, {
         status: ScheduledProcessingStatus.PENDING,
         includeCompleted: false,
       });
 
-      // ASSERT
       expect(
         mockPrisma.scheduledTrackerProcessing.findMany,
       ).toHaveBeenCalledWith({
@@ -352,7 +321,6 @@ describe('ScheduledTrackerProcessingService', () => {
     });
 
     it('should_order_by_scheduledAt_ascending', async () => {
-      // ARRANGE
       const guildId = '987654321098765432';
       const schedules = [mockSchedule];
 
@@ -360,10 +328,8 @@ describe('ScheduledTrackerProcessingService', () => {
         mockPrisma.scheduledTrackerProcessing.findMany,
       ).mockResolvedValue(schedules as any);
 
-      // ACT
       await service.getSchedulesForGuild(guildId);
 
-      // ASSERT
       const callArgs = vi.mocked(mockPrisma.scheduledTrackerProcessing.findMany)
         .mock.calls[0]?.[0];
       expect(callArgs?.orderBy).toEqual({ scheduledAt: 'asc' });
@@ -372,17 +338,14 @@ describe('ScheduledTrackerProcessingService', () => {
 
   describe('getSchedule', () => {
     it('should_return_schedule_when_schedule_exists', async () => {
-      // ARRANGE
       const scheduleId = 'schedule-123';
 
       vi.mocked(
         mockPrisma.scheduledTrackerProcessing.findUnique,
       ).mockResolvedValue(mockSchedule as any);
 
-      // ACT
       const result = await service.getSchedule(scheduleId);
 
-      // ASSERT
       expect(result).toEqual(mockSchedule);
       expect(
         mockPrisma.scheduledTrackerProcessing.findUnique,
@@ -392,14 +355,12 @@ describe('ScheduledTrackerProcessingService', () => {
     });
 
     it('should_throw_NotFoundException_when_schedule_does_not_exist', async () => {
-      // ARRANGE
       const scheduleId = 'nonexistent';
 
       vi.mocked(
         mockPrisma.scheduledTrackerProcessing.findUnique,
       ).mockResolvedValue(null);
 
-      // ACT & ASSERT
       await expect(service.getSchedule(scheduleId)).rejects.toThrow(
         NotFoundException,
       );
@@ -408,7 +369,6 @@ describe('ScheduledTrackerProcessingService', () => {
 
   describe('cancelSchedule', () => {
     it('should_cancel_schedule_when_status_is_pending', async () => {
-      // ARRANGE
       const scheduleId = 'schedule-123';
       const pendingSchedule = {
         ...mockSchedule,
@@ -432,10 +392,8 @@ describe('ScheduledTrackerProcessingService', () => {
       const scheduledJobsMap = (service as any).scheduledJobs;
       scheduledJobsMap.set(jobId, mockCronJobInstance);
 
-      // ACT
       const result = await service.cancelSchedule(scheduleId);
 
-      // ASSERT
       expect(result.status).toBe(ScheduledProcessingStatus.CANCELLED);
       expect(mockCronJobInstance.stop).toHaveBeenCalled();
       expect(mockSchedulerRegistry.deleteCronJob).toHaveBeenCalledWith(jobId);
@@ -443,7 +401,6 @@ describe('ScheduledTrackerProcessingService', () => {
     });
 
     it('should_throw_BadRequestException_when_status_is_completed', async () => {
-      // ARRANGE
       const scheduleId = 'schedule-123';
       const completedSchedule = {
         ...mockSchedule,
@@ -454,14 +411,12 @@ describe('ScheduledTrackerProcessingService', () => {
         mockPrisma.scheduledTrackerProcessing.findUnique,
       ).mockResolvedValue(completedSchedule as any);
 
-      // ACT & ASSERT
       await expect(service.cancelSchedule(scheduleId)).rejects.toThrow(
         BadRequestException,
       );
     });
 
     it('should_throw_BadRequestException_when_status_is_cancelled', async () => {
-      // ARRANGE
       const scheduleId = 'schedule-123';
       const cancelledSchedule = {
         ...mockSchedule,
@@ -472,14 +427,12 @@ describe('ScheduledTrackerProcessingService', () => {
         mockPrisma.scheduledTrackerProcessing.findUnique,
       ).mockResolvedValue(cancelledSchedule as any);
 
-      // ACT & ASSERT
       await expect(service.cancelSchedule(scheduleId)).rejects.toThrow(
         BadRequestException,
       );
     });
 
     it('should_throw_BadRequestException_when_status_is_failed', async () => {
-      // ARRANGE
       const scheduleId = 'schedule-123';
       const failedSchedule = {
         ...mockSchedule,
@@ -490,14 +443,12 @@ describe('ScheduledTrackerProcessingService', () => {
         mockPrisma.scheduledTrackerProcessing.findUnique,
       ).mockResolvedValue(failedSchedule as any);
 
-      // ACT & ASSERT
       await expect(service.cancelSchedule(scheduleId)).rejects.toThrow(
         BadRequestException,
       );
     });
 
     it('should_handle_missing_job_gracefully_when_cancelling', async () => {
-      // ARRANGE
       const scheduleId = 'schedule-123';
       const pendingSchedule = {
         ...mockSchedule,
@@ -516,16 +467,13 @@ describe('ScheduledTrackerProcessingService', () => {
       );
       vi.mocked(mockSchedulerRegistry.doesExist).mockReturnValue(false);
 
-      // ACT
       const result = await service.cancelSchedule(scheduleId);
 
-      // ASSERT
       expect(result.status).toBe(ScheduledProcessingStatus.CANCELLED);
       expect(mockPrisma.scheduledTrackerProcessing.update).toHaveBeenCalled();
     });
 
     it('should_handle_scheduler_registry_error_gracefully', async () => {
-      // ARRANGE
       const scheduleId = 'schedule-123';
       const pendingSchedule = {
         ...mockSchedule,
@@ -551,10 +499,8 @@ describe('ScheduledTrackerProcessingService', () => {
       const scheduledJobsMap = (service as any).scheduledJobs;
       scheduledJobsMap.set(jobId, mockCronJobInstance);
 
-      // ACT
       const result = await service.cancelSchedule(scheduleId);
 
-      // ASSERT
       expect(result.status).toBe(ScheduledProcessingStatus.CANCELLED);
       expect(mockSchedulerRegistry.deleteCronJob).toHaveBeenCalled();
     });
@@ -562,7 +508,6 @@ describe('ScheduledTrackerProcessingService', () => {
 
   describe('onModuleInit', () => {
     it('should_load_pending_schedules_when_module_initializes', async () => {
-      // ARRANGE
       const futureSchedule = {
         ...mockSchedule,
         scheduledAt: new Date(Date.now() + 86400000),
@@ -573,10 +518,8 @@ describe('ScheduledTrackerProcessingService', () => {
         mockPrisma.scheduledTrackerProcessing.findMany,
       ).mockResolvedValue(schedules as any);
 
-      // ACT
       await service.onModuleInit();
 
-      // ASSERT
       expect(
         mockPrisma.scheduledTrackerProcessing.findMany,
       ).toHaveBeenCalledWith({
@@ -589,22 +532,18 @@ describe('ScheduledTrackerProcessingService', () => {
     });
 
     it('should_not_load_past_schedules_when_module_initializes', async () => {
-      // ARRANGE
       vi.mocked(
         mockPrisma.scheduledTrackerProcessing.findMany,
       ).mockResolvedValue([] as any);
 
-      // ACT
       await service.onModuleInit();
 
-      // ASSERT
       const callArgs = vi.mocked(mockPrisma.scheduledTrackerProcessing.findMany)
         .mock.calls[0]?.[0];
       expect((callArgs?.where?.scheduledAt as any)?.gt).toBeInstanceOf(Date);
     });
 
     it('should_schedule_all_loaded_pending_schedules', async () => {
-      // ARRANGE
       const schedule1 = {
         ...mockSchedule,
         id: 'schedule-1',
@@ -621,10 +560,8 @@ describe('ScheduledTrackerProcessingService', () => {
         mockPrisma.scheduledTrackerProcessing.findMany,
       ).mockResolvedValue(schedules as any);
 
-      // ACT
       await service.onModuleInit();
 
-      // ASSERT
       expect(CronJob).toHaveBeenCalledTimes(2);
       expect(mockSchedulerRegistry.addCronJob).toHaveBeenCalledTimes(2);
     });
@@ -632,7 +569,6 @@ describe('ScheduledTrackerProcessingService', () => {
 
   describe('onApplicationShutdown', () => {
     it('should_stop_all_jobs_when_shutting_down', async () => {
-      // ARRANGE
       const jobId1 = 'scheduled-processing-schedule-1';
       const jobId2 = 'scheduled-processing-schedule-2';
       const scheduledJobsMap = (service as any).scheduledJobs;
@@ -642,17 +578,14 @@ describe('ScheduledTrackerProcessingService', () => {
 
       vi.mocked(mockSchedulerRegistry.doesExist).mockReturnValue(true);
 
-      // ACT
       await service.onApplicationShutdown();
 
-      // ASSERT
       expect(mockCronJobInstance.stop).toHaveBeenCalledTimes(2);
       expect(mockSchedulerRegistry.deleteCronJob).toHaveBeenCalledTimes(2);
       expect(scheduledJobsMap.size).toBe(0);
     });
 
     it('should_handle_stop_errors_gracefully', async () => {
-      // ARRANGE
       const jobId = 'scheduled-processing-schedule-1';
       const errorJob = {
         start: vi.fn(),
@@ -666,17 +599,14 @@ describe('ScheduledTrackerProcessingService', () => {
 
       vi.mocked(mockSchedulerRegistry.doesExist).mockReturnValue(true);
 
-      // ACT
       await service.onApplicationShutdown();
 
-      // ASSERT
       expect(errorJob.stop).toHaveBeenCalled();
       expect(mockSchedulerRegistry.deleteCronJob).toHaveBeenCalled();
       expect(scheduledJobsMap.size).toBe(0);
     });
 
     it('should_handle_registry_deletion_errors_gracefully', async () => {
-      // ARRANGE
       const jobId = 'scheduled-processing-schedule-1';
       const scheduledJobsMap = (service as any).scheduledJobs;
 
@@ -687,17 +617,14 @@ describe('ScheduledTrackerProcessingService', () => {
         throw new Error('Delete error');
       });
 
-      // ACT
       await service.onApplicationShutdown();
 
-      // ASSERT
       expect(mockCronJobInstance.stop).toHaveBeenCalled();
       expect(mockSchedulerRegistry.deleteCronJob).toHaveBeenCalled();
       expect(scheduledJobsMap.size).toBe(0);
     });
 
     it('should_clear_scheduled_jobs_map_when_shutting_down', async () => {
-      // ARRANGE
       const jobId = 'scheduled-processing-schedule-1';
       const scheduledJobsMap = (service as any).scheduledJobs;
 
@@ -705,17 +632,14 @@ describe('ScheduledTrackerProcessingService', () => {
 
       vi.mocked(mockSchedulerRegistry.doesExist).mockReturnValue(false);
 
-      // ACT
       await service.onApplicationShutdown();
 
-      // ASSERT
       expect(scheduledJobsMap.size).toBe(0);
     });
   });
 
   describe('dateToCronExpression', () => {
     it('should_convert_date_to_cron_expression_when_date_provided', async () => {
-      // ARRANGE
       const guildId = '987654321098765432';
       const now = new Date();
       const testDate = new Date(
@@ -735,10 +659,8 @@ describe('ScheduledTrackerProcessingService', () => {
         mockSchedule as any,
       );
 
-      // ACT
       await service.createSchedule(guildId, testDate, createdBy);
 
-      // ASSERT
       expect(CronJob).toHaveBeenCalled();
       const cronCall = vi.mocked(CronJob).mock.calls[0];
       const expectedMonth = testDate.getMonth() + 1;
@@ -748,7 +670,6 @@ describe('ScheduledTrackerProcessingService', () => {
     });
 
     it('should_use_one_indexed_month_in_cron_expression', async () => {
-      // ARRANGE
       const guildId = '987654321098765432';
       // Always use a future date to ensure deterministic test behavior
       const futureYear = new Date().getFullYear() + 1;
@@ -762,16 +683,13 @@ describe('ScheduledTrackerProcessingService', () => {
         mockSchedule as any,
       );
 
-      // ACT
       await service.createSchedule(guildId, testDate, createdBy);
 
-      // ASSERT
       const cronCall = vi.mocked(CronJob).mock.calls[0];
       expect(cronCall[0]).toBe('0 0 10 15 1 *');
     });
 
     it('should_handle_various_date_times_correctly', async () => {
-      // ARRANGE
       const guildId = '987654321098765432';
       // Always use a future date to ensure deterministic test behavior
       const futureYear = new Date().getFullYear() + 1;
@@ -785,10 +703,8 @@ describe('ScheduledTrackerProcessingService', () => {
         mockSchedule as any,
       );
 
-      // ACT
       await service.createSchedule(guildId, testDate, createdBy);
 
-      // ASSERT
       const cronCall = vi.mocked(CronJob).mock.calls[0];
       expect(cronCall[0]).toBe('59 59 23 30 6 *');
     });
@@ -796,7 +712,6 @@ describe('ScheduledTrackerProcessingService', () => {
 
   describe('execution logic', () => {
     it('should_execute_schedule_callback_when_job_runs', async () => {
-      // ARRANGE
       const guildId = '987654321098765432';
       const scheduleId = 'schedule-123';
       const scheduledAt = new Date(Date.now() + 86400000);
@@ -819,7 +734,6 @@ describe('ScheduledTrackerProcessingService', () => {
         return mockCronJobInstance as any;
       });
 
-      // ACT
       await service.createSchedule(guildId, scheduledAt, createdBy);
 
       // Execute the callback - callback is guaranteed to be set by CronJob mock
@@ -836,7 +750,6 @@ describe('ScheduledTrackerProcessingService', () => {
 
       await executionCallback!();
 
-      // ASSERT
       expect(
         mockTrackerProcessingService.processPendingTrackersForGuild,
       ).toHaveBeenCalledWith(guildId);
@@ -844,7 +757,6 @@ describe('ScheduledTrackerProcessingService', () => {
     });
 
     it('should_handle_execution_errors_gracefully', async () => {
-      // ARRANGE
       const guildId = '987654321098765432';
       const scheduleId = 'schedule-123';
       const scheduledAt = new Date(Date.now() + 86400000);
@@ -866,7 +778,6 @@ describe('ScheduledTrackerProcessingService', () => {
         return mockCronJobInstance as any;
       });
 
-      // ACT
       await service.createSchedule(guildId, scheduledAt, createdBy);
 
       // Execute the callback - callback is guaranteed to be set by CronJob mock
@@ -887,7 +798,6 @@ describe('ScheduledTrackerProcessingService', () => {
 
       await executionCallback!();
 
-      // ASSERT
       const updateCalls = vi.mocked(
         mockPrisma.scheduledTrackerProcessing.update,
       ).mock.calls;
@@ -900,7 +810,6 @@ describe('ScheduledTrackerProcessingService', () => {
     });
 
     it('should_cleanup_job_in_finally_block_when_execution_completes', async () => {
-      // ARRANGE
       const guildId = '987654321098765432';
       const scheduleId = 'schedule-123';
       const scheduledAt = new Date(Date.now() + 86400000);
@@ -924,7 +833,6 @@ describe('ScheduledTrackerProcessingService', () => {
       vi.mocked(mockSchedulerRegistry.doesExist).mockReturnValue(true);
       const jobId = `scheduled-processing-${scheduleId}`;
 
-      // ACT
       await service.createSchedule(guildId, scheduledAt, createdBy);
 
       // Execute the callback - callback is guaranteed to be set by CronJob mock
@@ -941,7 +849,6 @@ describe('ScheduledTrackerProcessingService', () => {
 
       await executionCallback!();
 
-      // ASSERT
       expect(mockCronJobInstance.stop).toHaveBeenCalled();
       expect(mockSchedulerRegistry.deleteCronJob).toHaveBeenCalledWith(jobId);
     });

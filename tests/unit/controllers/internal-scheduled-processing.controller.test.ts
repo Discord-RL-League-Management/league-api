@@ -33,7 +33,6 @@ describe('InternalScheduledProcessingController', () => {
   };
 
   beforeEach(async () => {
-    // ARRANGE: Setup test dependencies with mocks
     mockScheduledProcessingService = {
       createSchedule: vi.fn(),
       getSchedulesForGuild: vi.fn(),
@@ -61,7 +60,6 @@ describe('InternalScheduledProcessingController', () => {
 
   describe('scheduleTrackerProcessing', () => {
     it('should_create_schedule_when_data_is_valid', async () => {
-      // ARRANGE
       const dto: ScheduleTrackerProcessingDto = {
         guildId: '987654321098765432',
         scheduledAt: new Date(Date.now() + 86400000).toISOString(),
@@ -72,10 +70,8 @@ describe('InternalScheduledProcessingController', () => {
         mockScheduledProcessingService.createSchedule,
       ).mockResolvedValue(mockSchedule as never);
 
-      // ACT
       const result = await controller.scheduleTrackerProcessing(dto);
 
-      // ASSERT
       expect(result).toEqual(mockSchedule);
       expect(
         mockScheduledProcessingService.createSchedule,
@@ -88,7 +84,6 @@ describe('InternalScheduledProcessingController', () => {
     });
 
     it('should_return_schedule_when_service_succeeds', async () => {
-      // ARRANGE
       const dto: ScheduleTrackerProcessingDto = {
         guildId: '987654321098765432',
         scheduledAt: new Date(Date.now() + 86400000).toISOString(),
@@ -99,10 +94,8 @@ describe('InternalScheduledProcessingController', () => {
         mockScheduledProcessingService.createSchedule,
       ).mockResolvedValue(expectedSchedule as never);
 
-      // ACT
       const result = await controller.scheduleTrackerProcessing(dto);
 
-      // ASSERT
       expect(result).toEqual(expectedSchedule);
       expect(
         mockScheduledProcessingService.createSchedule,
@@ -110,7 +103,6 @@ describe('InternalScheduledProcessingController', () => {
     });
 
     it('should_throw_BadRequestException_when_date_is_in_past', async () => {
-      // ARRANGE
       const dto: ScheduleTrackerProcessingDto = {
         guildId: '987654321098765432',
         scheduledAt: new Date(Date.now() - 86400000).toISOString(), // -1 day (past)
@@ -122,7 +114,6 @@ describe('InternalScheduledProcessingController', () => {
         new BadRequestException('Scheduled date must be in the future'),
       );
 
-      // ACT & ASSERT
       await expect(controller.scheduleTrackerProcessing(dto)).rejects.toThrow(
         BadRequestException,
       );
@@ -137,7 +128,6 @@ describe('InternalScheduledProcessingController', () => {
     });
 
     it('should_throw_NotFoundException_when_guild_not_found', async () => {
-      // ARRANGE
       const dto: ScheduleTrackerProcessingDto = {
         guildId: '987654321098765432',
         scheduledAt: new Date(Date.now() + 86400000).toISOString(),
@@ -149,7 +139,6 @@ describe('InternalScheduledProcessingController', () => {
         new NotFoundException('Guild 987654321098765432 not found'),
       );
 
-      // ACT & ASSERT
       await expect(controller.scheduleTrackerProcessing(dto)).rejects.toThrow(
         NotFoundException,
       );
@@ -166,7 +155,6 @@ describe('InternalScheduledProcessingController', () => {
 
   describe('getSchedulesForGuild', () => {
     it('should_return_schedules_when_guild_exists', async () => {
-      // ARRANGE
       const guildId = '987654321098765432';
       const query: GetSchedulesQueryDto = {};
       const mockSchedules = [mockSchedule];
@@ -174,10 +162,8 @@ describe('InternalScheduledProcessingController', () => {
         mockScheduledProcessingService.getSchedulesForGuild,
       ).mockResolvedValue(mockSchedules as never);
 
-      // ACT
       const result = await controller.getSchedulesForGuild(guildId, query);
 
-      // ASSERT
       expect(result).toEqual(mockSchedules);
       expect(
         mockScheduledProcessingService.getSchedulesForGuild,
@@ -188,7 +174,6 @@ describe('InternalScheduledProcessingController', () => {
     });
 
     it('should_call_service_with_status_filter_when_provided', async () => {
-      // ARRANGE
       const guildId = '987654321098765432';
       const query: GetSchedulesQueryDto = {
         status: ScheduledProcessingStatus.PENDING,
@@ -198,10 +183,8 @@ describe('InternalScheduledProcessingController', () => {
         mockScheduledProcessingService.getSchedulesForGuild,
       ).mockResolvedValue(mockSchedules as never);
 
-      // ACT
       const result = await controller.getSchedulesForGuild(guildId, query);
 
-      // ASSERT
       expect(result).toEqual(mockSchedules);
       expect(
         mockScheduledProcessingService.getSchedulesForGuild,
@@ -212,7 +195,6 @@ describe('InternalScheduledProcessingController', () => {
     });
 
     it('should_call_service_with_includeCompleted_filter_when_provided', async () => {
-      // ARRANGE
       const guildId = '987654321098765432';
       const query: GetSchedulesQueryDto = {
         includeCompleted: false,
@@ -222,10 +204,8 @@ describe('InternalScheduledProcessingController', () => {
         mockScheduledProcessingService.getSchedulesForGuild,
       ).mockResolvedValue(mockSchedules as never);
 
-      // ACT
       const result = await controller.getSchedulesForGuild(guildId, query);
 
-      // ASSERT
       expect(result).toEqual(mockSchedules);
       expect(
         mockScheduledProcessingService.getSchedulesForGuild,
@@ -236,17 +216,14 @@ describe('InternalScheduledProcessingController', () => {
     });
 
     it('should_return_empty_array_when_no_schedules_exist', async () => {
-      // ARRANGE
       const guildId = '987654321098765432';
       const query: GetSchedulesQueryDto = {};
       vi.mocked(
         mockScheduledProcessingService.getSchedulesForGuild,
       ).mockResolvedValue([] as never);
 
-      // ACT
       const result = await controller.getSchedulesForGuild(guildId, query);
 
-      // ASSERT
       expect(result).toEqual([]);
       expect(
         mockScheduledProcessingService.getSchedulesForGuild,
@@ -257,7 +234,6 @@ describe('InternalScheduledProcessingController', () => {
     });
 
     it('should_call_service_with_both_filters_when_provided', async () => {
-      // ARRANGE
       const guildId = '987654321098765432';
       const query: GetSchedulesQueryDto = {
         status: ScheduledProcessingStatus.COMPLETED,
@@ -268,10 +244,8 @@ describe('InternalScheduledProcessingController', () => {
         mockScheduledProcessingService.getSchedulesForGuild,
       ).mockResolvedValue(mockSchedules as never);
 
-      // ACT
       const result = await controller.getSchedulesForGuild(guildId, query);
 
-      // ASSERT
       expect(result).toEqual(mockSchedules);
       expect(
         mockScheduledProcessingService.getSchedulesForGuild,
@@ -284,7 +258,6 @@ describe('InternalScheduledProcessingController', () => {
 
   describe('cancelSchedule', () => {
     it('should_cancel_schedule_when_schedule_exists', async () => {
-      // ARRANGE
       const scheduleId = 'schedule-123';
       const cancelledSchedule = {
         ...mockSchedule,
@@ -294,10 +267,8 @@ describe('InternalScheduledProcessingController', () => {
         mockScheduledProcessingService.cancelSchedule,
       ).mockResolvedValue(cancelledSchedule as never);
 
-      // ACT
       const result = await controller.cancelSchedule(scheduleId);
 
-      // ASSERT
       expect(result).toEqual(cancelledSchedule);
       expect(
         mockScheduledProcessingService.cancelSchedule,
@@ -305,7 +276,6 @@ describe('InternalScheduledProcessingController', () => {
     });
 
     it('should_throw_BadRequestException_when_schedule_not_pending', async () => {
-      // ARRANGE
       const scheduleId = 'schedule-123';
       vi.mocked(
         mockScheduledProcessingService.cancelSchedule,
@@ -313,7 +283,6 @@ describe('InternalScheduledProcessingController', () => {
         new BadRequestException('Cannot cancel schedule with status COMPLETED'),
       );
 
-      // ACT & ASSERT
       await expect(controller.cancelSchedule(scheduleId)).rejects.toThrow(
         BadRequestException,
       );
@@ -323,7 +292,6 @@ describe('InternalScheduledProcessingController', () => {
     });
 
     it('should_throw_NotFoundException_when_schedule_not_found', async () => {
-      // ARRANGE
       const scheduleId = 'schedule-999';
       vi.mocked(
         mockScheduledProcessingService.cancelSchedule,
@@ -331,7 +299,6 @@ describe('InternalScheduledProcessingController', () => {
         new NotFoundException('Schedule schedule-999 not found'),
       );
 
-      // ACT & ASSERT
       await expect(controller.cancelSchedule(scheduleId)).rejects.toThrow(
         NotFoundException,
       );

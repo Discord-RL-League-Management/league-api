@@ -18,7 +18,6 @@ describe('PrismaExceptionFilter', () => {
   let mockArgumentsHost: ArgumentsHost;
 
   beforeEach(() => {
-    // ARRANGE: Setup test dependencies
     mockResponse = {
       status: vi.fn().mockReturnThis(),
       json: vi.fn(),
@@ -45,7 +44,6 @@ describe('PrismaExceptionFilter', () => {
 
   describe('catch', () => {
     it('should_handle_unique_constraint_violation', () => {
-      // ARRANGE
       const exception = new Prisma.PrismaClientKnownRequestError(
         'Unique constraint failed',
         {
@@ -55,10 +53,8 @@ describe('PrismaExceptionFilter', () => {
         },
       );
 
-      // ACT
       filter.catch(exception, mockArgumentsHost);
 
-      // ASSERT
       expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.CONFLICT);
       expect(mockResponse.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -70,7 +66,6 @@ describe('PrismaExceptionFilter', () => {
     });
 
     it('should_handle_record_not_found', () => {
-      // ARRANGE
       const exception = new Prisma.PrismaClientKnownRequestError(
         'Record not found',
         {
@@ -80,10 +75,8 @@ describe('PrismaExceptionFilter', () => {
         },
       );
 
-      // ACT
       filter.catch(exception, mockArgumentsHost);
 
-      // ASSERT
       expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
       expect(mockResponse.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -95,7 +88,6 @@ describe('PrismaExceptionFilter', () => {
     });
 
     it('should_handle_foreign_key_constraint_violation', () => {
-      // ARRANGE
       const exception = new Prisma.PrismaClientKnownRequestError(
         'Foreign key constraint failed',
         {
@@ -105,10 +97,8 @@ describe('PrismaExceptionFilter', () => {
         },
       );
 
-      // ACT
       filter.catch(exception, mockArgumentsHost);
 
-      // ASSERT
       expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
       expect(mockResponse.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -120,7 +110,6 @@ describe('PrismaExceptionFilter', () => {
     });
 
     it('should_handle_validation_error', () => {
-      // ARRANGE
       const exception = new Prisma.PrismaClientValidationError(
         'Invalid input',
         {
@@ -128,10 +117,8 @@ describe('PrismaExceptionFilter', () => {
         },
       );
 
-      // ACT
       filter.catch(exception, mockArgumentsHost);
 
-      // ASSERT
       expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
       expect(mockResponse.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -143,7 +130,6 @@ describe('PrismaExceptionFilter', () => {
     });
 
     it('should_handle_initialization_error', () => {
-      // ARRANGE
       const exception = {
         message: 'Connection error',
         errorCode: 'P1001',
@@ -151,10 +137,8 @@ describe('PrismaExceptionFilter', () => {
         name: 'PrismaClientInitializationError',
       } as Prisma.PrismaClientInitializationError;
 
-      // ACT
       filter.catch(exception, mockArgumentsHost);
 
-      // ASSERT
       expect(mockResponse.status).toHaveBeenCalledWith(
         HttpStatus.SERVICE_UNAVAILABLE,
       );
@@ -168,17 +152,14 @@ describe('PrismaExceptionFilter', () => {
     });
 
     it('should_handle_rust_panic_error', () => {
-      // ARRANGE
       const exception = {
         message: 'Rust panic',
         clientVersion: '6.18.0',
         name: 'PrismaClientRustPanicError',
       } as Prisma.PrismaClientRustPanicError;
 
-      // ACT
       filter.catch(exception, mockArgumentsHost);
 
-      // ASSERT
       expect(mockResponse.status).toHaveBeenCalledWith(
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
@@ -192,16 +173,13 @@ describe('PrismaExceptionFilter', () => {
     });
 
     it('should_include_timestamp_in_response', () => {
-      // ARRANGE
       const exception = {
         code: 'P2002',
         message: 'Unique constraint failed',
       } as Prisma.PrismaClientKnownRequestError;
 
-      // ACT
       filter.catch(exception, mockArgumentsHost);
 
-      // ASSERT
       expect(mockResponse.json).toHaveBeenCalledWith(
         expect.objectContaining({
           timestamp: expect.any(String),

@@ -74,7 +74,6 @@ describe('LeagueMemberService', () => {
   };
 
   beforeEach(() => {
-    // ARRANGE: Setup test dependencies
     mockRepository = {
       findById: vi.fn(),
       findByPlayerAndLeague: vi.fn(),
@@ -148,24 +147,19 @@ describe('LeagueMemberService', () => {
 
   describe('findOne', () => {
     it('should_return_league_member_when_member_exists', async () => {
-      // ARRANGE
       const memberId = 'member_123';
       vi.mocked(mockRepository.findById).mockResolvedValue(mockLeagueMember);
 
-      // ACT
       const result = await service.findOne(memberId);
 
-      // ASSERT
       expect(result).toEqual(mockLeagueMember);
       expect(result.id).toBe(memberId);
     });
 
     it('should_throw_LeagueMemberNotFoundException_when_member_does_not_exist', async () => {
-      // ARRANGE
       const memberId = 'nonexistent';
       vi.mocked(mockRepository.findById).mockResolvedValue(null);
 
-      // ACT & ASSERT
       await expect(service.findOne(memberId)).rejects.toThrow(
         LeagueMemberNotFoundException,
       );
@@ -174,37 +168,30 @@ describe('LeagueMemberService', () => {
 
   describe('findByPlayerAndLeague', () => {
     it('should_return_member_when_player_and_league_match', async () => {
-      // ARRANGE
       const playerId = 'player_123';
       const leagueId = 'league_123';
       vi.mocked(mockRepository.findByPlayerAndLeague).mockResolvedValue(
         mockLeagueMember,
       );
 
-      // ACT
       const result = await service.findByPlayerAndLeague(playerId, leagueId);
 
-      // ASSERT
       expect(result).toEqual(mockLeagueMember);
     });
 
     it('should_return_null_when_no_member_exists', async () => {
-      // ARRANGE
       const playerId = 'player_999';
       const leagueId = 'league_999';
       vi.mocked(mockRepository.findByPlayerAndLeague).mockResolvedValue(null);
 
-      // ACT
       const result = await service.findByPlayerAndLeague(playerId, leagueId);
 
-      // ASSERT
       expect(result).toBeNull();
     });
   });
 
   describe('findByLeagueId', () => {
     it('should_return_paginated_members_for_league', async () => {
-      // ARRANGE
       const leagueId = 'league_123';
       const mockResult = {
         data: [mockLeagueMember],
@@ -215,10 +202,8 @@ describe('LeagueMemberService', () => {
 
       vi.mocked(mockRepository.findByLeagueId).mockResolvedValue(mockResult);
 
-      // ACT
       const result = await service.findByLeagueId(leagueId);
 
-      // ASSERT
       expect(result).toEqual(mockResult);
       expect(result.data).toHaveLength(1);
       expect(result.total).toBe(1);
@@ -227,7 +212,6 @@ describe('LeagueMemberService', () => {
 
   describe('update', () => {
     it('should_update_member_when_member_exists', async () => {
-      // ARRANGE
       const memberId = 'member_123';
       const updateDto: UpdateLeagueMemberDto = {
         notes: 'Updated notes',
@@ -241,22 +225,18 @@ describe('LeagueMemberService', () => {
       vi.mocked(mockRepository.findById).mockResolvedValue(mockLeagueMember);
       vi.mocked(mockRepository.update).mockResolvedValue(updatedMember);
 
-      // ACT
       const result = await service.update(memberId, updateDto);
 
-      // ASSERT
       expect(result).toEqual(updatedMember);
       expect(result.notes).toBe(updateDto.notes);
     });
 
     it('should_throw_LeagueMemberNotFoundException_when_member_does_not_exist', async () => {
-      // ARRANGE
       const memberId = 'nonexistent';
       const updateDto: UpdateLeagueMemberDto = { notes: 'Test' };
 
       vi.mocked(mockRepository.findById).mockResolvedValue(null);
 
-      // ACT & ASSERT
       await expect(service.update(memberId, updateDto)).rejects.toThrow(
         LeagueMemberNotFoundException,
       );
@@ -265,24 +245,19 @@ describe('LeagueMemberService', () => {
 
   describe('delete', () => {
     it('should_delete_member_when_member_exists', async () => {
-      // ARRANGE
       const memberId = 'member_123';
       vi.mocked(mockRepository.findById).mockResolvedValue(mockLeagueMember);
       vi.mocked(mockRepository.delete).mockResolvedValue(mockLeagueMember);
 
-      // ACT
       const result = await service.delete(memberId);
 
-      // ASSERT
       expect(result).toEqual(mockLeagueMember);
     });
 
     it('should_throw_LeagueMemberNotFoundException_when_member_does_not_exist', async () => {
-      // ARRANGE
       const memberId = 'nonexistent';
       vi.mocked(mockRepository.findById).mockResolvedValue(null);
 
-      // ACT & ASSERT
       await expect(service.delete(memberId)).rejects.toThrow(
         LeagueMemberNotFoundException,
       );
@@ -291,7 +266,6 @@ describe('LeagueMemberService', () => {
 
   describe('approveMember', () => {
     it('should_approve_pending_member_and_return_updated_member', async () => {
-      // ARRANGE
       const memberId = 'member_123';
       const approvedBy = 'admin_123';
       const pendingMember = {
@@ -327,29 +301,24 @@ describe('LeagueMemberService', () => {
         },
       );
 
-      // ACT
       const result = await service.approveMember(memberId, approvedBy);
 
-      // ASSERT: Verify member was approved (status changed to ACTIVE)
       expect(result.status).toBe(LeagueMemberStatus.ACTIVE);
       expect(result.approvedBy).toBe(approvedBy);
     });
 
     it('should_throw_LeagueMemberNotFoundException_when_member_does_not_exist', async () => {
-      // ARRANGE
       const memberId = 'nonexistent';
       const approvedBy = 'admin_123';
 
       vi.mocked(mockRepository.findById).mockResolvedValue(null);
 
-      // ACT & ASSERT
       await expect(service.approveMember(memberId, approvedBy)).rejects.toThrow(
         LeagueMemberNotFoundException,
       );
     });
 
     it('should_throw_LeagueMemberNotFoundException_when_member_is_not_pending', async () => {
-      // ARRANGE
       const memberId = 'member_123';
       const approvedBy = 'admin_123';
       const activeMember = {
@@ -359,7 +328,6 @@ describe('LeagueMemberService', () => {
 
       vi.mocked(mockRepository.findById).mockResolvedValue(activeMember);
 
-      // ACT & ASSERT
       await expect(service.approveMember(memberId, approvedBy)).rejects.toThrow(
         LeagueMemberNotFoundException,
       );
@@ -368,7 +336,6 @@ describe('LeagueMemberService', () => {
 
   describe('rejectMember', () => {
     it('should_delete_member_when_member_is_pending', async () => {
-      // ARRANGE
       const memberId = 'member_123';
       const pendingMember = {
         ...mockLeagueMember,
@@ -378,26 +345,21 @@ describe('LeagueMemberService', () => {
       vi.mocked(mockRepository.findById).mockResolvedValue(pendingMember);
       vi.mocked(mockRepository.delete).mockResolvedValue(pendingMember);
 
-      // ACT
       const result = await service.rejectMember(memberId);
 
-      // ASSERT
       expect(result).toEqual(pendingMember);
     });
 
     it('should_throw_LeagueMemberNotFoundException_when_member_does_not_exist', async () => {
-      // ARRANGE
       const memberId = 'nonexistent';
       vi.mocked(mockRepository.findById).mockResolvedValue(null);
 
-      // ACT & ASSERT
       await expect(service.rejectMember(memberId)).rejects.toThrow(
         LeagueMemberNotFoundException,
       );
     });
 
     it('should_throw_LeagueMemberNotFoundException_when_member_is_not_pending', async () => {
-      // ARRANGE
       const memberId = 'member_123';
       const activeMember = {
         ...mockLeagueMember,
@@ -406,7 +368,6 @@ describe('LeagueMemberService', () => {
 
       vi.mocked(mockRepository.findById).mockResolvedValue(activeMember);
 
-      // ACT & ASSERT
       await expect(service.rejectMember(memberId)).rejects.toThrow(
         LeagueMemberNotFoundException,
       );
@@ -415,33 +376,26 @@ describe('LeagueMemberService', () => {
 
   describe('exists', () => {
     it('should_return_true_when_member_exists', async () => {
-      // ARRANGE
       const memberId = 'member_123';
       vi.mocked(mockRepository.exists).mockResolvedValue(true);
 
-      // ACT
       const result = await service.exists(memberId);
 
-      // ASSERT
       expect(result).toBe(true);
     });
 
     it('should_return_false_when_member_does_not_exist', async () => {
-      // ARRANGE
       const memberId = 'nonexistent';
       vi.mocked(mockRepository.exists).mockResolvedValue(false);
 
-      // ACT
       const result = await service.exists(memberId);
 
-      // ASSERT
       expect(result).toBe(false);
     });
   });
 
   describe('joinLeague', () => {
     it('should_create_new_member_when_player_and_league_exist_and_no_approval_required', async () => {
-      // ARRANGE
       const leagueId = 'league_123';
       const joinDto: JoinLeagueDto = {
         playerId: 'player_123',
@@ -515,29 +469,24 @@ describe('LeagueMemberService', () => {
         lastUpdatedAt: new Date(),
       } as any);
 
-      // ACT
       const result = await service.joinLeague(leagueId, joinDto);
 
-      // ASSERT: Verify member was created with ACTIVE status
       expect(result.status).toBe(LeagueMemberStatus.ACTIVE);
       expect(result.notes).toBe(joinDto.notes);
     });
 
     it('should_throw_NotFoundException_when_league_does_not_exist', async () => {
-      // ARRANGE
       const leagueId = 'nonexistent';
       const joinDto: JoinLeagueDto = { playerId: 'player_123' };
 
       vi.mocked(mockPrisma.league.findUnique).mockResolvedValue(null);
 
-      // ACT & ASSERT
       await expect(service.joinLeague(leagueId, joinDto)).rejects.toThrow(
         NotFoundException,
       );
     });
 
     it('should_throw_LeagueMemberAlreadyExistsException_when_member_already_active', async () => {
-      // ARRANGE
       const leagueId = 'league_123';
       const joinDto: JoinLeagueDto = { playerId: 'player_123' };
       const existingMember = {
@@ -557,7 +506,6 @@ describe('LeagueMemberService', () => {
         existingMember,
       );
 
-      // ACT & ASSERT
       await expect(service.joinLeague(leagueId, joinDto)).rejects.toThrow(
         LeagueMemberAlreadyExistsException,
       );
@@ -566,7 +514,6 @@ describe('LeagueMemberService', () => {
 
   describe('leaveLeague', () => {
     it('should_deactivate_member_when_member_is_active', async () => {
-      // ARRANGE
       const playerId = 'player_123';
       const leagueId = 'league_123';
       const activeMember = {
@@ -600,29 +547,24 @@ describe('LeagueMemberService', () => {
         },
       );
 
-      // ACT
       const result = await service.leaveLeague(playerId, leagueId);
 
-      // ASSERT: Verify member was deactivated
       expect(result.status).toBe(LeagueMemberStatus.INACTIVE);
       expect(result.leftAt).toBeTruthy();
     });
 
     it('should_throw_LeagueMemberNotFoundException_when_member_does_not_exist', async () => {
-      // ARRANGE
       const playerId = 'player_999';
       const leagueId = 'league_999';
 
       vi.mocked(mockRepository.findByPlayerAndLeague).mockResolvedValue(null);
 
-      // ACT & ASSERT
       await expect(service.leaveLeague(playerId, leagueId)).rejects.toThrow(
         LeagueMemberNotFoundException,
       );
     });
 
     it('should_throw_LeagueMemberNotFoundException_when_member_is_not_active', async () => {
-      // ARRANGE
       const playerId = 'player_123';
       const leagueId = 'league_123';
       const inactiveMember = {
@@ -634,7 +576,6 @@ describe('LeagueMemberService', () => {
         inactiveMember,
       );
 
-      // ACT & ASSERT
       await expect(service.leaveLeague(playerId, leagueId)).rejects.toThrow(
         LeagueMemberNotFoundException,
       );

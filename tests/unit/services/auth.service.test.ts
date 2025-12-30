@@ -66,7 +66,6 @@ describe('AuthService', () => {
   };
 
   beforeEach(() => {
-    // ARRANGE: Setup test dependencies with mocks
     mockUserOrchestrator = {
       upsertUserFromOAuth: vi.fn(),
     } as unknown as UserOrchestratorService;
@@ -93,42 +92,34 @@ describe('AuthService', () => {
 
   describe('validateDiscordUser', () => {
     it('should_return_user_when_validation_succeeds', async () => {
-      // ARRANGE
       vi.mocked(mockUserOrchestrator.upsertUserFromOAuth).mockResolvedValue(
         mockUser,
       );
 
-      // ACT
       const result = await service.validateDiscordUser(mockDiscordProfile);
 
-      // ASSERT
       expect(result).toEqual(mockUser);
       expect(result.id).toBe(userId);
     });
 
     it('should_upsert_user_during_validation', async () => {
-      // ARRANGE
       vi.mocked(mockUserOrchestrator.upsertUserFromOAuth).mockResolvedValue(
         mockUser,
       );
 
-      // ACT
       await service.validateDiscordUser(mockDiscordProfile);
 
-      // ASSERT: Verify user orchestrator called (state verification through result)
       expect(mockUserOrchestrator.upsertUserFromOAuth).toHaveBeenCalledWith(
         mockDiscordProfile,
       );
     });
 
     it('should_propagate_errors_from_user_orchestrator', async () => {
-      // ARRANGE
       const error = new InternalServerErrorException('User creation failed');
       vi.mocked(mockUserOrchestrator.upsertUserFromOAuth).mockRejectedValue(
         error,
       );
 
-      // ACT & ASSERT
       await expect(
         service.validateDiscordUser(mockDiscordProfile),
       ).rejects.toThrow(InternalServerErrorException);
@@ -137,7 +128,6 @@ describe('AuthService', () => {
 
   describe('generateJwt', () => {
     it('should_generate_jwt_with_all_user_fields', () => {
-      // ARRANGE
       const user = {
         id: userId,
         username: 'testuser',
@@ -147,10 +137,8 @@ describe('AuthService', () => {
         guilds: [{ id: 'guild-1' }, { id: 'guild-2' }],
       };
 
-      // ACT
       const result = service.generateJwt(user);
 
-      // ASSERT
       expect(result).toHaveProperty('access_token');
       expect(result).toHaveProperty('user');
       expect(result.access_token).toBe('jwt_token_string');
@@ -159,16 +147,13 @@ describe('AuthService', () => {
     });
 
     it('should_generate_jwt_without_optional_fields', () => {
-      // ARRANGE
       const user = {
         id: userId,
         username: 'testuser',
       };
 
-      // ACT
       const result = service.generateJwt(user);
 
-      // ASSERT
       expect(result).toHaveProperty('access_token');
       expect(result).toHaveProperty('user');
       expect(result.user.id).toBe(userId);
@@ -176,17 +161,14 @@ describe('AuthService', () => {
     });
 
     it('should_include_guild_ids_in_jwt_payload', () => {
-      // ARRANGE
       const user = {
         id: userId,
         username: 'testuser',
         guilds: [{ id: 'guild-1' }, { id: 'guild-2' }],
       };
 
-      // ACT
       service.generateJwt(user);
 
-      // ASSERT
       expect(mockJwtService.sign).toHaveBeenCalledWith(
         expect.objectContaining({
           guilds: ['guild-1', 'guild-2'],
@@ -195,7 +177,6 @@ describe('AuthService', () => {
     });
 
     it('should_not_include_oauth_tokens_in_jwt_payload', () => {
-      // ARRANGE
       const excludedTokens = createTestTokenPair('excluded');
       const user = {
         id: userId,
@@ -204,17 +185,14 @@ describe('AuthService', () => {
         refreshToken: excludedTokens.refreshToken,
       };
 
-      // ACT
       service.generateJwt(user);
 
-      // ASSERT: Verify JWT payload does not contain OAuth tokens
       const signCall = vi.mocked(mockJwtService.sign).mock.calls[0][0] as any;
       expect(signCall).not.toHaveProperty('accessToken');
       expect(signCall).not.toHaveProperty('refreshToken');
     });
 
     it('should_include_all_required_jwt_fields', () => {
-      // ARRANGE
       const user = {
         id: userId,
         username: 'testuser',
@@ -223,10 +201,8 @@ describe('AuthService', () => {
         email: 'test@example.com',
       };
 
-      // ACT
       service.generateJwt(user);
 
-      // ASSERT
       const signCall = vi.mocked(mockJwtService.sign).mock.calls[0][0] as any;
       expect(signCall).toHaveProperty('sub', userId);
       expect(signCall).toHaveProperty('username', 'testuser');
@@ -236,17 +212,14 @@ describe('AuthService', () => {
     });
 
     it('should_return_user_object_without_guilds', () => {
-      // ARRANGE
       const user = {
         id: userId,
         username: 'testuser',
         guilds: [{ id: 'guild-1' }],
       };
 
-      // ACT
       const result = service.generateJwt(user);
 
-      // ASSERT
       expect(result.user).not.toHaveProperty('guilds');
       expect(result.user.id).toBe(userId);
       expect(result.user.username).toBe('testuser');
@@ -255,43 +228,34 @@ describe('AuthService', () => {
 
   describe('getUserAvailableGuilds', () => {
     it('should_return_user_guilds_when_retrieval_succeeds', async () => {
-      // ARRANGE
       const guilds = [mockUserGuild];
       vi.mocked(
         mockUserGuildsService.getUserAvailableGuildsWithPermissions,
       ).mockResolvedValue(guilds);
 
-      // ACT
       const result = await service.getUserAvailableGuilds(userId);
 
-      // ASSERT
       expect(result).toEqual(guilds);
       expect(result).toHaveLength(1);
     });
 
     it('should_return_empty_array_when_service_throws_error', async () => {
-      // ARRANGE
       vi.mocked(
         mockUserGuildsService.getUserAvailableGuildsWithPermissions,
       ).mockRejectedValue(new Error('Service error'));
 
-      // ACT
       const result = await service.getUserAvailableGuilds(userId);
 
-      // ASSERT
       expect(result).toEqual([]);
     });
 
     it('should_return_empty_array_when_no_guilds_available', async () => {
-      // ARRANGE
       vi.mocked(
         mockUserGuildsService.getUserAvailableGuildsWithPermissions,
       ).mockResolvedValue([]);
 
-      // ACT
       const result = await service.getUserAvailableGuilds(userId);
 
-      // ASSERT
       expect(result).toEqual([]);
       expect(result).toHaveLength(0);
     });
@@ -299,7 +263,6 @@ describe('AuthService', () => {
 
   describe('completeOAuthFlow', () => {
     it('should_complete_oauth_flow_successfully', async () => {
-      // ARRANGE
       const userGuilds = [
         {
           id: 'guild-1',
@@ -314,16 +277,13 @@ describe('AuthService', () => {
         resultGuilds,
       );
 
-      // ACT
       const result = await service.completeOAuthFlow(userId, userGuilds);
 
-      // ASSERT
       expect(result).toEqual(resultGuilds);
       expect(result).toHaveLength(1);
     });
 
     it('should_sync_guilds_during_oauth_completion', async () => {
-      // ARRANGE
       const userGuilds = [
         {
           id: 'guild-1',
@@ -337,10 +297,8 @@ describe('AuthService', () => {
         resultGuilds,
       );
 
-      // ACT
       await service.completeOAuthFlow(userId, userGuilds);
 
-      // ASSERT: Verify guilds service called (state verification through result)
       expect(mockUserGuildsService.completeOAuthFlow).toHaveBeenCalledWith(
         userId,
         userGuilds,
@@ -348,7 +306,6 @@ describe('AuthService', () => {
     });
 
     it('should_throw_InternalServerErrorException_when_oauth_completion_fails', async () => {
-      // ARRANGE
       const userGuilds = [
         {
           id: 'guild-1',
@@ -361,7 +318,6 @@ describe('AuthService', () => {
         new Error('OAuth completion failed'),
       );
 
-      // ACT & ASSERT
       await expect(
         service.completeOAuthFlow(userId, userGuilds),
       ).rejects.toThrow(InternalServerErrorException);

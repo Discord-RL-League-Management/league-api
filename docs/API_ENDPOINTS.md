@@ -113,7 +113,7 @@ curl -H "Authorization: Bearer JWT_TOKEN" \
 |--------|----------|-------------|---------------|
 | `POST` | `/api/trackers/register` | Register 1-4 tracker URLs (for new users) | ✅ JWT |
 | `GET` | `/api/trackers/me` | Get current user's trackers | ✅ JWT |
-| `GET` | `/api/trackers` | Get trackers (filtered by guild access or user) | ✅ JWT |
+| `GET` | `/api/trackers` | Get current user's trackers with query options | ✅ JWT |
 | `GET` | `/api/trackers/:id` | Get tracker details | ✅ JWT |
 | `GET` | `/api/trackers/:id/detail` | Get tracker details with all seasons | ✅ JWT |
 | `GET` | `/api/trackers/:id/status` | Get scraping status for a tracker | ✅ JWT |
@@ -124,8 +124,28 @@ curl -H "Authorization: Bearer JWT_TOKEN" \
 | `DELETE` | `/api/trackers/:id` | Soft delete a tracker | ✅ JWT |
 | `POST` | `/api/trackers/add` | Add an additional tracker (up to 4 total) | ✅ JWT |
 
-**Query Parameters for `/api/trackers`:**
-- `guildId` (optional): Filter by guild ID
+**Query Parameters for `/api/trackers/me` and `/api/trackers`:**
+- `platform` (optional): Filter by platform (STEAM, EPIC, etc.) - single value or comma-separated array
+- `status` (optional): Filter by scraping status (PENDING, IN_PROGRESS, COMPLETED, FAILED) - single value or comma-separated array
+- `isActive` (optional): Filter by active status (true/false)
+- `page` (optional): Page number (1-based, default: 1)
+- `limit` (optional): Items per page (max 100, default: 50)
+- `sortBy` (optional): Field to sort by (createdAt, updatedAt, lastScrapedAt)
+- `sortOrder` (optional): Sort order (asc, desc, default: desc)
+
+**Response Format:**
+Both endpoints return a paginated response:
+```json
+{
+  "data": [/* tracker objects */],
+  "pagination": {
+    "page": 1,
+    "limit": 50,
+    "total": 10,
+    "pages": 1
+  }
+}
+```
 
 **Query Parameters for `/api/trackers/:id/snapshots`:**
 - `season` (optional): Filter by season number

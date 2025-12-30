@@ -19,7 +19,6 @@ describe('MmrCalculationService', () => {
   let mockFormulaValidation: FormulaValidationService;
 
   beforeEach(() => {
-    // ARRANGE: Setup test dependencies
     // Mock external dependency (FormulaValidationService)
     mockFormulaValidation = {
       validateFormula: vi.fn().mockReturnValue({ valid: true }),
@@ -34,7 +33,6 @@ describe('MmrCalculationService', () => {
 
   describe('calculateMmr - WEIGHTED_AVERAGE algorithm', () => {
     it('should_calculate_weighted_average_mmr_with_valid_data', () => {
-      // ARRANGE: Prepare test data
       const trackerData: TrackerData = {
         ones: 1200,
         twos: 1400,
@@ -58,17 +56,14 @@ describe('MmrCalculationService', () => {
         },
       };
 
-      // ACT: Execute the function
       const result = service.calculateMmr(trackerData, config);
 
-      // ASSERT: Verify the result (state verification)
       // Expected: (1200 * 0.2 + 1400 * 0.3 + 1600 * 0.5) / (0.2 + 0.3 + 0.5)
       // = (240 + 420 + 800) / 1.0 = 1460
       expect(result).toBe(1460);
     });
 
     it('should_return_zero_when_no_valid_playlists_meet_min_games', () => {
-      // ARRANGE
       const trackerData: TrackerData = {
         ones: 1200,
         onesGamesPlayed: 10, // Below minimum
@@ -80,17 +75,14 @@ describe('MmrCalculationService', () => {
         minGamesPlayed: { ones: 50 },
       };
 
-      // ACT
       const result = service.calculateMmr(trackerData, config);
 
-      // ASSERT
       expect(result).toBe(0);
     });
   });
 
   describe('calculateMmr - PEAK_MMR algorithm', () => {
     it('should_return_highest_mmr_across_all_playlists', () => {
-      // ARRANGE
       const trackerData: TrackerData = {
         ones: 1200,
         twos: 1800,
@@ -109,17 +101,14 @@ describe('MmrCalculationService', () => {
         },
       };
 
-      // ACT
       const result = service.calculateMmr(trackerData, config);
 
-      // ASSERT
       expect(result).toBe(1800); // Highest MMR
     });
   });
 
   describe('calculateMmr - CUSTOM algorithm', () => {
     it('should_calculate_mmr_using_custom_formula', () => {
-      // ARRANGE
       const trackerData: TrackerData = {
         twos: 1400,
         threes: 1600,
@@ -137,10 +126,8 @@ describe('MmrCalculationService', () => {
         valid: true,
       });
 
-      // ACT
       const result = service.calculateMmr(trackerData, config);
 
-      // ASSERT
       // Expected: (1400 + 1600) / 2 = 1500
       expect(result).toBe(1500);
       expect(mockFormulaValidation.validateFormula).toHaveBeenCalledWith(
@@ -149,7 +136,6 @@ describe('MmrCalculationService', () => {
     });
 
     it('should_throw_exception_when_custom_formula_is_invalid', () => {
-      // ARRANGE
       const trackerData: TrackerData = {
         twos: 1400,
         twosGamesPlayed: 200,
@@ -166,7 +152,6 @@ describe('MmrCalculationService', () => {
         error: 'Invalid formula syntax',
       });
 
-      // ACT & ASSERT
       expect(() => service.calculateMmr(trackerData, config)).toThrow(
         BadRequestException,
       );
@@ -175,10 +160,8 @@ describe('MmrCalculationService', () => {
 
   describe('calculateMmr - error handling', () => {
     it('should_throw_exception_when_config_is_missing', () => {
-      // ARRANGE
       const trackerData: TrackerData = { ones: 1200 };
 
-      // ACT & ASSERT
       expect(() =>
         service.calculateMmr(
           trackerData,
@@ -188,13 +171,11 @@ describe('MmrCalculationService', () => {
     });
 
     it('should_throw_exception_when_algorithm_is_unknown', () => {
-      // ARRANGE
       const trackerData: TrackerData = { ones: 1200 };
       const config = {
         algorithm: 'UNKNOWN_ALGORITHM',
       } as unknown as MmrCalculationConfig;
 
-      // ACT & ASSERT
       expect(() => service.calculateMmr(trackerData, config)).toThrow(
         BadRequestException,
       );

@@ -109,21 +109,12 @@ export class TrackerController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get trackers (filtered by guild access)' })
-  @ApiQuery({
-    name: 'guildId',
-    required: false,
-    description: 'Filter by guild ID',
-  })
-  @ApiResponse({ status: 200, description: 'List of trackers' })
+  @ApiOperation({ summary: "Get current user's trackers with query options" })
+  @ApiResponse({ status: 200, description: "User's trackers (paginated)" })
   async getTrackers(
     @CurrentUser() user: AuthenticatedUser,
-    @Query('guildId') guildId?: string,
     @Query() query?: TrackerQueryDto,
   ) {
-    if (guildId) {
-      return this.trackerService.getTrackersByGuild(guildId);
-    }
     const options: TrackerQueryOptions | undefined = query
       ? { ...query }
       : undefined;

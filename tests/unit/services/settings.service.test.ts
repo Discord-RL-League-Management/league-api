@@ -15,7 +15,6 @@ describe('SettingsService', () => {
   let mockRepository: SettingsRepository;
 
   beforeEach(() => {
-    // ARRANGE: Setup test dependencies
     mockRepository = {
       findByOwner: vi.fn(),
       upsert: vi.fn(),
@@ -31,7 +30,6 @@ describe('SettingsService', () => {
 
   describe('getSettings', () => {
     it('should_return_settings_when_found', async () => {
-      // ARRANGE
       const ownerType = 'guild';
       const ownerId = 'guild123';
       const settings: Settings = {
@@ -47,10 +45,8 @@ describe('SettingsService', () => {
 
       vi.mocked(mockRepository.findByOwner).mockResolvedValue(settings);
 
-      // ACT
       const result = await service.getSettings(ownerType, ownerId);
 
-      // ASSERT
       expect(result).toEqual(settings);
       expect(mockRepository.findByOwner).toHaveBeenCalledWith(
         ownerType,
@@ -59,23 +55,19 @@ describe('SettingsService', () => {
     });
 
     it('should_return_null_when_settings_not_found', async () => {
-      // ARRANGE
       const ownerType = 'guild';
       const ownerId = 'guild123';
 
       vi.mocked(mockRepository.findByOwner).mockResolvedValue(null);
 
-      // ACT
       const result = await service.getSettings(ownerType, ownerId);
 
-      // ASSERT
       expect(result).toBeNull();
     });
   });
 
   describe('upsertSettings', () => {
     it('should_create_settings_when_not_exists', async () => {
-      // ARRANGE
       const ownerType = 'guild';
       const ownerId = 'guild123';
       const settingsData = { key: 'value' };
@@ -94,7 +86,6 @@ describe('SettingsService', () => {
 
       vi.mocked(mockRepository.upsert).mockResolvedValue(createdSettings);
 
-      // ACT
       const result = await service.upsertSettings(
         ownerType,
         ownerId,
@@ -103,7 +94,6 @@ describe('SettingsService', () => {
         configVersion,
       );
 
-      // ASSERT
       expect(result).toEqual(createdSettings);
       expect(mockRepository.upsert).toHaveBeenCalledWith(
         ownerType,
@@ -120,7 +110,6 @@ describe('SettingsService', () => {
     });
 
     it('should_update_settings_when_exists', async () => {
-      // ARRANGE
       const ownerType = 'guild';
       const ownerId = 'guild123';
       const settingsData = { key: 'updated_value' };
@@ -137,19 +126,16 @@ describe('SettingsService', () => {
 
       vi.mocked(mockRepository.upsert).mockResolvedValue(updatedSettings);
 
-      // ACT
       const result = await service.upsertSettings(
         ownerType,
         ownerId,
         settingsData,
       );
 
-      // ASSERT
       expect(result).toEqual(updatedSettings);
     });
 
     it('should_support_transaction_client', async () => {
-      // ARRANGE
       const ownerType = 'guild';
       const ownerId = 'guild123';
       const settingsData = { key: 'value' };
@@ -167,7 +153,6 @@ describe('SettingsService', () => {
 
       vi.mocked(mockRepository.upsert).mockResolvedValue(createdSettings);
 
-      // ACT
       const result = await service.upsertSettings(
         ownerType,
         ownerId,
@@ -177,7 +162,6 @@ describe('SettingsService', () => {
         tx,
       );
 
-      // ASSERT
       expect(result).toEqual(createdSettings);
       expect(mockRepository.upsert).toHaveBeenCalledWith(
         ownerType,
@@ -190,7 +174,6 @@ describe('SettingsService', () => {
 
   describe('updateSettings', () => {
     it('should_update_existing_settings', async () => {
-      // ARRANGE
       const ownerType = 'guild';
       const ownerId = 'guild123';
       const settingsData = { key: 'updated_value' };
@@ -207,14 +190,12 @@ describe('SettingsService', () => {
 
       vi.mocked(mockRepository.update).mockResolvedValue(updatedSettings);
 
-      // ACT
       const result = await service.updateSettings(
         ownerType,
         ownerId,
         settingsData,
       );
 
-      // ASSERT
       expect(result).toEqual(updatedSettings);
       expect(mockRepository.update).toHaveBeenCalledWith(
         ownerType,
@@ -228,7 +209,6 @@ describe('SettingsService', () => {
     });
 
     it('should_support_transaction_client', async () => {
-      // ARRANGE
       const ownerType = 'guild';
       const ownerId = 'guild123';
       const settingsData = { key: 'value' };
@@ -246,7 +226,6 @@ describe('SettingsService', () => {
 
       vi.mocked(mockRepository.update).mockResolvedValue(updatedSettings);
 
-      // ACT
       const result = await service.updateSettings(
         ownerType,
         ownerId,
@@ -254,7 +233,6 @@ describe('SettingsService', () => {
         tx,
       );
 
-      // ASSERT
       expect(result).toEqual(updatedSettings);
       expect(mockRepository.update).toHaveBeenCalledWith(
         ownerType,

@@ -17,7 +17,6 @@ describe('TrackerRepository', () => {
   let mockPrisma: PrismaService;
 
   beforeEach(() => {
-    // ARRANGE: Setup test dependencies
     mockPrisma = {
       tracker: {
         findMany: vi.fn(),
@@ -39,38 +38,32 @@ describe('TrackerRepository', () => {
     const refreshIntervalHours = 24;
 
     it('should_use_flattened_or_structure_with_three_conditions', async () => {
-      // ARRANGE
       const mockResult = [{ id: 'tracker_1' }];
       vi.mocked(mockPrisma.tracker.findMany).mockResolvedValue(
         mockResult as never,
       );
 
-      // ACT
       await repository.findPendingAndStaleForGuild(
         guildId,
         refreshIntervalHours,
       );
 
-      // ASSERT: Verify OR array has 3 elements (flattened structure)
       const callArgs = vi.mocked(mockPrisma.tracker.findMany).mock
         .calls[0]?.[0];
       expect(callArgs?.where?.OR).toHaveLength(3);
     });
 
     it('should_include_pending_null_and_stale_conditions_in_or_array', async () => {
-      // ARRANGE
       const mockResult = [{ id: 'tracker_1' }];
       vi.mocked(mockPrisma.tracker.findMany).mockResolvedValue(
         mockResult as never,
       );
 
-      // ACT
       await repository.findPendingAndStaleForGuild(
         guildId,
         refreshIntervalHours,
       );
 
-      // ASSERT: Verify each condition is present
       const callArgs = vi.mocked(mockPrisma.tracker.findMany).mock
         .calls[0]?.[0];
       expect(callArgs?.where?.OR?.[0]).toEqual({
@@ -82,19 +75,16 @@ describe('TrackerRepository', () => {
     });
 
     it('should_not_have_nested_or_structure', async () => {
-      // ARRANGE
       const mockResult = [{ id: 'tracker_1' }];
       vi.mocked(mockPrisma.tracker.findMany).mockResolvedValue(
         mockResult as never,
       );
 
-      // ACT
       await repository.findPendingAndStaleForGuild(
         guildId,
         refreshIntervalHours,
       );
 
-      // ASSERT: Verify no nested OR structure
       const callArgs = vi.mocked(mockPrisma.tracker.findMany).mock
         .calls[0]?.[0];
       expect(callArgs?.where?.OR?.[1]).not.toHaveProperty('OR');
@@ -102,19 +92,16 @@ describe('TrackerRepository', () => {
     });
 
     it('should_calculate_cutoff_time_correctly', async () => {
-      // ARRANGE
       const mockResult = [{ id: 'tracker_1' }];
       vi.mocked(mockPrisma.tracker.findMany).mockResolvedValue(
         mockResult as never,
       );
 
-      // ACT
       await repository.findPendingAndStaleForGuild(
         guildId,
         refreshIntervalHours,
       );
 
-      // ASSERT: Verify cutoff time is calculated correctly (flattened structure)
       const callArgs = vi.mocked(mockPrisma.tracker.findMany).mock
         .calls[0]?.[0];
       const cutoffTime = (callArgs?.where?.OR?.[2] as any)?.lastScrapedAt
@@ -134,19 +121,16 @@ describe('TrackerRepository', () => {
     });
 
     it('should_filter_by_guild_id', async () => {
-      // ARRANGE
       const mockResult = [{ id: 'tracker_1' }];
       vi.mocked(mockPrisma.tracker.findMany).mockResolvedValue(
         mockResult as never,
       );
 
-      // ACT
       await repository.findPendingAndStaleForGuild(
         guildId,
         refreshIntervalHours,
       );
 
-      // ASSERT: Verify guild filter
       const callArgs = vi.mocked(mockPrisma.tracker.findMany).mock
         .calls[0]?.[0];
       expect((callArgs?.where as any)?.user?.guildMembers?.some?.guildId).toBe(
@@ -155,19 +139,16 @@ describe('TrackerRepository', () => {
     });
 
     it('should_exclude_in_progress_trackers', async () => {
-      // ARRANGE
       const mockResult = [{ id: 'tracker_1' }];
       vi.mocked(mockPrisma.tracker.findMany).mockResolvedValue(
         mockResult as never,
       );
 
-      // ACT
       await repository.findPendingAndStaleForGuild(
         guildId,
         refreshIntervalHours,
       );
 
-      // ASSERT: Verify IN_PROGRESS exclusion
       const callArgs = vi.mocked(mockPrisma.tracker.findMany).mock
         .calls[0]?.[0];
       expect((callArgs?.where as any)?.scrapingStatus?.not).toBe(
@@ -176,19 +157,16 @@ describe('TrackerRepository', () => {
     });
 
     it('should_return_tracker_ids_only', async () => {
-      // ARRANGE
       const mockResult = [{ id: 'tracker_1' }, { id: 'tracker_2' }];
       vi.mocked(mockPrisma.tracker.findMany).mockResolvedValue(
         mockResult as never,
       );
 
-      // ACT
       const result = await repository.findPendingAndStaleForGuild(
         guildId,
         refreshIntervalHours,
       );
 
-      // ASSERT: Verify return structure
       expect(result).toEqual([{ id: 'tracker_1' }, { id: 'tracker_2' }]);
       expect(result[0]).toHaveProperty('id');
       expect(result[0]).not.toHaveProperty('url');
@@ -196,19 +174,16 @@ describe('TrackerRepository', () => {
     });
 
     it('should_include_pending_trackers_in_query', async () => {
-      // ARRANGE
       const mockResult = [{ id: 'tracker_1' }];
       vi.mocked(mockPrisma.tracker.findMany).mockResolvedValue(
         mockResult as never,
       );
 
-      // ACT
       await repository.findPendingAndStaleForGuild(
         guildId,
         refreshIntervalHours,
       );
 
-      // ASSERT: Verify PENDING condition is in OR array
       const callArgs = vi.mocked(mockPrisma.tracker.findMany).mock
         .calls[0]?.[0];
       const orConditions = callArgs?.where?.OR;
@@ -226,19 +201,16 @@ describe('TrackerRepository', () => {
     });
 
     it('should_include_null_lastScrapedAt_condition_in_query', async () => {
-      // ARRANGE
       const mockResult = [{ id: 'tracker_1' }];
       vi.mocked(mockPrisma.tracker.findMany).mockResolvedValue(
         mockResult as never,
       );
 
-      // ACT
       await repository.findPendingAndStaleForGuild(
         guildId,
         refreshIntervalHours,
       );
 
-      // ASSERT: Verify null condition is in flattened OR array
       const callArgs = vi.mocked(mockPrisma.tracker.findMany).mock
         .calls[0]?.[0];
       const orConditions = callArgs?.where?.OR;
@@ -256,19 +228,16 @@ describe('TrackerRepository', () => {
     });
 
     it('should_include_stale_lastScrapedAt_condition_in_query', async () => {
-      // ARRANGE
       const mockResult = [{ id: 'tracker_1' }];
       vi.mocked(mockPrisma.tracker.findMany).mockResolvedValue(
         mockResult as never,
       );
 
-      // ACT
       await repository.findPendingAndStaleForGuild(
         guildId,
         refreshIntervalHours,
       );
 
-      // ASSERT: Verify stale condition is in flattened OR array
       const callArgs = vi.mocked(mockPrisma.tracker.findMany).mock
         .calls[0]?.[0];
       const orConditions = callArgs?.where?.OR;
@@ -288,17 +257,14 @@ describe('TrackerRepository', () => {
     });
 
     it('should_handle_different_refresh_intervals', async () => {
-      // ARRANGE
       const mockResult = [{ id: 'tracker_1' }];
       vi.mocked(mockPrisma.tracker.findMany).mockResolvedValue(
         mockResult as never,
       );
       const customRefreshHours = 48;
 
-      // ACT
       await repository.findPendingAndStaleForGuild(guildId, customRefreshHours);
 
-      // ASSERT: Verify cutoff time uses custom interval (flattened structure)
       const callArgs = vi.mocked(mockPrisma.tracker.findMany).mock
         .calls[0]?.[0];
       const cutoffTime = (callArgs?.where?.OR?.[2] as any)?.lastScrapedAt

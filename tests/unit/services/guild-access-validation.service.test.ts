@@ -22,7 +22,6 @@ describe('GuildAccessValidationService', () => {
   let mockDiscordApiService: DiscordApiService;
 
   beforeEach(() => {
-    // ARRANGE: Setup test dependencies
     mockGuildMembersService = {
       findOne: vi.fn(),
       create: vi.fn(),
@@ -55,7 +54,6 @@ describe('GuildAccessValidationService', () => {
 
   describe('validateUserGuildAccess', () => {
     it('should_pass_when_guild_exists_and_user_is_member', async () => {
-      // ARRANGE
       const userId = 'user123';
       const guildId = 'guild123';
       const membership = { userId, guildId };
@@ -65,10 +63,8 @@ describe('GuildAccessValidationService', () => {
         membership as any,
       );
 
-      // ACT
       await service.validateUserGuildAccess(userId, guildId);
 
-      // ASSERT
       expect(mockGuildsService.exists).toHaveBeenCalledWith(guildId);
       expect(mockGuildMembersService.findOne).toHaveBeenCalledWith(
         userId,
@@ -77,13 +73,11 @@ describe('GuildAccessValidationService', () => {
     });
 
     it('should_throw_NotFoundException_when_guild_does_not_exist', async () => {
-      // ARRANGE
       const userId = 'user123';
       const guildId = 'guild123';
 
       vi.mocked(mockGuildsService.exists).mockResolvedValue(false);
 
-      // ACT & ASSERT
       await expect(
         service.validateUserGuildAccess(userId, guildId),
       ).rejects.toThrow(NotFoundException);
@@ -93,7 +87,6 @@ describe('GuildAccessValidationService', () => {
     });
 
     it('should_sync_membership_when_not_found_but_valid_in_discord', async () => {
-      // ARRANGE
       const userId = 'user123';
       const guildId = 'guild123';
       const accessToken = createTestAccessToken('guild');
@@ -116,10 +109,8 @@ describe('GuildAccessValidationService', () => {
       vi.mocked(mockGuildsService.findOne).mockResolvedValue(guild as any);
       vi.mocked(mockGuildMembersService.create).mockResolvedValue({} as any);
 
-      // ACT
       await service.validateUserGuildAccess(userId, guildId);
 
-      // ASSERT
       expect(mockDiscordApiService.checkGuildPermissions).toHaveBeenCalledWith(
         accessToken,
         guildId,
@@ -128,7 +119,6 @@ describe('GuildAccessValidationService', () => {
     });
 
     it('should_throw_ForbiddenException_when_user_not_member_in_discord', async () => {
-      // ARRANGE
       const userId = 'user123';
       const guildId = 'guild123';
       const accessToken = createTestAccessToken('guild');
@@ -148,7 +138,6 @@ describe('GuildAccessValidationService', () => {
         guildPermissions as any,
       );
 
-      // ACT & ASSERT
       await expect(
         service.validateUserGuildAccess(userId, guildId),
       ).rejects.toThrow(ForbiddenException);
@@ -158,7 +147,6 @@ describe('GuildAccessValidationService', () => {
     });
 
     it('should_throw_ForbiddenException_when_no_access_token', async () => {
-      // ARRANGE
       const userId = 'user123';
       const guildId = 'guild123';
 
@@ -170,7 +158,6 @@ describe('GuildAccessValidationService', () => {
         mockTokenManagementService.getValidAccessToken,
       ).mockResolvedValue(null);
 
-      // ACT & ASSERT
       await expect(
         service.validateUserGuildAccess(userId, guildId),
       ).rejects.toThrow(ForbiddenException);
