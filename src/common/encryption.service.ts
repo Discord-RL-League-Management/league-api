@@ -1,20 +1,21 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
+import { IConfigurationService } from '../infrastructure/configuration/interfaces/configuration.interface';
 
 @Injectable()
 export class EncryptionService {
   private readonly serviceName = EncryptionService.name;
   private readonly algorithm = 'aes-256-gcm';
-  private readonly ivLength = 16; // 128 bits
-  private readonly saltLength = 64; // 64 bytes
-  private readonly tagLength = 16; // 128 bits
+  private readonly ivLength = 16;
+  private readonly saltLength = 64;
+  private readonly tagLength = 16;
   private readonly tagPosition = this.saltLength + this.ivLength;
   private readonly encryptedDataPosition = this.tagPosition + this.tagLength;
 
   constructor(
-    private configService: ConfigService,
+    @Inject(IConfigurationService)
+    private configService: IConfigurationService,
     @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
@@ -31,11 +32,10 @@ export class EncryptionService {
         'ENCRYPTION_KEY not set. Using default key for development only!',
         this.serviceName,
       );
-      // For development only - in production this should throw an error
+      // WARNING: Development fallback only - should throw in production
       return crypto.scryptSync('default-key-for-development', 'salt', 32);
     }
 
-    // Convert hex string to buffer
     return Buffer.from(key, 'hex');
   }
 
@@ -85,8 +85,7 @@ export class EncryptionService {
     try {
       const combined = Buffer.from(encryptedText, 'base64');
 
-      // Skip salt bytes (salt is stored but not used in decryption - key is derived from config)
-      combined.subarray(0, this.saltLength);
+      // Salt is stored but not used in decryption - key is derived from config
       const iv = combined.subarray(
         this.saltLength,
         this.saltLength + this.ivLength,

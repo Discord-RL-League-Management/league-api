@@ -1,7 +1,10 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
-import { ITransactionService } from '../../infrastructure/transactions/interfaces/transaction.interface';
+import {
+  ITransactionService,
+  ITransactionClient,
+} from '../../infrastructure/transactions/interfaces/transaction.interface';
 import { League, Prisma, LeagueStatus, Game } from '@prisma/client';
 import { CreateLeagueDto } from '../dto/create-league.dto';
 import { UpdateLeagueDto } from '../dto/update-league.dto';
@@ -89,10 +92,10 @@ export class LeagueRepository
     status?: string | string[];
     game?: string | string[];
   }): Promise<{ data: League[]; total: number; page: number; limit: number }> {
-    const page = options?.page ?? 1;
-    const limit = options?.limit ?? 50;
+    const page = Math.max(1, options?.page ?? 1);
+    const limit = Math.max(1, Math.min(options?.limit ?? 50, 100));
     const skip = (page - 1) * limit;
-    const maxLimit = Math.min(limit, 100);
+    const maxLimit = limit; // Already validated, no need for Math.min
 
     const where: Prisma.LeagueWhereInput = {};
 
@@ -147,7 +150,6 @@ export class LeagueRepository
 
   /**
    * Find leagues by guild ID
-   * Repository-specific method for filtering
    */
   async findByGuild(
     guildId: string,
@@ -161,7 +163,6 @@ export class LeagueRepository
 
   /**
    * Find leagues by game
-   * Repository-specific method for filtering
    */
   async findByGame(
     guildId: string,
@@ -240,36 +241,38 @@ export class LeagueRepository
       return league;
     }
 
-    return this.prisma.$transaction(async (transaction) => {
-      const league = await transaction.league.create({
-        data: leagueData,
-      });
+    return this.transactionService.executeTransaction(
+      async (tx: ITransactionClient) => {
+        const transaction = tx as Prisma.TransactionClient;
+        const league = await transaction.league.create({
+          data: leagueData,
+        });
 
-      await transaction.settings.upsert({
-        where: {
-          ownerType_ownerId: {
+        await transaction.settings.upsert({
+          where: {
+            ownerType_ownerId: {
+              ownerType: 'league',
+              ownerId: league.id,
+            },
+          },
+          create: {
             ownerType: 'league',
             ownerId: league.id,
+            settings: settingsData,
+            schemaVersion: 1,
           },
-        },
-        create: {
-          ownerType: 'league',
-          ownerId: league.id,
-          settings: settingsData,
-          schemaVersion: 1,
-        },
-        update: {
-          settings: settingsData,
-        },
-      });
+          update: {
+            settings: settingsData,
+          },
+        });
 
-      return league;
-    });
+        return league;
+      },
+    );
   }
 
   /**
    * Find leagues by status
-   * Repository-specific method for filtering
    */
   async findByStatus(
     guildId: string,

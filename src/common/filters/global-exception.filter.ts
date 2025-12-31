@@ -6,9 +6,9 @@ import {
   HttpStatus,
   Inject,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
 import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { IConfigurationService } from '../../infrastructure/configuration/interfaces/configuration.interface';
 
 interface ErrorResponse {
   statusCode: number;
@@ -27,13 +27,14 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   private readonly isDevelopment: boolean;
 
   constructor(
-    private configService: ConfigService,
+    @Inject(IConfigurationService)
+    private configService: IConfigurationService,
     @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {
     this.isDevelopment =
-      this.configService.get<string>('app.nodeEnv', 'development') ===
-      'development';
+      (this.configService.get<string>('app.nodeEnv', 'development') ??
+        'development') === 'development';
   }
 
   catch(exception: unknown, host: ArgumentsHost): void {

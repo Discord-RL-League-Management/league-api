@@ -5,12 +5,12 @@ import {
   ForbiddenException,
   Inject,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 import { AuditLogService } from '../../audit/services/audit-log.service';
 import { AuditAction } from '../../audit/interfaces/audit-event.interface';
 import type { AuthenticatedUser } from '../../common/interfaces/user.interface';
 import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { IConfigurationService } from '../../infrastructure/configuration/interfaces/configuration.interface';
 
 /**
  * SystemAdminGuard - Single Responsibility: System-wide admin permission checking
@@ -27,7 +27,8 @@ export class SystemAdminGuard implements CanActivate {
   private readonly serviceName = SystemAdminGuard.name;
 
   constructor(
-    private configService: ConfigService,
+    @Inject(IConfigurationService)
+    private configService: IConfigurationService,
     private auditLogService: AuditLogService,
     @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
@@ -35,8 +36,6 @@ export class SystemAdminGuard implements CanActivate {
 
   /**
    * Check if user has system admin permissions
-   * Single Responsibility: System admin permission checking
-   * Separation of Concerns: Handles only permission logic, no HTTP concerns
    */
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context
@@ -54,7 +53,7 @@ export class SystemAdminGuard implements CanActivate {
 
     try {
       const systemAdminUserIds =
-        this.configService.get<string[]>('systemAdmin.userIds') || [];
+        this.configService.get<string[]>('systemAdmin.userIds') ?? [];
 
       const isSystemAdmin = systemAdminUserIds.includes(user.id);
 

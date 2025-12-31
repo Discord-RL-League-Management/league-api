@@ -137,6 +137,81 @@ describe('LeagueRepository', () => {
       const callArgs = vi.mocked(mockPrisma.league.findMany).mock.calls[0]?.[0];
       expect(callArgs?.where).toHaveProperty('status', LeagueStatus.ACTIVE);
     });
+
+    it('should_use_page_1_when_page_is_0', async () => {
+      const mockLeagues = [mockLeague];
+      vi.mocked(mockPrisma.league.findMany).mockResolvedValue(
+        mockLeagues as never,
+      );
+      vi.mocked(mockPrisma.league.count).mockResolvedValue(1);
+
+      const result = await repository.findAll({ page: 0 });
+
+      expect(result.page).toBe(1);
+      expect(result.limit).toBe(50);
+      const callArgs = vi.mocked(mockPrisma.league.findMany).mock.calls[0]?.[0];
+      expect(callArgs?.skip).toBe(0); // (1 - 1) * 50 = 0
+    });
+
+    it('should_use_page_1_when_page_is_negative', async () => {
+      const mockLeagues = [mockLeague];
+      vi.mocked(mockPrisma.league.findMany).mockResolvedValue(
+        mockLeagues as never,
+      );
+      vi.mocked(mockPrisma.league.count).mockResolvedValue(1);
+
+      const result = await repository.findAll({ page: -5 });
+
+      expect(result.page).toBe(1);
+      expect(result.limit).toBe(50);
+      const callArgs = vi.mocked(mockPrisma.league.findMany).mock.calls[0]?.[0];
+      expect(callArgs?.skip).toBe(0); // (1 - 1) * 50 = 0
+    });
+
+    it('should_use_limit_1_when_limit_is_0', async () => {
+      const mockLeagues = [mockLeague];
+      vi.mocked(mockPrisma.league.findMany).mockResolvedValue(
+        mockLeagues as never,
+      );
+      vi.mocked(mockPrisma.league.count).mockResolvedValue(1);
+
+      const result = await repository.findAll({ limit: 0 });
+
+      expect(result.page).toBe(1);
+      expect(result.limit).toBe(1);
+      const callArgs = vi.mocked(mockPrisma.league.findMany).mock.calls[0]?.[0];
+      expect(callArgs?.take).toBe(1);
+    });
+
+    it('should_use_limit_1_when_limit_is_negative', async () => {
+      const mockLeagues = [mockLeague];
+      vi.mocked(mockPrisma.league.findMany).mockResolvedValue(
+        mockLeagues as never,
+      );
+      vi.mocked(mockPrisma.league.count).mockResolvedValue(1);
+
+      const result = await repository.findAll({ limit: -10 });
+
+      expect(result.page).toBe(1);
+      expect(result.limit).toBe(1);
+      const callArgs = vi.mocked(mockPrisma.league.findMany).mock.calls[0]?.[0];
+      expect(callArgs?.take).toBe(1);
+    });
+
+    it('should_cap_limit_at_100_when_limit_exceeds_100', async () => {
+      const mockLeagues = [mockLeague];
+      vi.mocked(mockPrisma.league.findMany).mockResolvedValue(
+        mockLeagues as never,
+      );
+      vi.mocked(mockPrisma.league.count).mockResolvedValue(1);
+
+      const result = await repository.findAll({ limit: 200 });
+
+      expect(result.page).toBe(1);
+      expect(result.limit).toBe(100);
+      const callArgs = vi.mocked(mockPrisma.league.findMany).mock.calls[0]?.[0];
+      expect(callArgs?.take).toBe(100);
+    });
   });
 
   describe('exists', () => {
