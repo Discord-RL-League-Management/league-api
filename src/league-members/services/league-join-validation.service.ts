@@ -165,7 +165,7 @@ export class LeagueJoinValidationService {
         );
     }
 
-    if (skillValue == null) {
+    if (skillValue === null || skillValue === undefined) {
       throw new LeagueJoinValidationException(
         `Unable to determine ${skillRequirements.skillMetric} value from tracker`,
       );
