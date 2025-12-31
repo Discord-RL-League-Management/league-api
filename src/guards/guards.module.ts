@@ -56,8 +56,6 @@ import { TokenManagementService } from '../auth/services/token-management.servic
   ],
   providers: [
     ResourceOwnershipGuard,
-    // Provide adapters with injection tokens for AdminGuard
-    // Use factory functions to create adapters, avoiding circular dependency issues
     {
       provide: 'IPermissionProvider',
       useFactory: (permissionCheckService: PermissionCheckService) => {
@@ -86,7 +84,6 @@ import { TokenManagementService } from '../auth/services/token-management.servic
       },
       inject: [TokenManagementService],
     },
-    // REMOVED: IGuildAccessProvider factory (moved to GuildAccessAdapterModule)
     AdminGuard,
     SystemAdminGuard,
     GuildAdminGuard,
@@ -96,13 +93,10 @@ import { TokenManagementService } from '../auth/services/token-management.servic
     AdminGuard,
     SystemAdminGuard,
     GuildAdminGuard,
-    // Export provider tokens so AdminGuard dependencies are available to modules that import GuardsModule
     'IPermissionProvider',
     'IAuditProvider',
     'IDiscordProvider',
     'ITokenProvider',
-    // Note: IGuildAccessProvider is provided by GuildAccessAdapterModule, not GuardsModule
-    // Modules that need IGuildAccessProvider should import GuildAccessAdapterModule directly
   ],
 })
 export class GuardsModule {}

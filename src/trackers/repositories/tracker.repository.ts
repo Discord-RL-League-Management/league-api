@@ -251,8 +251,6 @@ export class TrackerRepository {
       return trackerWithData;
     }
 
-    // Fallback: return most recently scraped tracker (even without season data)
-    // This handles cases where trackers exist but haven't been scraped yet
     return this.prisma.tracker.findFirst({
       where: {
         userId,

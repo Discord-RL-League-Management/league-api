@@ -29,14 +29,11 @@ export class MmrCalculationService {
   private readonly math: MathJsInstance;
 
   constructor(private readonly formulaValidation: FormulaValidationService) {
-    // Create sandboxed math.js instance (same as validation service)
-    // Use all functions but validation ensures only safe variables are used
     this.math = create(all);
   }
 
   /**
    * Calculate internal MMR based on guild configuration
-   * Single Responsibility: MMR calculation orchestration
    *
    * @param trackerData - Tracker data with MMR and games played
    * @param config - Guild MMR calculation configuration
@@ -67,7 +64,6 @@ export class MmrCalculationService {
 
   /**
    * Calculate weighted average MMR
-   * Single Responsibility: Weighted average calculation
    */
   private calculateWeightedAverage(
     trackerData: TrackerData,
@@ -127,7 +123,6 @@ export class MmrCalculationService {
 
   /**
    * Calculate Ascendancy MMR using 5-step process
-   * Single Responsibility: Ascendancy algorithm calculation
    *
    * Steps:
    * 1. Calculate 2s Score = weighted average of Current and Peak (using Q and R)
@@ -145,40 +140,30 @@ export class MmrCalculationService {
     const Q = weights.current;
     const R = weights.peak;
 
-    // Step 2: Calculate 2s Score (L)
-    // Note: Peak data not available in tracker data structure, using current as both
     const twosCurrent = trackerData.twos || 0;
     const twosPeak = trackerData.twos || 0;
     const twosScore =
       Q + R > 0 ? (twosCurrent * Q + twosPeak * R) / (Q + R) : 0;
 
-    // Step 3: Calculate 3s Score (M)
-    // Note: Peak data not available in tracker data structure, using current as both
     const threesCurrent = trackerData.threes || 0;
     const threesPeak = trackerData.threes || 0;
     const threesScore =
       Q + R > 0 ? (threesCurrent * Q + threesPeak * R) / (Q + R) : 0;
 
-    // Step 4: Calculate total games
     const totalGames =
       (trackerData.onesGamesPlayed || 0) +
       (trackerData.twosGamesPlayed || 0) +
       (trackerData.threesGamesPlayed || 0) +
       (trackerData.foursGamesPlayed || 0);
 
-    // Step 5: Calculate 2s% (N)
     const twosPercent =
       totalGames > 0 ? (trackerData.twosGamesPlayed || 0) / totalGames : 0;
 
-    // Step 6: Calculate 3s% (O)
     const threesPercent =
       totalGames > 0 ? (trackerData.threesGamesPlayed || 0) / totalGames : 0;
 
-    // Step 7: Calculate Final Score (P)
-    // Weighted average of 2s Score and 3s Score using percentages as weights
     const totalPercent = twosPercent + threesPercent;
     if (totalPercent === 0) {
-      // No games in 2s or 3s, return 0
       return 0;
     }
 
@@ -190,7 +175,6 @@ export class MmrCalculationService {
 
   /**
    * Calculate peak MMR (highest MMR across all playlists)
-   * Single Responsibility: Peak MMR calculation
    */
   private calculatePeakMmr(
     trackerData: TrackerData,
@@ -241,7 +225,6 @@ export class MmrCalculationService {
 
   /**
    * Calculate MMR using custom formula
-   * Single Responsibility: Custom formula evaluation
    */
   private calculateCustomFormula(
     trackerData: TrackerData,
@@ -253,7 +236,6 @@ export class MmrCalculationService {
       );
     }
 
-    // Validate formula if not already validated
     const validation = this.formulaValidation.validateFormula(
       config.customFormula,
     );
@@ -262,7 +244,6 @@ export class MmrCalculationService {
     }
 
     try {
-      // Prepare data for formula evaluation
       const formulaData = {
         ones: trackerData.ones || 0,
         twos: trackerData.twos || 0,
@@ -279,11 +260,9 @@ export class MmrCalculationService {
           (trackerData.foursGamesPlayed || 0),
       };
 
-      // Parse and evaluate formula using math.js
       const expr = this.math.parse(config.customFormula);
       const result = expr.evaluate(formulaData) as unknown;
 
-      // Ensure result is a valid number
       if (typeof result !== 'number' || !isFinite(result)) {
         throw new Error('Formula evaluated to invalid number');
       }
@@ -304,7 +283,6 @@ export class MmrCalculationService {
 
   /**
    * Test formula with sample data
-   * Single Responsibility: Formula testing
    *
    * @param formula - Formula to test
    * @param testData - Optional test data, uses defaults if not provided
@@ -354,7 +332,6 @@ export class MmrCalculationService {
 
   /**
    * Get default test data
-   * Single Responsibility: Test data provision
    */
   private getDefaultTestData(): TrackerData {
     return {

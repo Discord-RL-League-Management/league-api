@@ -55,10 +55,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       const status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
 
-      // Handle both string and object responses from HttpException
-      // When InternalServerErrorException is thrown with an object like:
-      // new InternalServerErrorException({ message, code, details }),
-      // the exceptionResponse will be that object
       const isObjectResponse =
         typeof exceptionResponse === 'object' && exceptionResponse !== null;
       const errorData = isObjectResponse
@@ -70,23 +66,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         timestamp,
         path,
         method,
-        message:
-          typeof errorData.message === 'string'
-            ? errorData.message
-            : typeof errorData.message === 'object' &&
-                errorData.message !== null
-              ? JSON.stringify(errorData.message)
-              : errorData.message != null
-                ? typeof errorData.message === 'object' &&
-                  errorData.message !== null
-                  ? JSON.stringify(errorData.message)
-                  : typeof errorData.message === 'string'
-                    ? errorData.message
-                    : typeof errorData.message === 'number' ||
-                        typeof errorData.message === 'boolean'
-                      ? String(errorData.message)
-                      : 'Unknown error'
-                : 'Unknown error',
+        message: this.extractErrorMessage(errorData.message),
         code: typeof errorData.code === 'string' ? errorData.code : undefined,
         details:
           typeof errorData.details === 'object' && errorData.details !== null
@@ -96,7 +76,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       };
     }
 
-    // Handle null or undefined exceptions
     if (exception === null || exception === undefined) {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -116,6 +95,28 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       message: 'Internal server error',
       stack: this.isDevelopment ? (exception as Error)?.stack : undefined,
     };
+  }
+
+  /**
+   * Extract and format error message from various types
+   *
+   * @param message - The message value to extract (can be string, object, number, boolean, null, or undefined)
+   * @returns Formatted string message
+   */
+  private extractErrorMessage(message: unknown): string {
+    if (typeof message === 'string') {
+      return message;
+    }
+
+    if (typeof message === 'object' && message !== null) {
+      return JSON.stringify(message);
+    }
+
+    if (typeof message === 'number' || typeof message === 'boolean') {
+      return String(message);
+    }
+
+    return 'Unknown error';
   }
 
   private logError(

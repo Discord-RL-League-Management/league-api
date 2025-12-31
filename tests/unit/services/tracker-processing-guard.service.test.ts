@@ -1,29 +1,39 @@
+/**
+ * TrackerProcessingGuardService Unit Tests
+ *
+ * Demonstrates TDD methodology with Vitest.
+ * Focus: Functional core, state verification, fast execution.
+ *
+ * Aligned with ISO/IEC/IEEE 29119 standards.
+ */
+
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
-import { TrackerProcessingGuardService } from './tracker-processing-guard.service';
-import { PrismaService } from '../../prisma/prisma.service';
-import { GuildSettingsService } from '../../guilds/guild-settings.service';
-import { GuildSettings } from '../../guilds/interfaces/settings.interface';
+import { TrackerProcessingGuardService } from '@/trackers/services/tracker-processing-guard.service';
+import { PrismaService } from '@/prisma/prisma.service';
+import { GuildSettingsService } from '@/guilds/guild-settings.service';
+import { GuildSettings } from '@/guilds/interfaces/settings.interface';
 
 describe('TrackerProcessingGuardService', () => {
   let service: TrackerProcessingGuardService;
-  let prismaService: jest.Mocked<PrismaService>;
-  let guildSettingsService: jest.Mocked<GuildSettingsService>;
 
   const mockPrismaService = {
     tracker: {
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
     },
     guildMember: {
-      findMany: jest.fn(),
+      findMany: vi.fn(),
     },
   };
 
   const mockGuildSettingsService = {
-    getSettings: jest.fn(),
+    getSettings: vi.fn(),
   };
 
   beforeEach(async () => {
+    vi.clearAllMocks();
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TrackerProcessingGuardService,
@@ -41,21 +51,13 @@ describe('TrackerProcessingGuardService', () => {
     service = module.get<TrackerProcessingGuardService>(
       TrackerProcessingGuardService,
     );
-    prismaService =
-      module.get<jest.Mocked<PrismaService>>(PrismaService);
-    guildSettingsService =
-      module.get<jest.Mocked<GuildSettingsService>>(GuildSettingsService);
-  });
-
-  beforeEach(() => {
-    jest.clearAllMocks();
   });
 
   describe('canProcessTracker', () => {
     const trackerId = 'tracker1';
     const userId = 'user1';
 
-    it('should return true when user has no guilds (backward compatibility)', async () => {
+    it('should_return_true_when_user_has_no_guilds', async () => {
       mockPrismaService.tracker.findUnique.mockResolvedValue({
         id: trackerId,
         userId,
@@ -81,7 +83,7 @@ describe('TrackerProcessingGuardService', () => {
       });
     });
 
-    it('should return true when user has one guild with processing enabled', async () => {
+    it('should_return_true_when_user_has_one_guild_with_processing_enabled', async () => {
       const guildId = 'guild1';
       const settings: GuildSettings = {
         bot_command_channels: [],
@@ -107,7 +109,7 @@ describe('TrackerProcessingGuardService', () => {
       );
     });
 
-    it('should return false when user has one guild with processing disabled', async () => {
+    it('should_return_false_when_user_has_one_guild_with_processing_disabled', async () => {
       const guildId = 'guild1';
       const settings: GuildSettings = {
         bot_command_channels: [],
@@ -130,7 +132,7 @@ describe('TrackerProcessingGuardService', () => {
       expect(result).toBe(false);
     });
 
-    it('should return true when user has multiple guilds and at least one has processing enabled', async () => {
+    it('should_return_true_when_user_has_multiple_guilds_and_at_least_one_has_processing_enabled', async () => {
       const guildId1 = 'guild1';
       const guildId2 = 'guild2';
       const settings1: GuildSettings = {
@@ -164,7 +166,7 @@ describe('TrackerProcessingGuardService', () => {
       expect(mockGuildSettingsService.getSettings).toHaveBeenCalledTimes(2);
     });
 
-    it('should return false when user has multiple guilds and all have processing disabled', async () => {
+    it('should_return_false_when_user_has_multiple_guilds_and_all_have_processing_disabled', async () => {
       const guildId1 = 'guild1';
       const guildId2 = 'guild2';
       const settings: GuildSettings = {
@@ -191,11 +193,10 @@ describe('TrackerProcessingGuardService', () => {
       expect(result).toBe(false);
     });
 
-    it('should return true when trackerProcessing is not set (defaults to enabled)', async () => {
+    it('should_return_true_when_trackerProcessing_is_not_set', async () => {
       const guildId = 'guild1';
       const settings: GuildSettings = {
         bot_command_channels: [],
-        // trackerProcessing not set
       };
 
       mockPrismaService.tracker.findUnique.mockResolvedValue({
@@ -212,7 +213,7 @@ describe('TrackerProcessingGuardService', () => {
       expect(result).toBe(true);
     });
 
-    it('should return false when tracker not found', async () => {
+    it('should_return_false_when_tracker_not_found', async () => {
       mockPrismaService.tracker.findUnique.mockResolvedValue(null);
 
       const result = await service.canProcessTracker(trackerId);
@@ -220,7 +221,7 @@ describe('TrackerProcessingGuardService', () => {
       expect(result).toBe(false);
     });
 
-    it('should return true on error (backward compatibility)', async () => {
+    it('should_return_true_when_error_occurs', async () => {
       mockPrismaService.tracker.findUnique.mockRejectedValue(
         new Error('Database error'),
       );
@@ -234,7 +235,7 @@ describe('TrackerProcessingGuardService', () => {
   describe('canProcessTrackerForUser', () => {
     const userId = 'user1';
 
-    it('should return true when user has no guilds', async () => {
+    it('should_return_true_when_user_has_no_guilds', async () => {
       mockPrismaService.guildMember.findMany.mockResolvedValue([]);
 
       const result = await service.canProcessTrackerForUser(userId);
@@ -242,7 +243,7 @@ describe('TrackerProcessingGuardService', () => {
       expect(result).toBe(true);
     });
 
-    it('should return true when user has guild with processing enabled', async () => {
+    it('should_return_true_when_user_has_guild_with_processing_enabled', async () => {
       const guildId = 'guild1';
       const settings: GuildSettings = {
         bot_command_channels: [],
@@ -261,7 +262,7 @@ describe('TrackerProcessingGuardService', () => {
       expect(result).toBe(true);
     });
 
-    it('should return false when user has guild with processing disabled', async () => {
+    it('should_return_false_when_user_has_guild_with_processing_disabled', async () => {
       const guildId = 'guild1';
       const settings: GuildSettings = {
         bot_command_channels: [],
@@ -282,14 +283,14 @@ describe('TrackerProcessingGuardService', () => {
   });
 
   describe('filterProcessableTrackers', () => {
-    it('should return empty array when no tracker IDs provided', async () => {
+    it('should_return_empty_array_when_no_tracker_ids_provided', async () => {
       const result = await service.filterProcessableTrackers([]);
 
       expect(result).toEqual([]);
       expect(mockPrismaService.tracker.findMany).not.toHaveBeenCalled();
     });
 
-    it('should filter trackers based on user guild settings', async () => {
+    it('should_filter_trackers_when_based_on_user_guild_settings', async () => {
       const trackerId1 = 'tracker1';
       const trackerId2 = 'tracker2';
       const trackerId3 = 'tracker3';
@@ -338,7 +339,7 @@ describe('TrackerProcessingGuardService', () => {
       expect(result).not.toContain(trackerId2);
     });
 
-    it('should return all trackers on error (backward compatibility)', async () => {
+    it('should_return_all_trackers_when_error_occurs', async () => {
       const trackerIds = ['tracker1', 'tracker2'];
 
       mockPrismaService.tracker.findMany.mockRejectedValue(
@@ -350,7 +351,7 @@ describe('TrackerProcessingGuardService', () => {
       expect(result).toEqual(trackerIds);
     });
 
-    it('should handle trackers with same user efficiently', async () => {
+    it('should_handle_trackers_when_same_user_efficiently', async () => {
       const trackerId1 = 'tracker1';
       const trackerId2 = 'tracker2';
       const userId = 'user1';
@@ -384,4 +385,3 @@ describe('TrackerProcessingGuardService', () => {
     });
   });
 });
-

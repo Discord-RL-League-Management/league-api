@@ -50,12 +50,9 @@ export class PrismaExceptionFilter implements ExceptionFilter {
       details?: Record<string, unknown>;
     };
 
-    // Handle PrismaClientKnownRequestError (database errors)
     if (exception instanceof Prisma.PrismaClientKnownRequestError) {
       errorInfo = this.handleKnownRequestError(exception);
-    }
-    // Handle PrismaClientValidationError (schema validation errors)
-    else if (exception instanceof Prisma.PrismaClientValidationError) {
+    } else if (exception instanceof Prisma.PrismaClientValidationError) {
       errorInfo = {
         status: HttpStatus.BAD_REQUEST,
         message: 'Database validation error',
@@ -65,10 +62,7 @@ export class PrismaExceptionFilter implements ExceptionFilter {
           cause: exception.cause,
         },
       };
-    }
-    // Handle PrismaClientInitializationError (connection errors)
-    // Check for errorCode property which is unique to this error type
-    else if (exception instanceof Prisma.PrismaClientInitializationError) {
+    } else if (exception instanceof Prisma.PrismaClientInitializationError) {
       errorInfo = {
         status: HttpStatus.SERVICE_UNAVAILABLE,
         message: 'Database connection error',
@@ -83,7 +77,6 @@ export class PrismaExceptionFilter implements ExceptionFilter {
       'errorCode' in exception &&
       typeof (exception as { errorCode?: string }).errorCode === 'string'
     ) {
-      // Fallback for test mocks that have errorCode property
       const mockError = exception as {
         errorCode: string;
         clientVersion?: string;
@@ -99,10 +92,7 @@ export class PrismaExceptionFilter implements ExceptionFilter {
           message: mockError.message,
         },
       };
-    }
-    // Handle PrismaClientRustPanicError (unexpected errors)
-    // Check name property as fallback when instanceof fails (for test mocks)
-    else if (exception instanceof Prisma.PrismaClientRustPanicError) {
+    } else if (exception instanceof Prisma.PrismaClientRustPanicError) {
       errorInfo = {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: 'Unexpected database error',
@@ -115,7 +105,6 @@ export class PrismaExceptionFilter implements ExceptionFilter {
     } else if (
       (exception as { name?: string }).name === 'PrismaClientRustPanicError'
     ) {
-      // Fallback for test mocks that have name property
       const mockError = exception as { message: string; cause?: unknown };
       errorInfo = {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -126,9 +115,7 @@ export class PrismaExceptionFilter implements ExceptionFilter {
           cause: mockError.cause,
         },
       };
-    }
-    // Fallback for any unhandled Prisma error types
-    else {
+    } else {
       errorInfo = {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: 'Database error',
@@ -158,7 +145,6 @@ export class PrismaExceptionFilter implements ExceptionFilter {
 
   /**
    * Handle PrismaClientKnownRequestError with error code mapping
-   * Single Responsibility: Map Prisma error codes to HTTP status and messages
    */
   private handleKnownRequestError(
     exception: Prisma.PrismaClientKnownRequestError,
@@ -168,7 +154,6 @@ export class PrismaExceptionFilter implements ExceptionFilter {
     code: string;
     details?: Record<string, unknown>;
   } {
-    // Map Prisma error codes to HTTP status and messages
     const errorMap: Record<
       string,
       { status: HttpStatus; message: string; code: string }

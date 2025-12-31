@@ -25,10 +25,11 @@ if [ "$current_branch" = "main" ] || [ "$current_branch" = "master" ]; then
 fi
 
 echo "🔍 Running linter (includes complexity check)..."
-npm run lint
+npx eslint "{src,apps,libs}/**/*.ts"
 if [ $? -ne 0 ]; then
   echo "❌ Linter failed. Please fix linting errors before committing."
   echo "   Note: ESLint includes cyclomatic complexity checking (max: 30)"
+  echo "   Run 'npm run lint' to auto-fix issues where possible"
   exit 1
 fi
 
