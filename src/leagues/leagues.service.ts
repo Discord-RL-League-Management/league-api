@@ -48,8 +48,6 @@ export class LeaguesService {
       // Instead, we'll check for duplicate name within the same guild if needed
       // For now, we'll allow multiple leagues with the same name in a guild
 
-      // Create league with settings in transaction (handled by repository)
-      // Ensure createdBy is included in the data
       const leagueData: CreateLeagueDto & { createdBy: string } = {
         ...createLeagueDto,
         createdBy,

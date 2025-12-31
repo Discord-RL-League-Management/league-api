@@ -85,7 +85,6 @@ export class ConfigMigrationService {
     const currentVersion =
       typeof metadata.schemaVersion === 'number' ? metadata.schemaVersion : 1;
 
-    // If already at current version, just ensure metadata is up to date
     if (currentVersion >= CURRENT_SCHEMA_VERSION) {
       const version =
         typeof metadata.version === 'string'

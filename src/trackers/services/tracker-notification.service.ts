@@ -66,7 +66,6 @@ export class TrackerNotificationService {
         seasonsFailed || 0,
       );
 
-      // Send DM to user via Discord API
       await this.discordMessageService.sendDirectMessage(userId, {
         embeds: [embed],
       });
@@ -95,7 +94,6 @@ export class TrackerNotificationService {
     error: string,
   ): Promise<void> {
     try {
-      // Get tracker info including channel context
       const tracker = await this.prisma.tracker.findUnique({
         where: { id: trackerId },
       });
@@ -116,7 +114,6 @@ export class TrackerNotificationService {
         return;
       }
 
-      // Build error embed (user-friendly, no backend details)
       const embed = this.notificationBuilderService.buildScrapingFailedEmbed(
         tracker,
         user,
@@ -149,7 +146,6 @@ export class TrackerNotificationService {
           );
         }
       } else {
-        // No interaction token available, send DM instead
         await this.discordMessageService.sendDirectMessage(userId, {
           embeds: [embed],
         });

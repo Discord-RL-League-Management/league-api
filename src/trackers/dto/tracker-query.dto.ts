@@ -26,7 +26,6 @@ export class TrackerQueryDto {
     if (!value) return undefined;
     if (Array.isArray(value)) return value as GamePlatform[];
     if (typeof value === 'string') {
-      // Handle comma-separated values
       const values = value.split(',').map((v) => v.trim()) as GamePlatform[];
       return values.length === 1 ? values[0] : values;
     }
@@ -50,7 +49,6 @@ export class TrackerQueryDto {
       if (!value) return undefined;
       if (Array.isArray(value)) return value as TrackerScrapingStatus[];
       if (typeof value === 'string') {
-        // Handle comma-separated values
         const values = value
           .split(',')
           .map((v) => v.trim()) as TrackerScrapingStatus[];

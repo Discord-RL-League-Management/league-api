@@ -30,7 +30,6 @@ export class ResourceOwnershipGuard implements CanActivate {
 
     const hasAccess = user.id === resourceUserId;
 
-    // Log audit event
     await this.auditLogService.logPermissionCheck(
       {
         userId: user.id,

@@ -40,7 +40,6 @@ export class GuildAccessValidationService {
     userId: string,
     guildId: string,
   ): Promise<void> {
-    // Check bot is in guild (guild exists and is active)
     const guildExists = await this.guildsService.exists(guildId);
     if (!guildExists) {
       this.logger.warn(
@@ -49,7 +48,6 @@ export class GuildAccessValidationService {
       throw new NotFoundException('Guild not found or bot is not a member');
     }
 
-    // Check user is member of guild
     try {
       const membership = await this.guildMembersService.findOne(
         userId,
@@ -59,17 +57,13 @@ export class GuildAccessValidationService {
         return; // User is member, access granted
       }
     } catch (error) {
-      // If the findOne throws NotFoundException, try Discord API fallback
       if (error instanceof NotFoundException) {
-        // Fallback to Discord API verification and sync
         await this.verifyAndSyncMembershipWithDiscord(userId, guildId);
         return;
       }
-      // Re-throw any other errors
       throw error;
     }
 
-    // If membership not found and no exception thrown, try Discord API fallback
     await this.verifyAndSyncMembershipWithDiscord(userId, guildId);
   }
 
@@ -114,7 +108,6 @@ export class GuildAccessValidationService {
         includeCount: false,
       });
 
-      // Create membership record with roles from Discord API
       await this.guildMembersService.create({
         userId,
         guildId,

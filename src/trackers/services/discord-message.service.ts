@@ -173,7 +173,6 @@ export class DiscordMessageService {
         throw new Error('Interaction token expired or invalid');
       }
 
-      // For other errors, log and throw to trigger fallback
       const errorMessage =
         axiosError.response?.data?.message ||
         axiosError.message ||
@@ -183,7 +182,6 @@ export class DiscordMessageService {
         error,
       );
       this.recordFailure();
-      // Throw to trigger fallback to DM notification
       throw error;
     }
   }
