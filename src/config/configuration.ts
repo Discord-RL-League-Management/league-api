@@ -15,7 +15,7 @@ export default () => {
       cookieSecure: process.env.NODE_ENV === 'production',
       cookieSameSite:
         (process.env.COOKIE_SAME_SITE as 'lax' | 'strict' | 'none') || 'lax',
-      cookieMaxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      cookieMaxAge: 7 * 24 * 60 * 60 * 1000,
     },
     encryption: {
       key: process.env.ENCRYPTION_KEY || '',
@@ -123,6 +123,9 @@ export default () => {
             .map((id) => id.trim())
             .filter(Boolean)
         : [],
+    },
+    gateway: {
+      mode: process.env.GATEWAY_MODE === 'true',
     },
   };
 };

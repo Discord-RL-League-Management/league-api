@@ -37,7 +37,7 @@ export const configurationSchema = Joi.object({
   FRONTEND_URL: Joi.string().required(),
 
   // Rate Limiting
-  THROTTLE_TTL: Joi.number().default(60000), // 1 minute
+  THROTTLE_TTL: Joi.number().default(60000),
   THROTTLE_LIMIT: Joi.number().default(100),
 
   // New Relic Logs API Configuration
@@ -95,4 +95,7 @@ export const configurationSchema = Joi.object({
     .allow('')
     .pattern(/^(\d{17,20})(,\s*\d{17,20})*$/)
     .description('Comma-separated Discord user IDs (snowflakes)'),
+
+  // Gateway Mode Configuration
+  GATEWAY_MODE: Joi.boolean().default(false),
 });
