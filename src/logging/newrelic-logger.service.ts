@@ -21,7 +21,7 @@ export class NewRelicLoggerService implements LoggerService {
 
   constructor(private configService: ConfigService) {
     this.apiKey = this.configService.get<string>('newrelic.apiKey') || '';
-    this.enabled = this.configService.get<boolean>('newrelic.enabled') ?? true;
+    this.enabled = this.configService.get<boolean>('newrelic.enabled', true);
     this.serviceName = process.env.NEW_RELIC_APP_NAME || 'League API';
     this.hostname = os.hostname();
     // Support EU region: use log-api.eu.newrelic.com for EU accounts

@@ -56,15 +56,18 @@ export class DiscordApiService {
     @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {
-    this.apiUrl =
-      this.configService.get<string>(
-        'discord.apiUrl',
-        'https://discord.com/api',
-      ) ?? 'https://discord.com/api';
-    this.requestTimeout =
-      this.configService.get<number>('discord.timeout', 10000) ?? 10000;
-    this.retryAttempts =
-      this.configService.get<number>('discord.retryAttempts', 3) ?? 3;
+    this.apiUrl = this.configService.get<string>(
+      'discord.apiUrl',
+      'https://discord.com/api',
+    );
+    this.requestTimeout = this.configService.get<number>(
+      'discord.timeout',
+      10000,
+    );
+    this.retryAttempts = this.configService.get<number>(
+      'discord.retryAttempts',
+      3,
+    );
   }
 
   /**
