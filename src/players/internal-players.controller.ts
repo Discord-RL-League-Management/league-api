@@ -8,7 +8,7 @@ import {
   Body,
   Query,
   UseGuards,
-  Logger,
+  Inject,
 } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import {
@@ -24,6 +24,7 @@ import { CreatePlayerDto } from './dto/create-player.dto';
 import { UpdatePlayerDto } from './dto/update-player.dto';
 import type { PlayerQueryOptions } from './interfaces/player.interface';
 import { ParseCUIDPipe } from '../common/pipes';
+import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 
 /**
  * InternalPlayersController - Bot-only endpoints for full player management
@@ -34,9 +35,13 @@ import { ParseCUIDPipe } from '../common/pipes';
 @UseGuards(BotAuthGuard)
 @SkipThrottle()
 export class InternalPlayersController {
-  private readonly logger = new Logger(InternalPlayersController.name);
+  private readonly serviceName = InternalPlayersController.name;
 
-  constructor(private playerService: PlayerService) {}
+  constructor(
+    private playerService: PlayerService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'List all players (Bot only)' })

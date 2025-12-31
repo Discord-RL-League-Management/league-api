@@ -1,7 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { InfrastructureModule } from '../infrastructure/infrastructure.module';
-import { CacheModule } from '@nestjs/cache-manager';
 import { AuthModule } from '../auth/auth.module';
 import { GuildsModule } from '../guilds/guilds.module';
 import { PlayersModule } from '../players/players.module';
@@ -29,8 +28,7 @@ import { LeagueSettingsProviderAdapter } from './adapters/league-settings-provid
 @Module({
   imports: [
     PrismaModule,
-    InfrastructureModule,
-    CacheModule.register(),
+    InfrastructureModule, // Provides ICachingService
     AuthModule,
     GuildsModule, // For GuildsService dependency
     PlayersModule, // For PlayerService dependency

@@ -1,4 +1,5 @@
-import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
+import { Injectable, ForbiddenException, Inject } from '@nestjs/common';
+import type { ILoggingService } from '../../../infrastructure/logging/interfaces/logging.interface';
 import { DiscordBotService } from '../../../discord/discord-bot.service';
 import { RoleParserService } from '../role-parser/role-parser.service';
 import { AccessInfo } from '../../interfaces/permission.interface';
@@ -7,12 +8,14 @@ import { GuildSettings } from '../../../guilds/interfaces/settings.interface';
 
 @Injectable()
 export class PermissionCheckService {
-  private readonly logger = new Logger(PermissionCheckService.name);
+  private readonly serviceName = PermissionCheckService.name;
 
   constructor(
     private guildMembersService: GuildMembersService,
     private discordValidation: DiscordBotService,
     private roleParser: RoleParserService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
   ) {}
 
   /**
@@ -42,8 +45,10 @@ export class PermissionCheckService {
 
       // Settings must be provided by caller - they cannot be accessed from Prisma relations
       if (!guildSettings) {
-        this.logger.warn(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+        this.loggingService.warn(
           `No settings provided for guild ${guildId}. Admin checks will fail. Caller should fetch settings using GuildSettingsService.getSettings(guildId).`,
+          this.serviceName,
         );
         return { isMember: true, isAdmin: false, permissions: [] };
       }
@@ -61,10 +66,12 @@ export class PermissionCheckService {
       );
 
       return { isMember: true, isAdmin, permissions };
-    } catch (error) {
-      this.logger.error(
-        `Error checking guild access for user ${userId} in guild ${guildId}:`,
-        error,
+    } catch (err) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      this.loggingService.error(
+        `Error checking guild access for user ${userId} in guild ${guildId}: ${err instanceof Error ? err.message : String(err)}`,
+        err instanceof Error ? err.stack : undefined,
+        this.serviceName,
       );
       return { isMember: false, isAdmin: false, permissions: [] };
     }
@@ -92,14 +99,20 @@ export class PermissionCheckService {
         );
 
       if (!membership) {
-        this.logger.warn(`User ${userId} is not a member of guild ${guildId}`);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+        this.loggingService.warn(
+          `User ${userId} is not a member of guild ${guildId}`,
+          this.serviceName,
+        );
         return false;
       }
 
       // Settings must be provided by caller - they cannot be accessed from Prisma relations
       if (!guildSettings) {
-        this.logger.warn(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+        this.loggingService.warn(
           `No settings provided for guild ${guildId}. Admin check will fail. Caller should fetch settings using GuildSettingsService.getSettings(guildId).`,
+          this.serviceName,
         );
         return false;
       }
@@ -110,10 +123,12 @@ export class PermissionCheckService {
         guildSettings,
         validateWithDiscord,
       );
-    } catch (error) {
-      this.logger.error(
-        `Error checking admin role for user ${userId} in guild ${guildId}:`,
-        error,
+    } catch (err) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      this.loggingService.error(
+        `Error checking admin role for user ${userId} in guild ${guildId}: ${err instanceof Error ? err.message : String(err)}`,
+        err instanceof Error ? err.stack : undefined,
+        this.serviceName,
       );
       return false;
     }
@@ -134,8 +149,10 @@ export class PermissionCheckService {
   ): Promise<boolean> {
     // Handle undefined/null settings gracefully
     if (!guildSettings) {
-      this.logger.warn(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      this.loggingService.warn(
         `No settings provided for admin role check in guild ${guildId}`,
+        this.serviceName,
       );
       return false;
     }
@@ -143,7 +160,11 @@ export class PermissionCheckService {
     const adminRoles = this.roleParser.getAdminRolesFromSettings(guildSettings);
 
     if (adminRoles.length === 0) {
-      this.logger.warn(`No admin roles configured for guild ${guildId}`);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      this.loggingService.warn(
+        `No admin roles configured for guild ${guildId}`,
+        this.serviceName,
+      );
       return false;
     }
 
@@ -167,7 +188,8 @@ export class PermissionCheckService {
         );
 
         if (!isValid) {
-          this.logger.warn(
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+          this.loggingService.warn(
             `Admin role ${userAdminRole.id} does not exist in Discord guild ${guildId}`,
           );
           return false;

@@ -1,5 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import type { ITransactionService } from '../../infrastructure/transactions/interfaces/transaction.interface';
 import { League, Prisma, LeagueStatus, Game } from '@prisma/client';
 import { CreateLeagueDto } from '../dto/create-league.dto';
 import { UpdateLeagueDto } from '../dto/update-league.dto';
@@ -25,9 +27,15 @@ export class LeagueRepository
       UpdateLeagueDto
     >
 {
-  private readonly logger = new Logger(LeagueRepository.name);
+  private readonly serviceName = LeagueRepository.name;
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject('ITransactionService')
+    private transactionService: ITransactionService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
+  ) {}
 
   async findById(
     id: string,
@@ -207,7 +215,6 @@ export class LeagueRepository
     tx?: Prisma.TransactionClient,
   ): Promise<League> {
     if (tx) {
-      // If transaction client provided, use it directly
       const league = await tx.league.create({
         data: leagueData,
       });
@@ -233,7 +240,6 @@ export class LeagueRepository
       return league;
     }
 
-    // Otherwise, create a new transaction
     return this.prisma.$transaction(async (transaction) => {
       const league = await transaction.league.create({
         data: leagueData,

@@ -16,6 +16,7 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { TrackerProcessingService } from '@/trackers/services/tracker-processing.service';
 import { ScheduledProcessingStatus } from '@prisma/client';
 import { CronJob } from 'cron';
+import { createMockLoggingService } from '@tests/utils/test-helpers';
 
 // Mock CronJob constructor
 vi.mock('cron', () => {
@@ -89,10 +90,13 @@ describe('ScheduledTrackerProcessingService', () => {
       doesExist: vi.fn().mockReturnValue(false),
     } as unknown as SchedulerRegistry;
 
+    const mockLoggingService = createMockLoggingService();
+
     service = new ScheduledTrackerProcessingService(
       mockPrisma,
       mockTrackerProcessingService,
       mockSchedulerRegistry,
+      mockLoggingService,
     );
   });
 

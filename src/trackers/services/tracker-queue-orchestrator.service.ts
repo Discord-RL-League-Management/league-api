@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
+import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TrackerScrapingQueueService } from '../queues/tracker-scraping.queue';
 import { TrackerProcessingGuardService } from './tracker-processing-guard.service';
@@ -13,12 +14,14 @@ import { TrackerScrapingStatus } from '@prisma/client';
  */
 @Injectable()
 export class TrackerQueueOrchestratorService {
-  private readonly logger = new Logger(TrackerQueueOrchestratorService.name);
+  private readonly serviceName = TrackerQueueOrchestratorService.name;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly scrapingQueueService: TrackerScrapingQueueService,
     private readonly processingGuard: TrackerProcessingGuardService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
   ) {}
 
   /**
@@ -30,7 +33,11 @@ export class TrackerQueueOrchestratorService {
     promise.catch((error: unknown) => {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      this.logger.error(`${errorContext}: ${errorMessage}`);
+      this.loggingService.error(
+        `${errorContext}: ${errorMessage}`,
+        undefined,
+        this.serviceName,
+      );
     });
   }
 
@@ -55,12 +62,15 @@ export class TrackerQueueOrchestratorService {
           },
         })
         .catch((updateError) => {
-          this.logger.error(
+          this.loggingService.error(
             `Failed to update tracker ${trackerId} status after processing guard check: ${updateError instanceof Error ? updateError.message : String(updateError)}`,
+            undefined,
+            this.serviceName,
           );
         });
-      this.logger.warn(
+      this.loggingService.warn(
         `Skipping tracker ${trackerId} - processing disabled by guild settings`,
+        this.serviceName,
       );
       return;
     }
@@ -69,8 +79,10 @@ export class TrackerQueueOrchestratorService {
       this.scrapingQueueService.addScrapingJob(trackerId).catch((error) => {
         const errorMessage =
           error instanceof Error ? error.message : String(error);
-        this.logger.error(
+        this.loggingService.error(
           `Failed to enqueue scraping job for tracker ${trackerId}: ${errorMessage}`,
+          undefined,
+          this.serviceName,
         );
         return this.prisma.tracker
           .update({
@@ -82,8 +94,10 @@ export class TrackerQueueOrchestratorService {
             },
           })
           .catch((updateError) => {
-            this.logger.error(
+            this.loggingService.error(
               `Failed to update tracker ${trackerId} status after enqueue failure: ${updateError instanceof Error ? updateError.message : String(updateError)}`,
+              undefined,
+              this.serviceName,
             );
           });
       }),
@@ -123,8 +137,10 @@ export class TrackerQueueOrchestratorService {
               },
             })
             .catch((error) => {
-              this.logger.error(
+              this.loggingService.error(
                 `Failed to update tracker ${id} status: ${error instanceof Error ? error.message : String(error)}`,
+                undefined,
+                this.serviceName,
               );
             }),
         ),

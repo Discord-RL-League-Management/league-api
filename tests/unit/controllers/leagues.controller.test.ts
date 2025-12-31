@@ -19,6 +19,7 @@ import { CreateLeagueDto } from '@/leagues/dto/create-league.dto';
 import { UpdateLeagueDto } from '@/leagues/dto/update-league.dto';
 import { LeagueStatus, Game } from '@prisma/client';
 import type { AuthenticatedUser } from '@/common/interfaces/user.interface';
+import { createMockLoggingService } from '@tests/utils/test-helpers';
 
 describe('LeaguesController', () => {
   let controller: LeaguesController;
@@ -66,6 +67,8 @@ describe('LeaguesController', () => {
       checkLeagueAdminAccess: vi.fn(),
     } as unknown as LeaguePermissionService;
 
+    const mockLoggingService = createMockLoggingService();
+
     const module = await Test.createTestingModule({
       controllers: [LeaguesController],
       providers: [
@@ -78,6 +81,7 @@ describe('LeaguesController', () => {
           provide: LeaguePermissionService,
           useValue: mockLeaguePermissionService,
         },
+        { provide: 'ILoggingService', useValue: mockLoggingService },
       ],
     }).compile();
 

@@ -23,7 +23,6 @@ export class ResourceOwnershipGuard implements CanActivate {
     const user = request.user;
     const resourceUserId = request.params.userId || request.params.id;
 
-    // If authenticated via bot, allow everything
     if ('type' in user && user.type === 'bot') {
       return true;
     }
@@ -44,7 +43,6 @@ export class ResourceOwnershipGuard implements CanActivate {
       request,
     );
 
-    // If authenticated via JWT, check ownership
     if (!hasAccess) {
       throw new ForbiddenException('You can only access your own resources');
     }

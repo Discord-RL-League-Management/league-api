@@ -8,7 +8,7 @@ import {
   Body,
   Query,
   UseGuards,
-  Logger,
+  Inject,
 } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import {
@@ -25,6 +25,7 @@ import { UpdateLeagueMemberDto } from './dto/update-league-member.dto';
 import { ApproveLeagueMemberDto } from './dto/approve-league-member.dto';
 import { LeagueMemberNotFoundException } from './exceptions/league-member.exceptions';
 import type { LeagueMemberQueryOptions } from './interfaces/league-member.interface';
+import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 
 /**
  * InternalLeagueMembersController - Bot-only endpoints for league member management
@@ -35,9 +36,13 @@ import type { LeagueMemberQueryOptions } from './interfaces/league-member.interf
 @UseGuards(BotAuthGuard)
 @SkipThrottle()
 export class InternalLeagueMembersController {
-  private readonly logger = new Logger(InternalLeagueMembersController.name);
+  private readonly serviceName = InternalLeagueMembersController.name;
 
-  constructor(private leagueMemberService: LeagueMemberService) {}
+  constructor(
+    private leagueMemberService: LeagueMemberService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create league member (Bot only)' })

@@ -24,13 +24,11 @@ export class InAppConfigurationService implements IConfigurationService {
    */
   get<T>(key: string, defaultValue?: T): T | undefined {
     try {
-      // ConfigService.get() accepts default as second parameter
       if (defaultValue !== undefined) {
         return this.configService.get<T>(key, defaultValue);
       }
       return this.configService.get<T>(key);
     } catch {
-      // ConfigService.get() should not throw, but handle errors gracefully
       return defaultValue;
     }
   }

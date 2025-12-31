@@ -1,11 +1,16 @@
 import {
   Injectable,
   InternalServerErrorException,
-  Logger,
   NotFoundException,
+  Inject,
 } from '@nestjs/common';
+import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import type {
+  ITransactionService,
+  ITransactionClient,
+} from '../../infrastructure/transactions/interfaces/transaction.interface';
 import { CreateGuildDto } from '../dto/create-guild.dto';
 import { SettingsDefaultsService } from './settings-defaults.service';
 import { GuildErrorHandlerService } from './guild-error-handler.service';
@@ -24,7 +29,7 @@ import { GuildSettings } from '../interfaces/settings.interface';
  */
 @Injectable()
 export class GuildSyncService {
-  private readonly logger = new Logger(GuildSyncService.name);
+  private readonly serviceName = GuildSyncService.name;
 
   constructor(
     private prisma: PrismaService,
@@ -32,6 +37,10 @@ export class GuildSyncService {
     private errorHandler: GuildErrorHandlerService,
     private userRepository: UserRepository,
     private settingsService: SettingsService,
+    @Inject('ITransactionService')
+    private transactionService: ITransactionService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
   ) {}
 
   /**
@@ -69,115 +78,120 @@ export class GuildSyncService {
     try {
       const defaultSettings = this.settingsDefaults.getDefaults();
 
-      const result = await this.prisma.$transaction(async (tx) => {
-        const guild = await tx.guild.upsert({
-          where: { id: guildData.id },
-          update: {
-            name: guildData.name,
-            icon: guildData.icon ?? null,
-            ownerId: guildData.ownerId,
-            memberCount: guildData.memberCount ?? 0,
-            isActive: true,
-            leftAt: null,
-          },
-          create: guildData,
-        });
-
-        const existingSettings = await tx.settings.findUnique({
-          where: {
-            ownerType_ownerId: {
-              ownerType: 'guild',
-              ownerId: guild.id,
+      const result = await this.transactionService.executeTransaction(
+        async (tx: ITransactionClient) => {
+          const guild = await (tx as Prisma.TransactionClient).guild.upsert({
+            where: { id: guildData.id },
+            update: {
+              name: guildData.name,
+              icon: guildData.icon ?? null,
+              ownerId: guildData.ownerId,
+              memberCount: guildData.memberCount ?? 0,
+              isActive: true,
+              leftAt: null,
             },
-          },
-        });
+            create: guildData,
+          });
 
-        const settingsToSave =
-          rolesData?.admin && rolesData.admin.length > 0
-            ? {
-                ...defaultSettings,
-                roles: {
-                  ...defaultSettings.roles,
-                  admin: rolesData.admin,
-                },
-              }
-            : defaultSettings;
-
-        await tx.settings.upsert({
-          where: {
-            ownerType_ownerId: {
-              ownerType: 'guild',
-              ownerId: guild.id,
+          const existingSettings = await (
+            tx as Prisma.TransactionClient
+          ).settings.findUnique({
+            where: {
+              ownerType_ownerId: {
+                ownerType: 'guild',
+                ownerId: guild.id,
+              },
             },
-          },
-          update:
+          });
+
+          const settingsToSave =
             rolesData?.admin && rolesData.admin.length > 0
               ? {
-                  settings: {
-                    ...((existingSettings?.settings as unknown as GuildSettings) ||
-                      defaultSettings),
-                    roles: {
-                      ...((
-                        existingSettings?.settings as unknown as GuildSettings
-                      )?.roles || {}),
-                      admin: rolesData.admin,
-                    },
-                  } as unknown as Prisma.InputJsonValue,
+                  ...defaultSettings,
+                  roles: {
+                    ...defaultSettings.roles,
+                    admin: rolesData.admin,
+                  },
                 }
-              : {},
-          create: {
-            ownerType: 'guild',
-            ownerId: guild.id,
-            settings: JSON.parse(
-              JSON.stringify(settingsToSave),
-            ) as Prisma.InputJsonValue,
-          },
-        });
+              : defaultSettings;
 
-        if (members.length > 0) {
-          const uniqueUsers = Array.from(
-            new Map(members.map((m) => [m.userId, m])).values(),
-          );
-
-          for (const member of uniqueUsers) {
-            await this.userRepository.upsert(
-              {
-                id: member.userId,
-                username: member.username,
-                globalName: member.globalName ?? null,
-                avatar: member.avatar ?? null,
+          await (tx as Prisma.TransactionClient).settings.upsert({
+            where: {
+              ownerType_ownerId: {
+                ownerType: 'guild',
+                ownerId: guild.id,
               },
-              tx,
-            );
-          }
-        }
-
-        await tx.guildMember.deleteMany({
-          where: { guildId },
-        });
-
-        if (members.length > 0) {
-          const memberData = members.map((member) => ({
-            userId: member.userId,
-            guildId,
-            username: member.username,
-            nickname: member.nickname || null,
-            roles: member.roles,
-          }));
-
-          await tx.guildMember.createMany({
-            data: memberData,
+            },
+            update:
+              rolesData?.admin && rolesData.admin.length > 0
+                ? {
+                    settings: {
+                      ...((existingSettings?.settings as unknown as GuildSettings) ||
+                        defaultSettings),
+                      roles: {
+                        ...((
+                          existingSettings?.settings as unknown as GuildSettings
+                        )?.roles || {}),
+                        admin: rolesData.admin,
+                      },
+                    } as unknown as Prisma.InputJsonValue,
+                  }
+                : {},
+            create: {
+              ownerType: 'guild',
+              ownerId: guild.id,
+              settings: JSON.parse(
+                JSON.stringify(settingsToSave),
+              ) as Prisma.InputJsonValue,
+            },
           });
-        }
 
-        return {
-          guild,
-          membersSynced: members.length,
-        };
-      });
+          if (members.length > 0) {
+            const uniqueUsers = Array.from(
+              new Map(members.map((m) => [m.userId, m])).values(),
+            );
 
-      this.logger.log(
+            for (const member of uniqueUsers) {
+              await this.userRepository.upsert(
+                {
+                  id: member.userId,
+                  username: member.username,
+                  globalName: member.globalName ?? null,
+                  avatar: member.avatar ?? null,
+                },
+                tx as Prisma.TransactionClient,
+              );
+            }
+          }
+
+          await (tx as Prisma.TransactionClient).guildMember.deleteMany({
+            where: { guildId },
+          });
+
+          if (members.length > 0) {
+            const memberData = members.map((member) => ({
+              userId: member.userId,
+              guildId,
+              username: member.username,
+              nickname: member.nickname || null,
+              roles: member.roles,
+            }));
+
+            await (tx as Prisma.TransactionClient).guildMember.createMany({
+              data: memberData,
+            });
+          }
+
+          return {
+            guild,
+            membersSynced: members.length,
+          };
+        },
+      );
+
+      this.loggingService.log(
         `Atomically synced guild ${guildId} with ${result.membersSynced} members`,
+        this.serviceName,
       );
 
       return result;
@@ -186,14 +200,10 @@ export class GuildSyncService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2003'
       ) {
-        this.logger.error(
-          `Foreign key constraint error syncing guild ${guildId} with members:`,
-          {
-            message: error.message,
-            meta: error.meta,
-            cause: error.cause,
-            guildId,
-          },
+        this.loggingService.error(
+          `Foreign key constraint error syncing guild ${guildId} with members: ${error.message}`,
+          error.stack,
+          this.serviceName,
         );
 
         const meta = error.meta as { field_name?: string } | undefined;
@@ -220,19 +230,11 @@ export class GuildSyncService {
 
       const errorInfo = this.errorHandler.extractErrorInfo(error, guildId);
 
-      this.logger.error(`Failed to sync guild ${guildId} with members:`, {
-        error: errorInfo.message,
-        code: errorInfo.code,
-        details: errorInfo.details,
-        stack: error instanceof Error ? error.stack : undefined,
-        guildData: {
-          id: guildData.id,
-          name: guildData.name,
-          ownerId: guildData.ownerId,
-          memberCount: guildData.memberCount,
-        },
-        memberCount: members.length,
-      });
+      this.loggingService.error(
+        `Failed to sync guild ${guildId} with members: ${errorInfo.message} (code: ${errorInfo.code})`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
 
       throw new InternalServerErrorException({
         message: 'Failed to sync guild with members',

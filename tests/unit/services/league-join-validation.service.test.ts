@@ -58,14 +58,27 @@ describe('LeagueJoinValidationService', () => {
       findBestTrackerForUser: vi.fn(),
     } as unknown as TrackerService;
 
+    const mockLeagueSettingsProvider = {
+      getSettings: vi.fn(),
+    } as unknown as any;
+
+    const mockLoggingService = {
+      log: vi.fn(),
+      error: vi.fn(),
+      warn: vi.fn(),
+      debug: vi.fn(),
+      verbose: vi.fn(),
+    } as unknown as any;
+
     service = new LeagueJoinValidationService(
       mockPrisma,
-      mockLeagueSettingsService,
+      mockLeagueSettingsProvider,
       mockLeagueMemberRepository,
       mockPlayerService,
       mockPlayerValidationService,
       mockGuildMembersService,
       mockTrackerService,
+      mockLoggingService,
     );
   });
 

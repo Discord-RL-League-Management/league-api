@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Team } from '@prisma/client';
 import { CreateTeamDto } from '../dto/create-team.dto';
@@ -12,8 +12,6 @@ import { BaseRepository } from '../../common/repositories/base.repository.interf
 export class TeamRepository
   implements BaseRepository<Team, CreateTeamDto, UpdateTeamDto>
 {
-  private readonly logger = new Logger(TeamRepository.name);
-
   constructor(private prisma: PrismaService) {}
 
   async findById(id: string): Promise<Team | null> {

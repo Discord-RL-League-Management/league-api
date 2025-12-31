@@ -15,6 +15,7 @@ import { GuildMembersService } from '@/guild-members/guild-members.service';
 import { PermissionCheckService } from '@/permissions/modules/permission-check/permission-check.service';
 import { GuildSettingsService } from '@/guilds/guild-settings.service';
 import type { GuildSettings } from '@/guilds/interfaces/settings.interface';
+import { createMockLoggingService } from '@tests/utils/test-helpers';
 
 describe('TrackerAuthorizationService', () => {
   let service: TrackerAuthorizationService;
@@ -51,10 +52,13 @@ describe('TrackerAuthorizationService', () => {
       getSettings: vi.fn(),
     } as unknown as GuildSettingsService;
 
+    const mockLoggingService = createMockLoggingService();
+
     service = new TrackerAuthorizationService(
       mockGuildMembersService,
       mockPermissionCheckService,
       mockGuildSettingsService,
+      mockLoggingService,
     );
   });
 

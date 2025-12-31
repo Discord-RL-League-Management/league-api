@@ -3,9 +3,10 @@ import {
   OnModuleInit,
   OnModuleDestroy,
   OnApplicationShutdown,
-  Logger,
+  Inject,
 } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 
 /**
  * PrismaService - Manages database connections and ensures graceful shutdown
@@ -17,11 +18,18 @@ export class PrismaService
   extends PrismaClient
   implements OnModuleInit, OnModuleDestroy, OnApplicationShutdown
 {
-  private readonly logger = new Logger(PrismaService.name);
+  private readonly serviceName = PrismaService.name;
+
+  constructor(
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
+  ) {
+    super();
+  }
 
   async onModuleInit() {
     await this.$connect();
-    this.logger.log('✅ Database connected');
+    this.loggingService.log('✅ Database connected', this.serviceName);
   }
 
   async onModuleDestroy() {
@@ -29,8 +37,14 @@ export class PrismaService
   }
 
   async onApplicationShutdown(signal?: string) {
-    this.logger.log(`Application shutting down: ${signal || 'unknown signal'}`);
+    this.loggingService.log(
+      `Application shutting down: ${signal || 'unknown signal'}`,
+      this.serviceName,
+    );
     await this.$disconnect();
-    this.logger.log('✅ Database disconnected on shutdown');
+    this.loggingService.log(
+      '✅ Database disconnected on shutdown',
+      this.serviceName,
+    );
   }
 }

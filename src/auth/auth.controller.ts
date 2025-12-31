@@ -4,8 +4,8 @@ import {
   Post,
   Res,
   UseGuards,
-  Logger,
   Query,
+  Inject,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -16,8 +16,9 @@ import {
 } from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
 import type { Response } from 'express';
-import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
+import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
+import type { IConfigurationService } from '../infrastructure/configuration/interfaces/configuration.interface';
 import { DiscordOAuthService } from './services/discord-oauth.service';
 import { DiscordApiService } from '../discord/discord-api.service';
 import { AuthOrchestrationService } from './services/auth-orchestration.service';
@@ -31,7 +32,7 @@ import type { AuthenticatedUser } from '../common/interfaces/user.interface';
 @Controller('auth')
 @SkipThrottle()
 export class AuthController {
-  private readonly logger = new Logger(AuthController.name);
+  private readonly serviceName = AuthController.name;
 
   constructor(
     private authService: AuthService,
@@ -39,7 +40,10 @@ export class AuthController {
     private discordApiService: DiscordApiService,
     private authOrchestrationService: AuthOrchestrationService,
     private tokenManagementService: TokenManagementService,
-    private configService: ConfigService,
+    @Inject('IConfigurationService')
+    private configService: IConfigurationService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
   ) {}
 
   @Get('discord')
@@ -52,7 +56,7 @@ export class AuthController {
   @ApiExcludeEndpoint()
   discordLogin(@Res() res: Response) {
     const authUrl = this.discordOAuthService.getAuthorizationUrl();
-    this.logger.log('Discord OAuth flow initiated');
+    this.loggingService.log('Discord OAuth flow initiated', this.serviceName);
     res.redirect(authUrl);
   }
 
@@ -71,14 +75,21 @@ export class AuthController {
     @Res() res: Response,
   ) {
     if (error) {
-      this.logger.warn(`OAuth error: ${error} - ${errorDescription}`);
+      this.loggingService.warn(
+        `OAuth error: ${error} - ${errorDescription}`,
+        this.serviceName,
+      );
       const frontendUrl = this.configService.get<string>('frontend.url', '');
       const errorUrl = `${frontendUrl}/auth/error?error=${encodeURIComponent(error)}&description=${encodeURIComponent(errorDescription || '')}`;
       return res.redirect(errorUrl);
     }
 
     if (!code) {
-      this.logger.error('OAuth callback received without authorization code');
+      this.loggingService.error(
+        'OAuth callback received without authorization code',
+        undefined,
+        this.serviceName,
+      );
       const frontendUrl = this.configService.get<string>('frontend.url', '');
       const errorUrl = `${frontendUrl}/auth/error?error=no_code&description=${encodeURIComponent('Authorization code missing')}`;
       return res.redirect(errorUrl);
@@ -102,7 +113,10 @@ export class AuthController {
         refreshToken: tokenResponse.refresh_token,
       });
 
-      this.logger.log(`OAuth callback successful for user ${user.id}`);
+      this.loggingService.log(
+        `OAuth callback successful for user ${user.id}`,
+        this.serviceName,
+      );
 
       // Sync guild memberships during OAuth to ensure user roles are current when they first log in
       try {
@@ -112,9 +126,10 @@ export class AuthController {
         );
       } catch (error) {
         // Log error but don't fail OAuth callback - role sync is not critical
-        this.logger.error(
-          `Failed to sync guild memberships with roles for user ${user.id}:`,
-          error,
+        this.loggingService.error(
+          `Failed to sync guild memberships with roles for user ${user.id}: ${error instanceof Error ? error.message : String(error)}`,
+          error instanceof Error ? error.stack : undefined,
+          this.serviceName,
         );
       }
 
@@ -148,7 +163,11 @@ export class AuthController {
       const redirectUrl = `${frontendUrl}/auth/callback`;
       res.redirect(redirectUrl);
     } catch (error) {
-      this.logger.error('OAuth callback failed:', error);
+      this.loggingService.error(
+        `OAuth callback failed: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       const frontendUrl = this.configService.get<string>('frontend.url', '');
       const errorUrl = `${frontendUrl}/auth/error?error=oauth_failed&description=${encodeURIComponent('Authentication failed')}`;
       res.redirect(errorUrl);
@@ -198,7 +217,11 @@ export class AuthController {
     try {
       return await this.authService.getUserAvailableGuilds(user.id);
     } catch (error) {
-      this.logger.error(`Error getting user guilds for ${user.id}:`, error);
+      this.loggingService.error(
+        `Error getting user guilds for ${user.id}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       throw error;
     }
   }
@@ -225,7 +248,11 @@ export class AuthController {
 
       return res.json({ message: 'Logged out successfully' });
     } catch (error) {
-      this.logger.error(`Error during logout for user ${user.id}:`, error);
+      this.loggingService.error(
+        `Error during logout for user ${user.id}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       throw error;
     }
   }

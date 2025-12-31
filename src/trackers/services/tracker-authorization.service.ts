@@ -1,4 +1,5 @@
-import { Injectable, ForbiddenException, Logger } from '@nestjs/common';
+import { Injectable, ForbiddenException, Inject } from '@nestjs/common';
+import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { GuildMembersService } from '../../guild-members/guild-members.service';
 import { PermissionCheckService } from '../../permissions/modules/permission-check/permission-check.service';
 import { GuildSettingsService } from '../../guilds/guild-settings.service';
@@ -23,12 +24,14 @@ interface GuildMembershipWithGuild {
  */
 @Injectable()
 export class TrackerAuthorizationService {
-  private readonly logger = new Logger(TrackerAuthorizationService.name);
+  private readonly serviceName = TrackerAuthorizationService.name;
 
   constructor(
     private guildMembersService: GuildMembersService,
     private permissionCheckService: PermissionCheckService,
     private guildSettingsService: GuildSettingsService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
   ) {}
 
   /**
@@ -45,8 +48,9 @@ export class TrackerAuthorizationService {
   ): Promise<void> {
     // Self-access: Users can always view their own trackers
     if (currentUserId === targetUserId) {
-      this.logger.debug(
+      this.loggingService.debug(
         `User ${currentUserId} accessing their own trackers - access granted`,
+        this.serviceName,
       );
       return;
     }
@@ -72,8 +76,9 @@ export class TrackerAuthorizationService {
     );
 
     if (commonGuildIds.length === 0) {
-      this.logger.warn(
+      this.loggingService.warn(
         `User ${currentUserId} attempted to access trackers for user ${targetUserId} but they share no common guilds`,
+        this.serviceName,
       );
       throw new ForbiddenException(
         'You can only view trackers for yourself or members of guilds where you are an admin',
@@ -99,23 +104,25 @@ export class TrackerAuthorizationService {
         );
 
         if (isAdmin) {
-          this.logger.debug(
+          this.loggingService.debug(
             `User ${currentUserId} is admin in guild ${guildId} - access granted for trackers of user ${targetUserId}`,
+            this.serviceName,
           );
           return; // Access granted
         }
       } catch (error) {
         // Log error but continue checking other guilds
-        this.logger.warn(
-          `Error checking admin access for user ${currentUserId} in guild ${guildId}:`,
-          error,
+        this.loggingService.warn(
+          `Error checking admin access for user ${currentUserId} in guild ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+          this.serviceName,
         );
       }
     }
 
     // No common guild found where current user is admin
-    this.logger.warn(
+    this.loggingService.warn(
       `User ${currentUserId} attempted to access trackers for user ${targetUserId} but is not an admin in any common guild`,
+      this.serviceName,
     );
     throw new ForbiddenException(
       'You can only view trackers for yourself or members of guilds where you are an admin',
@@ -135,15 +142,17 @@ export class TrackerAuthorizationService {
    */
   validateTrackerOwnership(currentUserId: string, trackerUserId: string): void {
     if (currentUserId !== trackerUserId) {
-      this.logger.warn(
+      this.loggingService.warn(
         `User ${currentUserId} attempted owner-only operation on tracker owned by ${trackerUserId}`,
+        this.serviceName,
       );
       throw new ForbiddenException(
         'You can only perform this operation on your own trackers',
       );
     }
-    this.logger.debug(
+    this.loggingService.debug(
       `User ${currentUserId} confirmed as owner - operation allowed`,
+      this.serviceName,
     );
   }
 }

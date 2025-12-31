@@ -18,6 +18,7 @@ import { UserGuildsService } from '@/user-guilds/user-guilds.service';
 import { DiscordProfileDto } from '@/auth/dto/discord-profile.dto';
 import { User } from '@prisma/client';
 import type { UserGuild } from '@/user-guilds/interfaces/user-guild.interface';
+import { createMockLoggingService } from '@tests/utils/test-helpers';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -79,10 +80,13 @@ describe('AuthService', () => {
       completeOAuthFlow: vi.fn(),
     } as unknown as UserGuildsService;
 
+    const mockLoggingService = createMockLoggingService();
+
     service = new AuthService(
       mockUserOrchestrator,
       mockJwtService,
       mockUserGuildsService,
+      mockLoggingService,
     );
   });
 

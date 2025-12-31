@@ -27,6 +27,10 @@ import {
   InvalidPlayerStatusException,
 } from '@/players/exceptions/player.exceptions';
 import { Player, PlayerStatus } from '@prisma/client';
+import {
+  createMockLoggingService,
+  createMockTransactionService,
+} from '@tests/utils/test-helpers';
 
 describe('PlayerService', () => {
   let service: PlayerService;
@@ -34,6 +38,8 @@ describe('PlayerService', () => {
   let mockValidationService: PlayerValidationService;
   let mockPrisma: PrismaService;
   let mockActivityLogService: ActivityLogService;
+  let mockTransactionService: ReturnType<typeof createMockTransactionService>;
+  let mockLoggingService: ReturnType<typeof createMockLoggingService>;
 
   const playerId = 'player-123';
   const userId = 'user-123';
@@ -85,11 +91,16 @@ describe('PlayerService', () => {
       }),
     } as unknown as PrismaService;
 
+    mockTransactionService = createMockTransactionService();
+    mockLoggingService = createMockLoggingService();
+
     service = new PlayerService(
       mockPlayerRepository,
       mockValidationService,
       mockPrisma,
       mockActivityLogService,
+      mockTransactionService,
+      mockLoggingService,
     );
   });
 
@@ -223,13 +234,13 @@ describe('PlayerService', () => {
       vi.mocked(mockPlayerRepository.findByUserIdAndGuildId).mockResolvedValue(
         null,
       );
-      vi.mocked(mockPrisma.$transaction).mockImplementation(
+      const mockTx = {
+        player: {
+          create: vi.fn().mockResolvedValue(mockPlayer),
+        },
+      } as any;
+      vi.mocked(mockTransactionService.executeTransaction).mockImplementation(
         async (callback) => {
-          const mockTx = {
-            player: {
-              create: vi.fn().mockResolvedValue(mockPlayer),
-            },
-          } as any;
           return callback(mockTx);
         },
       );
@@ -292,7 +303,9 @@ describe('PlayerService', () => {
       vi.mocked(mockPlayerRepository.findByUserIdAndGuildId).mockResolvedValue(
         null,
       );
-      vi.mocked(mockPrisma.$transaction).mockRejectedValue(prismaError);
+      vi.mocked(mockTransactionService.executeTransaction).mockRejectedValue(
+        prismaError,
+      );
 
       await expect(service.create(createDto)).rejects.toThrow(
         PlayerAlreadyExistsException,
@@ -308,7 +321,7 @@ describe('PlayerService', () => {
       vi.mocked(mockPlayerRepository.findByUserIdAndGuildId).mockResolvedValue(
         null,
       );
-      vi.mocked(mockPrisma.$transaction).mockRejectedValue(
+      vi.mocked(mockTransactionService.executeTransaction).mockRejectedValue(
         new Error('Database error'),
       );
 
@@ -333,14 +346,14 @@ describe('PlayerService', () => {
       vi.mocked(mockPlayerRepository.findByUserIdAndGuildId).mockResolvedValue(
         null,
       );
-      vi.mocked(mockPrisma.$transaction).mockImplementation(
+      const mockTx = {
+        player: {
+          findUnique: vi.fn().mockResolvedValue(null),
+          create: vi.fn().mockResolvedValue(mockPlayer),
+        },
+      } as any;
+      vi.mocked(mockTransactionService.executeTransaction).mockImplementation(
         async (callback) => {
-          const mockTx = {
-            player: {
-              findUnique: vi.fn().mockResolvedValue(null),
-              create: vi.fn().mockResolvedValue(mockPlayer),
-            },
-          } as any;
           return callback(mockTx);
         },
       );
@@ -355,14 +368,14 @@ describe('PlayerService', () => {
       vi.mocked(mockPlayerRepository.findByUserIdAndGuildId).mockResolvedValue(
         null,
       );
-      vi.mocked(mockPrisma.$transaction).mockImplementation(
+      const mockTx = {
+        player: {
+          findUnique: vi.fn().mockResolvedValue(mockPlayer), // Created by another transaction
+          create: vi.fn(),
+        },
+      } as any;
+      vi.mocked(mockTransactionService.executeTransaction).mockImplementation(
         async (callback) => {
-          const mockTx = {
-            player: {
-              findUnique: vi.fn().mockResolvedValue(mockPlayer), // Created by another transaction
-              create: vi.fn(),
-            },
-          } as any;
           return callback(mockTx);
         },
       );
@@ -397,13 +410,13 @@ describe('PlayerService', () => {
       const updatedPlayer = { ...mockPlayer, status: PlayerStatus.INACTIVE };
 
       vi.mocked(mockPlayerRepository.findById).mockResolvedValue(mockPlayer);
-      vi.mocked(mockPrisma.$transaction).mockImplementation(
+      const mockTx = {
+        player: {
+          update: vi.fn().mockResolvedValue(updatedPlayer),
+        },
+      } as any;
+      vi.mocked(mockTransactionService.executeTransaction).mockImplementation(
         async (callback) => {
-          const mockTx = {
-            player: {
-              update: vi.fn().mockResolvedValue(updatedPlayer),
-            },
-          } as any;
           return callback(mockTx);
         },
       );
@@ -452,7 +465,7 @@ describe('PlayerService', () => {
       };
 
       vi.mocked(mockPlayerRepository.findById).mockResolvedValue(mockPlayer);
-      vi.mocked(mockPrisma.$transaction).mockRejectedValue(
+      vi.mocked(mockTransactionService.executeTransaction).mockRejectedValue(
         new Error('Database error'),
       );
 

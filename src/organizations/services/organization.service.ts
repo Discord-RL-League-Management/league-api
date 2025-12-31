@@ -1,14 +1,18 @@
 import {
   Injectable,
-  Logger,
   NotFoundException,
   BadRequestException,
   ForbiddenException,
   Inject,
   forwardRef,
 } from '@nestjs/common';
+import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { OrganizationRepository } from '../repositories/organization.repository';
 import { OrganizationMemberService } from './organization-member.service';
+import type {
+  ITransactionService,
+  ITransactionClient,
+} from '../../infrastructure/transactions/interfaces/transaction.interface';
 import { OrganizationValidationService } from './organization-validation.service';
 import { PlayerService } from '../../players/services/player.service';
 import { LeagueRepository } from '../../leagues/repositories/league.repository';
@@ -17,7 +21,7 @@ import { TeamRepository } from '../../teams/repositories/team.repository';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateOrganizationDto } from '../dto/create-organization.dto';
 import { UpdateOrganizationDto } from '../dto/update-organization.dto';
-import { OrganizationMemberRole } from '@prisma/client';
+import { OrganizationMemberRole, Prisma } from '@prisma/client';
 import { LeagueConfiguration } from '../../leagues/interfaces/league-settings.interface';
 import {
   OrganizationNotFoundException,
@@ -30,7 +34,7 @@ import {
  */
 @Injectable()
 export class OrganizationService {
-  private readonly logger = new Logger(OrganizationService.name);
+  private readonly serviceName = OrganizationService.name;
 
   constructor(
     private organizationRepository: OrganizationRepository,
@@ -42,6 +46,10 @@ export class OrganizationService {
     private leagueSettingsService: LeagueSettingsService,
     private teamRepository: TeamRepository,
     private prisma: PrismaService,
+    @Inject('ITransactionService')
+    private transactionService: ITransactionService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
   ) {}
 
   /**
@@ -122,8 +130,9 @@ export class OrganizationService {
       const hasGMs =
         await this.organizationMemberService.hasGeneralManagers(id);
       if (!hasGMs && (userId === 'system' || userId === 'bot')) {
-        this.logger.log(
+        this.loggingService.log(
           `Allowing ${userId} user to update organization ${id} with no GMs`,
+          this.serviceName,
         );
       } else {
         throw new NotGeneralManagerException(id);
@@ -148,8 +157,9 @@ export class OrganizationService {
       const hasGMs =
         await this.organizationMemberService.hasGeneralManagers(id);
       if (!hasGMs && (userId === 'system' || userId === 'bot')) {
-        this.logger.log(
+        this.loggingService.log(
           `Allowing ${userId} user to delete organization ${id} with no GMs`,
+          this.serviceName,
         );
       } else {
         throw new NotGeneralManagerException(id);
@@ -266,33 +276,37 @@ export class OrganizationService {
 
     // Capacity validation occurs inside the transaction to prevent race conditions where
     // concurrent requests could add teams between the validation check and the actual updates
-    return this.prisma.$transaction(async (tx) => {
-      // Count teams using transaction client to ensure consistent view of data
-      if (maxTeamsPerOrg !== null && maxTeamsPerOrg !== undefined) {
-        const currentTeamCount = await tx.team.count({
-          where: { organizationId },
-        });
-        const totalTeamsAfterAssignment = currentTeamCount + teamIds.length;
+    return this.transactionService.executeTransaction(
+      async (tx: ITransactionClient) => {
+        // Count teams using transaction client to ensure consistent view of data
+        if (maxTeamsPerOrg !== null && maxTeamsPerOrg !== undefined) {
+          const currentTeamCount = await (
+            tx as Prisma.TransactionClient
+          ).team.count({
+            where: { organizationId },
+          });
+          const totalTeamsAfterAssignment = currentTeamCount + teamIds.length;
 
-        if (totalTeamsAfterAssignment > maxTeamsPerOrg) {
-          throw new OrganizationCapacityExceededException(
-            organizationId,
-            maxTeamsPerOrg,
-          );
+          if (totalTeamsAfterAssignment > maxTeamsPerOrg) {
+            throw new OrganizationCapacityExceededException(
+              organizationId,
+              maxTeamsPerOrg,
+            );
+          }
         }
-      }
 
-      // This ensures all-or-nothing semantics: if any update fails, all updates are rolled back
-      const results = [];
-      for (const teamId of teamIds) {
-        const team = await tx.team.update({
-          where: { id: teamId },
-          data: { organizationId },
-          include: { members: true, organization: true },
-        });
-        results.push(team);
-      }
-      return results;
-    });
+        // This ensures all-or-nothing semantics: if any update fails, all updates are rolled back
+        const results = [];
+        for (const teamId of teamIds) {
+          const team = await (tx as Prisma.TransactionClient).team.update({
+            where: { id: teamId },
+            data: { organizationId },
+            include: { members: true, organization: true },
+          });
+          results.push(team);
+        }
+        return results;
+      },
+    );
   }
 }

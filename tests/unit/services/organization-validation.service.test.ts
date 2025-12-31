@@ -11,6 +11,7 @@ import { OrganizationRepository } from '@/organizations/repositories/organizatio
 import { LeagueRepository } from '@/leagues/repositories/league.repository';
 import { PlayerService } from '@/players/services/player.service';
 import { LeagueSettingsService } from '@/leagues/league-settings.service';
+import { createMockLoggingService } from '@tests/utils/test-helpers';
 import {
   OrganizationNotFoundException,
   NoGeneralManagerException,
@@ -29,6 +30,7 @@ describe('OrganizationValidationService', () => {
   let mockLeagueRepository: LeagueRepository;
   let mockPlayerService: PlayerService;
   let mockLeagueSettingsService: LeagueSettingsService;
+  let mockLoggingService: ReturnType<typeof createMockLoggingService>;
 
   beforeEach(() => {
     mockOrganizationRepository = {
@@ -53,10 +55,13 @@ describe('OrganizationValidationService', () => {
       getSettings: vi.fn(),
     } as unknown as LeagueSettingsService;
 
+    mockLoggingService = createMockLoggingService();
+
     service = new OrganizationValidationService(
       mockOrganizationRepository,
       mockLeagueRepository,
       mockPlayerService,
+      mockLoggingService,
       mockLeagueSettingsService,
     );
   });

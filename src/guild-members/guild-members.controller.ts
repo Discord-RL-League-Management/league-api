@@ -7,7 +7,7 @@ import {
   Param,
   Query,
   UseGuards,
-  Logger,
+  Inject,
   Body,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -22,15 +22,20 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
+import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 
 @ApiTags('Guild Members')
 @Controller('api/guilds/:guildId/members')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class GuildMembersController {
-  private readonly logger = new Logger(GuildMembersController.name);
+  private readonly serviceName = GuildMembersController.name;
 
-  constructor(private guildMembersService: GuildMembersService) {}
+  constructor(
+    private guildMembersService: GuildMembersService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Get guild members with pagination' })
@@ -60,7 +65,10 @@ export class GuildMembersController {
       100,
     ); // Max 100 per page
 
-    this.logger.log(`Getting members for guild ${guildId}, page ${pageNum}`);
+    this.loggingService.log(
+      `Getting members for guild ${guildId}, page ${pageNum}`,
+      this.serviceName,
+    );
     return this.guildMembersService.findAll(guildId, pageNum, limitNum);
   }
 
@@ -94,7 +102,10 @@ export class GuildMembersController {
       100,
     );
 
-    this.logger.log(`Searching members in guild ${guildId} for "${query}"`);
+    this.loggingService.log(
+      `Searching members in guild ${guildId} for "${query}"`,
+      this.serviceName,
+    );
     return this.guildMembersService.searchMembers(
       guildId,
       query,
@@ -109,7 +120,10 @@ export class GuildMembersController {
   @ApiResponse({ status: 401, description: 'Invalid JWT token' })
   @ApiParam({ name: 'guildId', description: 'Discord guild ID' })
   async getMemberStats(@Param('guildId') guildId: string) {
-    this.logger.log(`Getting member stats for guild ${guildId}`);
+    this.loggingService.log(
+      `Getting member stats for guild ${guildId}`,
+      this.serviceName,
+    );
     return this.guildMembersService.getMemberStats(guildId);
   }
 
@@ -124,7 +138,10 @@ export class GuildMembersController {
     @Param('guildId') guildId: string,
     @Param('userId') userId: string,
   ) {
-    this.logger.log(`Getting member ${userId} from guild ${guildId}`);
+    this.loggingService.log(
+      `Getting member ${userId} from guild ${guildId}`,
+      this.serviceName,
+    );
     return this.guildMembersService.findOne(userId, guildId);
   }
 
@@ -138,7 +155,10 @@ export class GuildMembersController {
     @Param('guildId') guildId: string,
     @Body() createGuildMemberDto: CreateGuildMemberDto,
   ) {
-    this.logger.log(`Creating member in guild ${guildId}`);
+    this.loggingService.log(
+      `Creating member in guild ${guildId}`,
+      this.serviceName,
+    );
     return this.guildMembersService.create({
       ...createGuildMemberDto,
       guildId,
@@ -158,7 +178,10 @@ export class GuildMembersController {
     @Param('userId') userId: string,
     @Body() updateGuildMemberDto: UpdateGuildMemberDto,
   ) {
-    this.logger.log(`Updating member ${userId} in guild ${guildId}`);
+    this.loggingService.log(
+      `Updating member ${userId} in guild ${guildId}`,
+      this.serviceName,
+    );
     return this.guildMembersService.update(
       userId,
       guildId,
@@ -178,7 +201,10 @@ export class GuildMembersController {
     @Param('guildId') guildId: string,
     @Param('userId') userId: string,
   ) {
-    this.logger.log(`Removing member ${userId} from guild ${guildId}`);
+    this.loggingService.log(
+      `Removing member ${userId} from guild ${guildId}`,
+      this.serviceName,
+    );
     await this.guildMembersService.remove(userId, guildId);
     return { message: 'Member removed successfully' };
   }
@@ -201,7 +227,10 @@ export class GuildMembersController {
       }>;
     },
   ) {
-    this.logger.log(`Syncing members for guild ${guildId}`);
+    this.loggingService.log(
+      `Syncing members for guild ${guildId}`,
+      this.serviceName,
+    );
     return this.guildMembersService.syncGuildMembers(guildId, syncData.members);
   }
 }

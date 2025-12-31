@@ -1,9 +1,10 @@
 import {
   Injectable,
-  Logger,
   BadRequestException,
   NotFoundException,
+  Inject,
 } from '@nestjs/common';
+import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { LeagueSettingsService } from '../../leagues/league-settings.service';
 import { OrganizationRepository } from '../../organizations/repositories/organization.repository';
 import { OrganizationValidationService } from '../../organizations/services/organization-validation.service';
@@ -13,12 +14,14 @@ import { OrganizationValidationService } from '../../organizations/services/orga
  */
 @Injectable()
 export class TeamValidationService {
-  private readonly logger = new Logger(TeamValidationService.name);
+  private readonly serviceName = TeamValidationService.name;
 
   constructor(
     private leagueSettingsService: LeagueSettingsService,
     private organizationRepository: OrganizationRepository,
     private organizationValidationService: OrganizationValidationService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
   ) {}
 
   /**
@@ -80,8 +83,9 @@ export class TeamValidationService {
     // This is a warning/pre-check, not a blocker
     // The actual assignment will happen in the settings update hook
     if (newRequireOrg) {
-      this.logger.log(
+      this.loggingService.log(
         `League ${leagueId} is changing to require organizations. Teams without organizations will be auto-assigned.`,
+        this.serviceName,
       );
     }
     return Promise.resolve();

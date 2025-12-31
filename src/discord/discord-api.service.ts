@@ -1,11 +1,12 @@
 import {
   Injectable,
-  Logger,
   UnauthorizedException,
   ServiceUnavailableException,
+  Inject,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
+import type { IConfigurationService } from '../infrastructure/configuration/interfaces/configuration.interface';
+import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 import {
   firstValueFrom,
   timeout,
@@ -43,27 +44,27 @@ interface GuildPermissions {
 
 @Injectable()
 export class DiscordApiService {
-  private readonly logger = new Logger(DiscordApiService.name);
+  private readonly serviceName = DiscordApiService.name;
   private readonly apiUrl: string;
   private readonly requestTimeout: number;
   private readonly retryAttempts: number;
 
   constructor(
     private httpService: HttpService,
-    private configService: ConfigService,
+    @Inject('IConfigurationService')
+    private configService: IConfigurationService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
   ) {
-    this.apiUrl = this.configService.get<string>(
-      'discord.apiUrl',
-      'https://discord.com/api',
-    );
-    this.requestTimeout = this.configService.get<number>(
-      'discord.timeout',
-      10000,
-    );
-    this.retryAttempts = this.configService.get<number>(
-      'discord.retryAttempts',
-      3,
-    );
+    this.apiUrl =
+      this.configService.get<string>(
+        'discord.apiUrl',
+        'https://discord.com/api',
+      ) ?? 'https://discord.com/api';
+    this.requestTimeout =
+      this.configService.get<number>('discord.timeout', 10000) ?? 10000;
+    this.retryAttempts =
+      this.configService.get<number>('discord.retryAttempts', 3) ?? 3;
   }
 
   /**
@@ -108,11 +109,11 @@ export class DiscordApiService {
             timeout(this.requestTimeout),
             this.createRetryOperator<AxiosResponse<DiscordGuild[]>>(),
             catchError((error: AxiosError) => {
-              this.logger.error(`Discord API error: ${error.message}`, {
-                status: error.response?.status,
-                statusText: error.response?.statusText,
-                data: error.response?.data,
-              });
+              this.loggingService.error(
+                `Discord API error: ${error.message} - Status: ${error.response?.status}, StatusText: ${error.response?.statusText}`,
+                error.stack,
+                this.serviceName,
+              );
 
               if (error.response?.status === 401) {
                 throw new UnauthorizedException('Invalid Discord access token');
@@ -129,12 +130,17 @@ export class DiscordApiService {
           ),
       );
 
-      this.logger.log(
+      this.loggingService.log(
         `Successfully fetched ${response.data.length} guilds from Discord API`,
+        this.serviceName,
       );
       return response.data;
     } catch (error) {
-      this.logger.error('Failed to fetch user guilds from Discord API:', error);
+      this.loggingService.error(
+        `Failed to fetch user guilds from Discord API: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       throw error;
     }
   }
@@ -154,7 +160,11 @@ export class DiscordApiService {
             timeout(this.requestTimeout),
             this.createRetryOperator<AxiosResponse<DiscordUser>>(),
             catchError((error: AxiosError) => {
-              this.logger.error(`Discord profile API error: ${error.message}`);
+              this.loggingService.error(
+                `Discord profile API error: ${error.message}`,
+                error.stack,
+                this.serviceName,
+              );
               throw new ServiceUnavailableException('Discord API unavailable');
             }),
           ),
@@ -162,9 +172,10 @@ export class DiscordApiService {
 
       return response.data;
     } catch (error) {
-      this.logger.error(
-        'Failed to fetch user profile from Discord API:',
-        error,
+      this.loggingService.error(
+        `Failed to fetch user profile from Discord API: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw error;
     }
@@ -197,8 +208,10 @@ export class DiscordApiService {
                   discriminator: string;
                 } | null>); // User not in guild
               }
-              this.logger.error(
+              this.loggingService.error(
                 `Guild permission check error: ${error.message}`,
+                error.stack,
+                this.serviceName,
               );
               throw new ServiceUnavailableException('Discord API unavailable');
             }),
@@ -228,9 +241,10 @@ export class DiscordApiService {
         hasAdministratorPermission,
       };
     } catch (error) {
-      this.logger.error(
-        `Failed to check guild permissions for ${guildId}:`,
-        error,
+      this.loggingService.error(
+        `Failed to check guild permissions for ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       return {
         isMember: false,
@@ -274,7 +288,11 @@ export class DiscordApiService {
                   nick?: string;
                 } | null>); // User not in guild
               }
-              this.logger.error(`Guild member fetch error: ${error.message}`);
+              this.loggingService.error(
+                `Guild member fetch error: ${error.message}`,
+                error.stack,
+                this.serviceName,
+              );
               throw new ServiceUnavailableException('Discord API unavailable');
             }),
           ),
@@ -299,7 +317,11 @@ export class DiscordApiService {
       if (error instanceof ServiceUnavailableException) {
         throw error;
       }
-      this.logger.error(`Failed to fetch guild member for ${guildId}:`, error);
+      this.loggingService.error(
+        `Failed to fetch guild member for ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       return null;
     }
   }

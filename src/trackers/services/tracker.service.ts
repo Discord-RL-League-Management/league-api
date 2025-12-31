@@ -1,4 +1,5 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TrackerRepository } from '../repositories/tracker.repository';
 import { TrackerSeasonService } from './tracker-season.service';
@@ -13,12 +14,14 @@ import { TrackerQueryOptions } from '../interfaces/tracker-query.options';
 
 @Injectable()
 export class TrackerService {
-  private readonly logger = new Logger(TrackerService.name);
+  private readonly serviceName = TrackerService.name;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly trackerRepository: TrackerRepository,
     private readonly seasonService: TrackerSeasonService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
   ) {}
 
   /**

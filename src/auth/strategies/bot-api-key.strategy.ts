@@ -1,19 +1,25 @@
-import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-custom';
 import { Request } from 'express';
 import { createHmac, timingSafeEqual } from 'crypto';
-import { ConfigService } from '@nestjs/config';
+import type { IConfigurationService } from '../../infrastructure/configuration/interfaces/configuration.interface';
+import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 
 @Injectable()
 export class BotApiKeyStrategy extends PassportStrategy(
   Strategy,
   'bot-api-key',
 ) {
-  private readonly logger = new Logger(BotApiKeyStrategy.name);
+  private readonly serviceName = BotApiKeyStrategy.name;
   private readonly apiKeyHash: string;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    @Inject('IConfigurationService')
+    private configService: IConfigurationService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
+  ) {
     super();
     // Pre-hash API key to enable constant-time comparison and prevent timing attacks
     const botApiKey = this.configService.get<string>('auth.botApiKey');
@@ -31,10 +37,10 @@ export class BotApiKeyStrategy extends PassportStrategy(
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      this.logger.warn('Missing or invalid authorization header', {
-        ip: req.ip,
-        userAgent: req.get('User-Agent'),
-      });
+      this.loggingService.warn(
+        `Missing or invalid authorization header - IP: ${req.ip}, User-Agent: ${req.get('User-Agent')}`,
+        this.serviceName,
+      );
       throw new UnauthorizedException('Missing authorization header');
     }
 
@@ -48,10 +54,10 @@ export class BotApiKeyStrategy extends PassportStrategy(
         Buffer.from(providedKeyHash),
       )
     ) {
-      this.logger.warn('Invalid API key provided', {
-        ip: req.ip,
-        userAgent: req.get('User-Agent'),
-      });
+      this.loggingService.warn(
+        `Invalid API key provided - IP: ${req.ip}, User-Agent: ${req.get('User-Agent')}`,
+        this.serviceName,
+      );
       throw new UnauthorizedException('Invalid API key');
     }
 

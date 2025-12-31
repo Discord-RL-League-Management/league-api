@@ -8,14 +8,17 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { UserSettingsService } from '@/profile/services/user-settings.service';
 import { PrismaService } from '@/prisma/prisma.service';
+import { createMockLoggingService } from '@tests/utils/test-helpers';
 
 describe('UserSettingsService', () => {
   let service: UserSettingsService;
   let mockPrisma: PrismaService;
+  let mockLoggingService: ReturnType<typeof createMockLoggingService>;
 
   beforeEach(() => {
     mockPrisma = {} as PrismaService;
-    service = new UserSettingsService(mockPrisma);
+    mockLoggingService = createMockLoggingService();
+    service = new UserSettingsService(mockPrisma, mockLoggingService);
   });
 
   afterEach(() => {

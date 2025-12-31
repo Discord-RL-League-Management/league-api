@@ -4,6 +4,7 @@ import { PassportModule } from '@nestjs/passport';
 import { HttpModule } from '@nestjs/axios';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CacheModule } from '@nestjs/cache-manager';
+import { InfrastructureModule } from '../infrastructure/infrastructure.module';
 import { UsersModule } from '../users/users.module';
 import { DiscordModule } from '../discord/discord.module';
 import { UserGuildsModule } from '../user-guilds/user-guilds.module';
@@ -29,6 +30,7 @@ import { UserOrchestratorService } from '../users/services/user-orchestrator.ser
     PassportModule,
     HttpModule.register(httpModuleOptions), // Required for Discord API calls
     CacheModule.register(cacheModuleOptions),
+    InfrastructureModule, // Provides IConfigurationService
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({

@@ -16,6 +16,7 @@ import {
   LeagueNotFoundException,
   LeagueAccessDeniedException,
 } from '@/leagues/exceptions/league.exceptions';
+import { createMockLoggingService } from '@tests/utils/test-helpers';
 
 describe('LeagueAccessValidationService', () => {
   let service: LeagueAccessValidationService;
@@ -23,6 +24,8 @@ describe('LeagueAccessValidationService', () => {
   let mockGuildsService: GuildsService;
   let mockPlayerService: PlayerService;
   let mockLeagueMemberRepository: LeagueMemberRepository;
+  let mockLeagueMemberAccess: any;
+  let mockLoggingService: ReturnType<typeof createMockLoggingService>;
 
   beforeEach(() => {
     mockLeagueRepository = {
@@ -42,11 +45,18 @@ describe('LeagueAccessValidationService', () => {
       findByPlayerAndLeague: vi.fn(),
     } as unknown as LeagueMemberRepository;
 
+    mockLeagueMemberAccess = {
+      findByPlayerAndLeague: vi.fn(),
+    };
+
+    mockLoggingService = createMockLoggingService();
+
     service = new LeagueAccessValidationService(
       mockLeagueRepository,
       mockGuildsService,
       mockPlayerService,
-      mockLeagueMemberRepository,
+      mockLeagueMemberAccess,
+      mockLoggingService,
     );
   });
 
@@ -129,7 +139,7 @@ describe('LeagueAccessValidationService', () => {
         player as any,
       );
       vi.mocked(
-        mockLeagueMemberRepository.findByPlayerAndLeague,
+        mockLeagueMemberAccess.findByPlayerAndLeague,
       ).mockResolvedValue(member as any);
 
       await expect(

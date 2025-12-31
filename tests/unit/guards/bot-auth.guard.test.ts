@@ -27,12 +27,5 @@ describe('BotAuthGuard', () => {
       expect(guard).toBeInstanceOf(BotAuthGuard);
     });
   });
-
-  describe('inheritance', () => {
-    it('should_extend_AuthGuard', () => {
-      expect(guard).toBeInstanceOf(BotAuthGuard);
-      // BotAuthGuard extends AuthGuard('bot-api-key')
-      // This is verified by the class structure
-    });
-  });
 });
+

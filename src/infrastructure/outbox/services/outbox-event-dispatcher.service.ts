@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
+import type { ILoggingService } from '../../logging/interfaces/logging.interface';
 import { Outbox } from '@prisma/client';
 
 /**
@@ -9,7 +10,12 @@ import { Outbox } from '@prisma/client';
  */
 @Injectable()
 export class OutboxEventDispatcher {
-  private readonly logger = new Logger(OutboxEventDispatcher.name);
+  private readonly serviceName = OutboxEventDispatcher.name;
+
+  constructor(
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
+  ) {}
 
   /**
    * Dispatch an outbox event to the appropriate queue
@@ -25,8 +31,9 @@ export class OutboxEventDispatcher {
    * FAILED for investigation, preventing silent data loss.
    */
   dispatchEvent(event: Outbox): Promise<void> {
-    this.logger.debug(
+    this.loggingService.debug(
       `Dispatching event ${event.id} of type ${event.eventType}`,
+      this.serviceName,
     );
 
     const deprecatedEventTypes = [
@@ -34,9 +41,10 @@ export class OutboxEventDispatcher {
     ];
 
     if (deprecatedEventTypes.includes(event.eventType)) {
-      this.logger.warn(
+      this.loggingService.warn(
         `Skipping deprecated event type: ${event.eventType} (event ${event.id}). ` +
           `This event type is no longer processed as the system has been removed.`,
+        this.serviceName,
       );
       return Promise.resolve();
     }

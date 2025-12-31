@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
+import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TrackerData } from './mmr-calculation.service';
 import { PlaylistData } from '../../trackers/interfaces/scraper.interfaces';
@@ -10,9 +11,13 @@ import { PlaylistData } from '../../trackers/interfaces/scraper.interfaces';
  */
 @Injectable()
 export class TrackerDataExtractionService {
-  private readonly logger = new Logger(TrackerDataExtractionService.name);
+  private readonly serviceName = TrackerDataExtractionService.name;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
+  ) {}
 
   /**
    * Extract TrackerData from latest TrackerSeason for a tracker
@@ -30,7 +35,10 @@ export class TrackerDataExtractionService {
       });
 
       if (!latestSeason) {
-        this.logger.debug(`No season data found for tracker ${trackerId}`);
+        this.loggingService.debug(
+          `No season data found for tracker ${trackerId}`,
+          this.serviceName,
+        );
         return null;
       }
 
@@ -53,9 +61,10 @@ export class TrackerDataExtractionService {
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error(
+      this.loggingService.error(
         `Failed to extract tracker data for tracker ${trackerId}: ${errorMessage}`,
-        error,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       return null;
     }

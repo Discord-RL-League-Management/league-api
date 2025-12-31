@@ -15,10 +15,12 @@ import { UsersService } from '@/users/users.service';
 import { DiscordProfileDto } from '@/auth/dto/discord-profile.dto';
 import { User } from '@prisma/client';
 import { createTestTokenPair } from '../../factories/token.factory';
+import { createMockLoggingService } from '@tests/utils/test-helpers';
 
 describe('UserOrchestratorService', () => {
   let service: UserOrchestratorService;
   let mockUsersService: UsersService;
+  let mockLoggingService: ReturnType<typeof createMockLoggingService>;
 
   const userId = 'user-123';
   const mockPlainTokens = createTestTokenPair('plain');
@@ -65,7 +67,9 @@ describe('UserOrchestratorService', () => {
       update: vi.fn(),
     } as unknown as UsersService;
 
-    service = new UserOrchestratorService(mockUsersService);
+    mockLoggingService = createMockLoggingService();
+
+    service = new UserOrchestratorService(mockUsersService, mockLoggingService);
   });
 
   afterEach(() => {

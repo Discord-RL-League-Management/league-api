@@ -68,7 +68,20 @@ describe('TrackerService', () => {
       },
     } as unknown as PrismaService;
 
-    service = new TrackerService(mockPrisma, mockRepository, mockSeasonService);
+    const mockLoggingService = {
+      log: vi.fn(),
+      error: vi.fn(),
+      warn: vi.fn(),
+      debug: vi.fn(),
+      verbose: vi.fn(),
+    } as unknown as any;
+
+    service = new TrackerService(
+      mockPrisma,
+      mockRepository,
+      mockSeasonService,
+      mockLoggingService,
+    );
   });
 
   afterEach(() => {

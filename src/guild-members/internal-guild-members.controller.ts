@@ -6,7 +6,7 @@ import {
   Param,
   Body,
   UseGuards,
-  Logger,
+  Inject,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
@@ -22,6 +22,7 @@ import {
   ApiBearerAuth,
   ApiParam,
 } from '@nestjs/swagger';
+import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 
 @ApiTags('Internal Guild Members')
 @Controller('internal/guild-members')
@@ -29,9 +30,13 @@ import {
 @SkipThrottle()
 @ApiBearerAuth('bot-api-key')
 export class InternalGuildMembersController {
-  private readonly logger = new Logger(InternalGuildMembersController.name);
+  private readonly serviceName = InternalGuildMembersController.name;
 
-  constructor(private guildMembersService: GuildMembersService) {}
+  constructor(
+    private guildMembersService: GuildMembersService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
+  ) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -40,8 +45,9 @@ export class InternalGuildMembersController {
   @ApiResponse({ status: 404, description: 'Guild or user not found' })
   @ApiResponse({ status: 401, description: 'Invalid bot API key' })
   async createMember(@Body() createMemberDto: CreateGuildMemberDto) {
-    this.logger.log(
+    this.loggingService.log(
       `Bot creating member ${createMemberDto.userId} in guild ${createMemberDto.guildId}`,
+      this.serviceName,
     );
     return this.guildMembersService.create(createMemberDto);
   }
@@ -64,8 +70,9 @@ export class InternalGuildMembersController {
       }>;
     },
   ) {
-    this.logger.log(
+    this.loggingService.log(
       `Bot syncing ${syncData.members.length} members for guild ${guildId}`,
+      this.serviceName,
     );
     return this.guildMembersService.syncGuildMembers(guildId, syncData.members);
   }
@@ -82,7 +89,10 @@ export class InternalGuildMembersController {
     @Param('userId') userId: string,
     @Body() updateMemberDto: UpdateGuildMemberDto,
   ) {
-    this.logger.log(`Bot updating member ${userId} in guild ${guildId}`);
+    this.loggingService.log(
+      `Bot updating member ${userId} in guild ${guildId}`,
+      this.serviceName,
+    );
     return this.guildMembersService.update(userId, guildId, updateMemberDto);
   }
 
@@ -97,7 +107,10 @@ export class InternalGuildMembersController {
     @Param('guildId') guildId: string,
     @Param('userId') userId: string,
   ) {
-    this.logger.log(`Bot removing member ${userId} from guild ${guildId}`);
+    this.loggingService.log(
+      `Bot removing member ${userId} from guild ${guildId}`,
+      this.serviceName,
+    );
     await this.guildMembersService.remove(userId, guildId);
     return { message: 'Member removed successfully' };
   }

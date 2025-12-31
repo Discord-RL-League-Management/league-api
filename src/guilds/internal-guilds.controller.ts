@@ -7,7 +7,7 @@ import {
   Param,
   Body,
   UseGuards,
-  Logger,
+  Inject,
   HttpCode,
   HttpStatus,
   Res,
@@ -28,6 +28,7 @@ import {
   ApiBearerAuth,
   ApiParam,
 } from '@nestjs/swagger';
+import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 
 @ApiTags('Internal Guilds')
 @Controller('internal/guilds')
@@ -35,12 +36,14 @@ import {
 @SkipThrottle()
 @ApiBearerAuth('bot-api-key')
 export class InternalGuildsController {
-  private readonly logger = new Logger(InternalGuildsController.name);
+  private readonly serviceName = InternalGuildsController.name;
 
   constructor(
     private guildsService: GuildsService,
     private guildSettingsService: GuildSettingsService,
     private guildSyncService: GuildSyncService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
   ) {}
 
   @Get()
@@ -48,7 +51,7 @@ export class InternalGuildsController {
   @ApiResponse({ status: 200, description: 'List of all guilds' })
   @ApiResponse({ status: 401, description: 'Invalid bot API key' })
   async findAll() {
-    this.logger.log('Bot requested all guilds');
+    this.loggingService.log('Bot requested all guilds', this.serviceName);
     return this.guildsService.findAll();
   }
 
@@ -59,7 +62,7 @@ export class InternalGuildsController {
   @ApiResponse({ status: 401, description: 'Invalid bot API key' })
   @ApiParam({ name: 'id', description: 'Discord guild ID' })
   async findOne(@Param('id') id: string) {
-    this.logger.log(`Bot requested guild ${id}`);
+    this.loggingService.log(`Bot requested guild ${id}`, this.serviceName);
     return this.guildsService.findOne(id);
   }
 
@@ -70,7 +73,10 @@ export class InternalGuildsController {
   @ApiResponse({ status: 409, description: 'Guild already exists' })
   @ApiResponse({ status: 401, description: 'Invalid bot API key' })
   async create(@Body() createGuildDto: CreateGuildDto) {
-    this.logger.log(`Bot creating guild ${createGuildDto.id}`);
+    this.loggingService.log(
+      `Bot creating guild ${createGuildDto.id}`,
+      this.serviceName,
+    );
     return this.guildsService.create(createGuildDto);
   }
 
@@ -80,7 +86,10 @@ export class InternalGuildsController {
   @ApiResponse({ status: 201, description: 'Guild created successfully' })
   @ApiResponse({ status: 401, description: 'Invalid bot API key' })
   async upsert(@Body() createGuildDto: CreateGuildDto, @Res() res: Response) {
-    this.logger.log(`Bot upserting guild ${createGuildDto.id}`);
+    this.loggingService.log(
+      `Bot upserting guild ${createGuildDto.id}`,
+      this.serviceName,
+    );
 
     const exists = await this.guildsService.exists(createGuildDto.id);
     const guild = await this.guildsService.upsert(createGuildDto);
@@ -116,8 +125,9 @@ export class InternalGuildsController {
       roles?: { admin: Array<{ id: string; name: string }> };
     },
   ) {
-    this.logger.log(
+    this.loggingService.log(
       `Bot syncing guild ${guildId} with ${syncData.members.length} members`,
+      this.serviceName,
     );
     return this.guildSyncService.syncGuildWithMembers(
       guildId,
@@ -137,7 +147,7 @@ export class InternalGuildsController {
     @Param('id') id: string,
     @Body() updateGuildDto: UpdateGuildDto,
   ) {
-    this.logger.log(`Bot updating guild ${id}`);
+    this.loggingService.log(`Bot updating guild ${id}`, this.serviceName);
     return this.guildsService.update(id, updateGuildDto);
   }
 
@@ -148,7 +158,7 @@ export class InternalGuildsController {
   @ApiResponse({ status: 401, description: 'Invalid bot API key' })
   @ApiParam({ name: 'id', description: 'Discord guild ID' })
   async remove(@Param('id') id: string) {
-    this.logger.log(`Bot removing guild ${id}`);
+    this.loggingService.log(`Bot removing guild ${id}`, this.serviceName);
     return this.guildsService.remove(id);
   }
 
@@ -159,7 +169,10 @@ export class InternalGuildsController {
   @ApiResponse({ status: 401, description: 'Invalid bot API key' })
   @ApiParam({ name: 'id', description: 'Discord guild ID' })
   async getSettings(@Param('id') id: string) {
-    this.logger.log(`Bot requested settings for guild ${id}`);
+    this.loggingService.log(
+      `Bot requested settings for guild ${id}`,
+      this.serviceName,
+    );
     return this.guildSettingsService.getSettings(id);
   }
 
@@ -173,7 +186,10 @@ export class InternalGuildsController {
     @Param('id') id: string,
     @Body() settings: GuildSettingsDto,
   ) {
-    this.logger.log(`Bot updating settings for guild ${id}`);
+    this.loggingService.log(
+      `Bot updating settings for guild ${id}`,
+      this.serviceName,
+    );
     // Use placeholder userId for audit trail since bot endpoints lack user context
     return this.guildSettingsService.updateSettings(id, settings, 'bot');
   }

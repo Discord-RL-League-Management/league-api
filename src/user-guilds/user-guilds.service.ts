@@ -1,13 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
+import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 import { GuildMembersService } from '../guild-members/guild-members.service';
 import { DiscordApiService } from '../discord/discord-api.service';
 import { TokenManagementService } from '../auth/services/token-management.service';
 import { PermissionCheckService } from '../permissions/modules/permission-check/permission-check.service';
 import { GuildsService } from '../guilds/guilds.service';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Inject } from '@nestjs/common';
-import type { Cache } from 'cache-manager';
 import { UserGuild } from './interfaces/user-guild.interface';
+import type { ICachingService } from '../infrastructure/caching/interfaces/caching.interface';
 import { GuildSettings } from '../guilds/interfaces/settings.interface';
 
 interface DiscordGuild {
@@ -21,7 +20,7 @@ interface DiscordGuild {
 
 @Injectable()
 export class UserGuildsService {
-  private readonly logger = new Logger(UserGuildsService.name);
+  private readonly serviceName = UserGuildsService.name;
   private readonly cacheTtl: number;
 
   constructor(
@@ -30,7 +29,9 @@ export class UserGuildsService {
     private discordApiService: DiscordApiService,
     private tokenManagementService: TokenManagementService,
     private permissionCheckService: PermissionCheckService,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    @Inject('ICachingService') private cachingService: ICachingService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
   ) {
     this.cacheTtl = 300; // 5 minutes cache TTL
   }
@@ -78,9 +79,10 @@ export class UserGuildsService {
 
       return enrichedGuilds;
     } catch (error) {
-      this.logger.error(
-        `Error getting user available guilds with permissions for user ${userId}:`,
-        error,
+      this.loggingService.error(
+        `Error getting user available guilds with permissions for user ${userId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       return [];
     }
@@ -102,7 +104,6 @@ export class UserGuildsService {
         existingMemberships.map((m) => (m as { guildId: string }).guildId),
       );
 
-      // Prepare bulk operations with roles from OAuth
       const newMemberships = userGuilds
         .filter((guild) => !existingGuildIds.has(guild.id))
         .map((guild) => ({
@@ -116,22 +117,24 @@ export class UserGuildsService {
         try {
           await this.guildMembersService.create(membership);
         } catch (error) {
-          this.logger.warn(
-            `Failed to create membership for user ${userId} in guild ${membership.guildId}:`,
-            error,
+          this.loggingService.warn(
+            `Failed to create membership for user ${userId} in guild ${membership.guildId}: ${error instanceof Error ? error.message : String(error)}`,
+            this.serviceName,
           );
         }
       }
 
-      this.logger.log(
+      this.loggingService.log(
         `Synced ${newMemberships.length} new guild memberships for user ${userId}`,
+        this.serviceName,
       );
 
-      await this.cacheManager.del(`user:${userId}:guilds`);
+      await this.cachingService.del(`user:${userId}:guilds`);
     } catch (error) {
-      this.logger.error(
-        `Error syncing user guild memberships for user ${userId}:`,
-        error,
+      this.loggingService.error(
+        `Error syncing user guild memberships for user ${userId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw error;
     }
@@ -151,14 +154,16 @@ export class UserGuildsService {
       const availableGuilds =
         await this.getUserAvailableGuildsWithPermissions(userId);
 
-      this.logger.log(
+      this.loggingService.log(
         `Completed OAuth flow for user ${userId} with ${availableGuilds.length} available guilds`,
+        this.serviceName,
       );
       return availableGuilds;
     } catch (error) {
-      this.logger.error(
-        `Error completing OAuth flow for user ${userId}:`,
-        error,
+      this.loggingService.error(
+        `Error completing OAuth flow for user ${userId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw error;
     }
@@ -172,16 +177,22 @@ export class UserGuildsService {
     try {
       const cacheKey = `user:${userId}:guilds`;
       const cachedGuilds =
-        await this.cacheManager.get<DiscordGuild[]>(cacheKey);
+        await this.cachingService.get<DiscordGuild[]>(cacheKey);
       if (cachedGuilds) {
-        this.logger.log(`Returning cached guilds for user ${userId}`);
+        this.loggingService.log(
+          `Returning cached guilds for user ${userId}`,
+          this.serviceName,
+        );
         return cachedGuilds;
       }
 
       const accessToken =
         await this.tokenManagementService.getValidAccessToken(userId);
       if (!accessToken) {
-        this.logger.warn(`No valid access token for user ${userId}`);
+        this.loggingService.warn(
+          `No valid access token for user ${userId}`,
+          this.serviceName,
+        );
         return [];
       }
 
@@ -195,16 +206,22 @@ export class UserGuildsService {
         botGuildIds.has(userGuild.id),
       );
 
-      await this.cacheManager.set(cacheKey, mutualGuilds, this.cacheTtl * 1000);
+      await this.cachingService.set(
+        cacheKey,
+        mutualGuilds,
+        this.cacheTtl * 1000,
+      );
 
-      this.logger.log(
+      this.loggingService.log(
         `Filtered ${userGuilds.length} user guilds to ${mutualGuilds.length} mutual guilds for user ${userId}`,
+        this.serviceName,
       );
       return mutualGuilds;
     } catch (error) {
-      this.logger.error(
-        `Error filtering user guilds for user ${userId}:`,
-        error,
+      this.loggingService.error(
+        `Error filtering user guilds for user ${userId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       return [];
     }

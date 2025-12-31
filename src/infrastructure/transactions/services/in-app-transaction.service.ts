@@ -27,7 +27,6 @@ export class InAppTransactionService implements ITransactionService {
     callback: (tx: ITransactionClient) => Promise<T>,
   ): Promise<T> {
     return this.prisma.$transaction(async (tx) => {
-      // Cast Prisma transaction client to ITransactionClient interface
       return callback(tx as ITransactionClient);
     });
   }

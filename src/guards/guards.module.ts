@@ -11,6 +11,7 @@ import { GuildsModule } from '../guilds/guilds.module';
 import { GuildMembersModule } from '../guild-members/guild-members.module';
 import { DiscordModule } from '../discord/discord.module';
 import { TokenManagementModule } from '../auth/services/token-management.module';
+import { InfrastructureModule } from '../infrastructure/infrastructure.module';
 import { PermissionProviderAdapter } from '../permissions/adapters/permission-provider.adapter';
 import { AuditProviderAdapter } from '../audit/adapters/audit-provider.adapter';
 import { DiscordProviderAdapter } from '../discord/adapters/discord-provider.adapter';
@@ -46,6 +47,7 @@ import { TokenManagementService } from '../auth/services/token-management.servic
 @Module({
   imports: [
     ConfigModule,
+    InfrastructureModule,
     forwardRef(() => AuditModule),
     PermissionCheckModule,
     forwardRef(() => GuildAccessAdapterModule), // Use forwardRef to break circular dependency

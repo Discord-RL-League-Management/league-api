@@ -3,9 +3,10 @@ import { InternalController } from './internal.controller';
 import { InternalTrackerController } from './internal-tracker.controller';
 import { InternalScheduledProcessingController } from './controllers/internal-scheduled-processing.controller';
 import { TrackersModule } from '../trackers/trackers.module';
+import { InfrastructureModule } from '../infrastructure/infrastructure.module';
 
 @Module({
-  imports: [TrackersModule],
+  imports: [TrackersModule, InfrastructureModule],
   controllers: [
     InternalController,
     InternalTrackerController,

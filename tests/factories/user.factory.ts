@@ -50,3 +50,4 @@ export function createUserData(
 export function createMultipleUsers(count: number): UserFactoryData[] {
   return Array.from({ length: count }, () => createUserData());
 }
+

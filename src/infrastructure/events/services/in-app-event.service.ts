@@ -50,8 +50,7 @@ export class InAppEventService implements IEventService {
       });
       return Promise.resolve();
     } catch {
-      // Log error but don't throw - event publishing failures should not break the application
-      // In production, this could be logged to monitoring
+      // Event publishing failures should not break the application
       return Promise.resolve();
     }
   }
@@ -74,7 +73,6 @@ export class InAppEventService implements IEventService {
       metadata?: Record<string, unknown>;
     },
   ): Promise<void> {
-    // Use OutboxService to write event to outbox table within transaction
     await this.outboxService.createEvent(
       tx as Prisma.TransactionClient,
       options?.sourceType || 'system',

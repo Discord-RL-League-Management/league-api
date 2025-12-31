@@ -18,7 +18,7 @@ describe('InAppCachingService', () => {
       get: vi.fn(),
       set: vi.fn(),
       del: vi.fn(),
-      reset: vi.fn(),
+      clear: vi.fn(),
       store: {
         keys: vi.fn(),
       },
@@ -132,7 +132,7 @@ describe('InAppCachingService', () => {
 
     it('should_handle_non_existent_key', async () => {
       const key = 'non-existent-key';
-      vi.mocked(mockCache.del).mockResolvedValue(undefined);
+      vi.mocked(mockCache.del).mockResolvedValue(true);
 
       await service.del(key);
 
@@ -144,11 +144,11 @@ describe('InAppCachingService', () => {
     it('should_reset_entire_cache', async () => {
       await service.reset();
 
-      expect(mockCache.reset).toHaveBeenCalled();
+      expect(mockCache.clear).toHaveBeenCalled();
     });
 
     it('should_handle_reset_errors_gracefully', async () => {
-      vi.mocked(mockCache.reset).mockRejectedValue(new Error('Reset failed'));
+      vi.mocked(mockCache.clear).mockRejectedValue(new Error('Reset failed'));
 
       await expect(service.reset()).rejects.toThrow('Reset failed');
     });

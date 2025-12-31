@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TerminusModule, HealthIndicatorService } from '@nestjs/terminus';
+import { InfrastructureModule } from '../infrastructure/infrastructure.module';
 import { HealthController } from './health.controller';
 import { DiscordApiHealthIndicator } from './indicators/discord-api.health';
 
@@ -11,7 +12,10 @@ import { DiscordApiHealthIndicator } from './indicators/discord-api.health';
  * Separation of Concerns: Public health separate from authenticated health
  */
 @Module({
-  imports: [TerminusModule],
+  imports: [
+    TerminusModule,
+    InfrastructureModule, // Provides IConfigurationService
+  ],
   controllers: [HealthController],
   providers: [DiscordApiHealthIndicator, HealthIndicatorService],
 })

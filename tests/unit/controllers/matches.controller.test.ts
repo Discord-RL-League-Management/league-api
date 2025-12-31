@@ -137,12 +137,12 @@ describe('MatchesController', () => {
       const completeDto: CompleteMatchDto = { winnerId: 'team-123' };
       const completedMatch = { ...mockMatch, status: MatchStatus.COMPLETED };
       vi.mocked(mockMatchService.completeMatch).mockResolvedValue(
-        completedMatch as never,
+        completedMatch as any,
       );
 
       const result = await controller.completeMatch('match-123', completeDto);
 
-      expect(result.status).toBe(MatchStatus.COMPLETED);
+      expect((result as any).status).toBe(MatchStatus.COMPLETED);
       expect(mockMatchService.completeMatch).toHaveBeenCalledWith(
         'match-123',
         'team-123',

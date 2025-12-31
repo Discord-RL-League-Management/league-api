@@ -1,6 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Injectable, Inject } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import type { IConfigurationService } from '../../infrastructure/configuration/interfaces/configuration.interface';
+import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { TrackerRepository } from '../repositories/tracker.repository';
 import { TrackerScrapingQueueService } from '../queues/tracker-scraping.queue';
 import { TrackerProcessingGuardService } from './tracker-processing-guard.service';
@@ -14,7 +15,7 @@ import { TrackerScrapingStatus } from '@prisma/client';
  */
 @Injectable()
 export class TrackerBatchProcessorService {
-  private readonly logger = new Logger(TrackerBatchProcessorService.name);
+  private readonly serviceName = TrackerBatchProcessorService.name;
   private readonly refreshIntervalHours: number;
 
   constructor(
@@ -22,7 +23,10 @@ export class TrackerBatchProcessorService {
     private readonly trackerRepository: TrackerRepository,
     private readonly scrapingQueueService: TrackerScrapingQueueService,
     private readonly processingGuard: TrackerProcessingGuardService,
-    private readonly configService: ConfigService,
+    @Inject('IConfigurationService')
+    private readonly configService: IConfigurationService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
   ) {
     const trackerConfig = this.configService.get<{
       refreshIntervalHours: number;
@@ -55,7 +59,10 @@ export class TrackerBatchProcessorService {
     });
 
     if (pendingTrackers.length === 0) {
-      this.logger.log('No pending trackers to process');
+      this.loggingService.log(
+        'No pending trackers to process',
+        this.serviceName,
+      );
       return { processed: 0, trackers: [] };
     }
 
@@ -65,16 +72,18 @@ export class TrackerBatchProcessorService {
       await this.processingGuard.filterProcessableTrackers(trackerIds);
 
     if (processableTrackerIds.length === 0) {
-      this.logger.log(
+      this.loggingService.log(
         `Found ${trackerIds.length} pending trackers, but none can be processed due to guild settings`,
+        this.serviceName,
       );
       return { processed: 0, trackers: [] };
     }
 
     await this.scrapingQueueService.addBatchScrapingJobs(processableTrackerIds);
 
-    this.logger.log(
+    this.loggingService.log(
       `Enqueued ${processableTrackerIds.length} pending trackers for processing (${trackerIds.length - processableTrackerIds.length} skipped due to guild settings)`,
+      this.serviceName,
     );
 
     return {
@@ -109,8 +118,9 @@ export class TrackerBatchProcessorService {
     );
 
     if (trackers.length === 0) {
-      this.logger.log(
+      this.loggingService.log(
         `No pending or stale trackers to process for guild ${guildId}`,
+        this.serviceName,
       );
       return { processed: 0, trackers: [] };
     }
@@ -119,8 +129,9 @@ export class TrackerBatchProcessorService {
 
     await this.scrapingQueueService.addBatchScrapingJobs(trackerIds);
 
-    this.logger.log(
+    this.loggingService.log(
       `Enqueued ${trackerIds.length} pending and stale trackers for guild ${guildId} (manual admin action - bypasses toggle)`,
+      this.serviceName,
     );
 
     return {

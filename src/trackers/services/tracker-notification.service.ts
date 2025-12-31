@@ -1,19 +1,23 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Injectable, Inject } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import type { IConfigurationService } from '../../infrastructure/configuration/interfaces/configuration.interface';
+import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { DiscordMessageService } from './discord-message.service';
 import { NotificationBuilderService } from './notification-builder.service';
 
 @Injectable()
 export class TrackerNotificationService {
-  private readonly logger = new Logger(TrackerNotificationService.name);
+  private readonly serviceName = TrackerNotificationService.name;
   private readonly frontendUrl: string;
 
   constructor(
-    private readonly configService: ConfigService,
+    @Inject('IConfigurationService')
+    private readonly configService: IConfigurationService,
     private readonly prisma: PrismaService,
     private readonly discordMessageService: DiscordMessageService,
     private readonly notificationBuilderService: NotificationBuilderService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
   ) {
     this.frontendUrl = this.configService.get<string>('frontend.url') || '';
   }
@@ -37,7 +41,10 @@ export class TrackerNotificationService {
       });
 
       if (!user) {
-        this.logger.warn(`User ${userId} not found, cannot send notification`);
+        this.loggingService.warn(
+          `User ${userId} not found, cannot send notification`,
+          this.serviceName,
+        );
         return;
       }
 
@@ -52,8 +59,9 @@ export class TrackerNotificationService {
       });
 
       if (!tracker) {
-        this.logger.warn(
+        this.loggingService.warn(
           `Tracker ${trackerId} not found, cannot send notification`,
+          this.serviceName,
         );
         return;
       }
@@ -70,15 +78,17 @@ export class TrackerNotificationService {
         embeds: [embed],
       });
 
-      this.logger.log(
+      this.loggingService.log(
         `Sent scraping complete notification to user ${userId} for tracker ${trackerId}`,
+        this.serviceName,
       );
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      this.logger.error(
+      this.loggingService.error(
         `Failed to send scraping complete notification: ${errorMessage}`,
-        error,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       // Don't throw - notification failures shouldn't break the scraping process
     }
@@ -99,8 +109,9 @@ export class TrackerNotificationService {
       });
 
       if (!tracker) {
-        this.logger.warn(
+        this.loggingService.warn(
           `Tracker ${trackerId} not found, cannot send notification`,
+          this.serviceName,
         );
         return;
       }
@@ -110,7 +121,10 @@ export class TrackerNotificationService {
       });
 
       if (!user) {
-        this.logger.warn(`User ${userId} not found, cannot send notification`);
+        this.loggingService.warn(
+          `User ${userId} not found, cannot send notification`,
+          this.serviceName,
+        );
         return;
       }
 
@@ -121,7 +135,6 @@ export class TrackerNotificationService {
         this.frontendUrl,
       );
 
-      // Try ephemeral follow-up if we have an interaction token, otherwise fall back to DM
       if (tracker.registrationInteractionToken) {
         try {
           await this.discordMessageService.sendEphemeralFollowUp(
@@ -130,35 +143,39 @@ export class TrackerNotificationService {
               embeds: [embed],
             },
           );
-          this.logger.log(
+          this.loggingService.log(
             `Sent scraping failed ephemeral follow-up for tracker ${trackerId}`,
+            this.serviceName,
           );
         } catch {
-          // If ephemeral fails (e.g., token expired), fall back to DM
-          this.logger.debug(
+          this.loggingService.debug(
             `Ephemeral follow-up failed for tracker ${trackerId}, falling back to DM`,
+            this.serviceName,
           );
           await this.discordMessageService.sendDirectMessage(userId, {
             embeds: [embed],
           });
-          this.logger.log(
+          this.loggingService.log(
             `Sent scraping failed DM notification for tracker ${trackerId}`,
+            this.serviceName,
           );
         }
       } else {
         await this.discordMessageService.sendDirectMessage(userId, {
           embeds: [embed],
         });
-        this.logger.log(
+        this.loggingService.log(
           `Sent scraping failed DM notification for tracker ${trackerId} (no interaction token)`,
+          this.serviceName,
         );
       }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      this.logger.error(
+      this.loggingService.error(
         `Failed to send scraping failed notification: ${errorMessage}`,
-        error,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       // Don't throw - notification failures shouldn't break the scraping process
     }
@@ -173,15 +190,17 @@ export class TrackerNotificationService {
     progress: { current: number; total: number },
   ): void {
     try {
-      this.logger.debug(
+      this.loggingService.debug(
         `Scraping progress for tracker ${trackerId}: ${progress.current}/${progress.total} seasons`,
+        this.serviceName,
       );
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      this.logger.error(
+      this.loggingService.error(
         `Failed to send scraping progress notification: ${errorMessage}`,
-        error,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
     }
   }

@@ -2,8 +2,9 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
-  Logger,
+  Inject,
 } from '@nestjs/common';
+import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { GuildMembersService } from '../../guild-members/guild-members.service';
 import { GuildsService } from '../guilds.service';
 import { TokenManagementService } from '../../auth/services/token-management.service';
@@ -18,13 +19,15 @@ import { DiscordApiService } from '../../discord/discord-api.service';
  */
 @Injectable()
 export class GuildAccessValidationService {
-  private readonly logger = new Logger(GuildAccessValidationService.name);
+  private readonly serviceName = GuildAccessValidationService.name;
 
   constructor(
     private guildMembersService: GuildMembersService,
     private guildsService: GuildsService,
     private tokenManagementService: TokenManagementService,
     private discordApiService: DiscordApiService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
   ) {}
 
   /**
@@ -42,8 +45,9 @@ export class GuildAccessValidationService {
   ): Promise<void> {
     const guildExists = await this.guildsService.exists(guildId);
     if (!guildExists) {
-      this.logger.warn(
+      this.loggingService.warn(
         `Guild ${guildId} not found or bot is not a member for user ${userId}`,
+        this.serviceName,
       );
       throw new NotFoundException('Guild not found or bot is not a member');
     }
@@ -79,8 +83,9 @@ export class GuildAccessValidationService {
       const accessToken =
         await this.tokenManagementService.getValidAccessToken(userId);
       if (!accessToken) {
-        this.logger.warn(
+        this.loggingService.warn(
           `No valid access token for user ${userId}, cannot verify Discord membership`,
+          this.serviceName,
         );
         throw new ForbiddenException('You are not a member of this guild');
       }
@@ -92,14 +97,16 @@ export class GuildAccessValidationService {
         );
 
       if (!guildPermissions.isMember) {
-        this.logger.warn(
+        this.loggingService.warn(
           `User ${userId} is not a member of guild ${guildId} according to Discord API`,
+          this.serviceName,
         );
         throw new ForbiddenException('You are not a member of this guild');
       }
 
-      this.logger.log(
+      this.loggingService.log(
         `User ${userId} verified as member of guild ${guildId} via Discord API, syncing to database`,
+        this.serviceName,
       );
 
       const guild = await this.guildsService.findOne(guildId, {
@@ -115,16 +122,18 @@ export class GuildAccessValidationService {
         roles: guildPermissions.roles || [],
       });
 
-      this.logger.log(
+      this.loggingService.log(
         `Successfully synced membership for user ${userId} in guild ${guildId}`,
+        this.serviceName,
       );
     } catch (error) {
       if (error instanceof ForbiddenException) {
         throw error;
       }
-      this.logger.error(
-        `Failed to verify Discord membership for user ${userId} in guild ${guildId}:`,
-        error,
+      this.loggingService.error(
+        `Failed to verify Discord membership for user ${userId} in guild ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw new ForbiddenException('You are not a member of this guild');
     }

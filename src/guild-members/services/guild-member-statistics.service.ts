@@ -1,8 +1,9 @@
 import {
   Injectable,
-  Logger,
   InternalServerErrorException,
+  Inject,
 } from '@nestjs/common';
+import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { GuildMemberRepository } from '../repositories/guild-member.repository';
 
 /**
@@ -13,9 +14,13 @@ import { GuildMemberRepository } from '../repositories/guild-member.repository';
  */
 @Injectable()
 export class GuildMemberStatisticsService {
-  private readonly logger = new Logger(GuildMemberStatisticsService.name);
+  private readonly serviceName = GuildMemberStatisticsService.name;
 
-  constructor(private guildMemberRepository: GuildMemberRepository) {}
+  constructor(
+    private guildMemberRepository: GuildMemberRepository,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
+  ) {}
 
   /**
    * Get guild member statistics
@@ -29,9 +34,10 @@ export class GuildMemberStatisticsService {
     try {
       return await this.guildMemberRepository.countStats(guildId);
     } catch (error) {
-      this.logger.error(
-        `Failed to get member stats for guild ${guildId}:`,
-        error,
+      this.loggingService.error(
+        `Failed to get member stats for guild ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw new InternalServerErrorException('Failed to get member statistics');
     }
@@ -51,9 +57,10 @@ export class GuildMemberStatisticsService {
         roleIds,
       );
     } catch (error) {
-      this.logger.error(
-        `Failed to count members with roles in guild ${guildId}:`,
-        error,
+      this.loggingService.error(
+        `Failed to count members with roles in guild ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw new InternalServerErrorException(
         'Failed to count members with roles',
@@ -70,9 +77,10 @@ export class GuildMemberStatisticsService {
       const stats = await this.guildMemberRepository.countStats(guildId);
       return stats.activeMembers;
     } catch (error) {
-      this.logger.error(
-        `Failed to get active members count for guild ${guildId}:`,
-        error,
+      this.loggingService.error(
+        `Failed to get active members count for guild ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw new InternalServerErrorException(
         'Failed to get active members count',

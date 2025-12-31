@@ -24,7 +24,15 @@ describe('MmrCalculationService', () => {
       validateFormula: vi.fn().mockReturnValue({ valid: true }),
     } as unknown as FormulaValidationService;
 
-    service = new MmrCalculationService(mockFormulaValidation);
+    const mockLoggingService = {
+      log: vi.fn(),
+      error: vi.fn(),
+      warn: vi.fn(),
+      debug: vi.fn(),
+      verbose: vi.fn(),
+    } as unknown as any;
+
+    service = new MmrCalculationService(mockFormulaValidation, mockLoggingService);
   });
 
   afterEach(() => {

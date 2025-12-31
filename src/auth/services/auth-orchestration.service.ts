@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
+import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { DiscordApiService } from '../../discord/discord-api.service';
 import { UserGuildsService } from '../../user-guilds/user-guilds.service';
 import { GuildsService } from '../../guilds/guilds.service';
@@ -16,12 +17,14 @@ import { GuildsService } from '../../guilds/guilds.service';
  */
 @Injectable()
 export class AuthOrchestrationService {
-  private readonly logger = new Logger(AuthOrchestrationService.name);
+  private readonly serviceName = AuthOrchestrationService.name;
 
   constructor(
     private readonly discordApiService: DiscordApiService,
     private readonly userGuildsService: UserGuildsService,
     private readonly guildsService: GuildsService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
   ) {}
 
   /**
@@ -61,9 +64,9 @@ export class AuthOrchestrationService {
                 roles: memberData?.roles || [],
               };
             } catch (error) {
-              this.logger.warn(
-                `Failed to fetch roles for guild ${guild.id}:`,
-                error,
+              this.loggingService.warn(
+                `Failed to fetch roles for guild ${guild.id}: ${error instanceof Error ? error.message : String(error)}`,
+                this.serviceName,
               );
               // Continue with empty roles if fetch fails to prevent OAuth failure from partial role fetch errors
               return {
@@ -79,14 +82,16 @@ export class AuthOrchestrationService {
         mutualGuildsWithRoles,
       );
 
-      this.logger.log(
+      this.loggingService.log(
         `Synced ${mutualGuildsWithRoles.length} guild memberships with roles for user ${userId}`,
+        this.serviceName,
       );
     } catch (error) {
       // Log error but don't fail OAuth callback - role sync is not critical
-      this.logger.error(
-        `Failed to sync guild memberships with roles for user ${userId}:`,
-        error,
+      this.loggingService.error(
+        `Failed to sync guild memberships with roles for user ${userId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       // Re-throw to allow caller to handle if needed, but typically this is caught in controller
       throw error;

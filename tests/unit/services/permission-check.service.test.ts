@@ -10,12 +10,14 @@ import { PermissionCheckService } from '@/permissions/modules/permission-check/p
 import { GuildMembersService } from '@/guild-members/guild-members.service';
 import { DiscordBotService } from '@/discord/discord-bot.service';
 import { RoleParserService } from '@/permissions/modules/role-parser/role-parser.service';
+import { createMockLoggingService } from '@tests/utils/test-helpers';
 
 describe('PermissionCheckService', () => {
   let service: PermissionCheckService;
   let mockGuildMembersService: GuildMembersService;
   let mockDiscordValidation: DiscordBotService;
   let mockRoleParser: RoleParserService;
+  let mockLoggingService: ReturnType<typeof createMockLoggingService>;
 
   beforeEach(() => {
     mockGuildMembersService = {
@@ -32,10 +34,13 @@ describe('PermissionCheckService', () => {
       calculatePermissions: vi.fn(),
     } as unknown as RoleParserService;
 
+    mockLoggingService = createMockLoggingService();
+
     service = new PermissionCheckService(
       mockGuildMembersService,
       mockDiscordValidation,
       mockRoleParser,
+      mockLoggingService,
     );
   });
 

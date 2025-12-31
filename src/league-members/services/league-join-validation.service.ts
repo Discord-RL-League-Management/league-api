@@ -1,4 +1,5 @@
-import { Injectable, Logger, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
+import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { ILeagueSettingsProvider } from '../interfaces/league-settings-provider.interface';
 import { LeagueMemberRepository } from '../repositories/league-member.repository';
@@ -17,7 +18,7 @@ import { Player, PlayerStatus } from '@prisma/client';
  */
 @Injectable()
 export class LeagueJoinValidationService {
-  private readonly logger = new Logger(LeagueJoinValidationService.name);
+  private readonly serviceName = LeagueJoinValidationService.name;
 
   constructor(
     private prisma: PrismaService,
@@ -28,6 +29,8 @@ export class LeagueJoinValidationService {
     private playerValidationService: PlayerValidationService,
     private guildMembersService: GuildMembersService,
     private trackerService: TrackerService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
   ) {}
 
   /**

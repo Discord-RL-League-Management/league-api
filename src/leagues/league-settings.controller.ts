@@ -5,7 +5,7 @@ import {
   Param,
   Body,
   UseGuards,
-  Logger,
+  Inject,
   BadRequestException,
   InternalServerErrorException,
 } from '@nestjs/common';
@@ -23,18 +23,21 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import type { AuthenticatedUser } from '../common/interfaces/user.interface';
+import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 
 @ApiTags('League Settings')
 @Controller('api/leagues/:leagueId/settings')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class LeagueSettingsController {
-  private readonly logger = new Logger(LeagueSettingsController.name);
+  private readonly serviceName = LeagueSettingsController.name;
 
   constructor(
     private leagueSettingsService: LeagueSettingsService,
     private leagueAccessValidationService: LeagueAccessValidationService,
     private leaguePermissionService: LeaguePermissionService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
   ) {}
 
   @Get()
@@ -51,7 +54,10 @@ export class LeagueSettingsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     try {
-      this.logger.log(`Getting settings for league ${leagueId}`);
+      this.loggingService.log(
+        `Getting settings for league ${leagueId}`,
+        this.serviceName,
+      );
       await this.leagueAccessValidationService.validateLeagueAccess(
         user.id,
         leagueId,
@@ -64,9 +70,10 @@ export class LeagueSettingsController {
 
       return await this.leagueSettingsService.getSettings(leagueId);
     } catch (error) {
-      this.logger.error(
-        `Error getting settings for league ${leagueId}:`,
-        error,
+      this.loggingService.error(
+        `Error getting settings for league ${leagueId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw error;
     }
@@ -85,8 +92,9 @@ export class LeagueSettingsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     try {
-      this.logger.log(
+      this.loggingService.log(
         `Updating settings for league ${leagueId} by user ${user.id}`,
+        this.serviceName,
       );
       await this.leagueAccessValidationService.validateLeagueAccess(
         user.id,
@@ -103,9 +111,10 @@ export class LeagueSettingsController {
         settingsDto,
       );
     } catch (error) {
-      this.logger.error(
-        `Error updating settings for league ${leagueId}:`,
-        error,
+      this.loggingService.error(
+        `Error updating settings for league ${leagueId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       if (error instanceof BadRequestException) {
         throw error;

@@ -52,3 +52,4 @@ export function createMatchData(
 export function createMultipleMatches(count: number): MatchFactoryData[] {
   return Array.from({ length: count }, () => createMatchData());
 }
+

@@ -23,6 +23,10 @@ import { SettingsService } from '@/infrastructure/settings/services/settings.ser
 import { CreateGuildDto } from '@/guilds/dto/create-guild.dto';
 import { Guild } from '@prisma/client';
 import { GuildSettings } from '@/guilds/interfaces/settings.interface';
+import {
+  createMockLoggingService,
+  createMockTransactionService,
+} from '@tests/utils/test-helpers';
 
 describe('GuildSyncService', () => {
   let service: GuildSyncService;
@@ -31,6 +35,8 @@ describe('GuildSyncService', () => {
   let mockErrorHandler: GuildErrorHandlerService;
   let mockUserRepository: UserRepository;
   let mockSettingsService: SettingsService;
+  let mockTransactionService: ReturnType<typeof createMockTransactionService>;
+  let mockLoggingService: ReturnType<typeof createMockLoggingService>;
 
   const guildId = 'guild-123';
   const ownerId = 'owner-123';
@@ -122,12 +128,38 @@ describe('GuildSyncService', () => {
       }),
     } as unknown as PrismaService;
 
+    mockLoggingService = createMockLoggingService();
+    
+    // Create a mock transaction client that matches Prisma.TransactionClient structure
+    const createMockTx = () => ({
+      guild: {
+        upsert: vi.fn(),
+      },
+      settings: {
+        findUnique: vi.fn(),
+        upsert: vi.fn(),
+      },
+      guildMember: {
+        deleteMany: vi.fn(),
+        createMany: vi.fn(),
+      },
+    } as any);
+
+    mockTransactionService = {
+      executeTransaction: vi.fn().mockImplementation(async (callback) => {
+        const mockTx = createMockTx();
+        return await callback(mockTx);
+      }),
+    } as any;
+
     service = new GuildSyncService(
       mockPrisma,
       mockSettingsDefaults,
       mockErrorHandler,
       mockUserRepository,
       mockSettingsService,
+      mockTransactionService,
+      mockLoggingService,
     );
   });
 
@@ -137,7 +169,7 @@ describe('GuildSyncService', () => {
 
   describe('syncGuildWithMembers', () => {
     it('should_sync_new_guild_with_members_successfully', async () => {
-      vi.mocked(mockPrisma.$transaction).mockImplementation(
+      vi.mocked(mockTransactionService.executeTransaction).mockImplementation(
         async (callback) => {
           const mockTx = {
             guild: {
@@ -173,7 +205,7 @@ describe('GuildSyncService', () => {
 
     it('should_sync_existing_guild_with_members_successfully', async () => {
       const existingGuild = { ...mockGuild, name: 'Existing Guild' };
-      vi.mocked(mockPrisma.$transaction).mockImplementation(
+      vi.mocked(mockTransactionService.executeTransaction).mockImplementation(
         async (callback) => {
           const mockTx = {
             guild: {
@@ -213,7 +245,7 @@ describe('GuildSyncService', () => {
     });
 
     it('should_create_settings_when_settings_do_not_exist', async () => {
-      vi.mocked(mockPrisma.$transaction).mockImplementation(
+      vi.mocked(mockTransactionService.executeTransaction).mockImplementation(
         async (callback) => {
           const mockTx = {
             guild: {
@@ -261,7 +293,7 @@ describe('GuildSyncService', () => {
         },
       };
 
-      vi.mocked(mockPrisma.$transaction).mockImplementation(
+      vi.mocked(mockTransactionService.executeTransaction).mockImplementation(
         async (callback) => {
           const mockTx = {
             guild: {
@@ -296,7 +328,7 @@ describe('GuildSyncService', () => {
     });
 
     it('should_upsert_users_during_member_sync', async () => {
-      vi.mocked(mockPrisma.$transaction).mockImplementation(
+      vi.mocked(mockTransactionService.executeTransaction).mockImplementation(
         async (callback) => {
           const mockTx = {
             guild: {
@@ -323,7 +355,7 @@ describe('GuildSyncService', () => {
 
       await service.syncGuildWithMembers(guildId, mockGuildData, mockMembers);
 
-      expect(mockPrisma.$transaction).toHaveBeenCalled();
+      expect(mockTransactionService.executeTransaction).toHaveBeenCalled();
     });
 
     it('should_remove_duplicate_members_before_syncing', async () => {
@@ -332,7 +364,7 @@ describe('GuildSyncService', () => {
         { ...mockMembers[0] }, // Duplicate
       ];
 
-      vi.mocked(mockPrisma.$transaction).mockImplementation(
+      vi.mocked(mockTransactionService.executeTransaction).mockImplementation(
         async (callback) => {
           const mockTx = {
             guild: {
@@ -366,7 +398,7 @@ describe('GuildSyncService', () => {
     });
 
     it('should_delete_existing_members_before_creating_new_ones', async () => {
-      vi.mocked(mockPrisma.$transaction).mockImplementation(
+      vi.mocked(mockTransactionService.executeTransaction).mockImplementation(
         async (callback) => {
           const mockTx = {
             guild: {
@@ -409,7 +441,7 @@ describe('GuildSyncService', () => {
         },
       );
 
-      vi.mocked(mockPrisma.$transaction).mockRejectedValue(prismaError);
+      vi.mocked(mockTransactionService.executeTransaction).mockRejectedValue(prismaError);
 
       await expect(
         service.syncGuildWithMembers(guildId, mockGuildData, mockMembers),
@@ -426,7 +458,7 @@ describe('GuildSyncService', () => {
         },
       );
 
-      vi.mocked(mockPrisma.$transaction).mockRejectedValue(prismaError);
+      vi.mocked(mockTransactionService.executeTransaction).mockRejectedValue(prismaError);
 
       await expect(
         service.syncGuildWithMembers(guildId, mockGuildData, mockMembers),
@@ -435,7 +467,7 @@ describe('GuildSyncService', () => {
 
     it('should_throw_InternalServerErrorException_when_unexpected_error_occurs', async () => {
       const error = new Error('Unexpected database error');
-      vi.mocked(mockPrisma.$transaction).mockRejectedValue(error);
+      vi.mocked(mockTransactionService.executeTransaction).mockRejectedValue(error);
 
       await expect(
         service.syncGuildWithMembers(guildId, mockGuildData, mockMembers),
@@ -444,7 +476,7 @@ describe('GuildSyncService', () => {
 
     it('should_extract_error_info_when_error_handler_available', async () => {
       const error = new Error('Database error');
-      vi.mocked(mockPrisma.$transaction).mockRejectedValue(error);
+      vi.mocked(mockTransactionService.executeTransaction).mockRejectedValue(error);
       vi.mocked(mockErrorHandler.extractErrorInfo).mockReturnValue({
         message: 'Failed to sync guild',
         code: 'GUILD_SYNC_ERROR',
@@ -457,7 +489,7 @@ describe('GuildSyncService', () => {
     });
 
     it('should_handle_empty_members_array', async () => {
-      vi.mocked(mockPrisma.$transaction).mockImplementation(
+      vi.mocked(mockTransactionService.executeTransaction).mockImplementation(
         async (callback) => {
           const mockTx = {
             guild: {
@@ -502,7 +534,7 @@ describe('GuildSyncService', () => {
         settings: mockDefaultSettings,
       };
 
-      vi.mocked(mockPrisma.$transaction).mockImplementation(
+      vi.mocked(mockTransactionService.executeTransaction).mockImplementation(
         async (callback) => {
           const mockTx = {
             guild: {

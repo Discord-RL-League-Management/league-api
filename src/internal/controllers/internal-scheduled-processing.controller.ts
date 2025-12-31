@@ -6,7 +6,7 @@ import {
   Param,
   Query,
   UseGuards,
-  Logger,
+  Inject,
 } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import {
@@ -20,6 +20,7 @@ import { BotAuthGuard } from '../../auth/guards/bot-auth.guard';
 import { ScheduledTrackerProcessingService } from '../../trackers/services/scheduled-tracker-processing.service';
 import { ScheduleTrackerProcessingDto } from '../dto/schedule-tracker-processing.dto';
 import { GetSchedulesQueryDto } from '../dto/get-schedules-query.dto';
+import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 
 /**
  * InternalScheduledProcessingController - Bot-only endpoints for scheduled tracker processing
@@ -31,12 +32,12 @@ import { GetSchedulesQueryDto } from '../dto/get-schedules-query.dto';
 @SkipThrottle()
 @ApiBearerAuth('bot-api-key')
 export class InternalScheduledProcessingController {
-  private readonly logger = new Logger(
-    InternalScheduledProcessingController.name,
-  );
+  private readonly serviceName = InternalScheduledProcessingController.name;
 
   constructor(
     private readonly scheduledProcessingService: ScheduledTrackerProcessingService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
   ) {}
 
   @Post('schedule')
@@ -61,8 +62,9 @@ export class InternalScheduledProcessingController {
   async scheduleTrackerProcessing(
     @Body() body: ScheduleTrackerProcessingDto,
   ): Promise<unknown> {
-    this.logger.log(
+    this.loggingService.log(
       `Scheduling tracker processing for guild ${body.guildId} at ${body.scheduledAt}`,
+      this.serviceName,
     );
     return this.scheduledProcessingService.createSchedule(
       body.guildId,

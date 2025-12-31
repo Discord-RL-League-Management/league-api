@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
+import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { PrismaService } from '../../prisma/prisma.service';
 
 /**
@@ -30,9 +31,13 @@ export interface UserSettings {
  */
 @Injectable()
 export class UserSettingsService {
-  private readonly logger = new Logger(UserSettingsService.name);
+  private readonly serviceName = UserSettingsService.name;
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
+  ) {}
 
   /**
    * Get user settings with defaults
@@ -42,7 +47,11 @@ export class UserSettingsService {
     try {
       return Promise.resolve(this.getDefaultSettings());
     } catch (error) {
-      this.logger.error(`Failed to get settings for user ${userId}:`, error);
+      this.loggingService.error(
+        `Failed to get settings for user ${userId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       return Promise.resolve(this.getDefaultSettings());
     }
   }
@@ -61,10 +70,17 @@ export class UserSettingsService {
 
       this.validateSettings(mergedSettings);
 
-      this.logger.log(`Updated settings for user ${userId}`);
+      this.loggingService.log(
+        `Updated settings for user ${userId}`,
+        this.serviceName,
+      );
       return mergedSettings;
     } catch (error) {
-      this.logger.error(`Failed to update settings for user ${userId}:`, error);
+      this.loggingService.error(
+        `Failed to update settings for user ${userId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       throw error;
     }
   }

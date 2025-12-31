@@ -8,9 +8,14 @@ import { GuildMemberStatisticsService } from './services/guild-member-statistics
 import { GuildMemberSyncService } from './services/guild-member-sync.service';
 import { UsersModule } from '../users/users.module';
 import { PrismaModule } from '../prisma/prisma.module';
+import { InfrastructureModule } from '../infrastructure/infrastructure.module';
 
 @Module({
-  imports: [UsersModule, PrismaModule],
+  imports: [
+    UsersModule,
+    PrismaModule,
+    InfrastructureModule, // Provides ITransactionService
+  ],
   controllers: [GuildMembersController, InternalGuildMembersController],
   providers: [
     GuildMembersService,

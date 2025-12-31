@@ -1,4 +1,5 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Inject } from '@nestjs/common';
+import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { create, all, MathJsInstance } from 'mathjs';
 import { FormulaValidationService } from './formula-validation.service';
 import { MmrCalculationConfig } from '../../guilds/interfaces/settings.interface';
@@ -25,10 +26,14 @@ export interface TrackerData {
  */
 @Injectable()
 export class MmrCalculationService {
-  private readonly logger = new Logger(MmrCalculationService.name);
+  private readonly serviceName = MmrCalculationService.name;
   private readonly math: MathJsInstance;
 
-  constructor(private readonly formulaValidation: FormulaValidationService) {
+  constructor(
+    private readonly formulaValidation: FormulaValidationService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
+  ) {
     this.math = create(all);
   }
 
@@ -271,9 +276,10 @@ export class MmrCalculationService {
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error(
+      this.loggingService.error(
         `Failed to evaluate custom formula: ${errorMessage}`,
-        error,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw new BadRequestException(
         `Formula evaluation failed: ${errorMessage}`,

@@ -1,8 +1,9 @@
 import {
   Injectable,
   InternalServerErrorException,
-  Logger,
+  Inject,
 } from '@nestjs/common';
+import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 import { Prisma } from '@prisma/client';
 import { League, LeagueStatus } from '@prisma/client';
 import { CreateLeagueDto } from './dto/create-league.dto';
@@ -27,12 +28,14 @@ import { PrismaService } from '../prisma/prisma.service';
  */
 @Injectable()
 export class LeaguesService {
-  private readonly logger = new Logger(LeaguesService.name);
+  private readonly serviceName = LeaguesService.name;
 
   constructor(
     private settingsDefaults: LeagueSettingsDefaultsService,
     private leagueRepository: LeagueRepository,
     private prisma: PrismaService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
   ) {}
 
   /**
@@ -44,10 +47,6 @@ export class LeaguesService {
     createdBy: string,
   ): Promise<League> {
     try {
-      // Note: We can't check for duplicate league by ID since ID is generated (cuid)
-      // Instead, we'll check for duplicate name within the same guild if needed
-      // For now, we'll allow multiple leagues with the same name in a guild
-
       const leagueData: CreateLeagueDto & { createdBy: string } = {
         ...createLeagueDto,
         createdBy,
@@ -59,7 +58,10 @@ export class LeaguesService {
         this.settingsDefaults.getDefaults() as unknown as Prisma.InputJsonValue,
       );
 
-      this.logger.log(`Created league ${league.id} with default settings`);
+      this.loggingService.log(
+        `Created league ${league.id} with default settings`,
+        this.serviceName,
+      );
       return league;
     } catch (error) {
       if (
@@ -68,7 +70,11 @@ export class LeaguesService {
       ) {
         throw error;
       }
-      this.logger.error(`Failed to create league:`, error);
+      this.loggingService.error(
+        `Failed to create league: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       throw new InternalServerErrorException('Failed to create league');
     }
   }
@@ -97,7 +103,11 @@ export class LeaguesService {
         },
       };
     } catch (error) {
-      this.logger.error('Failed to fetch leagues:', error);
+      this.loggingService.error(
+        `Failed to fetch leagues: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       throw new InternalServerErrorException('Failed to fetch leagues');
     }
   }
@@ -120,7 +130,11 @@ export class LeaguesService {
         },
       };
     } catch (error) {
-      this.logger.error(`Failed to fetch leagues for guild ${guildId}:`, error);
+      this.loggingService.error(
+        `Failed to fetch leagues for guild ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       throw new InternalServerErrorException('Failed to fetch leagues');
     }
   }
@@ -151,9 +165,10 @@ export class LeaguesService {
         },
       };
     } catch (error) {
-      this.logger.error(
-        `Failed to fetch leagues for guild ${guildId} and game ${game}:`,
-        error,
+      this.loggingService.error(
+        `Failed to fetch leagues for guild ${guildId} and game ${game}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw new InternalServerErrorException('Failed to fetch leagues');
     }
@@ -179,7 +194,11 @@ export class LeaguesService {
       if (error instanceof LeagueNotFoundException) {
         throw error;
       }
-      this.logger.error(`Failed to fetch league ${id}:`, error);
+      this.loggingService.error(
+        `Failed to fetch league ${id}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       throw new InternalServerErrorException('Failed to fetch league');
     }
   }
@@ -201,7 +220,11 @@ export class LeaguesService {
       if (error instanceof LeagueNotFoundException) {
         throw error;
       }
-      this.logger.error(`Failed to update league ${id}:`, error);
+      this.loggingService.error(
+        `Failed to update league ${id}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       throw new InternalServerErrorException('Failed to update league');
     }
   }
@@ -214,7 +237,6 @@ export class LeaguesService {
     try {
       const league = await this.findOne(id);
 
-      // Validate status transition (can be enhanced with specific rules later)
       this.validateStatusTransition(league.status, status);
 
       return await this.leagueRepository.update(id, { status });
@@ -225,9 +247,10 @@ export class LeaguesService {
       ) {
         throw error;
       }
-      this.logger.error(
-        `Failed to update league ${id} status to ${status}:`,
-        error,
+      this.loggingService.error(
+        `Failed to update league ${id} status to ${status}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw new InternalServerErrorException('Failed to update league status');
     }
@@ -247,16 +270,19 @@ export class LeaguesService {
         throw new LeagueNotFoundException(id);
       }
 
-      // Hard delete league (cascade will handle related records)
       const deletedLeague = await this.leagueRepository.delete(id);
 
-      this.logger.log(`Deleted league ${id}`);
+      this.loggingService.log(`Deleted league ${id}`, this.serviceName);
       return deletedLeague;
     } catch (error) {
       if (error instanceof LeagueNotFoundException) {
         throw error;
       }
-      this.logger.error(`Failed to delete league ${id}:`, error);
+      this.loggingService.error(
+        `Failed to delete league ${id}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       throw new InternalServerErrorException('Failed to delete league');
     }
   }

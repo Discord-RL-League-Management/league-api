@@ -13,6 +13,7 @@ import { GuildMembersService } from '@/guild-members/guild-members.service';
 import { GuildsService } from '@/guilds/guilds.service';
 import { TokenManagementService } from '@/auth/services/token-management.service';
 import { DiscordApiService } from '@/discord/discord-api.service';
+import { createMockLoggingService } from '@tests/utils/test-helpers';
 
 describe('GuildAccessValidationService', () => {
   let service: GuildAccessValidationService;
@@ -40,11 +41,14 @@ describe('GuildAccessValidationService', () => {
       checkGuildPermissions: vi.fn(),
     } as unknown as DiscordApiService;
 
+    const mockLoggingService = createMockLoggingService();
+
     service = new GuildAccessValidationService(
       mockGuildMembersService,
       mockGuildsService,
       mockTokenManagementService,
       mockDiscordApiService,
+      mockLoggingService,
     );
   });
 

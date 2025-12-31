@@ -16,6 +16,7 @@ import { PermissionCheckService } from '@/permissions/modules/permission-check/p
 import { GuildSettingsService } from '@/guilds/guild-settings.service';
 import { LeagueNotFoundException } from '@/leagues/exceptions/league.exceptions';
 import { LeagueMemberRole } from '@prisma/client';
+import { createMockLoggingService } from '@tests/utils/test-helpers';
 
 describe('LeaguePermissionService', () => {
   let service: LeaguePermissionService;
@@ -25,6 +26,7 @@ describe('LeaguePermissionService', () => {
   let mockLeagueMemberRepository: LeagueMemberRepository;
   let mockPermissionCheckService: PermissionCheckService;
   let mockGuildSettingsService: GuildSettingsService;
+  let mockLoggingService: ReturnType<typeof createMockLoggingService>;
 
   beforeEach(() => {
     mockLeagueRepository = {
@@ -49,6 +51,8 @@ describe('LeaguePermissionService', () => {
       getSettings: vi.fn(),
     } as unknown as GuildSettingsService;
 
+    mockLoggingService = createMockLoggingService();
+
     service = new LeaguePermissionService(
       mockLeagueRepository,
       mockLeagueAccessValidationService,
@@ -56,6 +60,7 @@ describe('LeaguePermissionService', () => {
       mockLeagueMemberRepository,
       mockPermissionCheckService,
       mockGuildSettingsService,
+      mockLoggingService,
     );
   });
 

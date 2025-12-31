@@ -1,7 +1,13 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import type {
+  ITransactionService,
+  ITransactionClient,
+} from '../../infrastructure/transactions/interfaces/transaction.interface';
+import { Prisma } from '@prisma/client';
 import { TrackerScrapingStatus } from '@prisma/client';
 import { TRACKER_SCRAPING_QUEUE } from './tracker-scraping.queue';
 import {
@@ -18,7 +24,7 @@ import { MmrCalculationIntegrationService } from '../../mmr-calculation/services
 @Processor(TRACKER_SCRAPING_QUEUE)
 @Injectable()
 export class TrackerScrapingProcessor extends WorkerHost {
-  private readonly logger = new Logger(TrackerScrapingProcessor.name);
+  private readonly serviceName = TrackerScrapingProcessor.name;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -28,13 +34,20 @@ export class TrackerScrapingProcessor extends WorkerHost {
     private readonly notificationService: TrackerNotificationService,
     private readonly activityLogService: ActivityLogService,
     private readonly mmrCalculationIntegration: MmrCalculationIntegrationService,
+    @Inject('ITransactionService')
+    private readonly transactionService: ITransactionService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
   ) {
     super();
   }
 
   async process(job: Job<ScrapingJobData>): Promise<ScrapingJobResult> {
     const { trackerId } = job.data;
-    this.logger.log(`Processing scraping job for tracker ${trackerId}`);
+    this.loggingService.log(
+      `Processing scraping job for tracker ${trackerId}`,
+      this.serviceName,
+    );
 
     let scrapingLogId: string | null = null;
     let tracker: { id: string; url: string; userId: string } | null = null;
@@ -71,7 +84,10 @@ export class TrackerScrapingProcessor extends WorkerHost {
       const seasons = await this.scraperService.scrapeAllSeasons(tracker.url);
 
       if (!seasons || seasons.length === 0) {
-        this.logger.warn(`No seasons found for tracker ${trackerId}`);
+        this.loggingService.warn(
+          `No seasons found for tracker ${trackerId}`,
+          this.serviceName,
+        );
         await this.prisma.tracker.update({
           where: { id: trackerId },
           data: {
@@ -96,10 +112,10 @@ export class TrackerScrapingProcessor extends WorkerHost {
 
         const trackerUserId = tracker.userId;
         const trackerUrl = tracker.url;
-        await this.prisma
-          .$transaction(async (tx) => {
+        await this.transactionService
+          .executeTransaction(async (tx: ITransactionClient) => {
             await this.activityLogService.logActivity(
-              tx,
+              tx as Prisma.TransactionClient,
               'tracker',
               trackerId,
               'TRACKER_SCRAPING',
@@ -121,18 +137,20 @@ export class TrackerScrapingProcessor extends WorkerHost {
           .catch((err) => {
             const errorMessage =
               err instanceof Error ? err.message : String(err);
-            this.logger.warn(
+            this.loggingService.warn(
               `Failed to log scraping success to audit log: ${errorMessage}`,
+              this.serviceName,
             );
           });
 
-        this.notificationService
+        void this.notificationService
           .sendScrapingCompleteNotification(trackerId, tracker.userId, 0, 0)
           .catch((err) => {
             const errorMessage =
               err instanceof Error ? err.message : String(err);
-            this.logger.warn(
+            this.loggingService.warn(
               `Failed to send success notification: ${errorMessage}`,
+              this.serviceName,
             );
           });
 
@@ -153,8 +171,9 @@ export class TrackerScrapingProcessor extends WorkerHost {
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : String(error);
-        this.logger.warn(
+        this.loggingService.warn(
           `Bulk season upsert failed, falling back to individual upserts: ${errorMessage}`,
+          this.serviceName,
         );
 
         for (const seasonData of seasons) {
@@ -169,8 +188,12 @@ export class TrackerScrapingProcessor extends WorkerHost {
               individualError instanceof Error
                 ? individualError.message
                 : String(individualError);
-            this.logger.error(
+            this.loggingService.error(
               `Failed to store season ${seasonData.seasonNumber}: ${individualErrorMessage}`,
+              individualError instanceof Error
+                ? individualError.stack
+                : undefined,
+              this.serviceName,
             );
             seasonsFailed++;
           }
@@ -197,16 +220,17 @@ export class TrackerScrapingProcessor extends WorkerHost {
         },
       });
 
-      this.logger.log(
+      this.loggingService.log(
         `Successfully scraped tracker ${trackerId}: ${seasonsScraped} seasons scraped, ${seasonsFailed} failed`,
+        this.serviceName,
       );
 
       const trackerUserId = tracker.userId;
       const trackerUrl = tracker.url;
-      await this.prisma
-        .$transaction(async (tx) => {
+      await this.transactionService
+        .executeTransaction(async (tx: ITransactionClient) => {
           await this.activityLogService.logActivity(
-            tx,
+            tx as Prisma.TransactionClient,
             'tracker',
             trackerId,
             'TRACKER_SCRAPING',
@@ -226,12 +250,13 @@ export class TrackerScrapingProcessor extends WorkerHost {
         })
         .catch((err) => {
           const errorMessage = err instanceof Error ? err.message : String(err);
-          this.logger.warn(
+          this.loggingService.warn(
             `Failed to log scraping success to audit log: ${errorMessage}`,
+            this.serviceName,
           );
         });
 
-      this.notificationService
+      void this.notificationService
         .sendScrapingCompleteNotification(
           trackerId,
           tracker.userId,
@@ -240,18 +265,20 @@ export class TrackerScrapingProcessor extends WorkerHost {
         )
         .catch((err) => {
           const errorMessage = err instanceof Error ? err.message : String(err);
-          this.logger.warn(
+          this.loggingService.warn(
             `Failed to send success notification: ${errorMessage}`,
+            this.serviceName,
           );
         });
 
       const mmrUserId = tracker.userId;
-      this.mmrCalculationIntegration
+      void this.mmrCalculationIntegration
         .calculateMmrForUser(mmrUserId, trackerId)
         .catch((err) => {
           const errorMessage = err instanceof Error ? err.message : String(err);
-          this.logger.warn(
+          this.loggingService.warn(
             `Failed to calculate MMR for user ${mmrUserId}: ${errorMessage}`,
+            this.serviceName,
           );
         });
 
@@ -263,9 +290,10 @@ export class TrackerScrapingProcessor extends WorkerHost {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      this.logger.error(
+      this.loggingService.error(
         `Failed to scrape tracker ${trackerId}: ${errorMessage}`,
-        error,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
 
       await this.prisma.tracker.update({
@@ -295,16 +323,18 @@ export class TrackerScrapingProcessor extends WorkerHost {
         const trackerUserId = tracker.userId;
         const trackerUrl = tracker.url;
 
-        await this.prisma
-          .$transaction(async (tx) => {
-            const trackerWithAttempts = await tx.tracker.findUnique({
+        await this.transactionService
+          .executeTransaction(async (tx: ITransactionClient) => {
+            const trackerWithAttempts = await (
+              tx as Prisma.TransactionClient
+            ).tracker.findUnique({
               where: { id: trackerId },
               select: { scrapingAttempts: true },
             });
             const scrapingAttempts = trackerWithAttempts?.scrapingAttempts || 0;
 
             await this.activityLogService.logActivity(
-              tx,
+              tx as Prisma.TransactionClient,
               'tracker',
               trackerId,
               'TRACKER_SCRAPING',
@@ -324,14 +354,15 @@ export class TrackerScrapingProcessor extends WorkerHost {
           .catch((err) => {
             const errorMessage =
               err instanceof Error ? err.message : String(err);
-            this.logger.warn(
+            this.loggingService.warn(
               `Failed to log scraping failure to audit log: ${errorMessage}`,
+              this.serviceName,
             );
           });
       }
 
       if (tracker) {
-        this.notificationService
+        void this.notificationService
           .sendScrapingFailedNotification(
             trackerId,
             tracker.userId,
@@ -340,8 +371,9 @@ export class TrackerScrapingProcessor extends WorkerHost {
           .catch((err) => {
             const errorMessage =
               err instanceof Error ? err.message : String(err);
-            this.logger.warn(
+            this.loggingService.warn(
               `Failed to send failure notification: ${errorMessage}`,
+              this.serviceName,
             );
           });
       }

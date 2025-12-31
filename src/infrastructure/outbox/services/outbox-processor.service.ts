@@ -1,10 +1,11 @@
 import {
   Injectable,
-  Logger,
   OnModuleInit,
   OnModuleDestroy,
   OnApplicationShutdown,
+  Inject,
 } from '@nestjs/common';
+import type { ILoggingService } from '../../logging/interfaces/logging.interface';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { OutboxStatus } from '@prisma/client';
@@ -22,7 +23,7 @@ import { OutboxEventDispatcher } from './outbox-event-dispatcher.service';
 export class OutboxProcessorService
   implements OnModuleInit, OnModuleDestroy, OnApplicationShutdown
 {
-  private readonly logger = new Logger(OutboxProcessorService.name);
+  private readonly serviceName = OutboxProcessorService.name;
   private pollInterval: NodeJS.Timeout | null = null;
   private readonly pollIntervalMs: number;
   private isProcessing = false;
@@ -32,14 +33,17 @@ export class OutboxProcessorService
     private readonly outboxService: OutboxService,
     private readonly eventDispatcher: OutboxEventDispatcher,
     private readonly configService: ConfigService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
   ) {
     this.pollIntervalMs =
       this.configService.get<number>('outbox.pollIntervalMs') || 5000;
   }
 
   onModuleInit() {
-    this.logger.log(
+    this.loggingService.log(
       `Starting outbox processor with interval ${this.pollIntervalMs}ms`,
+      this.serviceName,
     );
     this.startPolling();
   }
@@ -49,7 +53,10 @@ export class OutboxProcessorService
   }
 
   async onApplicationShutdown(signal?: string) {
-    this.logger.log(`Application shutting down: ${signal || 'unknown signal'}`);
+    this.loggingService.log(
+      `Application shutting down: ${signal || 'unknown signal'}`,
+      this.serviceName,
+    );
     this.stopPolling();
 
     // Wait for in-flight processing with timeout to prevent shutdown from hanging indefinitely
@@ -60,13 +67,14 @@ export class OutboxProcessorService
     }
 
     if (this.isProcessing) {
-      this.logger.warn(
+      this.loggingService.warn(
         'Shutdown timeout reached, forcing stop of outbox processor',
+        this.serviceName,
       );
       this.isProcessing = false;
     }
 
-    this.logger.log('✅ Outbox processor stopped');
+    this.loggingService.log('✅ Outbox processor stopped', this.serviceName);
   }
 
   private startPolling() {
@@ -76,8 +84,12 @@ export class OutboxProcessorService
 
     this.pollInterval = setInterval(() => {
       if (!this.isProcessing) {
-        this.processOutboxEvents().catch((error) => {
-          this.logger.error('Error in outbox processing loop:', error);
+        void this.processOutboxEvents().catch((error) => {
+          this.loggingService.error(
+            `Error in outbox processing loop: ${error instanceof Error ? error.message : String(error)}`,
+            error instanceof Error ? error.stack : undefined,
+            this.serviceName,
+          );
         });
       }
     }, this.pollIntervalMs);
@@ -111,7 +123,10 @@ export class OutboxProcessorService
         return;
       }
 
-      this.logger.debug(`Processing ${pendingEvents.length} outbox events`);
+      this.loggingService.debug(
+        `Processing ${pendingEvents.length} outbox events`,
+        this.serviceName,
+      );
 
       for (const event of pendingEvents) {
         try {
@@ -127,14 +142,19 @@ export class OutboxProcessorService
             OutboxStatus.COMPLETED,
           );
 
-          this.logger.debug(`Successfully processed outbox event ${event.id}`);
+          this.loggingService.debug(
+            `Successfully processed outbox event ${event.id}`,
+            this.serviceName,
+          );
         } catch (error) {
           const errorMessage =
             error instanceof Error ? error.message : String(error);
           const retryCount = event.retryCount + 1;
 
-          this.logger.error(
+          this.loggingService.error(
             `Failed to process outbox event ${event.id}: ${errorMessage}`,
+            error instanceof Error ? error.stack : undefined,
+            this.serviceName,
           );
 
           // Mark as failed after 3 retries to prevent infinite retry loops
@@ -151,14 +171,20 @@ export class OutboxProcessorService
           );
 
           if (newStatus === OutboxStatus.FAILED) {
-            this.logger.error(
+            this.loggingService.error(
               `Outbox event ${event.id} failed after ${retryCount} retries`,
+              undefined,
+              this.serviceName,
             );
           }
         }
       }
     } catch (error) {
-      this.logger.error('Error processing outbox events:', error);
+      this.loggingService.error(
+        `Error processing outbox events: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
     } finally {
       this.isProcessing = false;
     }

@@ -1,11 +1,12 @@
 import {
   Injectable,
-  Logger,
   NotFoundException,
   BadRequestException,
   OnModuleInit,
   OnApplicationShutdown,
+  Inject,
 } from '@nestjs/common';
+import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { CronJob } from 'cron';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -24,13 +25,15 @@ import { ScheduledProcessingStatus, Prisma } from '@prisma/client';
 export class ScheduledTrackerProcessingService
   implements OnModuleInit, OnApplicationShutdown
 {
-  private readonly logger = new Logger(ScheduledTrackerProcessingService.name);
+  private readonly serviceName = ScheduledTrackerProcessingService.name;
   private readonly scheduledJobs = new Map<string, CronJob>();
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly trackerProcessingService: TrackerProcessingService,
     private readonly schedulerRegistry: SchedulerRegistry,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
   ) {}
 
   /**
@@ -48,7 +51,11 @@ export class ScheduledTrackerProcessingService
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      this.logger.error(`Error stopping job ${jobId}: ${errorMessage}`);
+      this.loggingService.error(
+        `Error stopping job ${jobId}: ${errorMessage}`,
+        undefined,
+        this.serviceName,
+      );
     }
   }
 
@@ -57,7 +64,10 @@ export class ScheduledTrackerProcessingService
    * Loads all pending scheduled jobs from database and schedules them
    */
   async onModuleInit() {
-    this.logger.log('Initializing scheduled tracker processing service');
+    this.loggingService.log(
+      'Initializing scheduled tracker processing service',
+      this.serviceName,
+    );
     await this.loadPendingSchedules();
   }
 
@@ -65,7 +75,10 @@ export class ScheduledTrackerProcessingService
    * Clean up scheduled jobs on shutdown
    */
   async onApplicationShutdown() {
-    this.logger.log('Shutting down scheduled tracker processing service');
+    this.loggingService.log(
+      'Shutting down scheduled tracker processing service',
+      this.serviceName,
+    );
     for (const [jobId, job] of this.scheduledJobs.entries()) {
       await this.stopJobSafely(job, jobId);
       if (this.schedulerRegistry.doesExist('cron', jobId)) {
@@ -73,12 +86,17 @@ export class ScheduledTrackerProcessingService
           this.schedulerRegistry.deleteCronJob(jobId);
         } catch (err: unknown) {
           const errorMessage = err instanceof Error ? err.message : String(err);
-          this.logger.error(
+          this.loggingService.error(
             `Error deleting cron job ${jobId}: ${errorMessage}`,
+            undefined,
+            this.serviceName,
           );
         }
       }
-      this.logger.log(`Stopped scheduled job: ${jobId}`);
+      this.loggingService.log(
+        `Stopped scheduled job: ${jobId}`,
+        this.serviceName,
+      );
     }
     this.scheduledJobs.clear();
   }
@@ -124,8 +142,9 @@ export class ScheduledTrackerProcessingService
 
     this.scheduleJob(schedule.id, scheduledDate, guildId);
 
-    this.logger.log(
+    this.loggingService.log(
       `Created scheduled tracker processing for guild ${guildId} at ${scheduledDate.toISOString()}`,
+      this.serviceName,
     );
 
     return schedule;
@@ -192,7 +211,10 @@ export class ScheduledTrackerProcessingService
     if (this.scheduledJobs.has(jobId)) {
       const job = this.scheduledJobs.get(jobId);
       if (!job) {
-        this.logger.warn(`Job ${jobId} not found in scheduledJobs map`);
+        this.loggingService.warn(
+          `Job ${jobId} not found in scheduledJobs map`,
+          this.serviceName,
+        );
         this.scheduledJobs.delete(jobId);
       } else {
         await this.stopJobSafely(job, jobId);
@@ -205,7 +227,11 @@ export class ScheduledTrackerProcessingService
         this.schedulerRegistry.deleteCronJob(jobId);
       } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : String(err);
-        this.logger.error(`Error deleting cron job ${jobId}: ${errorMessage}`);
+        this.loggingService.error(
+          `Error deleting cron job ${jobId}: ${errorMessage}`,
+          undefined,
+          this.serviceName,
+        );
       }
     }
 
@@ -216,7 +242,10 @@ export class ScheduledTrackerProcessingService
       },
     });
 
-    this.logger.log(`Cancelled scheduled processing ${id}`);
+    this.loggingService.log(
+      `Cancelled scheduled processing ${id}`,
+      this.serviceName,
+    );
 
     return updated;
   }
@@ -235,8 +264,9 @@ export class ScheduledTrackerProcessingService
         },
       });
 
-    this.logger.log(
+    this.loggingService.log(
       `Loading ${pendingSchedules.length} pending scheduled jobs`,
+      this.serviceName,
     );
 
     for (const schedule of pendingSchedules) {
@@ -258,8 +288,9 @@ export class ScheduledTrackerProcessingService
 
     const job = new CronJob(cronExpression, async () => {
       try {
-        this.logger.log(
+        this.loggingService.log(
           `Executing scheduled tracker processing ${scheduleId} for guild ${guildId}`,
+          this.serviceName,
         );
 
         await this.prisma.scheduledTrackerProcessing.update({
@@ -281,14 +312,17 @@ export class ScheduledTrackerProcessingService
           },
         });
 
-        this.logger.log(
+        this.loggingService.log(
           `Completed scheduled tracker processing ${scheduleId} for guild ${guildId}`,
+          this.serviceName,
         );
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : String(error);
-        this.logger.error(
+        this.loggingService.error(
           `Error executing scheduled tracker processing ${scheduleId}: ${errorMessage}`,
+          undefined,
+          this.serviceName,
         );
 
         await this.prisma.scheduledTrackerProcessing
@@ -302,8 +336,10 @@ export class ScheduledTrackerProcessingService
           .catch((dbError: unknown) => {
             const dbErrorMessage =
               dbError instanceof Error ? dbError.message : String(dbError);
-            this.logger.error(
+            this.loggingService.error(
               `Failed to update schedule status to FAILED for ${scheduleId}: ${dbErrorMessage}`,
+              undefined,
+              this.serviceName,
             );
           });
       } finally {
@@ -316,8 +352,10 @@ export class ScheduledTrackerProcessingService
           } catch (err: unknown) {
             const errorMessage =
               err instanceof Error ? err.message : String(err);
-            this.logger.error(
+            this.loggingService.error(
               `Error deleting cron job ${jobId}: ${errorMessage}`,
+              undefined,
+              this.serviceName,
             );
           }
         }
@@ -328,7 +366,10 @@ export class ScheduledTrackerProcessingService
     this.schedulerRegistry.addCronJob(jobId, job);
     job.start();
 
-    this.logger.log(`Scheduled job ${jobId} for ${scheduledAt.toISOString()}`);
+    this.loggingService.log(
+      `Scheduled job ${jobId} for ${scheduledAt.toISOString()}`,
+      this.serviceName,
+    );
   }
 
   /**

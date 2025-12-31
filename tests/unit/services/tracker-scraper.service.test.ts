@@ -20,6 +20,7 @@ import { of, throwError } from 'rxjs';
 import { AxiosError, AxiosResponse } from 'axios';
 import { TrackerScraperService } from '@/trackers/services/tracker-scraper.service';
 import { TrackerUrlConverterService } from '@/trackers/services/tracker-url-converter.service';
+import { createMockLoggingService } from '@tests/utils/test-helpers';
 import type {
   ScrapedTrackerData,
   TrackerSegment,
@@ -46,6 +47,7 @@ describe('TrackerScraperService', () => {
   let mockHttpService: HttpService;
   let mockConfigService: ConfigService;
   let mockUrlConverter: TrackerUrlConverterService;
+  let mockLoggingService: ReturnType<typeof createMockLoggingService>;
 
   const mockFlareSolverrConfig = {
     url: 'http://flaresolverr:8191',
@@ -76,10 +78,13 @@ describe('TrackerScraperService', () => {
       convertTrnUrlToApiUrl: vi.fn().mockReturnValue(mockApiUrl),
     } as unknown as TrackerUrlConverterService;
 
+    mockLoggingService = createMockLoggingService();
+
     service = new TrackerScraperService(
       mockHttpService,
-      mockConfigService,
+      mockConfigService as any, // IConfigurationService
       mockUrlConverter,
+      mockLoggingService,
     );
   });
 
@@ -105,8 +110,9 @@ describe('TrackerScraperService', () => {
       expect(() => {
         new TrackerScraperService(
           mockHttpService,
-          mockConfigServiceWithoutConfig,
+          mockConfigServiceWithoutConfig as any,
           mockUrlConverter,
+          createMockLoggingService(),
         );
       }).toThrow('FlareSolverr configuration is missing');
     });
@@ -284,6 +290,7 @@ describe('TrackerScraperService', () => {
         mockHttpService,
         mockConfigService,
         mockUrlConverter,
+        mockLoggingService,
       );
 
       // Mock makeProxyRequest to throw ServiceUnavailableException directly
@@ -1122,6 +1129,7 @@ describe('TrackerScraperService', () => {
         mockHttpService,
         fastConfigService,
         mockUrlConverter,
+        mockLoggingService,
       );
 
       const axiosError = new AxiosError('Network error');
@@ -1345,6 +1353,7 @@ describe('TrackerScraperService', () => {
         mockHttpService,
         mockConfigService,
         mockUrlConverter,
+        mockLoggingService,
       );
 
       // Mock makeProxyRequest to throw ServiceUnavailableException directly
@@ -1365,6 +1374,7 @@ describe('TrackerScraperService', () => {
         mockHttpService,
         mockConfigService,
         mockUrlConverter,
+        mockLoggingService,
       );
 
       // Mock makeProxyRequest to throw ServiceUnavailableException directly
@@ -1385,6 +1395,7 @@ describe('TrackerScraperService', () => {
         mockHttpService,
         mockConfigService,
         mockUrlConverter,
+        mockLoggingService,
       );
 
       // Mock makeProxyRequest to throw ServiceUnavailableException directly
@@ -1405,6 +1416,7 @@ describe('TrackerScraperService', () => {
         mockHttpService,
         mockConfigService,
         mockUrlConverter,
+        mockLoggingService,
       );
 
       // Mock makeProxyRequest to throw ServiceUnavailableException directly

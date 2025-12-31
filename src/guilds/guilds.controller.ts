@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards, Logger } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards, Inject } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { GuildAdminGuard } from '../common/guards/guild-admin.guard';
@@ -14,19 +14,22 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import type { AuthenticatedUser } from '../common/interfaces/user.interface';
+import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 
 @ApiTags('Guilds')
 @Controller('api/guilds')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class GuildsController {
-  private readonly logger = new Logger(GuildsController.name);
+  private readonly serviceName = GuildsController.name;
 
   constructor(
     private guildsService: GuildsService,
     private guildSettingsService: GuildSettingsService,
     private guildAccessValidationService: GuildAccessValidationService,
     private discordBotService: DiscordBotService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
   ) {}
 
   @Get(':id')
@@ -40,7 +43,10 @@ export class GuildsController {
     @Param('id') id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    this.logger.log(`User ${user.id} requested guild ${id}`);
+    this.loggingService.log(
+      `User ${user.id} requested guild ${id}`,
+      this.serviceName,
+    );
 
     await this.guildAccessValidationService.validateUserGuildAccess(
       user.id,
@@ -66,7 +72,10 @@ export class GuildsController {
     @Param('id') id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    this.logger.log(`User ${user.id} requested settings for guild ${id}`);
+    this.loggingService.log(
+      `User ${user.id} requested settings for guild ${id}`,
+      this.serviceName,
+    );
     // GuildAdminGuard handles all permission checks
     return this.guildSettingsService.getSettings(id);
   }
@@ -83,7 +92,10 @@ export class GuildsController {
     @Param('id') id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    this.logger.log(`User ${user.id} requested channels for guild ${id}`);
+    this.loggingService.log(
+      `User ${user.id} requested channels for guild ${id}`,
+      this.serviceName,
+    );
     // GuildAdminGuard handles all permission checks
     return this.discordBotService.getGuildChannels(id);
   }
@@ -100,7 +112,10 @@ export class GuildsController {
     @Param('id') id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    this.logger.log(`User ${user.id} requested roles for guild ${id}`);
+    this.loggingService.log(
+      `User ${user.id} requested roles for guild ${id}`,
+      this.serviceName,
+    );
     // GuildAdminGuard handles all permission checks
     return this.discordBotService.getGuildRoles(id);
   }

@@ -3,7 +3,7 @@ import {
   CanActivate,
   ExecutionContext,
   ForbiddenException,
-  Logger,
+  Inject,
 } from '@nestjs/common';
 import { GuildAccessValidationService } from '../../guilds/services/guild-access-validation.service';
 import { GuildMembersService } from '../../guild-members/guild-members.service';
@@ -12,6 +12,7 @@ import { PermissionCheckService } from '../../permissions/modules/permission-che
 import { GuildSettings } from '../../guilds/interfaces/settings.interface';
 import type { AuthenticatedUser } from '../interfaces/user.interface';
 import type { Request } from 'express';
+import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 
 interface RequestWithUser extends Request {
   user: AuthenticatedUser;
@@ -33,13 +34,15 @@ interface RequestWithUser extends Request {
  */
 @Injectable()
 export class GuildAdminGuard implements CanActivate {
-  private readonly logger = new Logger(GuildAdminGuard.name);
+  private readonly serviceName = GuildAdminGuard.name;
 
   constructor(
     private readonly guildAccessValidationService: GuildAccessValidationService,
     private readonly guildMembersService: GuildMembersService,
     private readonly guildSettingsService: GuildSettingsService,
     private readonly permissionCheckService: PermissionCheckService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -48,7 +51,10 @@ export class GuildAdminGuard implements CanActivate {
     const guildId = request.params.id;
 
     if (!user || !guildId) {
-      this.logger.warn('GuildAdminGuard: Missing user or guildId');
+      this.loggingService.warn(
+        'GuildAdminGuard: Missing user or guildId',
+        this.serviceName,
+      );
       throw new ForbiddenException('Authentication and guild ID required');
     }
 
@@ -73,14 +79,16 @@ export class GuildAdminGuard implements CanActivate {
       );
 
       if (!isAdmin) {
-        this.logger.warn(
+        this.loggingService.warn(
           `GuildAdminGuard: User ${user.id} is not an admin in guild ${guildId}`,
+          this.serviceName,
         );
         throw new ForbiddenException('Admin access required');
       }
 
-      this.logger.log(
+      this.loggingService.log(
         `GuildAdminGuard: User ${user.id} granted admin access to guild ${guildId}`,
+        this.serviceName,
       );
 
       return true;
@@ -88,9 +96,10 @@ export class GuildAdminGuard implements CanActivate {
       if (error instanceof ForbiddenException) {
         throw error;
       }
-      this.logger.error(
-        `GuildAdminGuard error for user ${user.id} in guild ${guildId}:`,
-        error,
+      this.loggingService.error(
+        `GuildAdminGuard error for user ${user.id} in guild ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw new ForbiddenException('Error checking admin permissions');
     }

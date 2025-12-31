@@ -4,10 +4,11 @@ import {
   ArgumentsHost,
   HttpException,
   HttpStatus,
-  Logger,
+  Inject,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
+import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 
 interface ErrorResponse {
   statusCode: number;
@@ -22,10 +23,14 @@ interface ErrorResponse {
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
-  private readonly logger = new Logger(GlobalExceptionFilter.name);
+  private readonly serviceName = GlobalExceptionFilter.name;
   private readonly isDevelopment: boolean;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
+  ) {
     this.isDevelopment =
       this.configService.get<string>('app.nodeEnv', 'development') ===
       'development';
@@ -124,22 +129,22 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     request: Request,
     errorResponse: ErrorResponse,
   ): void {
-    const { method, url, ip, headers } = request;
-    const userAgent = headers['user-agent'] || 'Unknown';
+    const { method, url } = request;
 
     if (errorResponse.statusCode >= 500) {
-      this.logger.error(
-        `${method} ${url} - ${errorResponse.statusCode} - ${errorResponse.message}`,
-        {
-          exception: exception instanceof Error ? exception.stack : exception,
-          request: { method, url, ip, userAgent },
-          error: errorResponse,
-        },
+      const errorMessage =
+        exception instanceof Error ? exception.message : String(exception);
+      const errorStack =
+        exception instanceof Error ? exception.stack : undefined;
+      this.loggingService.error(
+        `${method} ${url} - ${errorResponse.statusCode} - ${errorResponse.message}: ${errorMessage}`,
+        errorStack,
+        this.serviceName,
       );
     } else {
-      this.logger.warn(
+      this.loggingService.warn(
         `${method} ${url} - ${errorResponse.statusCode} - ${errorResponse.message}`,
-        { request: { method, url, ip, userAgent }, error: errorResponse },
+        this.serviceName,
       );
     }
   }

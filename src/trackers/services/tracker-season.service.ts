@@ -1,13 +1,24 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TrackerSeason, Prisma } from '@prisma/client';
+import type {
+  ITransactionService,
+  ITransactionClient,
+} from '../../infrastructure/transactions/interfaces/transaction.interface';
+import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { SeasonData } from '../interfaces/scraper.interfaces';
 
 @Injectable()
 export class TrackerSeasonService {
-  private readonly logger = new Logger(TrackerSeasonService.name);
+  private readonly serviceName = TrackerSeasonService.name;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject('ITransactionService')
+    private readonly transactionService: ITransactionService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
+  ) {}
 
   /**
    * Create or update a season for a tracker
@@ -54,17 +65,19 @@ export class TrackerSeasonService {
         },
       });
 
-      this.logger.debug(
+      this.loggingService.debug(
         `Upserted season ${seasonData.seasonNumber} for tracker ${trackerId}`,
+        this.serviceName,
       );
 
       return season;
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      this.logger.error(
+      this.loggingService.error(
         `Failed to create/update season: ${errorMessage}`,
-        error,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw error;
     }
@@ -88,7 +101,10 @@ export class TrackerSeasonService {
       where: { trackerId },
     });
 
-    this.logger.debug(`Deleted all seasons for tracker ${trackerId}`);
+    this.loggingService.debug(
+      `Deleted all seasons for tracker ${trackerId}`,
+      this.serviceName,
+    );
   }
 
   /**
@@ -109,60 +125,64 @@ export class TrackerSeasonService {
     seasons: SeasonData[],
   ): Promise<number> {
     try {
-      const result = await this.prisma.$transaction(async (tx) => {
-        const upsertPromises = seasons.map((seasonData) =>
-          tx.trackerSeason.upsert({
-            where: {
-              trackerId_seasonNumber: {
+      const result = await this.transactionService.executeTransaction(
+        async (tx: ITransactionClient) => {
+          const upsertPromises = seasons.map((seasonData) =>
+            (tx as Prisma.TransactionClient).trackerSeason.upsert({
+              where: {
+                trackerId_seasonNumber: {
+                  trackerId,
+                  seasonNumber: seasonData.seasonNumber,
+                },
+              },
+              update: {
+                seasonName: seasonData.seasonName,
+                playlist1v1:
+                  seasonData.playlist1v1 as unknown as Prisma.InputJsonValue,
+                playlist2v2:
+                  seasonData.playlist2v2 as unknown as Prisma.InputJsonValue,
+                playlist3v3:
+                  seasonData.playlist3v3 as unknown as Prisma.InputJsonValue,
+                playlist4v4:
+                  seasonData.playlist4v4 as unknown as Prisma.InputJsonValue,
+                scrapedAt: new Date(),
+                updatedAt: new Date(),
+              },
+              create: {
                 trackerId,
                 seasonNumber: seasonData.seasonNumber,
+                seasonName: seasonData.seasonName,
+                playlist1v1:
+                  seasonData.playlist1v1 as unknown as Prisma.InputJsonValue,
+                playlist2v2:
+                  seasonData.playlist2v2 as unknown as Prisma.InputJsonValue,
+                playlist3v3:
+                  seasonData.playlist3v3 as unknown as Prisma.InputJsonValue,
+                playlist4v4:
+                  seasonData.playlist4v4 as unknown as Prisma.InputJsonValue,
+                scrapedAt: new Date(),
               },
-            },
-            update: {
-              seasonName: seasonData.seasonName,
-              playlist1v1:
-                seasonData.playlist1v1 as unknown as Prisma.InputJsonValue,
-              playlist2v2:
-                seasonData.playlist2v2 as unknown as Prisma.InputJsonValue,
-              playlist3v3:
-                seasonData.playlist3v3 as unknown as Prisma.InputJsonValue,
-              playlist4v4:
-                seasonData.playlist4v4 as unknown as Prisma.InputJsonValue,
-              scrapedAt: new Date(),
-              updatedAt: new Date(),
-            },
-            create: {
-              trackerId,
-              seasonNumber: seasonData.seasonNumber,
-              seasonName: seasonData.seasonName,
-              playlist1v1:
-                seasonData.playlist1v1 as unknown as Prisma.InputJsonValue,
-              playlist2v2:
-                seasonData.playlist2v2 as unknown as Prisma.InputJsonValue,
-              playlist3v3:
-                seasonData.playlist3v3 as unknown as Prisma.InputJsonValue,
-              playlist4v4:
-                seasonData.playlist4v4 as unknown as Prisma.InputJsonValue,
-              scrapedAt: new Date(),
-            },
-          }),
-        );
+            }),
+          );
 
-        await Promise.all(upsertPromises);
-        return seasons.length;
-      });
+          await Promise.all(upsertPromises);
+          return seasons.length;
+        },
+      );
 
-      this.logger.debug(
+      this.loggingService.debug(
         `Bulk upserted ${result} seasons for tracker ${trackerId}`,
+        this.serviceName,
       );
 
       return result;
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      this.logger.error(
+      this.loggingService.error(
         `Failed to bulk upsert seasons: ${errorMessage}`,
-        error,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw error;
     }

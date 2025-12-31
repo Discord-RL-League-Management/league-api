@@ -1,10 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
+import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 
 @Injectable()
 export class EncryptionService {
-  private readonly logger = new Logger(EncryptionService.name);
+  private readonly serviceName = EncryptionService.name;
   private readonly algorithm = 'aes-256-gcm';
   private readonly ivLength = 16; // 128 bits
   private readonly saltLength = 64; // 64 bytes
@@ -12,7 +13,11 @@ export class EncryptionService {
   private readonly tagPosition = this.saltLength + this.ivLength;
   private readonly encryptedDataPosition = this.tagPosition + this.tagLength;
 
-  constructor(private configService: ConfigService) {}
+  constructor(
+    private configService: ConfigService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
+  ) {}
 
   /**
    * Get encryption key from environment
@@ -22,8 +27,9 @@ export class EncryptionService {
     const key = this.configService.get<string>('ENCRYPTION_KEY');
 
     if (!key) {
-      this.logger.warn(
+      this.loggingService.warn(
         'ENCRYPTION_KEY not set. Using default key for development only!',
+        this.serviceName,
       );
       // For development only - in production this should throw an error
       return crypto.scryptSync('default-key-for-development', 'salt', 32);
@@ -55,7 +61,6 @@ export class EncryptionService {
         cipher.final(),
       ]);
 
-      // Get authentication tag
       const tag = cipher.getAuthTag();
 
       // Combine: salt + iv + tag + encrypted data
@@ -63,7 +68,11 @@ export class EncryptionService {
 
       return combined.toString('base64');
     } catch (error) {
-      this.logger.error('Failed to encrypt data:', error);
+      this.loggingService.error(
+        `Failed to encrypt data: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       throw new Error('Encryption failed');
     }
   }
@@ -106,7 +115,11 @@ export class EncryptionService {
 
       return decrypted.toString('utf8');
     } catch (error) {
-      this.logger.error('Failed to decrypt data:', error);
+      this.loggingService.error(
+        `Failed to decrypt data: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       throw new Error('Decryption failed');
     }
   }
@@ -122,7 +135,6 @@ export class EncryptionService {
 
     try {
       const buffer = Buffer.from(data, 'base64');
-      // Check if buffer has minimum size for encrypted data
       return buffer.length >= this.encryptedDataPosition;
     } catch {
       return false;

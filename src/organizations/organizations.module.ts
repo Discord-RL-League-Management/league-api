@@ -1,5 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
+import { InfrastructureModule } from '../infrastructure/infrastructure.module';
 import { OrganizationRepository } from './repositories/organization.repository';
 import { OrganizationService } from './services/organization.service';
 import { OrganizationMemberService } from './services/organization-member.service';
@@ -14,6 +15,7 @@ import { TeamsModule } from '../teams/teams.module';
 @Module({
   imports: [
     PrismaModule,
+    InfrastructureModule, // Provides ITransactionService
     forwardRef(() => LeaguesModule),
     forwardRef(() => PlayersModule),
     forwardRef(() => TeamsModule),

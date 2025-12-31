@@ -6,7 +6,7 @@ import {
   Body,
   Query,
   UseGuards,
-  Logger,
+  Inject,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -25,19 +25,22 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { BatchRefreshDto } from '../dto/batch-refresh.dto';
 import { TrackerScrapingStatus, Prisma, GamePlatform } from '@prisma/client';
 import { ParseCUIDPipe, ParseEnumPipe } from '../../common/pipes';
+import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 
 @ApiTags('Admin - Trackers')
 @Controller('api/admin/trackers')
 @UseGuards(JwtAuthGuard, SystemAdminGuard)
 @ApiBearerAuth('JWT-auth')
 export class TrackerAdminController {
-  private readonly logger = new Logger(TrackerAdminController.name);
+  private readonly serviceName = TrackerAdminController.name;
 
   constructor(
     private readonly trackerService: TrackerService,
     private readonly trackerProcessingService: TrackerProcessingService,
     private readonly refreshScheduler: TrackerRefreshSchedulerService,
     private readonly prisma: PrismaService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
   ) {}
 
   @Get()

@@ -1,6 +1,7 @@
-import { Injectable, NestMiddleware, Logger } from '@nestjs/common';
+import { Injectable, NestMiddleware, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request, Response, NextFunction } from 'express';
+import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 
 /**
  * AuthLoggerMiddleware - Logs authentication method for each request
@@ -11,10 +12,14 @@ import { Request, Response, NextFunction } from 'express';
  */
 @Injectable()
 export class AuthLoggerMiddleware implements NestMiddleware {
-  private readonly logger = new Logger('AuthLogger');
+  private readonly serviceName = 'AuthLogger';
   private readonly botApiKey: string;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
+  ) {
     this.botApiKey = this.configService.get<string>('auth.botApiKey', '');
   }
 
@@ -23,14 +28,22 @@ export class AuthLoggerMiddleware implements NestMiddleware {
     const { method, path } = req;
 
     if (authHeader) {
-      // Check which type of auth is being used
       if (authHeader === `Bearer ${this.botApiKey}`) {
-        this.logger.log(`Bot request: ${method} ${path}`);
+        this.loggingService.log(
+          `Bot request: ${method} ${path}`,
+          this.serviceName,
+        );
       } else {
-        this.logger.log(`User request: ${method} ${path}`);
+        this.loggingService.log(
+          `User request: ${method} ${path}`,
+          this.serviceName,
+        );
       }
     } else {
-      this.logger.log(`Unauthenticated request: ${method} ${path}`);
+      this.loggingService.log(
+        `Unauthenticated request: ${method} ${path}`,
+        this.serviceName,
+      );
     }
 
     next();

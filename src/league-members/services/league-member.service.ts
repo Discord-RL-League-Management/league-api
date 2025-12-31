@@ -1,12 +1,16 @@
 import {
   Injectable,
-  Logger,
   NotFoundException,
   InternalServerErrorException,
   Inject,
 } from '@nestjs/common';
+import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { Prisma, LeagueMemberStatus, Player } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import type {
+  ITransactionService,
+  ITransactionClient,
+} from '../../infrastructure/transactions/interfaces/transaction.interface';
 import { UpdateLeagueMemberDto } from '../dto/update-league-member.dto';
 import { JoinLeagueDto } from '../dto/join-league.dto';
 import { LeagueMemberRepository } from '../repositories/league-member.repository';
@@ -30,7 +34,7 @@ import { LeagueMemberQueryOptions } from '../interfaces/league-member.interface'
  */
 @Injectable()
 export class LeagueMemberService {
-  private readonly logger = new Logger(LeagueMemberService.name);
+  private readonly serviceName = LeagueMemberService.name;
 
   constructor(
     private leagueMemberRepository: LeagueMemberRepository,
@@ -41,6 +45,10 @@ export class LeagueMemberService {
     private prisma: PrismaService,
     private activityLogService: ActivityLogService,
     private ratingService: PlayerLeagueRatingService,
+    @Inject('ILoggingService')
+    private readonly loggingService: ILoggingService,
+    @Inject('ITransactionService')
+    private readonly transactionService: ITransactionService,
   ) {}
 
   /**
@@ -154,85 +162,91 @@ export class LeagueMemberService {
         ? LeagueMemberStatus.PENDING_APPROVAL
         : LeagueMemberStatus.ACTIVE;
 
-      return await this.prisma.$transaction(async (tx) => {
-        // Double-check in transaction
-        const existingInTx = await tx.leagueMember.findUnique({
-          where: {
-            playerId_leagueId: {
+      return await this.transactionService.executeTransaction(
+        async (tx: ITransactionClient) => {
+          // Double-check in transaction
+          const existingInTx = await (
+            tx as Prisma.TransactionClient
+          ).leagueMember.findUnique({
+            where: {
+              playerId_leagueId: {
+                playerId: guildPlayer.id,
+                leagueId,
+              },
+            },
+          });
+
+          if (existingInTx) {
+            if (existingInTx.status === 'ACTIVE') {
+              throw new LeagueMemberAlreadyExistsException(
+                guildPlayer.id,
+                leagueId,
+              );
+            }
+            return (tx as Prisma.TransactionClient).leagueMember.update({
+              where: { id: existingInTx.id },
+              data: {
+                status: LeagueMemberStatus.ACTIVE,
+                leftAt: null,
+                notes: joinLeagueDto.notes,
+              },
+            });
+          }
+
+          const member = await (
+            tx as Prisma.TransactionClient
+          ).leagueMember.create({
+            data: {
               playerId: guildPlayer.id,
               leagueId,
-            },
-          },
-        });
-
-        if (existingInTx) {
-          if (existingInTx.status === 'ACTIVE') {
-            throw new LeagueMemberAlreadyExistsException(
-              guildPlayer.id,
-              leagueId,
-            );
-          }
-          return tx.leagueMember.update({
-            where: { id: existingInTx.id },
-            data: {
-              status: LeagueMemberStatus.ACTIVE,
-              leftAt: null,
+              status: initialStatus,
+              role: 'MEMBER',
               notes: joinLeagueDto.notes,
             },
           });
-        }
 
-        const member = await tx.leagueMember.create({
-          data: {
-            playerId: guildPlayer.id,
-            leagueId,
-            status: initialStatus,
-            role: 'MEMBER',
-            notes: joinLeagueDto.notes,
-          },
-        });
+          await this.activityLogService.logActivity(
+            tx as Prisma.TransactionClient,
+            'league_member',
+            member.id,
+            initialStatus === 'PENDING_APPROVAL'
+              ? 'LEAGUE_MEMBER_PENDING'
+              : 'LEAGUE_MEMBER_JOINED',
+            'create',
+            (guildPlayer as Player & { userId: string }).userId,
+            league.guildId,
+            { status: initialStatus, leagueId },
+          );
 
-        await this.activityLogService.logActivity(
-          tx,
-          'league_member',
-          member.id,
-          initialStatus === 'PENDING_APPROVAL'
-            ? 'LEAGUE_MEMBER_PENDING'
-            : 'LEAGUE_MEMBER_JOINED',
-          'create',
-          (guildPlayer as Player & { userId: string }).userId,
-          league.guildId,
-          { status: initialStatus, leagueId },
-        );
-
-        if (initialStatus === 'ACTIVE') {
-          try {
-            await this.ratingService.updateRating(
-              guildPlayer.id,
-              leagueId,
-              {
-                ratingSystem: 'DEFAULT',
-                currentRating: 1000, // Default starting rating
-                initialRating: 1000,
-                ratingData: {},
-                matchesPlayed: 0,
-                wins: 0,
-                losses: 0,
-                draws: 0,
-              },
-              tx, // Pass transaction client for atomicity
-            );
-          } catch (error) {
-            // Rating initialization failure shouldn't block join
-            this.logger.warn(
-              `Failed to initialize rating for player ${guildPlayer.id} in league ${leagueId}:`,
-              error,
-            );
+          if (initialStatus === 'ACTIVE') {
+            try {
+              await this.ratingService.updateRating(
+                guildPlayer.id,
+                leagueId,
+                {
+                  ratingSystem: 'DEFAULT',
+                  currentRating: 1000,
+                  initialRating: 1000,
+                  ratingData: {},
+                  matchesPlayed: 0,
+                  wins: 0,
+                  losses: 0,
+                  draws: 0,
+                },
+                tx as Prisma.TransactionClient, // Pass transaction client for atomicity
+              );
+            } catch (error) {
+              // Rating initialization failure shouldn't block join
+              this.loggingService.warn(
+                `Failed to initialize rating for player ${guildPlayer.id} in league ${leagueId}: ${error instanceof Error ? error.message : String(error)}`,
+                this.serviceName,
+              );
+            }
           }
-        }
 
-        return member;
-      });
+          return member;
+        },
+      );
     } catch (error) {
       if (
         error instanceof LeagueMemberAlreadyExistsException ||
@@ -251,7 +265,11 @@ export class LeagueMemberService {
         );
       }
 
-      this.logger.error('Failed to join league:', error);
+      this.loggingService.error(
+        `Failed to join league: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       throw new InternalServerErrorException('Failed to join league');
     }
   }
@@ -280,46 +298,58 @@ export class LeagueMemberService {
     const settings = await this.leagueSettingsProvider.getSettings(leagueId);
     const cooldownDays = settings.membership.cooldownAfterLeave;
 
-    return await this.prisma.$transaction(async (tx) => {
-      // Get league and player for activity logging (inside transaction for atomicity)
-      const league = await tx.league.findUnique({ where: { id: leagueId } });
-      const player = await tx.player.findUnique({ where: { id: playerId } });
+    return await this.transactionService.executeTransaction(
+      async (tx: ITransactionClient) => {
+        // Get league and player for activity logging (inside transaction for atomicity)
+        const league = await (tx as Prisma.TransactionClient).league.findUnique(
+          {
+            where: { id: leagueId },
+          },
+        );
+        const player = await (tx as Prisma.TransactionClient).player.findUnique(
+          {
+            where: { id: playerId },
+          },
+        );
 
-      if (!league || !player) {
-        throw new LeagueMemberNotFoundException(`${playerId}-${leagueId}`);
-      }
+        if (!league || !player) {
+          throw new LeagueMemberNotFoundException(`${playerId}-${leagueId}`);
+        }
 
-      const updatedMember = await tx.leagueMember.update({
-        where: { id: member.id },
-        data: {
-          status: LeagueMemberStatus.INACTIVE,
-          leftAt: new Date(),
-        },
-      });
-
-      if (cooldownDays && cooldownDays > 0) {
-        await tx.player.update({
-          where: { id: playerId },
+        const updatedMember = await (
+          tx as Prisma.TransactionClient
+        ).leagueMember.update({
+          where: { id: member.id },
           data: {
-            lastLeftLeagueAt: new Date(),
-            lastLeftLeagueId: leagueId,
+            status: LeagueMemberStatus.INACTIVE,
+            leftAt: new Date(),
           },
         });
-      }
 
-      await this.activityLogService.logActivity(
-        tx,
-        'league_member',
-        member.id,
-        'LEAGUE_MEMBER_LEFT',
-        'update',
-        player.userId,
-        league.guildId,
-        { status: 'INACTIVE', cooldownDays },
-      );
+        if (cooldownDays && cooldownDays > 0) {
+          await (tx as Prisma.TransactionClient).player.update({
+            where: { id: playerId },
+            data: {
+              lastLeftLeagueAt: new Date(),
+              lastLeftLeagueId: leagueId,
+            },
+          });
+        }
 
-      return updatedMember;
-    });
+        await this.activityLogService.logActivity(
+          tx as Prisma.TransactionClient,
+          'league_member',
+          member.id,
+          'LEAGUE_MEMBER_LEFT',
+          'update',
+          player.userId,
+          league.guildId,
+          { status: 'INACTIVE', cooldownDays },
+        );
+
+        return updatedMember;
+      },
+    );
   }
 
   /**
@@ -359,62 +389,69 @@ export class LeagueMemberService {
     }
 
     // Approve with activity logging and rating initialization in transaction
-    return await this.prisma.$transaction(async (tx) => {
-      const updated = await tx.leagueMember.update({
-        where: { id },
-        data: {
-          status: LeagueMemberStatus.ACTIVE,
-          approvedBy,
-          approvedAt: new Date(),
-        },
-      });
-
-      // Get player and league for activity logging
-      const player = await tx.player.findUnique({
-        where: { id: member.playerId },
-      });
-      const league = await tx.league.findUnique({
-        where: { id: member.leagueId },
-      });
-
-      if (player && league) {
-        await this.activityLogService.logActivity(
-          tx,
-          'league_member',
-          id,
-          'LEAGUE_MEMBER_APPROVED',
-          'update',
-          player.userId,
-          league.guildId,
-          { approvedBy },
-        );
-      }
-
-      try {
-        await this.ratingService.updateRating(
-          member.playerId,
-          member.leagueId,
-          {
-            ratingSystem: 'DEFAULT',
-            currentRating: 1000,
-            initialRating: 1000,
-            ratingData: {},
-            matchesPlayed: 0,
-            wins: 0,
-            losses: 0,
-            draws: 0,
+    return await this.transactionService.executeTransaction(
+      async (tx: ITransactionClient) => {
+        const updated = await (
+          tx as Prisma.TransactionClient
+        ).leagueMember.update({
+          where: { id },
+          data: {
+            status: LeagueMemberStatus.ACTIVE,
+            approvedBy,
+            approvedAt: new Date(),
           },
-          tx, // Pass transaction client for atomicity
-        );
-      } catch (error) {
-        this.logger.warn(
-          `Failed to initialize rating for player ${member.playerId} in league ${member.leagueId}:`,
-          error,
-        );
-      }
+        });
 
-      return updated;
-    });
+        const player = await (tx as Prisma.TransactionClient).player.findUnique(
+          {
+            where: { id: member.playerId },
+          },
+        );
+        const league = await (tx as Prisma.TransactionClient).league.findUnique(
+          {
+            where: { id: member.leagueId },
+          },
+        );
+
+        if (player && league) {
+          await this.activityLogService.logActivity(
+            tx as Prisma.TransactionClient,
+            'league_member',
+            id,
+            'LEAGUE_MEMBER_APPROVED',
+            'update',
+            player.userId,
+            league.guildId,
+            { approvedBy },
+          );
+        }
+
+        try {
+          await this.ratingService.updateRating(
+            member.playerId,
+            member.leagueId,
+            {
+              ratingSystem: 'DEFAULT',
+              currentRating: 1000,
+              initialRating: 1000,
+              ratingData: {},
+              matchesPlayed: 0,
+              wins: 0,
+              losses: 0,
+              draws: 0,
+            },
+            tx as Prisma.TransactionClient, // Pass transaction client for atomicity
+          );
+        } catch (error) {
+          this.loggingService.warn(
+            `Failed to initialize rating for player ${member.playerId} in league ${member.leagueId}: ${error instanceof Error ? error.message : String(error)}`,
+            this.serviceName,
+          );
+        }
+
+        return updated;
+      },
+    );
   }
 
   /**
