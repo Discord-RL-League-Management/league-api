@@ -253,13 +253,9 @@ export class LeagueSettingsService {
         `Created default organization ${defaultOrgId} for league ${leagueId}`,
       );
     } else {
-      // Use first organization as default
       defaultOrgId = organizations[0].id;
     }
 
-    // Assign all teams to organizations (distribute evenly or assign to default)
-    // For simplicity, assign all to default organization
-    // In a more sophisticated implementation, you could distribute evenly
     const teamIds = teamsWithoutOrg.map((team) => team.id);
 
     // Use OrganizationService.assignTeamsToOrganization to validate capacity constraints

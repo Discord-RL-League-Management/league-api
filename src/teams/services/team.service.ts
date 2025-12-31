@@ -31,14 +31,12 @@ export class TeamService {
       createTeamDto.organizationId,
     );
 
-    // If organizationId provided, validate it exists in league
     if (createTeamDto.organizationId) {
       await this.teamValidationService.validateOrganizationExists(
         createTeamDto.organizationId,
         createTeamDto.leagueId,
       );
 
-      // Validate organization capacity
       await this.teamValidationService.validateOrganizationCapacity(
         createTeamDto.organizationId,
         createTeamDto.leagueId,
@@ -52,22 +50,18 @@ export class TeamService {
     const team = await this.teamRepository.findById(id);
     if (!team) throw new TeamNotFoundException(id);
 
-    // If organizationId is being updated, validate
     if (updateTeamDto.organizationId !== undefined) {
-      // If removing organizationId (setting to null), check if league requires organizations
       if (updateTeamDto.organizationId === null) {
         await this.teamValidationService.validateOrganizationRequirement(
           team.leagueId,
           undefined,
         );
       } else {
-        // Validate new organization exists in league
         await this.teamValidationService.validateOrganizationExists(
           updateTeamDto.organizationId,
           team.leagueId,
         );
 
-        // Validate organization capacity
         await this.teamValidationService.validateOrganizationCapacity(
           updateTeamDto.organizationId,
           team.leagueId,
