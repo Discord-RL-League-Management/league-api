@@ -55,9 +55,6 @@ export class UserGuildsService {
         ]),
       );
 
-      // Enrich guilds with permission information
-      // Note: For performance, we pass undefined for settings and let the
-      // permission service fetch them only when needed for admin checks.
       const enrichedGuilds = await Promise.all(
         guilds.map(async (guild) => {
           const membership = membershipMap.get(guild.id);
@@ -65,8 +62,8 @@ export class UserGuildsService {
             ? await this.permissionCheckService.checkAdminRoles(
                 membership.roles,
                 guild.id,
-                undefined as unknown as GuildSettings | Record<string, unknown>, // Settings will be fetched by permission service if needed
-                false, // Don't validate with Discord for listing (performance)
+                undefined as unknown as GuildSettings | Record<string, unknown>,
+                false,
               )
             : false;
 
@@ -111,8 +108,8 @@ export class UserGuildsService {
         .map((guild) => ({
           userId,
           guildId: guild.id,
-          username: guild.name, // Discord guild name as username placeholder
-          roles: guild.roles || [], // Use roles from OAuth data
+          username: guild.name,
+          roles: guild.roles || [],
         }));
 
       for (const membership of newMemberships) {
@@ -130,7 +127,6 @@ export class UserGuildsService {
         `Synced ${newMemberships.length} new guild memberships for user ${userId}`,
       );
 
-      // Invalidate cache
       await this.cacheManager.del(`user:${userId}:guilds`);
     } catch (error) {
       this.logger.error(
@@ -150,7 +146,6 @@ export class UserGuildsService {
     userGuilds: Array<DiscordGuild & { roles?: string[] }>,
   ): Promise<UserGuild[]> {
     try {
-      // Sync guild memberships atomically with roles
       await this.syncUserGuildMembershipsWithRoles(userId, userGuilds);
 
       const availableGuilds =
@@ -190,19 +185,16 @@ export class UserGuildsService {
         return [];
       }
 
-      // Fetch user's guilds from Discord API
       const userGuilds =
         await this.discordApiService.getUserGuilds(accessToken);
 
       const guildIds = await this.guildsService.findActiveGuildIds();
       const botGuildIds = new Set(guildIds);
 
-      // Filter user guilds to only include mutual guilds
       const mutualGuilds = userGuilds.filter((userGuild) =>
         botGuildIds.has(userGuild.id),
       );
 
-      // Cache the result
       await this.cacheManager.set(cacheKey, mutualGuilds, this.cacheTtl * 1000);
 
       this.logger.log(

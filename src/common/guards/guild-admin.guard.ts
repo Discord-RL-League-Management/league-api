@@ -53,23 +53,18 @@ export class GuildAdminGuard implements CanActivate {
     }
 
     try {
-      // Step 1: Validate user and bot have access to guild (security first)
       await this.guildAccessValidationService.validateUserGuildAccess(
         user.id,
         guildId,
       );
 
-      // Step 2: Get guild membership
       const membership = await this.guildMembersService.findOne(
         user.id,
         guildId,
       );
 
-      // Step 3: Ensure settings exist BEFORE permission check (independent of user)
-      // This auto-creates settings if they don't exist
       const settings = await this.guildSettingsService.getSettings(guildId);
 
-      // Step 4: Check admin roles with Discord validation
       const isAdmin = await this.permissionCheckService.checkAdminRoles(
         membership.roles,
         guildId,

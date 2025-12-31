@@ -85,7 +85,6 @@ export class TrackerValidationService {
   private isValidUrlFormat(url: string): boolean {
     try {
       const urlObj = new URL(url);
-      // Normalize trailing slashes: preserve at most one to match regex behavior (\/?$ allows 0-1)
       const normalizedPathname = urlObj.pathname.replace(/\/+$/, (match) =>
         match.length > 1 ? '/' : match,
       );
@@ -103,12 +102,10 @@ export class TrackerValidationService {
 
   /**
    * Parse tracker URL to extract platform and username
-   * Normalizes trailing slashes before regex matching to match regex behavior (allows 0-1 trailing slash)
    */
   private parseTrackerUrl(
     url: string,
   ): { platform: string; username: string } | null {
-    // Normalize URL: preserve at most one trailing slash to match regex pattern (\/?$ allows 0-1)
     const normalizedUrl = url.replace(/\/+$/, (match) =>
       match.length > 1 ? '/' : match,
     );
@@ -172,7 +169,6 @@ export class TrackerValidationService {
       return true;
     }
 
-    // If excluding a tracker ID and it matches, consider it unique (for replacement)
     if (excludeTrackerId && existingTracker.id === excludeTrackerId) {
       return true;
     }
@@ -195,7 +191,6 @@ export class TrackerValidationService {
       return new Map();
     }
 
-    // Single database query to check all URLs at once
     const existingTrackers = await this.prisma.tracker.findMany({
       where: {
         url: { in: urls },

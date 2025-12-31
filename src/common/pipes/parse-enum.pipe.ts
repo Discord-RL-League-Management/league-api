@@ -16,7 +16,6 @@ export class ParseEnumPipe<T extends object>
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _metadata: ArgumentMetadata,
   ): T[keyof T] | undefined {
-    // Optional parameters may be undefined, so we allow them to pass through without validation
     if (value === undefined || value === null) {
       return undefined;
     }
@@ -27,9 +26,6 @@ export class ParseEnumPipe<T extends object>
       return value as T[keyof T];
     }
 
-    // For numeric enums, try converting string to number
-    // This handles the case where HTTP query parameters arrive as strings (e.g., '1')
-    // but the enum values are numbers (e.g., NumberEnum.ONE = 1)
     const numericValue = Number(value);
     if (
       !isNaN(numericValue) &&

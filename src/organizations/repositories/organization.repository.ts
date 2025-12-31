@@ -179,7 +179,6 @@ export class OrganizationRepository
       },
     });
 
-    // REMOVED members should not block re-joins (treat as not in organization)
     if (membership && membership.status === OrganizationMemberStatus.REMOVED) {
       return null;
     }
@@ -219,11 +218,7 @@ export class OrganizationRepository
       approvedBy?: string;
     },
   ): Promise<OrganizationMember> {
-    // This prevents race conditions where concurrent requests could both pass validation
-    // (filtering out REMOVED members) and then both attempt to create memberships,
-    // violating the unique constraint on (playerId, leagueId)
     return this.prisma.$transaction(async (tx) => {
-      // Allows players to rejoin organizations after being removed
       await tx.organizationMember.deleteMany({
         where: {
           playerId: data.playerId,
