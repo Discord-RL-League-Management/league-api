@@ -67,7 +67,6 @@ export class ConfigMigrationService {
       typeof configObj._metadata !== 'object' ||
       configObj._metadata === null
     ) {
-      // Missing metadata - merge with defaults and update metadata
       const defaults = this.settingsDefaults.getDefaults();
       const merged = this.settingsDefaults.mergeSettings(
         defaults,
@@ -110,7 +109,6 @@ export class ConfigMigrationService {
       migrated = this.migrateToVersion(migrated, version);
     }
 
-    // Update metadata
     const migratedObj = migrated as Record<string, unknown>;
     migratedObj._metadata = {
       version: CURRENT_CONFIG_VERSION,

@@ -184,7 +184,6 @@ export class LeagueSettingsDefaultsService {
         continue;
       }
 
-      // Handle nested objects - recursive merge
       if (
         sourceValue &&
         typeof sourceValue === 'object' &&
@@ -200,7 +199,6 @@ export class LeagueSettingsDefaultsService {
         continue;
       }
 
-      // Handle arrays and primitives - replace completely
       (result[keyTyped] as unknown) = sourceValue;
     }
 
@@ -225,7 +223,6 @@ export class LeagueSettingsDefaultsService {
         continue;
       }
 
-      // Handle nested objects - recursive merge
       if (
         source[key] &&
         typeof source[key] === 'object' &&
@@ -241,7 +238,6 @@ export class LeagueSettingsDefaultsService {
         continue;
       }
 
-      // Handle arrays and primitives - replace completely
       result[key] = source[key];
     }
 

@@ -22,6 +22,8 @@ import {
   UpdateTrackerDto,
 } from '@/trackers/dto/tracker.dto';
 import type { AuthenticatedUser } from '@/common/interfaces/user.interface';
+import { createMockLoggingService } from '@tests/utils/test-helpers';
+import { ILoggingService } from '@/infrastructure/logging/interfaces/logging.interface';
 
 describe('TrackerController', () => {
   let controller: TrackerController;
@@ -86,6 +88,8 @@ describe('TrackerController', () => {
       transformTrackerDetail: vi.fn(),
     } as unknown as TrackerResponseMapperService;
 
+    const mockLoggingService = createMockLoggingService();
+
     const module = await Test.createTestingModule({
       controllers: [TrackerController],
       providers: [
@@ -102,6 +106,10 @@ describe('TrackerController', () => {
         {
           provide: TrackerResponseMapperService,
           useValue: mockResponseMapper,
+        },
+        {
+          provide: ILoggingService,
+          useValue: mockLoggingService,
         },
       ],
     }).compile();

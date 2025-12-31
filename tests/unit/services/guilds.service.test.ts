@@ -21,12 +21,14 @@ import {
 import { CreateGuildDto } from '@/guilds/dto/create-guild.dto';
 import { UpdateGuildDto } from '@/guilds/dto/update-guild.dto';
 import { Guild } from '@prisma/client';
+import { createMockLoggingService } from '@tests/utils/test-helpers';
 
 describe('GuildsService', () => {
   let service: GuildsService;
   let mockGuildRepository: GuildRepository;
   let mockSettingsDefaults: SettingsDefaultsService;
   let mockErrorHandler: GuildErrorHandlerService;
+  let mockLoggingService: ReturnType<typeof createMockLoggingService>;
 
   const mockGuild: Guild = {
     id: '123456789012345678',
@@ -71,10 +73,13 @@ describe('GuildsService', () => {
       }),
     } as unknown as GuildErrorHandlerService;
 
+    mockLoggingService = createMockLoggingService();
+
     service = new GuildsService(
       mockSettingsDefaults,
       mockGuildRepository,
       mockErrorHandler,
+      mockLoggingService,
     );
   });
 

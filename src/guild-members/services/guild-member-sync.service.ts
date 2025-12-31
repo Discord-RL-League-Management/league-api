@@ -1,9 +1,10 @@
 import {
   Injectable,
-  Logger,
   NotFoundException,
   InternalServerErrorException,
+  Inject,
 } from '@nestjs/common';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { Prisma } from '@prisma/client';
 import { GuildMemberRepository } from '../repositories/guild-member.repository';
 
@@ -15,9 +16,13 @@ import { GuildMemberRepository } from '../repositories/guild-member.repository';
  */
 @Injectable()
 export class GuildMemberSyncService {
-  private readonly logger = new Logger(GuildMemberSyncService.name);
+  private readonly serviceName = GuildMemberSyncService.name;
 
-  constructor(private guildMemberRepository: GuildMemberRepository) {}
+  constructor(
+    private guildMemberRepository: GuildMemberRepository,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
+  ) {}
 
   /**
    * Sync all guild members (bulk operation)
@@ -38,7 +43,10 @@ export class GuildMemberSyncService {
         members,
       );
 
-      this.logger.log(`Synced ${result.synced} members for guild ${guildId}`);
+      this.loggingService.log(
+        `Synced ${result.synced} members for guild ${guildId}`,
+        this.serviceName,
+      );
       return result;
     } catch (error) {
       // Handle Prisma foreign key constraint errors
@@ -62,7 +70,11 @@ export class GuildMemberSyncService {
         }
         throw new NotFoundException('Foreign key constraint failed');
       }
-      this.logger.error(`Failed to sync members for guild ${guildId}:`, error);
+      this.loggingService.error(
+        `Failed to sync members for guild ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       throw new InternalServerErrorException('Failed to sync guild members');
     }
   }
@@ -83,9 +95,10 @@ export class GuildMemberSyncService {
         roles,
       );
     } catch (error) {
-      this.logger.error(
-        `Failed to update roles for member ${userId} in guild ${guildId}:`,
-        error,
+      this.loggingService.error(
+        `Failed to update roles for member ${userId} in guild ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw new InternalServerErrorException('Failed to update member roles');
     }
@@ -114,10 +127,17 @@ export class GuildMemberSyncService {
         0,
       );
 
-      this.logger.log(`Batch updated roles for ${totalUpdated} members`);
+      this.loggingService.log(
+        `Batch updated roles for ${totalUpdated} members`,
+        this.serviceName,
+      );
       return { updated: totalUpdated };
     } catch (error) {
-      this.logger.error(`Failed to batch update roles:`, error);
+      this.loggingService.error(
+        `Failed to batch update roles: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       throw new InternalServerErrorException('Failed to batch update roles');
     }
   }

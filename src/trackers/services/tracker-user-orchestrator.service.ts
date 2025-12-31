@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { PrismaService } from '../../prisma/prisma.service';
 
 /**
@@ -9,9 +10,13 @@ import { PrismaService } from '../../prisma/prisma.service';
  */
 @Injectable()
 export class TrackerUserOrchestratorService {
-  private readonly logger = new Logger(TrackerUserOrchestratorService.name);
+  private readonly serviceName = TrackerUserOrchestratorService.name;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
+  ) {}
 
   /**
    * Ensure user exists in database, creating or updating as needed
@@ -43,6 +48,9 @@ export class TrackerUserOrchestratorService {
       },
     });
 
-    this.logger.debug(`Ensured user exists: ${userId}`);
+    this.loggingService.debug(
+      `Ensured user exists: ${userId}`,
+      this.serviceName,
+    );
   }
 }

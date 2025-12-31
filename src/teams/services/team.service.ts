@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { TeamRepository } from '../repositories/team.repository';
 import { TeamValidationService } from './team-validation.service';
 import { CreateTeamDto } from '../dto/create-team.dto';
@@ -7,11 +8,13 @@ import { TeamNotFoundException } from '../exceptions/team.exceptions';
 
 @Injectable()
 export class TeamService {
-  private readonly logger = new Logger(TeamService.name);
+  private readonly serviceName = TeamService.name;
 
   constructor(
     private teamRepository: TeamRepository,
     private teamValidationService: TeamValidationService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
   ) {}
 
   async findOne(id: string) {
@@ -25,7 +28,6 @@ export class TeamService {
   }
 
   async create(createTeamDto: CreateTeamDto) {
-    // Validate organization requirement
     await this.teamValidationService.validateOrganizationRequirement(
       createTeamDto.leagueId,
       createTeamDto.organizationId,

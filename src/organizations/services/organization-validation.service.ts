@@ -1,4 +1,5 @@
-import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { OrganizationRepository } from '../repositories/organization.repository';
 import { LeagueRepository } from '../../leagues/repositories/league.repository';
 import { PlayerService } from '../../players/services/player.service';
@@ -22,12 +23,14 @@ import { LeagueConfiguration } from '../../leagues/interfaces/league-settings.in
  */
 @Injectable()
 export class OrganizationValidationService {
-  private readonly logger = new Logger(OrganizationValidationService.name);
+  private readonly serviceName = OrganizationValidationService.name;
 
   constructor(
     private organizationRepository: OrganizationRepository,
     private leagueRepository: LeagueRepository,
     private playerService: PlayerService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
     @Inject(forwardRef(() => LeagueSettingsService))
     private leagueSettingsService: LeagueSettingsService,
   ) {}

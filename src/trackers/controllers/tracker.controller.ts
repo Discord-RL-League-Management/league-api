@@ -8,7 +8,7 @@ import {
   Body,
   Query,
   UseGuards,
-  Logger,
+  Inject,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -35,13 +35,14 @@ import type { TrackerQueryOptions } from '../interfaces/tracker-query.options';
 import { TrackerQueryDto } from '../dto/tracker-query.dto';
 import { TrackerAuthorizationService } from '../services/tracker-authorization.service';
 import { TrackerResponseMapperService } from '../services/tracker-response-mapper.service';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 
 @ApiTags('Trackers')
 @Controller('api/trackers')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class TrackerController {
-  private readonly logger = new Logger(TrackerController.name);
+  private readonly serviceName = TrackerController.name;
 
   constructor(
     private readonly trackerService: TrackerService,
@@ -49,6 +50,8 @@ export class TrackerController {
     private readonly snapshotService: TrackerSnapshotService,
     private readonly trackerAuthorizationService: TrackerAuthorizationService,
     private readonly responseMapper: TrackerResponseMapperService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
   ) {}
 
   @Post('register')

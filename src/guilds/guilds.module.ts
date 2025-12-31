@@ -1,5 +1,5 @@
 import { Module, forwardRef } from '@nestjs/common';
-import { CacheModule } from '@nestjs/cache-manager';
+import { InfrastructureModule } from '../infrastructure/infrastructure.module';
 import { GuildsController } from './guilds.controller';
 import { InternalGuildsController } from './internal-guilds.controller';
 import { GuildSettingsController } from './guild-settings.controller';
@@ -20,7 +20,6 @@ import { DiscordModule } from '../discord/discord.module';
 import { GuardsModule } from '../guards/guards.module';
 import { GuildAccessAdapterModule } from './adapters/guild-access-adapter.module';
 import { TokenManagementModule } from '../auth/services/token-management.module';
-import { cacheModuleOptions } from '../common/config/cache.config';
 import { PrismaModule } from '../prisma/prisma.module';
 import { UsersModule } from '../users/users.module';
 import { FormulaValidationAdapterModule } from './adapters/formula-validation-adapter.module';
@@ -39,7 +38,7 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
     ActivityLogModule, // Required for GuildSettingsService (ActivityLogService)
     FormulaValidationAdapterModule, // Required for SettingsValidationService (IFormulaValidationService)
     UsersModule,
-    CacheModule.register(cacheModuleOptions),
+    InfrastructureModule, // Provides ICachingService
   ],
   controllers: [
     GuildsController,

@@ -1,6 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Organization, OrganizationMember } from '@prisma/client';
+import { Organization, OrganizationMember, Prisma } from '@prisma/client';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import {
+  ITransactionService,
+  ITransactionClient,
+} from '../../infrastructure/transactions/interfaces/transaction.interface';
 import { CreateOrganizationDto } from '../dto/create-organization.dto';
 import { UpdateOrganizationDto } from '../dto/update-organization.dto';
 import { AddOrganizationMemberDto } from '../dto/add-organization-member.dto';
@@ -19,9 +24,15 @@ export class OrganizationRepository
   implements
     BaseRepository<Organization, CreateOrganizationDto, UpdateOrganizationDto>
 {
-  private readonly logger = new Logger(OrganizationRepository.name);
+  private readonly serviceName = OrganizationRepository.name;
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(ITransactionService)
+    private transactionService: ITransactionService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
+  ) {}
 
   async findById(id: string): Promise<Organization | null> {
     return this.prisma.organization.findUnique({
@@ -153,7 +164,7 @@ export class OrganizationRepository
     return this.prisma.organizationMember.findMany({
       where: {
         organizationId,
-        status: OrganizationMemberStatus.ACTIVE, // Only return active members
+        status: OrganizationMemberStatus.ACTIVE,
       },
       include: {
         player: { include: { user: true } },
@@ -218,34 +229,36 @@ export class OrganizationRepository
       approvedBy?: string;
     },
   ): Promise<OrganizationMember> {
-    return this.prisma.$transaction(async (tx) => {
-      await tx.organizationMember.deleteMany({
-        where: {
-          playerId: data.playerId,
-          leagueId: data.leagueId,
-          status: OrganizationMemberStatus.REMOVED,
-        },
-      });
+    return this.transactionService.executeTransaction(
+      async (tx: ITransactionClient) => {
+        await (tx as Prisma.TransactionClient).organizationMember.deleteMany({
+          where: {
+            playerId: data.playerId,
+            leagueId: data.leagueId,
+            status: OrganizationMemberStatus.REMOVED,
+          },
+        });
 
-      return tx.organizationMember.create({
-        data: {
-          organizationId: data.organizationId,
-          playerId: data.playerId,
-          leagueId: data.leagueId,
-          role: data.role ?? OrganizationMemberRole.MEMBER,
-          notes: data.notes,
-          approvedBy: data.approvedBy,
-          approvedAt:
-            data.approvedBy !== undefined && data.approvedBy !== null
-              ? new Date()
-              : undefined,
-        },
-        include: {
-          organization: true,
-          player: { include: { user: true } },
-        },
-      });
-    });
+        return (tx as Prisma.TransactionClient).organizationMember.create({
+          data: {
+            organizationId: data.organizationId,
+            playerId: data.playerId,
+            leagueId: data.leagueId,
+            role: data.role ?? OrganizationMemberRole.MEMBER,
+            notes: data.notes,
+            approvedBy: data.approvedBy,
+            approvedAt:
+              data.approvedBy !== undefined && data.approvedBy !== null
+                ? new Date()
+                : undefined,
+          },
+          include: {
+            organization: true,
+            player: { include: { user: true } },
+          },
+        });
+      },
+    );
   }
 
   async updateMember(

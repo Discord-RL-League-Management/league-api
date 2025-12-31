@@ -6,9 +6,15 @@ import { UserSettingsService } from './services/user-settings.service';
 import { UsersModule } from '../users/users.module';
 import { GuildMembersModule } from '../guild-members/guild-members.module';
 import { PrismaModule } from '../prisma/prisma.module';
+import { InfrastructureModule } from '../infrastructure/infrastructure.module';
 
 @Module({
-  imports: [UsersModule, GuildMembersModule, PrismaModule],
+  imports: [
+    UsersModule,
+    GuildMembersModule,
+    PrismaModule,
+    InfrastructureModule,
+  ],
   controllers: [ProfileController],
   providers: [ProfileService, UserStatisticsService, UserSettingsService],
   exports: [ProfileService],

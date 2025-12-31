@@ -1,8 +1,9 @@
-import { Injectable, Logger, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { LeagueRepository } from '../repositories/league.repository';
 import { GuildsService } from '../../guilds/guilds.service';
 import { PlayerService } from '../../players/services/player.service';
-import type { ILeagueMemberAccess } from '../interfaces/league-member-access.interface';
+import { ILeagueMemberAccess } from '../interfaces/league-member-access.interface';
 import {
   LeagueNotFoundException,
   LeagueAccessDeniedException,
@@ -17,14 +18,16 @@ import { PlayerNotFoundException } from '../../players/exceptions/player.excepti
  */
 @Injectable()
 export class LeagueAccessValidationService {
-  private readonly logger = new Logger(LeagueAccessValidationService.name);
+  private readonly serviceName = LeagueAccessValidationService.name;
 
   constructor(
     private leagueRepository: LeagueRepository,
     private guildsService: GuildsService,
     private playerService: PlayerService,
-    @Inject('ILeagueMemberAccess')
+    @Inject(ILeagueMemberAccess)
     private leagueMemberAccess: ILeagueMemberAccess,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
   ) {}
 
   /**
@@ -42,11 +45,15 @@ export class LeagueAccessValidationService {
         throw new NotFoundException('Guild', guildId);
       }
       // Guild exists - user access is validated at a higher level (AdminGuard, etc.)
-      this.logger.debug(`User ${userId} has access to guild ${guildId}`);
+      this.loggingService.debug(
+        `User ${userId} has access to guild ${guildId}`,
+        this.serviceName,
+      );
     } catch (error) {
-      this.logger.error(
-        `Failed to validate guild access for user ${userId}, guild ${guildId}:`,
-        error,
+      this.loggingService.error(
+        `Failed to validate guild access for user ${userId}, guild ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw error;
     }
@@ -75,8 +82,9 @@ export class LeagueAccessValidationService {
         league.guildId,
       );
       if (!player) {
-        this.logger.debug(
+        this.loggingService.debug(
           `User ${userId} is not a player in guild ${league.guildId}`,
+          this.serviceName,
         );
         // Not a player yet - that's okay, they can still view public leagues
       } else {
@@ -90,7 +98,10 @@ export class LeagueAccessValidationService {
         }
       }
 
-      this.logger.debug(`User ${userId} has access to league ${leagueId}`);
+      this.loggingService.debug(
+        `User ${userId} has access to league ${leagueId}`,
+        this.serviceName,
+      );
     } catch (error) {
       if (
         error instanceof LeagueNotFoundException ||
@@ -100,9 +111,10 @@ export class LeagueAccessValidationService {
       ) {
         throw error;
       }
-      this.logger.error(
-        `Failed to validate league access for user ${userId}, league ${leagueId}:`,
-        error,
+      this.loggingService.error(
+        `Failed to validate league access for user ${userId}, league ${leagueId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw new LeagueAccessDeniedException(leagueId, userId);
     }

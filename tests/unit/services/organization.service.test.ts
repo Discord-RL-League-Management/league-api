@@ -23,6 +23,10 @@ import { LeagueRepository } from '@/leagues/repositories/league.repository';
 import { LeagueSettingsService } from '@/leagues/league-settings.service';
 import { TeamRepository } from '@/teams/repositories/team.repository';
 import { PrismaService } from '@/prisma/prisma.service';
+import {
+  createMockLoggingService,
+  createMockTransactionService,
+} from '@tests/utils/test-helpers';
 import { CreateOrganizationDto } from '@/organizations/dto/create-organization.dto';
 import { UpdateOrganizationDto } from '@/organizations/dto/update-organization.dto';
 import {
@@ -42,6 +46,8 @@ describe('OrganizationService', () => {
   let mockLeagueSettingsService: LeagueSettingsService;
   let mockTeamRepository: TeamRepository;
   let mockPrisma: PrismaService;
+  let mockTransactionService: ReturnType<typeof createMockTransactionService>;
+  let mockLoggingService: ReturnType<typeof createMockLoggingService>;
 
   const organizationId = 'org-123';
   const leagueId = 'league-123';
@@ -136,6 +142,9 @@ describe('OrganizationService', () => {
       }),
     } as unknown as PrismaService;
 
+    mockTransactionService = createMockTransactionService();
+    mockLoggingService = createMockLoggingService();
+
     service = new OrganizationService(
       mockOrganizationRepository,
       mockOrganizationMemberService,
@@ -145,6 +154,8 @@ describe('OrganizationService', () => {
       mockLeagueSettingsService,
       mockTeamRepository,
       mockPrisma,
+      mockTransactionService,
+      mockLoggingService,
     );
   });
 
@@ -603,18 +614,18 @@ describe('OrganizationService', () => {
       vi.mocked(mockLeagueSettingsService.getSettings).mockResolvedValue(
         leagueSettings as any,
       );
-      vi.mocked(mockPrisma.$transaction).mockImplementation(
+      const mockTx = {
+        team: {
+          count: vi.fn().mockResolvedValue(3), // Current count
+          update: vi.fn().mockImplementation((args: any) => ({
+            id: args.where.id,
+            organizationId,
+            ...args.data,
+          })),
+        },
+      } as any;
+      vi.mocked(mockTransactionService.executeTransaction).mockImplementation(
         async (callback) => {
-          const mockTx = {
-            team: {
-              count: vi.fn().mockResolvedValue(3), // Current count
-              update: vi.fn().mockImplementation((args: any) => ({
-                id: args.where.id,
-                organizationId,
-                ...args.data,
-              })),
-            },
-          } as any;
           return callback(mockTx);
         },
       );
@@ -643,14 +654,14 @@ describe('OrganizationService', () => {
       vi.mocked(mockLeagueSettingsService.getSettings).mockResolvedValue(
         leagueSettings as any,
       );
-      vi.mocked(mockPrisma.$transaction).mockImplementation(
+      const mockTx = {
+        team: {
+          count: vi.fn().mockResolvedValue(4), // Current count (4 + 2 = 6 > 5)
+          update: vi.fn(),
+        },
+      } as any;
+      vi.mocked(mockTransactionService.executeTransaction).mockImplementation(
         async (callback) => {
-          const mockTx = {
-            team: {
-              count: vi.fn().mockResolvedValue(4), // Current count (4 + 2 = 6 > 5)
-              update: vi.fn(),
-            },
-          } as any;
           return callback(mockTx);
         },
       );
@@ -686,18 +697,18 @@ describe('OrganizationService', () => {
       vi.mocked(mockLeagueSettingsService.getSettings).mockResolvedValue(
         leagueSettings as any,
       );
-      vi.mocked(mockPrisma.$transaction).mockImplementation(
+      const mockTx = {
+        team: {
+          count: vi.fn().mockResolvedValue(100), // High count, but no limit
+          update: vi.fn().mockImplementation((args: any) => ({
+            id: args.where.id,
+            organizationId,
+            ...args.data,
+          })),
+        },
+      } as any;
+      vi.mocked(mockTransactionService.executeTransaction).mockImplementation(
         async (callback) => {
-          const mockTx = {
-            team: {
-              count: vi.fn().mockResolvedValue(100), // High count, but no limit
-              update: vi.fn().mockImplementation((args: any) => ({
-                id: args.where.id,
-                organizationId,
-                ...args.data,
-              })),
-            },
-          } as any;
           return callback(mockTx);
         },
       );

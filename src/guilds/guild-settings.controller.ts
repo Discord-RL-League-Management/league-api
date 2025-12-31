@@ -6,7 +6,7 @@ import {
   Param,
   Body,
   UseGuards,
-  Logger,
+  Inject,
   BadRequestException,
   InternalServerErrorException,
   Query,
@@ -25,17 +25,20 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../common/interfaces/user.interface';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 
 @ApiTags('Guild Settings')
 @Controller('api/guilds/:guildId/settings')
 @UseGuards(JwtAuthGuard, AdminGuard)
 @ApiBearerAuth('JWT-auth')
 export class GuildSettingsController {
-  private readonly logger = new Logger(GuildSettingsController.name);
+  private readonly serviceName = GuildSettingsController.name;
 
   constructor(
     private guildSettingsService: GuildSettingsService,
     private guildAccessValidationService: GuildAccessValidationService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
   ) {}
 
   @Get()
@@ -52,7 +55,10 @@ export class GuildSettingsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     try {
-      this.logger.log(`Getting settings for guild ${guildId}`);
+      this.loggingService.log(
+        `Getting settings for guild ${guildId}`,
+        this.serviceName,
+      );
       // Validate user and bot have access to guild
       await this.guildAccessValidationService.validateUserGuildAccess(
         user.id,
@@ -60,7 +66,11 @@ export class GuildSettingsController {
       );
       return await this.guildSettingsService.getSettings(guildId);
     } catch (error) {
-      this.logger.error(`Error getting settings for guild ${guildId}:`, error);
+      this.loggingService.error(
+        `Error getting settings for guild ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       throw error;
     }
   }
@@ -78,8 +88,9 @@ export class GuildSettingsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     try {
-      this.logger.log(
+      this.loggingService.log(
         `Updating settings for guild ${guildId} by user ${user.id}`,
+        this.serviceName,
       );
       // Validate user and bot have access to guild
       await this.guildAccessValidationService.validateUserGuildAccess(
@@ -92,7 +103,11 @@ export class GuildSettingsController {
         user.id,
       );
     } catch (error) {
-      this.logger.error(`Error updating settings for guild ${guildId}:`, error);
+      this.loggingService.error(
+        `Error updating settings for guild ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       if (error instanceof BadRequestException) {
         throw error;
       }
@@ -111,8 +126,9 @@ export class GuildSettingsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     try {
-      this.logger.log(
+      this.loggingService.log(
         `Resetting settings for guild ${guildId} by user ${user.id}`,
+        this.serviceName,
       );
       // Validate user and bot have access to guild
       await this.guildAccessValidationService.validateUserGuildAccess(
@@ -121,9 +137,10 @@ export class GuildSettingsController {
       );
       return await this.guildSettingsService.resetSettings(guildId, user.id);
     } catch (error) {
-      this.logger.error(
-        `Error resetting settings for guild ${guildId}:`,
-        error,
+      this.loggingService.error(
+        `Error resetting settings for guild ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw new InternalServerErrorException('Failed to reset settings');
     }
@@ -148,7 +165,10 @@ export class GuildSettingsController {
   ) {
     try {
       const limitNum = limit ? parseInt(limit, 10) : 50;
-      this.logger.log(`Getting settings history for guild ${guildId}`);
+      this.loggingService.log(
+        `Getting settings history for guild ${guildId}`,
+        this.serviceName,
+      );
       // Validate user and bot have access to guild
       await this.guildAccessValidationService.validateUserGuildAccess(
         user.id,
@@ -159,9 +179,10 @@ export class GuildSettingsController {
         limitNum,
       );
     } catch (error) {
-      this.logger.error(
-        `Error getting settings history for guild ${guildId}:`,
-        error,
+      this.loggingService.error(
+        `Error getting settings history for guild ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw new InternalServerErrorException('Failed to get settings history');
     }

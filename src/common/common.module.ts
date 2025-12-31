@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { InfrastructureModule } from '../infrastructure/infrastructure.module';
 import { EncryptionService } from './encryption.service';
 
 /**
@@ -12,7 +13,7 @@ import { EncryptionService } from './encryption.service';
  * Import GuardsModule if you need guards (AdminGuard, SystemAdminGuard, etc.).
  */
 @Module({
-  imports: [ConfigModule],
+  imports: [ConfigModule, InfrastructureModule],
   providers: [EncryptionService],
   exports: [EncryptionService],
 })

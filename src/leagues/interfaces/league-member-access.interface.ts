@@ -1,3 +1,4 @@
+import type { InjectionToken } from '@nestjs/common';
 import { LeagueMember } from '@prisma/client';
 
 /**
@@ -19,3 +20,7 @@ export interface ILeagueMemberAccess {
     leagueId: string,
   ): Promise<LeagueMember | null>;
 }
+
+export const ILeagueMemberAccess = Symbol(
+  'ILeagueMemberAccess',
+) as InjectionToken<ILeagueMemberAccess>;

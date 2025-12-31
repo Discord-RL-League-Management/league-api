@@ -3,13 +3,14 @@ import {
   CanActivate,
   ExecutionContext,
   ForbiddenException,
-  Logger,
+  Inject,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 import { AuditLogService } from '../../audit/services/audit-log.service';
 import { AuditAction } from '../../audit/interfaces/audit-event.interface';
 import type { AuthenticatedUser } from '../../common/interfaces/user.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { IConfigurationService } from '../../infrastructure/configuration/interfaces/configuration.interface';
 
 /**
  * SystemAdminGuard - Single Responsibility: System-wide admin permission checking
@@ -23,17 +24,18 @@ import type { AuthenticatedUser } from '../../common/interfaces/user.interface';
  */
 @Injectable()
 export class SystemAdminGuard implements CanActivate {
-  private readonly logger = new Logger(SystemAdminGuard.name);
+  private readonly serviceName = SystemAdminGuard.name;
 
   constructor(
-    private configService: ConfigService,
+    @Inject(IConfigurationService)
+    private configService: IConfigurationService,
     private auditLogService: AuditLogService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
   ) {}
 
   /**
    * Check if user has system admin permissions
-   * Single Responsibility: System admin permission checking
-   * Separation of Concerns: Handles only permission logic, no HTTP concerns
    */
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context
@@ -42,19 +44,19 @@ export class SystemAdminGuard implements CanActivate {
     const user = request.user;
 
     if (!user) {
-      this.logger.warn('SystemAdminGuard: Missing user');
+      this.loggingService.warn(
+        'SystemAdminGuard: Missing user',
+        this.serviceName,
+      );
       throw new ForbiddenException('Authentication required');
     }
 
     try {
-      // Get system admin user IDs from configuration
       const systemAdminUserIds =
-        this.configService.get<string[]>('systemAdmin.userIds') || [];
+        this.configService.get<string[]>('systemAdmin.userIds') ?? [];
 
-      // Check if user ID is in the system admin list
       const isSystemAdmin = systemAdminUserIds.includes(user.id);
 
-      // Log audit event
       await this.auditLogService.logAdminAction(
         {
           userId: user.id,
@@ -71,16 +73,18 @@ export class SystemAdminGuard implements CanActivate {
       );
 
       if (!isSystemAdmin) {
-        this.logger.warn(
+        this.loggingService.warn(
           `SystemAdminGuard: User ${user.id} is not a system admin`,
+          this.serviceName,
         );
         throw new ForbiddenException(
           'System admin access required - your user ID must be configured as a system administrator',
         );
       }
 
-      this.logger.log(
+      this.loggingService.log(
         `SystemAdminGuard: User ${user.id} granted system admin access`,
+        this.serviceName,
       );
 
       return true;
@@ -88,7 +92,11 @@ export class SystemAdminGuard implements CanActivate {
       if (error instanceof ForbiddenException) {
         throw error;
       }
-      this.logger.error(`SystemAdminGuard error for user ${user.id}:`, error);
+      this.loggingService.error(
+        `SystemAdminGuard error for user ${user.id}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       throw new ForbiddenException('Error checking system admin permissions');
     }
   }

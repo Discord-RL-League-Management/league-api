@@ -1,11 +1,16 @@
 import {
   Injectable,
-  Logger,
   NotFoundException,
   InternalServerErrorException,
+  Inject,
 } from '@nestjs/common';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { Prisma, PlayerStatus, Player } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import {
+  ITransactionService,
+  ITransactionClient,
+} from '../../infrastructure/transactions/interfaces/transaction.interface';
 import { CreatePlayerDto } from '../dto/create-player.dto';
 import { UpdatePlayerDto } from '../dto/update-player.dto';
 import { PlayerRepository } from '../repositories/player.repository';
@@ -27,13 +32,17 @@ import { PlayerQueryOptions } from '../interfaces/player.interface';
  */
 @Injectable()
 export class PlayerService {
-  private readonly logger = new Logger(PlayerService.name);
+  private readonly serviceName = PlayerService.name;
 
   constructor(
     private playerRepository: PlayerRepository,
     private validationService: PlayerValidationService,
     private prisma: PrismaService,
     private activityLogService: ActivityLogService,
+    @Inject(ITransactionService)
+    private transactionService: ITransactionService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
   ) {}
 
   /**
@@ -115,28 +124,30 @@ export class PlayerService {
         );
       }
 
-      return await this.prisma.$transaction(async (tx) => {
-        const player = await tx.player.create({
-          data: {
-            userId: createPlayerDto.userId,
-            guildId: createPlayerDto.guildId,
-            status: createPlayerDto.status || 'ACTIVE',
-          },
-        });
+      return await this.transactionService.executeTransaction(
+        async (tx: ITransactionClient) => {
+          const player = await (tx as Prisma.TransactionClient).player.create({
+            data: {
+              userId: createPlayerDto.userId,
+              guildId: createPlayerDto.guildId,
+              status: createPlayerDto.status || 'ACTIVE',
+            },
+          });
 
-        await this.activityLogService.logActivity(
-          tx,
-          'player',
-          player.id,
-          'PLAYER_CREATED',
-          'create',
-          createPlayerDto.userId,
-          createPlayerDto.guildId,
-          { status: player.status },
-        );
+          await this.activityLogService.logActivity(
+            tx as Prisma.TransactionClient,
+            'player',
+            player.id,
+            'PLAYER_CREATED',
+            'create',
+            createPlayerDto.userId,
+            createPlayerDto.guildId,
+            { status: player.status },
+          );
 
-        return player;
-      });
+          return player;
+        },
+      );
     } catch (error) {
       if (
         error instanceof PlayerAlreadyExistsException ||
@@ -145,7 +156,6 @@ export class PlayerService {
         throw error;
       }
 
-      // Handle Prisma unique constraint errors
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
@@ -156,7 +166,11 @@ export class PlayerService {
         );
       }
 
-      this.logger.error('Failed to create player:', error);
+      this.loggingService.error(
+        `Failed to create player: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       throw new InternalServerErrorException('Failed to create player');
     }
   }
@@ -177,43 +191,47 @@ export class PlayerService {
 
     await this.validationService.validateGuildMembership(userId, guildId);
 
-    return await this.prisma.$transaction(async (tx) => {
-      // Double-check in transaction
-      const existing = await tx.player.findUnique({
-        where: {
-          userId_guildId: {
+    return await this.transactionService.executeTransaction(
+      async (tx: ITransactionClient) => {
+        // Double-check in transaction
+        const existing = await (
+          tx as Prisma.TransactionClient
+        ).player.findUnique({
+          where: {
+            userId_guildId: {
+              userId,
+              guildId,
+            },
+          },
+        });
+
+        if (existing) {
+          return existing;
+        }
+
+        const player = await (tx as Prisma.TransactionClient).player.create({
+          data: {
             userId,
             guildId,
+            status: PlayerStatus.ACTIVE,
           },
-        },
-      });
+        });
 
-      if (existing) {
-        return existing;
-      }
-
-      const player = await tx.player.create({
-        data: {
+        await this.activityLogService.logActivity(
+          tx as Prisma.TransactionClient,
+          'player',
+          player.id,
+          'PLAYER_AUTO_CREATED',
+          'create',
           userId,
           guildId,
-          status: PlayerStatus.ACTIVE,
-        },
-      });
+          { status: player.status },
+          { autoCreated: true },
+        );
 
-      await this.activityLogService.logActivity(
-        tx,
-        'player',
-        player.id,
-        'PLAYER_AUTO_CREATED',
-        'create',
-        userId,
-        guildId,
-        { status: player.status },
-        { autoCreated: true },
-      );
-
-      return player;
-    });
+        return player;
+      },
+    );
   }
 
   /**
@@ -228,33 +246,34 @@ export class PlayerService {
       }
 
       if (updatePlayerDto.status && updatePlayerDto.status !== player.status) {
-        // Validate status transition
         this.validationService.validatePlayerStatus(updatePlayerDto.status);
       }
 
-      return await this.prisma.$transaction(async (tx) => {
-        const updated = await tx.player.update({
-          where: { id },
-          data: {
-            ...(updatePlayerDto.status !== undefined && {
-              status: updatePlayerDto.status,
-            }),
-          },
-        });
+      return await this.transactionService.executeTransaction(
+        async (tx: ITransactionClient) => {
+          const updated = await (tx as Prisma.TransactionClient).player.update({
+            where: { id },
+            data: {
+              ...(updatePlayerDto.status !== undefined && {
+                status: updatePlayerDto.status,
+              }),
+            },
+          });
 
-        await this.activityLogService.logActivity(
-          tx,
-          'player',
-          id,
-          'PLAYER_UPDATED',
-          'update',
-          player.userId,
-          player.guildId,
-          updatePlayerDto as unknown as Prisma.InputJsonValue,
-        );
+          await this.activityLogService.logActivity(
+            tx as Prisma.TransactionClient,
+            'player',
+            id,
+            'PLAYER_UPDATED',
+            'update',
+            player.userId,
+            player.guildId,
+            updatePlayerDto as unknown as Prisma.InputJsonValue,
+          );
 
-        return updated;
-      });
+          return updated;
+        },
+      );
     } catch (error) {
       if (
         error instanceof PlayerNotFoundException ||
@@ -262,7 +281,11 @@ export class PlayerService {
       ) {
         throw error;
       }
-      this.logger.error(`Failed to update player ${id}:`, error);
+      this.loggingService.error(
+        `Failed to update player ${id}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       throw new InternalServerErrorException('Failed to update player');
     }
   }

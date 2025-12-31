@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import { EncryptionService } from './encryption.service';
+import { InfrastructureModule } from '../infrastructure/infrastructure.module';
 
 @Module({
+  imports: [InfrastructureModule],
   providers: [EncryptionService],
   exports: [EncryptionService],
 })

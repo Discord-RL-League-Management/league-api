@@ -6,6 +6,7 @@ import { FormulaValidationService } from './services/formula-validation.service'
 import { TrackerDataExtractionService } from './services/tracker-data-extraction.service';
 import { MmrCalculationIntegrationService } from './services/mmr-calculation-integration.service';
 import { PrismaModule } from '../prisma/prisma.module';
+import { InfrastructureModule } from '../infrastructure/infrastructure.module';
 import { GuildsModule } from '../guilds/guilds.module';
 import { GuardsModule } from '../guards/guards.module';
 import { GuildAccessAdapterModule } from '../guilds/adapters/guild-access-adapter.module';
@@ -24,6 +25,7 @@ import { GuildAccessAdapterModule } from '../guilds/adapters/guild-access-adapte
 @Module({
   imports: [
     PrismaModule,
+    InfrastructureModule,
     forwardRef(() => GuildsModule),
     forwardRef(() => GuardsModule), // Use forwardRef to break circular dependency with GuardsModule <-> GuildsModule
     forwardRef(() => GuildAccessAdapterModule), // Required for AdminGuard (IGuildAccessProvider)

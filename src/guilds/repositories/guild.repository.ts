@@ -1,5 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import {
+  ITransactionService,
+  ITransactionClient,
+} from '../../infrastructure/transactions/interfaces/transaction.interface';
 import { Guild, Prisma } from '@prisma/client';
 import { CreateGuildDto } from '../dto/create-guild.dto';
 import { UpdateGuildDto } from '../dto/update-guild.dto';
@@ -20,9 +25,15 @@ import {
 export class GuildRepository
   implements BaseRepository<Guild, CreateGuildDto, UpdateGuildDto>
 {
-  private readonly logger = new Logger(GuildRepository.name);
+  private readonly serviceName = GuildRepository.name;
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(ITransactionService)
+    private transactionService: ITransactionService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
+  ) {}
 
   async findById(
     id: string,
@@ -159,23 +170,25 @@ export class GuildRepository
     guildData: CreateGuildDto,
     defaultSettings: Record<string, unknown>,
   ): Promise<Guild> {
-    return this.prisma.$transaction(async (tx) => {
-      const guild = await tx.guild.create({
-        data: guildData,
-      });
+    return this.transactionService.executeTransaction(
+      async (tx: ITransactionClient) => {
+        const guild = await (tx as Prisma.TransactionClient).guild.create({
+          data: guildData,
+        });
 
-      await tx.settings.create({
-        data: {
-          ownerType: 'guild',
-          ownerId: guild.id,
-          settings: JSON.parse(
-            JSON.stringify(defaultSettings),
-          ) as Prisma.InputJsonValue,
-        },
-      });
+        await (tx as Prisma.TransactionClient).settings.create({
+          data: {
+            ownerType: 'guild',
+            ownerId: guild.id,
+            settings: JSON.parse(
+              JSON.stringify(defaultSettings),
+            ) as Prisma.InputJsonValue,
+          },
+        });
 
-      return guild;
-    });
+        return guild;
+      },
+    );
   }
 
   /**
@@ -183,22 +196,26 @@ export class GuildRepository
    * Single Responsibility: Atomic guild deactivation with member updates
    */
   async removeWithCleanup(guildId: string): Promise<Guild> {
-    return this.prisma.$transaction(async (tx) => {
-      const updatedGuild = await tx.guild.update({
-        where: { id: guildId },
-        data: {
-          isActive: false,
-          leftAt: new Date(),
-        },
-      });
+    return this.transactionService.executeTransaction(
+      async (tx: ITransactionClient) => {
+        const updatedGuild = await (
+          tx as Prisma.TransactionClient
+        ).guild.update({
+          where: { id: guildId },
+          data: {
+            isActive: false,
+            leftAt: new Date(),
+          },
+        });
 
-      await tx.guildMember.updateMany({
-        where: { guildId },
-        data: { updatedAt: new Date() },
-      });
+        await (tx as Prisma.TransactionClient).guildMember.updateMany({
+          where: { guildId },
+          data: { updatedAt: new Date() },
+        });
 
-      return updatedGuild;
-    });
+        return updatedGuild;
+      },
+    );
   }
 
   /**
@@ -212,41 +229,42 @@ export class GuildRepository
     guildData: CreateGuildDto,
     defaultSettings: Record<string, unknown>,
   ): Promise<Guild> {
-    return this.prisma.$transaction(async (tx) => {
-      // Upsert guild using Prisma's built-in upsert (cleaner than manual check/update/create)
-      const guild = await tx.guild.upsert({
-        where: { id: guildData.id },
-        update: {
-          name: guildData.name,
-          icon: guildData.icon ?? null,
-          ownerId: guildData.ownerId,
-          memberCount: guildData.memberCount ?? 0,
-          isActive: true, // Reactivate if it was soft-deleted
-          leftAt: null, // Clear leftAt if it was set
-        },
-        create: guildData,
-      });
+    return this.transactionService.executeTransaction(
+      async (tx: ITransactionClient) => {
+        const guild = await (tx as Prisma.TransactionClient).guild.upsert({
+          where: { id: guildData.id },
+          update: {
+            name: guildData.name,
+            icon: guildData.icon ?? null,
+            ownerId: guildData.ownerId,
+            memberCount: guildData.memberCount ?? 0,
+            isActive: true, // Reactivate if it was soft-deleted
+            leftAt: null, // Clear leftAt if it was set
+          },
+          create: guildData,
+        });
 
-      // Always ensure settings exist using idempotent upsert
-      // This will create if missing, or no-op if they already exist
-      await tx.settings.upsert({
-        where: {
-          ownerType_ownerId: {
+        // Always ensure settings exist using idempotent upsert
+        // This will create if missing, or no-op if they already exist
+        await (tx as Prisma.TransactionClient).settings.upsert({
+          where: {
+            ownerType_ownerId: {
+              ownerType: 'guild',
+              ownerId: guild.id,
+            },
+          },
+          update: {}, // No-op if settings already exist
+          create: {
             ownerType: 'guild',
             ownerId: guild.id,
+            settings: JSON.parse(
+              JSON.stringify(defaultSettings),
+            ) as Prisma.InputJsonValue,
           },
-        },
-        update: {}, // No-op if settings already exist
-        create: {
-          ownerType: 'guild',
-          ownerId: guild.id,
-          settings: JSON.parse(
-            JSON.stringify(defaultSettings),
-          ) as Prisma.InputJsonValue,
-        },
-      });
+        });
 
-      return guild;
-    });
+        return guild;
+      },
+    );
   }
 }

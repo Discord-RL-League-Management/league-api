@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Logger } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Inject } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { BotAuthGuard } from '../auth/guards/bot-auth.guard';
 import { TrackerProcessingService } from '../trackers/services/tracker-processing.service';
@@ -11,6 +11,7 @@ import {
 import { InternalRegisterTrackersDto } from './dto/register-trackers.dto';
 import { InternalAddTrackerDto } from './dto/add-tracker.dto';
 import { ProcessTrackersDto } from './dto/process-trackers.dto';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 
 @ApiTags('Internal - Trackers')
 @Controller('internal/trackers')
@@ -18,10 +19,12 @@ import { ProcessTrackersDto } from './dto/process-trackers.dto';
 @SkipThrottle()
 @ApiBearerAuth('bot-api-key')
 export class InternalTrackerController {
-  private readonly logger = new Logger(InternalTrackerController.name);
+  private readonly serviceName = InternalTrackerController.name;
 
   constructor(
     private readonly trackerProcessingService: TrackerProcessingService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
   ) {}
 
   @Post('register-multiple')
@@ -71,8 +74,9 @@ export class InternalTrackerController {
     description: 'Pending trackers for guild processed successfully',
   })
   async processTrackersForGuild(@Body() body: ProcessTrackersDto) {
-    this.logger.log(
+    this.loggingService.log(
       `Processing trackers for guild ${body.guildId} (requested by bot)`,
+      this.serviceName,
     );
     return this.trackerProcessingService.processPendingTrackersForGuild(
       body.guildId,

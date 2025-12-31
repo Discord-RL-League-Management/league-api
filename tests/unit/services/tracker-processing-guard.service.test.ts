@@ -13,6 +13,8 @@ import { TrackerProcessingGuardService } from '@/trackers/services/tracker-proce
 import { PrismaService } from '@/prisma/prisma.service';
 import { GuildSettingsService } from '@/guilds/guild-settings.service';
 import { GuildSettings } from '@/guilds/interfaces/settings.interface';
+import { createMockLoggingService } from '@tests/utils/test-helpers';
+import { ILoggingService } from '@/infrastructure/logging/interfaces/logging.interface';
 
 describe('TrackerProcessingGuardService', () => {
   let service: TrackerProcessingGuardService;
@@ -34,6 +36,8 @@ describe('TrackerProcessingGuardService', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
 
+    const mockLoggingService = createMockLoggingService();
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TrackerProcessingGuardService,
@@ -44,6 +48,10 @@ describe('TrackerProcessingGuardService', () => {
         {
           provide: GuildSettingsService,
           useValue: mockGuildSettingsService,
+        },
+        {
+          provide: ILoggingService,
+          useValue: mockLoggingService,
         },
       ],
     }).compile();

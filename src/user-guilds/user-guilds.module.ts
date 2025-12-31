@@ -1,6 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
-import { CacheModule } from '@nestjs/cache-manager';
 import { HttpModule } from '@nestjs/axios';
+import { InfrastructureModule } from '../infrastructure/infrastructure.module';
 import { UserGuildsService } from './user-guilds.service';
 import { GuildMembersModule } from '../guild-members/guild-members.module';
 import { GuildsModule } from '../guilds/guilds.module';
@@ -19,10 +19,7 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
       timeout: 10000,
       maxRedirects: 5,
     }),
-    CacheModule.register({
-      ttl: 300000, // 5 minutes in milliseconds
-      max: 1000, // Maximum number of items in cache
-    }),
+    InfrastructureModule,
   ],
   providers: [UserGuildsService],
   exports: [UserGuildsService],

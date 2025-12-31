@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GuildSettingsService } from '../../guilds/guild-settings.service';
 import { GuildSettings } from '../../guilds/interfaces/settings.interface';
@@ -13,11 +14,13 @@ import { GuildSettings } from '../../guilds/interfaces/settings.interface';
  */
 @Injectable()
 export class TrackerProcessingGuardService {
-  private readonly logger = new Logger(TrackerProcessingGuardService.name);
+  private readonly serviceName = TrackerProcessingGuardService.name;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly guildSettingsService: GuildSettingsService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
   ) {}
 
   /**
@@ -35,7 +38,10 @@ export class TrackerProcessingGuardService {
       });
 
       if (!tracker) {
-        this.logger.warn(`Tracker ${trackerId} not found`);
+        this.loggingService.warn(
+          `Tracker ${trackerId} not found`,
+          this.serviceName,
+        );
         return false;
       }
 
@@ -43,8 +49,10 @@ export class TrackerProcessingGuardService {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      this.logger.error(
+      this.loggingService.error(
         `Error checking if tracker ${trackerId} can be processed: ${errorMessage}`,
+        undefined,
+        this.serviceName,
       );
       // Default to true on error for backward compatibility
       return true;
@@ -73,8 +81,9 @@ export class TrackerProcessingGuardService {
 
       // If user has no guilds, default to true (backward compatibility)
       if (guildMemberships.length === 0) {
-        this.logger.debug(
+        this.loggingService.debug(
           `User ${userId} has no guild memberships, defaulting to enabled`,
+          this.serviceName,
         );
         return true;
       }
@@ -93,8 +102,10 @@ export class TrackerProcessingGuardService {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      this.logger.error(
+      this.loggingService.error(
         `Error checking if user ${userId} can process trackers: ${errorMessage}`,
+        undefined,
+        this.serviceName,
       );
       // Default to true on error for backward compatibility
       return true;
@@ -154,8 +165,10 @@ export class TrackerProcessingGuardService {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      this.logger.error(
+      this.loggingService.error(
         `Error filtering processable trackers: ${errorMessage}`,
+        undefined,
+        this.serviceName,
       );
       // Default to returning all trackers on error for backward compatibility
       return trackerIds;

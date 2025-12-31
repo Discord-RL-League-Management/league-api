@@ -1,6 +1,7 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { FormulaValidationAdapter } from './formula-validation.adapter';
 import { MmrCalculationModule } from '../../mmr-calculation/mmr-calculation.module';
+import { IFormulaValidationService } from '../interfaces/formula-validation.interface';
 
 /**
  * FormulaValidationAdapterModule - Provides FormulaValidationAdapter
@@ -13,10 +14,10 @@ import { MmrCalculationModule } from '../../mmr-calculation/mmr-calculation.modu
   providers: [
     FormulaValidationAdapter,
     {
-      provide: 'IFormulaValidationService',
+      provide: IFormulaValidationService,
       useExisting: FormulaValidationAdapter,
     },
   ],
-  exports: [FormulaValidationAdapter, 'IFormulaValidationService'],
+  exports: [FormulaValidationAdapter, IFormulaValidationService],
 })
 export class FormulaValidationAdapterModule {}

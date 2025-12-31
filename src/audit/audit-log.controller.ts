@@ -4,7 +4,7 @@ import {
   Param,
   Query,
   UseGuards,
-  Logger,
+  Inject,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -19,6 +19,7 @@ import { AdminGuard } from '../common/guards/admin.guard';
 import { AuditLogService } from './services/audit-log.service';
 import type { AuthenticatedUser } from '../common/interfaces/user.interface';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 
 /**
  * Audit Log Controller - Single Responsibility: Handle HTTP requests for audit logs
@@ -30,9 +31,13 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 @UseGuards(JwtAuthGuard, AdminGuard)
 @ApiBearerAuth('JWT-auth')
 export class AuditLogController {
-  private readonly logger = new Logger(AuditLogController.name);
+  private readonly serviceName = AuditLogController.name;
 
-  constructor(private auditLogService: AuditLogService) {}
+  constructor(
+    private auditLogService: AuditLogService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Get audit logs for a guild (admin only)' })
@@ -80,8 +85,9 @@ export class AuditLogController {
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
   ) {
-    this.logger.log(
+    this.loggingService.log(
       `User ${user.id} requested audit logs for guild ${guildId}`,
+      this.serviceName,
     );
 
     const filters: {

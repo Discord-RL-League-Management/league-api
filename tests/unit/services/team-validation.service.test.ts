@@ -31,10 +31,19 @@ describe('TeamValidationService', () => {
       validateOrganizationCapacity: vi.fn(),
     } as unknown as OrganizationValidationService;
 
+    const mockLoggingService = {
+      log: vi.fn(),
+      error: vi.fn(),
+      warn: vi.fn(),
+      debug: vi.fn(),
+      verbose: vi.fn(),
+    } as unknown as any;
+
     service = new TeamValidationService(
       mockLeagueSettingsService,
       mockOrganizationRepository,
       mockOrganizationValidationService,
+      mockLoggingService,
     );
   });
 

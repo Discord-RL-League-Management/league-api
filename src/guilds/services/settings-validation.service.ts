@@ -1,13 +1,9 @@
-import {
-  Injectable,
-  BadRequestException,
-  Logger,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, BadRequestException, Inject } from '@nestjs/common';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { DiscordBotService } from '../../discord/discord-bot.service';
 import { GuildSettingsDto } from '../dto/guild-settings.dto';
 import { MAX_CHANNEL_NAME_LENGTH } from '../constants/settings.constants';
-import type { IFormulaValidationService } from '../interfaces/formula-validation.interface';
+import { IFormulaValidationService } from '../interfaces/formula-validation.interface';
 import {
   ChannelConfig,
   MmrCalculationConfig,
@@ -16,12 +12,14 @@ import {
 
 @Injectable()
 export class SettingsValidationService {
-  private readonly logger = new Logger(SettingsValidationService.name);
+  private readonly serviceName = SettingsValidationService.name;
 
   constructor(
     private discordValidation: DiscordBotService,
-    @Inject('IFormulaValidationService')
+    @Inject(IFormulaValidationService)
     private formulaValidation: IFormulaValidationService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
   ) {}
 
   /**
@@ -212,8 +210,9 @@ export class SettingsValidationService {
 
       // Warn if weights don't sum to 1 (but don't fail)
       if (Math.abs(totalWeight - 1.0) > 0.01) {
-        this.logger.warn(
+        this.loggingService.warn(
           `Weights sum to ${totalWeight}, not 1.0. This may produce unexpected results.`,
+          this.serviceName,
         );
       }
     }
@@ -238,8 +237,9 @@ export class SettingsValidationService {
       // Warn if weights don't sum to 1 (but don't fail)
       const totalWeight = weights.current + weights.peak;
       if (Math.abs(totalWeight - 1.0) > 0.01) {
-        this.logger.warn(
+        this.loggingService.warn(
           `Ascendancy weights sum to ${totalWeight}, not 1.0. This may produce unexpected results.`,
+          this.serviceName,
         );
       }
     }

@@ -28,16 +28,14 @@ export class InAppRateLimitingService implements IRateLimitingService {
     limit: number,
     ttl: number,
   ): Promise<boolean> {
-    void ttl; // Parameter required by interface but unused in this implementation
+    void ttl;
     try {
       const count = await this.cache.get<number>(key);
       if (count === undefined) {
-        return false; // No count means not rate limited
+        return false;
       }
-      // Rate limited when count reaches or exceeds limit (inclusive boundary)
       return count >= limit;
     } catch {
-      // On cache error, allow the request (fail open)
       return false;
     }
   }
@@ -55,7 +53,6 @@ export class InAppRateLimitingService implements IRateLimitingService {
       await this.cache.set(key, newCount, ttl);
       return newCount;
     } catch {
-      // On cache error, return 1 as fallback
       return 1;
     }
   }

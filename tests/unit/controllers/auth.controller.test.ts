@@ -20,6 +20,9 @@ import { AuthOrchestrationService } from '@/auth/services/auth-orchestration.ser
 import { TokenManagementService } from '@/auth/services/token-management.service';
 import type { AuthenticatedUser } from '@/common/interfaces/user.interface';
 import type { Response } from 'express';
+import { createMockLoggingService } from '@tests/utils/test-helpers';
+import { ILoggingService } from '@/infrastructure/logging/interfaces/logging.interface';
+import { IConfigurationService } from '@/infrastructure/configuration/interfaces/configuration.interface';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -79,6 +82,8 @@ describe('AuthController', () => {
       json: vi.fn(),
     } as unknown as Response;
 
+    const mockLoggingService = createMockLoggingService();
+
     const moduleRef = await Test.createTestingModule({
       controllers: [AuthController],
       providers: [
@@ -93,7 +98,8 @@ describe('AuthController', () => {
           provide: TokenManagementService,
           useValue: mockTokenManagementService,
         },
-        { provide: ConfigService, useValue: mockConfigService },
+        { provide: IConfigurationService, useValue: mockConfigService },
+        { provide: ILoggingService, useValue: mockLoggingService },
       ],
     }).compile();
 

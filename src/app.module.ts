@@ -38,12 +38,10 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthLoggerMiddleware } from './common/middleware/auth-logger.middleware';
 import { RequestContextInterceptor } from './common/interceptors/request-context.interceptor';
 import { throttlerConfig } from './config/throttler.config';
-// Required for SchedulerRegistry dependency injection used by TrackerRefreshSchedulerService
 import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 
-// Standard validation error message exported for consistent API responses across the application
 export const VALIDATION_FAILED_MESSAGE = 'Validation failed';
 
 @Module({
@@ -130,7 +128,7 @@ export const VALIDATION_FAILED_MESSAGE = 'Validation failed';
       },
       inject: [ConfigService],
     },
-    // PrismaExceptionFilter must run first to catch database errors before the catch-all GlobalExceptionFilter
+    // PrismaExceptionFilter must run first to catch database errors before GlobalExceptionFilter
     {
       provide: APP_FILTER,
       useClass: PrismaExceptionFilter,

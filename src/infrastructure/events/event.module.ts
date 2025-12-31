@@ -19,13 +19,13 @@ import { IEventService } from './interfaces/event.interface';
   imports: [OutboxModule],
   providers: [
     {
-      provide: 'IEventService',
+      provide: IEventService,
       useFactory: (outboxService: OutboxService): IEventService => {
         return new InAppEventService(outboxService);
       },
       inject: [OutboxService],
     },
   ],
-  exports: ['IEventService'],
+  exports: [IEventService],
 })
 export class EventModule {}

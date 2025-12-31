@@ -40,10 +40,19 @@ describe('PlayerValidationService', () => {
       findOne: vi.fn(),
     } as unknown as GuildMembersService;
 
+    const mockLoggingService = {
+      log: vi.fn(),
+      error: vi.fn(),
+      warn: vi.fn(),
+      debug: vi.fn(),
+      verbose: vi.fn(),
+    } as unknown as any;
+
     service = new PlayerValidationService(
       mockPrisma,
       mockTrackerService,
       mockGuildMembersService,
+      mockLoggingService,
     );
   });
 

@@ -1,9 +1,10 @@
 import {
   Injectable,
-  Logger,
   NotFoundException,
   BadRequestException,
+  Inject,
 } from '@nestjs/common';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TrackerSnapshotRepository } from '../repositories/tracker-snapshot.repository';
 import { TrackerRepository } from '../repositories/tracker.repository';
@@ -11,13 +12,15 @@ import { VisibilityService } from '../../infrastructure/visibility/services/visi
 
 @Injectable()
 export class TrackerSnapshotService {
-  private readonly logger = new Logger(TrackerSnapshotService.name);
+  private readonly serviceName = TrackerSnapshotService.name;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly snapshotRepository: TrackerSnapshotRepository,
     private readonly trackerRepository: TrackerRepository,
     private readonly visibilityService: VisibilityService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
   ) {}
 
   /**
@@ -68,7 +71,10 @@ export class TrackerSnapshotService {
       }
     }
 
-    this.logger.log(`Created snapshot ${snapshot.id} for tracker ${trackerId}`);
+    this.loggingService.log(
+      `Created snapshot ${snapshot.id} for tracker ${trackerId}`,
+      this.serviceName,
+    );
 
     return snapshot;
   }
@@ -142,8 +148,9 @@ export class TrackerSnapshotService {
       'guild',
       guildId,
     );
-    this.logger.log(
+    this.loggingService.log(
       `Added guild ${guildId} visibility to snapshot ${snapshotId}`,
+      this.serviceName,
     );
   }
 
@@ -158,8 +165,9 @@ export class TrackerSnapshotService {
       'guild',
       guildId,
     );
-    this.logger.log(
+    this.loggingService.log(
       `Removed guild ${guildId} visibility from snapshot ${snapshotId}`,
+      this.serviceName,
     );
   }
 }

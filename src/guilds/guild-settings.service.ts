@@ -1,27 +1,30 @@
 import {
   Injectable,
   NotFoundException,
-  Logger,
   InternalServerErrorException,
+  Inject,
 } from '@nestjs/common';
 import { GuildSettingsDto } from './dto/guild-settings.dto';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 import { SettingsDefaultsService } from './services/settings-defaults.service';
 import { SettingsValidationService } from './services/settings-validation.service';
 import { ConfigMigrationService } from './services/config-migration.service';
-import { Inject } from '@nestjs/common';
-import type { Cache } from 'cache-manager';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { SETTINGS_CACHE_TTL } from './constants/settings.constants';
+import { ICachingService } from '../infrastructure/caching/interfaces/caching.interface';
 import { GuildSettings } from './interfaces/settings.interface';
 import { GuildRepository } from './repositories/guild.repository';
 import { SettingsService } from '../infrastructure/settings/services/settings.service';
 import { ActivityLogService } from '../infrastructure/activity-log/services/activity-log.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
+import {
+  ITransactionService,
+  ITransactionClient,
+} from '../infrastructure/transactions/interfaces/transaction.interface';
 
 @Injectable()
 export class GuildSettingsService {
-  private readonly logger = new Logger(GuildSettingsService.name);
+  private readonly serviceName = GuildSettingsService.name;
 
   constructor(
     private guildRepository: GuildRepository,
@@ -31,7 +34,11 @@ export class GuildSettingsService {
     private settingsService: SettingsService,
     private activityLogService: ActivityLogService,
     private prisma: PrismaService,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    @Inject(ICachingService) private cachingService: ICachingService,
+    @Inject(ITransactionService)
+    private transactionService: ITransactionService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
   ) {}
 
   /**
@@ -46,9 +53,12 @@ export class GuildSettingsService {
   async getSettings(guildId: string): Promise<GuildSettings> {
     try {
       const cacheKey = `settings:${guildId}`;
-      const cached = await this.cacheManager.get<GuildSettings>(cacheKey);
+      const cached = await this.cachingService.get<GuildSettings>(cacheKey);
       if (cached) {
-        this.logger.log(`Settings cache hit for guild ${guildId}`);
+        this.loggingService.log(
+          `Settings cache hit for guild ${guildId}`,
+          this.serviceName,
+        );
         return cached;
       }
 
@@ -68,8 +78,9 @@ export class GuildSettingsService {
           defaultSettings as unknown as Prisma.InputJsonValue,
           this.configMigration.getSchemaVersion(defaultSettings),
         );
-        this.logger.warn(
+        this.loggingService.warn(
           `Auto-created missing settings for guild ${guildId}. This should not happen if database trigger is working properly.`,
+          this.serviceName,
         );
       }
 
@@ -80,8 +91,9 @@ export class GuildSettingsService {
           rawSettings as Record<string, unknown>,
         )
       ) {
-        this.logger.log(
+        this.loggingService.log(
           `Migrating settings for guild ${guildId} from schema version ${this.configMigration.getSchemaVersion(rawSettings as Record<string, unknown>)}`,
+          this.serviceName,
         );
 
         migratedConfig = await this.configMigration.migrate(
@@ -96,10 +108,11 @@ export class GuildSettingsService {
           migratedConfig as unknown as Prisma.InputJsonValue,
         );
 
-        await this.cacheManager.del(cacheKey);
+        await this.cachingService.del(cacheKey);
 
-        this.logger.log(
+        this.loggingService.log(
           `Successfully migrated settings for guild ${guildId} to schema version ${migratedConfig._metadata?.schemaVersion || 'unknown'}`,
+          this.serviceName,
         );
       } else {
         const rawSettings = settings.settings as unknown;
@@ -110,7 +123,7 @@ export class GuildSettingsService {
 
       const result = this.settingsDefaults.mergeWithDefaults(migratedConfig);
 
-      await this.cacheManager.set(cacheKey, result, SETTINGS_CACHE_TTL);
+      await this.cachingService.set(cacheKey, result, SETTINGS_CACHE_TTL);
 
       return result;
     } catch (error) {
@@ -119,7 +132,11 @@ export class GuildSettingsService {
         throw error;
       }
       // If auto-creation or retrieval fails, system is broken
-      this.logger.error(`Error getting settings for guild ${guildId}:`, error);
+      this.loggingService.error(
+        `Error getting settings for guild ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       throw new InternalServerErrorException(
         `Failed to retrieve settings for guild ${guildId}. This is a system error.`,
       );
@@ -156,17 +173,17 @@ export class GuildSettingsService {
         );
       }
 
-      const result = await this.prisma.$transaction(
-        async (tx: Prisma.TransactionClient) => {
+      const result = await this.transactionService.executeTransaction(
+        async (tx: ITransactionClient) => {
           const updated = await this.settingsService.updateSettings(
             'guild',
             guildId,
             mergedSettings as unknown as Prisma.InputJsonValue,
-            tx,
+            tx as Prisma.TransactionClient,
           );
 
           await this.activityLogService.logActivity(
-            tx,
+            tx as Prisma.TransactionClient,
             'guild_settings',
             guildId,
             'SETTINGS_UPDATED',
@@ -181,14 +198,19 @@ export class GuildSettingsService {
         },
       );
 
-      await this.cacheManager.del(`settings:${guildId}`);
+      await this.cachingService.del(`settings:${guildId}`);
 
-      this.logger.log(
+      this.loggingService.log(
         `Updated settings for guild ${guildId} by user ${userId}`,
+        this.serviceName,
       );
       return result;
     } catch (error) {
-      this.logger.error(`Error updating settings for guild ${guildId}:`, error);
+      this.loggingService.error(
+        `Error updating settings for guild ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       throw error;
     }
   }
@@ -201,17 +223,17 @@ export class GuildSettingsService {
     try {
       const defaultSettings = this.settingsDefaults.getDefaults();
 
-      const result = await this.prisma.$transaction(
-        async (tx: Prisma.TransactionClient) => {
+      const result = await this.transactionService.executeTransaction(
+        async (tx: ITransactionClient) => {
           const updated = await this.settingsService.updateSettings(
             'guild',
             guildId,
             defaultSettings as unknown as Prisma.InputJsonValue,
-            tx,
+            tx as Prisma.TransactionClient,
           );
 
           await this.activityLogService.logActivity(
-            tx,
+            tx as Prisma.TransactionClient,
             'guild_settings',
             guildId,
             'SETTINGS_RESET',
@@ -226,16 +248,18 @@ export class GuildSettingsService {
         },
       );
 
-      await this.cacheManager.del(`settings:${guildId}`);
+      await this.cachingService.del(`settings:${guildId}`);
 
-      this.logger.log(
+      this.loggingService.log(
         `Reset settings to defaults for guild ${guildId} by user ${userId}`,
+        this.serviceName,
       );
       return result;
     } catch (error) {
-      this.logger.error(
-        `Error resetting settings for guild ${guildId}:`,
-        error,
+      this.loggingService.error(
+        `Error resetting settings for guild ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw new InternalServerErrorException('Failed to reset settings');
     }
@@ -256,9 +280,10 @@ export class GuildSettingsService {
       });
       return result.logs;
     } catch (error) {
-      this.logger.error(
-        `Error getting settings history for guild ${guildId}:`,
-        error,
+      this.loggingService.error(
+        `Error getting settings history for guild ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw new InternalServerErrorException('Failed to get settings history');
     }

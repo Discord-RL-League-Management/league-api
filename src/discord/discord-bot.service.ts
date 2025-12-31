@@ -1,15 +1,14 @@
 import {
   Injectable,
-  Logger,
   ServiceUnavailableException,
+  Inject,
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { ConfigService } from '@nestjs/config';
 import { firstValueFrom, timeout, retry, catchError, throwError } from 'rxjs';
+import { IConfigurationService } from '../infrastructure/configuration/interfaces/configuration.interface';
 import { AxiosError } from 'axios';
-import { Inject } from '@nestjs/common';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import type { Cache } from 'cache-manager';
+import { ICachingService } from '../infrastructure/caching/interfaces/caching.interface';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 
 export interface DiscordRole {
   id: string;
@@ -25,7 +24,7 @@ interface DiscordChannel {
 
 @Injectable()
 export class DiscordBotService {
-  private readonly logger = new Logger(DiscordBotService.name);
+  private readonly serviceName = DiscordBotService.name;
   private readonly botToken: string;
   private readonly apiUrl: string;
   private readonly requestTimeout: number;
@@ -34,8 +33,11 @@ export class DiscordBotService {
 
   constructor(
     private httpService: HttpService,
-    private configService: ConfigService,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    @Inject(IConfigurationService)
+    private configService: IConfigurationService,
+    @Inject(ICachingService) private cachingService: ICachingService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
   ) {
     this.botToken = this.configService.get<string>('discord.botToken') || '';
     this.apiUrl =
@@ -70,14 +72,16 @@ export class DiscordBotService {
         result.set(roleId, exists);
       }
 
-      this.logger.log(
+      this.loggingService.log(
         `Batch validated ${roleIds.length} roles for guild ${guildId}: ${Array.from(result.values()).filter(Boolean).length} valid`,
+        this.serviceName,
       );
       return result;
     } catch (error) {
-      this.logger.error(
-        `Failed to batch validate roles for guild ${guildId}:`,
-        error,
+      this.loggingService.error(
+        `Failed to batch validate roles for guild ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       for (const roleId of roleIds) {
         result.set(roleId, false);
@@ -109,14 +113,16 @@ export class DiscordBotService {
         result.set(channelId, exists);
       }
 
-      this.logger.log(
+      this.loggingService.log(
         `Batch validated ${channelIds.length} channels for guild ${guildId}: ${Array.from(result.values()).filter(Boolean).length} valid`,
+        this.serviceName,
       );
       return result;
     } catch (error) {
-      this.logger.error(
-        `Failed to batch validate channels for guild ${guildId}:`,
-        error,
+      this.loggingService.error(
+        `Failed to batch validate channels for guild ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       for (const channelId of channelIds) {
         result.set(channelId, false);
@@ -148,14 +154,16 @@ export class DiscordBotService {
       const roles = response.data;
       const roleExists = roles.some((role) => role.id === roleId);
 
-      this.logger.log(
+      this.loggingService.log(
         `Role validation for ${roleId} in guild ${guildId}: ${roleExists ? 'valid' : 'invalid'}`,
+        this.serviceName,
       );
       return roleExists;
     } catch (error) {
-      this.logger.error(
-        `Failed to validate role ${roleId} in guild ${guildId}:`,
-        error,
+      this.loggingService.error(
+        `Failed to validate role ${roleId} in guild ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       return false; // Fail-safe - don't block on Discord API issues
     }
@@ -189,14 +197,16 @@ export class DiscordBotService {
         (channel) => channel.id === channelId,
       );
 
-      this.logger.log(
+      this.loggingService.log(
         `Channel validation for ${channelId} in guild ${guildId}: ${channelExists ? 'valid' : 'invalid'}`,
+        this.serviceName,
       );
       return channelExists;
     } catch (error) {
-      this.logger.error(
-        `Failed to validate channel ${channelId} in guild ${guildId}:`,
-        error,
+      this.loggingService.error(
+        `Failed to validate channel ${channelId} in guild ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       return false; // Fail-safe - don't block on Discord API issues
     }
@@ -209,7 +219,11 @@ export class DiscordBotService {
    */
   async getGuildRoles(guildId: string): Promise<DiscordRole[]> {
     if (!this.botToken) {
-      this.logger.error('Discord bot token is not configured');
+      this.loggingService.error(
+        'Discord bot token is not configured',
+        undefined,
+        this.serviceName,
+      );
       throw new ServiceUnavailableException(
         'Discord bot token is not configured. Please set DISCORD_BOT_TOKEN environment variable.',
       );
@@ -217,10 +231,13 @@ export class DiscordBotService {
 
     try {
       const cacheKey = `discord:roles:${guildId}`;
-      const cached = await this.cacheManager.get<DiscordRole[]>(cacheKey);
+      const cached = await this.cachingService.get<DiscordRole[]>(cacheKey);
 
       if (cached) {
-        this.logger.debug(`Roles cache hit for guild ${guildId}`);
+        this.loggingService.debug(
+          `Roles cache hit for guild ${guildId}`,
+          this.serviceName,
+        );
         return cached;
       }
 
@@ -252,13 +269,18 @@ export class DiscordBotService {
           name: String(role.name),
         }));
 
-      await this.cacheManager.set(cacheKey, roles, this.cacheTtl);
-      this.logger.log(
+      await this.cachingService.set(cacheKey, roles, this.cacheTtl);
+      this.loggingService.log(
         `Successfully fetched ${roles.length} roles for guild ${guildId}`,
+        this.serviceName,
       );
       return roles;
     } catch (error) {
-      this.logger.error(`Failed to fetch roles for guild ${guildId}:`, error);
+      this.loggingService.error(
+        `Failed to fetch roles for guild ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       if (error instanceof ServiceUnavailableException) {
         throw error;
       }
@@ -277,7 +299,11 @@ export class DiscordBotService {
     Array<{ id: string; name: string; type: number; parent_id?: string }>
   > {
     if (!this.botToken) {
-      this.logger.error('Discord bot token is not configured');
+      this.loggingService.error(
+        'Discord bot token is not configured',
+        undefined,
+        this.serviceName,
+      );
       throw new ServiceUnavailableException(
         'Discord bot token is not configured. Please set DISCORD_BOT_TOKEN environment variable.',
       );
@@ -286,12 +312,15 @@ export class DiscordBotService {
     try {
       const cacheKey = `discord:channels:${guildId}`;
       const cached =
-        await this.cacheManager.get<
+        await this.cachingService.get<
           Array<{ id: string; name: string; type: number; parent_id?: string }>
         >(cacheKey);
 
       if (cached) {
-        this.logger.debug(`Channels cache hit for guild ${guildId}`);
+        this.loggingService.debug(
+          `Channels cache hit for guild ${guildId}`,
+          this.serviceName,
+        );
         return cached;
       }
 
@@ -322,15 +351,17 @@ export class DiscordBotService {
           parent_id: channel.parent_id ? String(channel.parent_id) : undefined,
         }));
 
-      await this.cacheManager.set(cacheKey, channels, this.cacheTtl);
-      this.logger.log(
+      await this.cachingService.set(cacheKey, channels, this.cacheTtl);
+      this.loggingService.log(
         `Successfully fetched ${channels.length} channels for guild ${guildId}`,
+        this.serviceName,
       );
       return channels;
     } catch (error) {
-      this.logger.error(
-        `Failed to fetch channels for guild ${guildId}:`,
-        error,
+      this.loggingService.error(
+        `Failed to fetch channels for guild ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       if (error instanceof ServiceUnavailableException) {
         throw error;
@@ -348,7 +379,11 @@ export class DiscordBotService {
       const status = error.response.status;
       const message = error.response.data;
 
-      this.logger.error(`Discord API error ${status}:`, message);
+      this.loggingService.error(
+        `Discord API error ${status}: ${typeof message === 'string' ? message : JSON.stringify(message)}`,
+        undefined,
+        this.serviceName,
+      );
 
       if (status === 401) {
         return throwError(
@@ -371,13 +406,21 @@ export class DiscordBotService {
         );
       }
     } else if (error.request) {
-      this.logger.error('Discord API request timeout:', error.message);
+      this.loggingService.error(
+        `Discord API request timeout: ${error.message}`,
+        undefined,
+        this.serviceName,
+      );
       return throwError(
         () => new ServiceUnavailableException('Discord API request timeout'),
       );
     }
 
-    this.logger.error('Discord API unknown error:', error.message);
+    this.loggingService.error(
+      `Discord API unknown error: ${error.message}`,
+      undefined,
+      this.serviceName,
+    );
     return throwError(
       () => new ServiceUnavailableException('Discord API unavailable'),
     );

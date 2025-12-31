@@ -1,15 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import {
   HealthIndicatorService,
   HealthIndicatorResult,
 } from '@nestjs/terminus';
-import { ConfigService } from '@nestjs/config';
+import { IConfigurationService } from '../../infrastructure/configuration/interfaces/configuration.interface';
 
 @Injectable()
 export class DiscordApiHealthIndicator {
   constructor(
     private healthIndicatorService: HealthIndicatorService,
-    private configService: ConfigService,
+    @Inject(IConfigurationService)
+    private configService: IConfigurationService,
   ) {}
 
   async isHealthy(key: string): Promise<HealthIndicatorResult> {

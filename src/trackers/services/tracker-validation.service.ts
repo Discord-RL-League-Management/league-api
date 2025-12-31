@@ -1,4 +1,4 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GamePlatform, Game } from '@prisma/client';
 import { TrackerUrlConverterService } from './tracker-url-converter.service';
@@ -12,7 +12,7 @@ export interface ParsedTrackerUrl {
 
 @Injectable()
 export class TrackerValidationService {
-  private readonly logger = new Logger(TrackerValidationService.name);
+  private readonly serviceName = TrackerValidationService.name;
   private readonly TRN_BASE_URL = 'https://rocketleague.tracker.network';
   private readonly TRN_PROFILE_REGEX =
     /^https:\/\/rocketleague\.tracker\.network\/rocket-league\/profile\/([^/]+)\/([^/]+)\/overview\/?$/i;

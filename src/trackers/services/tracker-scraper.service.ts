@@ -1,12 +1,13 @@
 import {
   Injectable,
-  Logger,
   BadRequestException,
   ServiceUnavailableException,
+  Inject,
 } from '@nestjs/common';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { HttpService } from '@nestjs/axios';
-import { ConfigService } from '@nestjs/config';
 import { firstValueFrom, retry, catchError } from 'rxjs';
+import { IConfigurationService } from '../../infrastructure/configuration/interfaces/configuration.interface';
 import { AxiosError, AxiosResponse } from 'axios';
 import { TrackerUrlConverterService } from './tracker-url-converter.service';
 import {
@@ -39,7 +40,7 @@ const PLAYLIST_ID_MAP: Record<
 
 @Injectable()
 export class TrackerScraperService {
-  private readonly logger = new Logger(TrackerScraperService.name);
+  private readonly serviceName = TrackerScraperService.name;
   private readonly flaresolverrUrl: string;
   private readonly flaresolverrTimeout: number;
   private readonly flaresolverrRetryAttempts: number;
@@ -51,8 +52,11 @@ export class TrackerScraperService {
 
   constructor(
     private readonly httpService: HttpService,
-    private readonly configService: ConfigService,
+    @Inject(IConfigurationService)
+    private readonly configService: IConfigurationService,
     private readonly urlConverter: TrackerUrlConverterService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
   ) {
     const flaresolverrConfig = this.configService.get<{
       url: string;
@@ -87,23 +91,28 @@ export class TrackerScraperService {
         ? `${apiUrl}?season=${seasonNumber}`
         : apiUrl;
 
-      this.logger.debug(`Scraping tracker data from: ${urlWithSeason}`);
+      this.loggingService.debug(
+        `Scraping tracker data from: ${urlWithSeason}`,
+        this.serviceName,
+      );
 
       const response = await this.makeProxyRequest(urlWithSeason);
 
       const data = this.parseApiResponse(response);
 
-      this.logger.debug(
+      this.loggingService.debug(
         `Successfully scraped data: ${data.segments.length} segments, ${data.availableSegments.length} available seasons`,
+        this.serviceName,
       );
 
       return data;
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      this.logger.error(
+      this.loggingService.error(
         `Failed to scrape tracker data: ${errorMessage}`,
-        error,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       if (
         error instanceof BadRequestException ||
@@ -131,12 +140,16 @@ export class TrackerScraperService {
         .filter((season): season is number => typeof season === 'number')
         .sort((a, b) => b - a); // Sort descending (newest first)
 
-      this.logger.debug(
+      this.loggingService.debug(
         `Found ${availableSeasons.length} available seasons for scraping`,
+        this.serviceName,
       );
 
       if (availableSeasons.length === 0) {
-        this.logger.warn('No seasons available for scraping');
+        this.loggingService.warn(
+          'No seasons available for scraping',
+          this.serviceName,
+        );
         // Still try to parse current season from base data
         const currentSeasonData = this.parseSegments(
           baseData.segments,
@@ -174,8 +187,10 @@ export class TrackerScraperService {
         } catch (error) {
           const errorMessage =
             error instanceof Error ? error.message : String(error);
-          this.logger.error(
+          this.loggingService.error(
             `Failed to scrape season ${seasonNum}: ${errorMessage}`,
+            undefined,
+            this.serviceName,
           );
           // Return null for failed seasons, we'll filter them out
           return null;
@@ -194,15 +209,20 @@ export class TrackerScraperService {
 
       validSeasons.sort((a, b) => b.seasonNumber - a.seasonNumber);
 
-      this.logger.log(
+      this.loggingService.log(
         `Successfully scraped ${validSeasons.length} of ${availableSeasons.length} seasons (including current season from base data)`,
+        this.serviceName,
       );
 
       return validSeasons;
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      this.logger.error(`Failed to scrape all seasons: ${errorMessage}`, error);
+      this.loggingService.error(
+        `Failed to scrape all seasons: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       throw error;
     }
   }
@@ -281,9 +301,10 @@ export class TrackerScraperService {
           .map((detail) => detail.message)
           .join('; ');
 
-        this.logger.warn(
+        this.loggingService.warn(
           `Invalid stats structure in segment (type: ${segmentType}, playlistId: ${playlistId}): ${errorDetails}. ` +
             `This may indicate the tracker.gg API response structure has changed.`,
+          this.serviceName,
         );
         return null;
       }
@@ -309,7 +330,10 @@ export class TrackerScraperService {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      this.logger.warn(`Failed to extract playlist data: ${errorMessage}`);
+      this.loggingService.warn(
+        `Failed to extract playlist data: ${errorMessage}`,
+        this.serviceName,
+      );
       return null;
     }
   }
@@ -364,14 +388,19 @@ export class TrackerScraperService {
       const errorHandler = catchError((error: AxiosError) => {
         if (error.response) {
           if (error.response.status === 429) {
-            this.logger.warn('Rate limit hit from FlareSolverr API');
+            this.loggingService.warn(
+              'Rate limit hit from FlareSolverr API',
+              this.serviceName,
+            );
             throw new ServiceUnavailableException(
               'Rate limit exceeded. Please try again later.',
             );
           }
           if (error.response.status >= 500) {
-            this.logger.error(
+            this.loggingService.error(
               `FlareSolverr API server error: ${error.response.status}`,
+              undefined,
+              this.serviceName,
             );
             throw new ServiceUnavailableException(
               'FlareSolverr scraper service unavailable',
@@ -386,8 +415,10 @@ export class TrackerScraperService {
         }
 
         if (error.response?.status === 400) {
-          this.logger.error(
+          this.loggingService.error(
             `FlareSolverr API 400 error: ${JSON.stringify(error.response.data)}`,
+            undefined,
+            this.serviceName,
           );
         }
         throw error;
@@ -438,15 +469,20 @@ export class TrackerScraperService {
           const errorMessage =
             flaresolverrResponse.message ||
             `FlareSolverr scraping failed with status: ${flaresolverrResponse.status || 'unknown'}`;
-          this.logger.error(`FlareSolverr scraping failed: ${errorMessage}`);
+          this.loggingService.error(
+            `FlareSolverr scraping failed: ${errorMessage}`,
+            undefined,
+            this.serviceName,
+          );
           throw new ServiceUnavailableException(
             `Failed to scrape target: ${errorMessage}`,
           );
         }
       }
 
-      this.logger.debug(
+      this.loggingService.debug(
         `FlareSolverr API response received. Status: ${response.status}, Data type: ${typeof response.data}`,
+        this.serviceName,
       );
       return response;
     } catch (error) {
@@ -458,9 +494,10 @@ export class TrackerScraperService {
       }
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      this.logger.error(
+      this.loggingService.error(
         `FlareSolverr API request failed: ${errorMessage}`,
-        error,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw new ServiceUnavailableException(
         `Failed to make request through FlareSolverr API: ${errorMessage}`,
@@ -513,8 +550,9 @@ export class TrackerScraperService {
       isObject && responseData !== null && typeof responseData === 'object'
         ? Object.keys(responseData).join(', ')
         : 'N/A';
-    this.logger.debug(
+    this.loggingService.debug(
       `Parsing API response. ResponseData type: ${responseDataType}, Is object: ${isObject}, Keys: ${keys}`,
+      this.serviceName,
     );
   }
 
@@ -560,7 +598,11 @@ export class TrackerScraperService {
       const errorMessage =
         flaresolverrResponse.message ||
         `FlareSolverr scraping failed with status: ${flaresolverrResponse.status}`;
-      this.logger.error(`FlareSolverr scraping failed: ${errorMessage}`);
+      this.loggingService.error(
+        `FlareSolverr scraping failed: ${errorMessage}`,
+        undefined,
+        this.serviceName,
+      );
       throw new ServiceUnavailableException(
         `Failed to scrape target: ${errorMessage}`,
       );
@@ -580,8 +622,9 @@ export class TrackerScraperService {
     }
 
     const htmlResponse = flaresolverrResponse.solution.response;
-    this.logger.debug(
+    this.loggingService.debug(
       `FlareSolverr response has HTML content. Length: ${htmlResponse.length}`,
+      this.serviceName,
     );
     return htmlResponse;
   }
@@ -600,14 +643,16 @@ export class TrackerScraperService {
 
       const jsonString = preTagMatch[1];
       const parsed = JSON.parse(jsonString) as unknown;
-      this.logger.debug(
+      this.loggingService.debug(
         `Successfully extracted and parsed JSON from HTML <pre> tag`,
+        this.serviceName,
       );
       return parsed;
     } catch (parseError) {
-      this.logger.error(
-        'Failed to extract or parse JSON from FlareSolverr HTML response',
-        parseError,
+      this.loggingService.error(
+        `Failed to extract or parse JSON from FlareSolverr HTML response: ${parseError instanceof Error ? parseError.message : String(parseError)}`,
+        parseError instanceof Error ? parseError.stack : undefined,
+        this.serviceName,
       );
       throw new BadRequestException(
         'Invalid API response: failed to parse JSON from FlareSolverr HTML response',
@@ -734,8 +779,9 @@ export class TrackerScraperService {
 
     if (this.requestCount >= this.rateLimitPerMinute) {
       const waitTime = windowMs - (now - this.rateLimitWindowStart);
-      this.logger.warn(
+      this.loggingService.warn(
         `Rate limit reached. Waiting ${waitTime}ms before next request`,
+        this.serviceName,
       );
       await new Promise((resolve) => setTimeout(resolve, waitTime));
       this.rateLimitWindowStart = Date.now();

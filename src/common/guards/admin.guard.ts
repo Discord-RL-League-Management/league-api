@@ -3,18 +3,18 @@ import {
   CanActivate,
   ExecutionContext,
   ForbiddenException,
-  Logger,
   Inject,
 } from '@nestjs/common';
 import { AuditAction } from '../../audit/interfaces/audit-event.interface';
 import { GuildSettings } from '../../guilds/interfaces/settings.interface';
 import type { AuthenticatedUser } from '../interfaces/user.interface';
 import type { Request } from 'express';
-import type { IPermissionProvider } from '../interfaces/permission-provider.interface';
-import type { IAuditProvider } from '../interfaces/audit-provider.interface';
-import type { IDiscordProvider } from '../interfaces/discord-provider.interface';
-import type { ITokenProvider } from '../interfaces/token-provider.interface';
-import type { IGuildAccessProvider } from '../interfaces/guild-access-provider.interface';
+import { IPermissionProvider } from '../interfaces/permission-provider.interface';
+import { IAuditProvider } from '../interfaces/audit-provider.interface';
+import { IDiscordProvider } from '../interfaces/discord-provider.interface';
+import { ITokenProvider } from '../interfaces/token-provider.interface';
+import { IGuildAccessProvider } from '../interfaces/guild-access-provider.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 
 interface RequestWithUser extends Request {
   user: AuthenticatedUser | { type: 'bot'; id: string };
@@ -23,7 +23,7 @@ interface RequestWithUser extends Request {
 
 @Injectable()
 export class AdminGuard implements CanActivate {
-  private readonly logger = new Logger(AdminGuard.name);
+  private readonly serviceName = AdminGuard.name;
 
   /**
    * AdminGuard Constructor - Dependencies
@@ -36,16 +36,18 @@ export class AdminGuard implements CanActivate {
    * and registered in CommonModule via dependency injection tokens.
    */
   constructor(
-    @Inject('IPermissionProvider')
+    @Inject(IPermissionProvider)
     private permissionProvider: IPermissionProvider,
-    @Inject('IAuditProvider')
+    @Inject(IAuditProvider)
     private auditProvider: IAuditProvider,
-    @Inject('IDiscordProvider')
+    @Inject(IDiscordProvider)
     private discordProvider: IDiscordProvider,
-    @Inject('ITokenProvider')
+    @Inject(ITokenProvider)
     private tokenProvider: ITokenProvider,
-    @Inject('IGuildAccessProvider')
+    @Inject(IGuildAccessProvider)
     private guildAccessProvider: IGuildAccessProvider,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
   ) {}
 
   /**
@@ -62,20 +64,23 @@ export class AdminGuard implements CanActivate {
     const guildId = request.params.guildId || request.params.id;
 
     if (!user || !guildId) {
-      this.logger.warn('AdminGuard: Missing user or guildId');
+      this.loggingService.warn(
+        'AdminGuard: Missing user or guildId',
+        this.serviceName,
+      );
       throw new ForbiddenException('Authentication and guild ID required');
     }
 
     try {
       const accessToken = await this.tokenProvider.getValidAccessToken(user.id);
       if (!accessToken) {
-        this.logger.warn(
+        this.loggingService.warn(
           `AdminGuard: No access token available for user ${user.id}`,
+          this.serviceName,
         );
         throw new ForbiddenException('Access token not available');
       }
 
-      // Check Discord permissions first (primary check for Discord admins)
       const guildPermissions = await this.discordProvider.checkGuildPermissions(
         accessToken,
         guildId,
@@ -85,10 +90,10 @@ export class AdminGuard implements CanActivate {
         throw new ForbiddenException('You are not a member of this guild');
       }
 
-      // Primary check: Discord Administrator permission
       if (guildPermissions.hasAdministratorPermission) {
-        this.logger.log(
+        this.loggingService.log(
           `AdminGuard: User ${user.id} has Discord Administrator permission in guild ${guildId}`,
+          this.serviceName,
         );
 
         await this.auditProvider.logAdminAction(
@@ -109,19 +114,16 @@ export class AdminGuard implements CanActivate {
         return true;
       }
 
-      // Ensure settings exist before checking configured roles (auto-creates if missing)
-      // This ensures settings are always available for permission checks
       const settings = await this.guildAccessProvider.getSettings(guildId);
 
       const settingsTyped = settings;
       const adminRoles = settingsTyped?.roles?.admin || [];
       const hasNoAdminRolesConfigured = !adminRoles || adminRoles.length === 0;
 
-      // If no admin roles are configured, allow access for initial setup
-      // This allows the first user to configure admin roles
       if (hasNoAdminRolesConfigured) {
-        this.logger.warn(
+        this.loggingService.warn(
           `No admin roles configured for guild ${guildId}. Allowing access for initial setup.`,
+          this.serviceName,
         );
 
         await this.auditProvider.logAdminAction(
@@ -148,13 +150,13 @@ export class AdminGuard implements CanActivate {
         guildId,
       );
       if (!membership) {
-        this.logger.warn(
+        this.loggingService.warn(
           `User ${user.id} is not a member of guild ${guildId} in database`,
+          this.serviceName,
         );
         throw new ForbiddenException('You are not a member of this guild');
       }
 
-      // Validate with Discord for final authorization check
       const isAdmin = await this.permissionProvider.checkAdminRoles(
         membership.roles,
         guildId,
@@ -188,9 +190,10 @@ export class AdminGuard implements CanActivate {
       if (error instanceof ForbiddenException) {
         throw error;
       }
-      this.logger.error(
-        `AdminGuard error for user ${user.id} in guild ${guildId}:`,
-        error,
+      this.loggingService.error(
+        `AdminGuard error for user ${user.id} in guild ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw new ForbiddenException('Error checking permissions');
     }

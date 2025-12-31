@@ -20,13 +20,13 @@ import { ILoggingService } from './interfaces/logging.interface';
   imports: [ConfigModule, AppLoggingModule],
   providers: [
     {
-      provide: 'ILoggingService',
+      provide: ILoggingService,
       useFactory: (newRelicLogger: NewRelicLoggerService): ILoggingService => {
         return new InAppLoggingService(newRelicLogger);
       },
       inject: [NewRelicLoggerService],
     },
   ],
-  exports: ['ILoggingService'],
+  exports: [ILoggingService],
 })
 export class LoggingModule {}

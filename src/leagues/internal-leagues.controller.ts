@@ -7,7 +7,7 @@ import {
   Param,
   Body,
   UseGuards,
-  Logger,
+  Inject,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
@@ -26,6 +26,7 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { ParseCUIDPipe } from '../common/pipes';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 
 @ApiTags('Internal Leagues')
 @Controller('internal/leagues')
@@ -33,11 +34,13 @@ import { ParseCUIDPipe } from '../common/pipes';
 @SkipThrottle()
 @ApiBearerAuth('bot-api-key')
 export class InternalLeaguesController {
-  private readonly logger = new Logger(InternalLeaguesController.name);
+  private readonly serviceName = InternalLeaguesController.name;
 
   constructor(
     private leaguesService: LeaguesService,
     private leagueSettingsService: LeagueSettingsService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
   ) {}
 
   @Get(':id')
@@ -47,7 +50,7 @@ export class InternalLeaguesController {
   @ApiResponse({ status: 401, description: 'Invalid bot API key' })
   @ApiParam({ name: 'id', description: 'League ID' })
   async findOne(@Param('id', ParseCUIDPipe) id: string) {
-    this.logger.log(`Bot requested league ${id}`);
+    this.loggingService.log(`Bot requested league ${id}`, this.serviceName);
     return this.leaguesService.findOne(id);
   }
 
@@ -60,7 +63,10 @@ export class InternalLeaguesController {
   async create(
     @Body() createLeagueDto: CreateLeagueDto & { createdBy: string },
   ) {
-    this.logger.log(`Bot creating league ${createLeagueDto.name}`);
+    this.loggingService.log(
+      `Bot creating league ${createLeagueDto.name}`,
+      this.serviceName,
+    );
     return this.leaguesService.create(
       createLeagueDto,
       createLeagueDto.createdBy || 'bot',
@@ -77,7 +83,7 @@ export class InternalLeaguesController {
     @Param('id', ParseCUIDPipe) id: string,
     @Body() updateLeagueDto: UpdateLeagueDto,
   ) {
-    this.logger.log(`Bot updating league ${id}`);
+    this.loggingService.log(`Bot updating league ${id}`, this.serviceName);
     return this.leaguesService.update(id, updateLeagueDto);
   }
 
@@ -88,7 +94,7 @@ export class InternalLeaguesController {
   @ApiResponse({ status: 401, description: 'Invalid bot API key' })
   @ApiParam({ name: 'id', description: 'League ID' })
   async remove(@Param('id', ParseCUIDPipe) id: string) {
-    this.logger.log(`Bot deleting league ${id}`);
+    this.loggingService.log(`Bot deleting league ${id}`, this.serviceName);
     return this.leaguesService.remove(id);
   }
 
@@ -99,7 +105,10 @@ export class InternalLeaguesController {
   @ApiResponse({ status: 401, description: 'Invalid bot API key' })
   @ApiParam({ name: 'id', description: 'League ID' })
   async getSettings(@Param('id', ParseCUIDPipe) id: string) {
-    this.logger.log(`Bot requested settings for league ${id}`);
+    this.loggingService.log(
+      `Bot requested settings for league ${id}`,
+      this.serviceName,
+    );
     return this.leagueSettingsService.getSettings(id);
   }
 
@@ -113,7 +122,10 @@ export class InternalLeaguesController {
     @Param('id', ParseCUIDPipe) id: string,
     @Body() settings: LeagueSettingsDto,
   ) {
-    this.logger.log(`Bot updating settings for league ${id}`);
+    this.loggingService.log(
+      `Bot updating settings for league ${id}`,
+      this.serviceName,
+    );
     return this.leagueSettingsService.updateSettings(id, settings);
   }
 }

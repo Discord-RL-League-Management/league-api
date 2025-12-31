@@ -1,8 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-jwt';
-import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../../users/users.service';
+import { IConfigurationService } from '../../infrastructure/configuration/interfaces/configuration.interface';
 import { Request } from 'express';
 
 /**
@@ -31,7 +31,8 @@ const cookieExtractor = (req: Request): string | null => {
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor(
     private usersService: UsersService,
-    private configService: ConfigService,
+    @Inject(IConfigurationService)
+    private configService: IConfigurationService,
   ) {
     super({
       jwtFromRequest: cookieExtractor,

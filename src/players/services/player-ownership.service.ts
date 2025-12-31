@@ -1,4 +1,5 @@
-import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
+import { Injectable, ForbiddenException, Inject } from '@nestjs/common';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { PlayerService } from './player.service';
 import { PlayerNotFoundException } from '../exceptions/player.exceptions';
 
@@ -10,9 +11,13 @@ import { PlayerNotFoundException } from '../exceptions/player.exceptions';
  */
 @Injectable()
 export class PlayerOwnershipService {
-  private readonly logger = new Logger(PlayerOwnershipService.name);
+  private readonly serviceName = PlayerOwnershipService.name;
 
-  constructor(private playerService: PlayerService) {}
+  constructor(
+    private playerService: PlayerService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
+  ) {}
 
   /**
    * Validate that a player belongs to the specified user
@@ -31,13 +36,17 @@ export class PlayerOwnershipService {
       const player = await this.playerService.findOne(playerId);
 
       if (player.userId !== userId) {
-        this.logger.warn(
+        this.loggingService.warn(
           `User ${userId} attempted to access player ${playerId} owned by ${player.userId}`,
+          this.serviceName,
         );
         throw new ForbiddenException('You can only access players you own');
       }
 
-      this.logger.debug(`User ${userId} owns player ${playerId}`);
+      this.loggingService.debug(
+        `User ${userId} owns player ${playerId}`,
+        this.serviceName,
+      );
     } catch (error) {
       if (
         error instanceof ForbiddenException ||
@@ -45,9 +54,10 @@ export class PlayerOwnershipService {
       ) {
         throw error;
       }
-      this.logger.error(
-        `Failed to validate player ownership for user ${userId}, player ${playerId}:`,
-        error,
+      this.loggingService.error(
+        `Failed to validate player ownership for user ${userId}, player ${playerId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw new ForbiddenException('Error validating player ownership');
     }

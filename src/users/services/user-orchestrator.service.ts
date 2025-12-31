@@ -1,8 +1,9 @@
 import {
   Injectable,
-  Logger,
   InternalServerErrorException,
+  Inject,
 } from '@nestjs/common';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { UsersService } from '../users.service';
 import { DiscordProfileDto } from '../../auth/dto/discord-profile.dto';
 import { User } from '@prisma/client';
@@ -15,9 +16,13 @@ import { User } from '@prisma/client';
  */
 @Injectable()
 export class UserOrchestratorService {
-  private readonly logger = new Logger(UserOrchestratorService.name);
+  private readonly serviceName = UserOrchestratorService.name;
 
-  constructor(private usersService: UsersService) {}
+  constructor(
+    private usersService: UsersService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
+  ) {}
 
   /**
    * Upsert user during OAuth flow - creates if not exists, updates if exists
@@ -51,9 +56,10 @@ export class UserOrchestratorService {
         });
       }
     } catch (error) {
-      this.logger.error(
-        `Failed to upsert user ${discordData.discordId} during OAuth:`,
-        error,
+      this.loggingService.error(
+        `Failed to upsert user ${discordData.discordId} during OAuth: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw new InternalServerErrorException(
         'Failed to create or update user during OAuth',

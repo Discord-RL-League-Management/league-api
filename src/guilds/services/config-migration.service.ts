@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { GuildSettings } from '../interfaces/settings.interface';
 import {
   CURRENT_SCHEMA_VERSION,
@@ -19,9 +20,13 @@ import { SettingsDefaultsService } from './settings-defaults.service';
  */
 @Injectable()
 export class ConfigMigrationService {
-  private readonly logger = new Logger(ConfigMigrationService.name);
+  private readonly serviceName = ConfigMigrationService.name;
 
-  constructor(private readonly settingsDefaults: SettingsDefaultsService) {}
+  constructor(
+    private readonly settingsDefaults: SettingsDefaultsService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
+  ) {}
 
   /**
    * Migrate configuration from any version to current version
@@ -38,8 +43,9 @@ export class ConfigMigrationService {
       return this.normalizeToCurrentSchema(config);
     }
 
-    this.logger.log(
+    this.loggingService.log(
       `Migrating config from schema version ${schemaVersion} to ${CURRENT_SCHEMA_VERSION}`,
+      this.serviceName,
     );
 
     // Apply migration chain
@@ -105,7 +111,10 @@ export class ConfigMigrationService {
    * Uses SettingsDefaultsService to merge with defaults.
    */
   private migrateToV1(config: unknown): unknown {
-    this.logger.log('Applying migration: version 0 → version 1');
+    this.loggingService.log(
+      'Applying migration: version 0 → version 1',
+      this.serviceName,
+    );
 
     // V1 migration: Merge with defaults to ensure all fields exist
     const migrated = this.settingsDefaults.mergeWithDefaults(
@@ -139,7 +148,10 @@ export class ConfigMigrationService {
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private migrateToV2(_config: unknown): unknown {
-    this.logger.log('Applying migration: version 1 → version 2');
+    this.loggingService.log(
+      'Applying migration: version 1 → version 2',
+      this.serviceName,
+    );
 
     // V2 migration: Strip to minimal schema
     const migrated: Record<string, unknown> = {

@@ -1,8 +1,9 @@
 import {
   Injectable,
-  Logger,
   InternalServerErrorException,
+  Inject,
 } from '@nestjs/common';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { GuildMemberRepository } from '../repositories/guild-member.repository';
 
 /**
@@ -13,9 +14,13 @@ import { GuildMemberRepository } from '../repositories/guild-member.repository';
  */
 @Injectable()
 export class GuildMemberQueryService {
-  private readonly logger = new Logger(GuildMemberQueryService.name);
+  private readonly serviceName = GuildMemberQueryService.name;
 
-  constructor(private guildMemberRepository: GuildMemberRepository) {}
+  constructor(
+    private guildMemberRepository: GuildMemberRepository,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
+  ) {}
 
   /**
    * Find all members in a guild with pagination
@@ -36,7 +41,11 @@ export class GuildMemberQueryService {
         includeUser: true,
       });
     } catch (error) {
-      this.logger.error(`Failed to fetch members for guild ${guildId}:`, error);
+      this.loggingService.error(
+        `Failed to fetch members for guild ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       throw new InternalServerErrorException('Failed to fetch guild members');
     }
   }
@@ -61,9 +70,10 @@ export class GuildMemberQueryService {
         includeUser: true,
       });
     } catch (error) {
-      this.logger.error(
-        `Failed to search members for guild ${guildId}:`,
-        error,
+      this.loggingService.error(
+        `Failed to search members for guild ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw new InternalServerErrorException('Failed to search guild members');
     }
@@ -82,7 +92,11 @@ export class GuildMemberQueryService {
         guild: true,
       });
     } catch (error) {
-      this.logger.error(`Failed to get guilds for user ${userId}:`, error);
+      this.loggingService.error(
+        `Failed to get guilds for user ${userId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       throw new InternalServerErrorException('Failed to get user guilds');
     }
   }
@@ -101,9 +115,10 @@ export class GuildMemberQueryService {
         guild: true,
       });
     } catch (error) {
-      this.logger.error(
-        `Failed to fetch memberships for user ${userId}:`,
-        error,
+      this.loggingService.error(
+        `Failed to fetch memberships for user ${userId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw new InternalServerErrorException('Failed to get user memberships');
     }
@@ -127,9 +142,10 @@ export class GuildMemberQueryService {
         guildId,
       );
     } catch (error) {
-      this.logger.error(
-        `Failed to fetch member with guild for user ${userId} in guild ${guildId}:`,
-        error,
+      this.loggingService.error(
+        `Failed to fetch member with guild for user ${userId} in guild ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       return null;
     }

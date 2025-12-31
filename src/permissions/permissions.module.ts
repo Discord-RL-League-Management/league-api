@@ -4,6 +4,7 @@ import { PermissionCheckModule } from './modules/permission-check/permission-che
 import { PermissionsController } from './permissions.controller';
 import { GuildMembersModule } from '../guild-members/guild-members.module';
 import { GuildsModule } from '../guilds/guilds.module';
+import { InfrastructureModule } from '../infrastructure/infrastructure.module';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { GuildsModule } from '../guilds/guilds.module';
     PermissionCheckModule,
     GuildMembersModule,
     GuildsModule,
+    InfrastructureModule,
   ],
   controllers: [PermissionsController],
   exports: [RoleParserModule, PermissionCheckModule],

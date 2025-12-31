@@ -1,5 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import {
+  ITransactionService,
+  ITransactionClient,
+} from '../../infrastructure/transactions/interfaces/transaction.interface';
 import { League, Prisma, LeagueStatus, Game } from '@prisma/client';
 import { CreateLeagueDto } from '../dto/create-league.dto';
 import { UpdateLeagueDto } from '../dto/update-league.dto';
@@ -25,9 +30,15 @@ export class LeagueRepository
       UpdateLeagueDto
     >
 {
-  private readonly logger = new Logger(LeagueRepository.name);
+  private readonly serviceName = LeagueRepository.name;
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(ITransactionService)
+    private transactionService: ITransactionService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
+  ) {}
 
   async findById(
     id: string,
@@ -81,10 +92,10 @@ export class LeagueRepository
     status?: string | string[];
     game?: string | string[];
   }): Promise<{ data: League[]; total: number; page: number; limit: number }> {
-    const page = options?.page ?? 1;
-    const limit = options?.limit ?? 50;
+    const page = Math.max(1, options?.page ?? 1);
+    const limit = Math.max(1, Math.min(options?.limit ?? 50, 100));
     const skip = (page - 1) * limit;
-    const maxLimit = Math.min(limit, 100);
+    const maxLimit = limit; // Already validated, no need for Math.min
 
     const where: Prisma.LeagueWhereInput = {};
 
@@ -139,7 +150,6 @@ export class LeagueRepository
 
   /**
    * Find leagues by guild ID
-   * Repository-specific method for filtering
    */
   async findByGuild(
     guildId: string,
@@ -153,7 +163,6 @@ export class LeagueRepository
 
   /**
    * Find leagues by game
-   * Repository-specific method for filtering
    */
   async findByGame(
     guildId: string,
@@ -207,7 +216,6 @@ export class LeagueRepository
     tx?: Prisma.TransactionClient,
   ): Promise<League> {
     if (tx) {
-      // If transaction client provided, use it directly
       const league = await tx.league.create({
         data: leagueData,
       });
@@ -233,37 +241,38 @@ export class LeagueRepository
       return league;
     }
 
-    // Otherwise, create a new transaction
-    return this.prisma.$transaction(async (transaction) => {
-      const league = await transaction.league.create({
-        data: leagueData,
-      });
+    return this.transactionService.executeTransaction(
+      async (tx: ITransactionClient) => {
+        const transaction = tx as Prisma.TransactionClient;
+        const league = await transaction.league.create({
+          data: leagueData,
+        });
 
-      await transaction.settings.upsert({
-        where: {
-          ownerType_ownerId: {
+        await transaction.settings.upsert({
+          where: {
+            ownerType_ownerId: {
+              ownerType: 'league',
+              ownerId: league.id,
+            },
+          },
+          create: {
             ownerType: 'league',
             ownerId: league.id,
+            settings: settingsData,
+            schemaVersion: 1,
           },
-        },
-        create: {
-          ownerType: 'league',
-          ownerId: league.id,
-          settings: settingsData,
-          schemaVersion: 1,
-        },
-        update: {
-          settings: settingsData,
-        },
-      });
+          update: {
+            settings: settingsData,
+          },
+        });
 
-      return league;
-    });
+        return league;
+      },
+    );
   }
 
   /**
    * Find leagues by status
-   * Repository-specific method for filtering
    */
   async findByStatus(
     guildId: string,

@@ -1,21 +1,23 @@
-import { Injectable, NestMiddleware, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Injectable, NestMiddleware, Inject } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { IConfigurationService } from '../../infrastructure/configuration/interfaces/configuration.interface';
 
 /**
  * AuthLoggerMiddleware - Logs authentication method for each request
- *
- * Single Responsibility: Only logs auth type, doesn't handle authentication itself
- * Separation of Concerns: Logging separated from authentication logic
- * Modularity: Can be easily enabled/disabled or replaced
  */
 @Injectable()
 export class AuthLoggerMiddleware implements NestMiddleware {
-  private readonly logger = new Logger('AuthLogger');
+  private readonly serviceName = 'AuthLogger';
   private readonly botApiKey: string;
 
-  constructor(private configService: ConfigService) {
-    this.botApiKey = this.configService.get<string>('auth.botApiKey', '');
+  constructor(
+    @Inject(IConfigurationService)
+    private configService: IConfigurationService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
+  ) {
+    this.botApiKey = this.configService.get<string>('auth.botApiKey', '') ?? '';
   }
 
   use(req: Request, res: Response, next: NextFunction) {
@@ -23,14 +25,22 @@ export class AuthLoggerMiddleware implements NestMiddleware {
     const { method, path } = req;
 
     if (authHeader) {
-      // Check which type of auth is being used
       if (authHeader === `Bearer ${this.botApiKey}`) {
-        this.logger.log(`Bot request: ${method} ${path}`);
+        this.loggingService.log(
+          `Bot request: ${method} ${path}`,
+          this.serviceName,
+        );
       } else {
-        this.logger.log(`User request: ${method} ${path}`);
+        this.loggingService.log(
+          `User request: ${method} ${path}`,
+          this.serviceName,
+        );
       }
     } else {
-      this.logger.log(`Unauthenticated request: ${method} ${path}`);
+      this.loggingService.log(
+        `Unauthenticated request: ${method} ${path}`,
+        this.serviceName,
+      );
     }
 
     next();

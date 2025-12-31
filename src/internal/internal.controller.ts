@@ -1,13 +1,19 @@
-import { Controller, Get, UseGuards, Logger } from '@nestjs/common';
+import { Controller, Get, UseGuards, Inject } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { BotAuthGuard } from '../auth/guards/bot-auth.guard';
 import { HealthCheckResponseDto } from '../common/dto/health-check.dto';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 
 @Controller('internal')
 @UseGuards(BotAuthGuard)
 @SkipThrottle()
 export class InternalController {
-  private readonly logger = new Logger(InternalController.name);
+  private readonly serviceName = InternalController.name;
+
+  constructor(
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
+  ) {}
 
   @Get('health')
   healthCheck(): HealthCheckResponseDto {
@@ -18,10 +24,14 @@ export class InternalController {
         timestamp: new Date().toISOString(),
       };
 
-      this.logger.log('Health check requested', { response });
+      this.loggingService.log('Health check requested', this.serviceName);
       return response;
     } catch (error) {
-      this.logger.error('Health check failed', error);
+      this.loggingService.error(
+        `Health check failed: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       throw error;
     }
   }

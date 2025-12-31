@@ -3,7 +3,7 @@ import {
   Post,
   Body,
   UseGuards,
-  Logger,
+  Inject,
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
@@ -23,6 +23,7 @@ import { CalculateMmrDto } from '../dto/calculate-mmr.dto';
 import { GuildSettingsService } from '../../guilds/guild-settings.service';
 import { SettingsDefaultsService } from '../../guilds/services/settings-defaults.service';
 import { MmrCalculationConfig } from '../../guilds/interfaces/settings.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 
 /**
  * MmrCalculationController - Single Responsibility: MMR calculation API endpoints
@@ -35,13 +36,15 @@ import { MmrCalculationConfig } from '../../guilds/interfaces/settings.interface
 @UseGuards(JwtAuthGuard, AdminGuard)
 @ApiBearerAuth('JWT-auth')
 export class MmrCalculationController {
-  private readonly logger = new Logger(MmrCalculationController.name);
+  private readonly serviceName = MmrCalculationController.name;
 
   constructor(
     private readonly mmrService: MmrCalculationService,
     private readonly formulaValidation: FormulaValidationService,
     private readonly guildSettingsService: GuildSettingsService,
     private readonly settingsDefaults: SettingsDefaultsService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
   ) {}
 
   @Post('test-formula')
@@ -111,9 +114,10 @@ export class MmrCalculationController {
         config: mmrConfig,
       };
     } catch (error: unknown) {
-      this.logger.error(
-        `Error calculating MMR for guild ${body.guildId}:`,
-        error,
+      this.loggingService.error(
+        `Error calculating MMR for guild ${body.guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       if (
         error instanceof BadRequestException ||

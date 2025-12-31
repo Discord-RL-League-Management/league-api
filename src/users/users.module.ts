@@ -7,9 +7,10 @@ import { UserRepository } from './repositories/user.repository';
 import { UserOrchestratorService } from './services/user-orchestrator.service';
 import { EncryptionModule } from '../common/encryption.module';
 import { PrismaModule } from '../prisma/prisma.module';
+import { InfrastructureModule } from '../infrastructure/infrastructure.module';
 
 @Module({
-  imports: [EncryptionModule, PrismaModule],
+  imports: [EncryptionModule, PrismaModule, InfrastructureModule],
   controllers: [InternalUsersController, UsersController],
   providers: [
     UsersService,

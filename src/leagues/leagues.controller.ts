@@ -8,7 +8,7 @@ import {
   Body,
   Query,
   UseGuards,
-  Logger,
+  Inject,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
@@ -31,18 +31,21 @@ import {
 } from '@nestjs/swagger';
 import type { AuthenticatedUser } from '../common/interfaces/user.interface';
 import { ParseCUIDPipe, ParseEnumPipe } from '../common/pipes';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 
 @ApiTags('Leagues')
 @Controller('api/leagues')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class LeaguesController {
-  private readonly logger = new Logger(LeaguesController.name);
+  private readonly serviceName = LeaguesController.name;
 
   constructor(
     private leaguesService: LeaguesService,
     private leagueAccessValidationService: LeagueAccessValidationService,
     private leaguePermissionService: LeaguePermissionService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
   ) {}
 
   @Get('guild/:guildId')
@@ -62,7 +65,10 @@ export class LeaguesController {
     @Query('status', new ParseEnumPipe(LeagueStatus)) status?: LeagueStatus,
     @Query('game', new ParseEnumPipe(Game)) game?: Game,
   ) {
-    this.logger.log(`User ${user.id} requested leagues for guild ${guildId}`);
+    this.loggingService.log(
+      `User ${user.id} requested leagues for guild ${guildId}`,
+      this.serviceName,
+    );
 
     await this.leagueAccessValidationService.validateGuildAccess(
       user.id,
@@ -90,7 +96,10 @@ export class LeaguesController {
     @Param('id', ParseCUIDPipe) id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    this.logger.log(`User ${user.id} requested league ${id}`);
+    this.loggingService.log(
+      `User ${user.id} requested league ${id}`,
+      this.serviceName,
+    );
 
     await this.leagueAccessValidationService.validateLeagueAccess(user.id, id);
 
@@ -107,7 +116,10 @@ export class LeaguesController {
     @Body() createLeagueDto: CreateLeagueDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    this.logger.log(`User ${user.id} creating league ${createLeagueDto.name}`);
+    this.loggingService.log(
+      `User ${user.id} creating league ${createLeagueDto.name}`,
+      this.serviceName,
+    );
 
     await this.leagueAccessValidationService.validateGuildAccess(
       user.id,
@@ -138,7 +150,10 @@ export class LeaguesController {
     @Body() updateLeagueDto: UpdateLeagueDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    this.logger.log(`User ${user.id} updating league ${id}`);
+    this.loggingService.log(
+      `User ${user.id} updating league ${id}`,
+      this.serviceName,
+    );
 
     await this.leagueAccessValidationService.validateLeagueAccess(user.id, id);
 
@@ -164,8 +179,9 @@ export class LeaguesController {
     @Body() body: UpdateLeagueStatusDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    this.logger.log(
+    this.loggingService.log(
       `User ${user.id} updating league ${id} status to ${body.status}`,
+      this.serviceName,
     );
 
     await this.leagueAccessValidationService.validateLeagueAccess(user.id, id);
@@ -184,7 +200,10 @@ export class LeaguesController {
     @Param('id', ParseCUIDPipe) id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    this.logger.log(`User ${user.id} deleting league ${id}`);
+    this.loggingService.log(
+      `User ${user.id} deleting league ${id}`,
+      this.serviceName,
+    );
 
     await this.leagueAccessValidationService.validateLeagueAccess(user.id, id);
 

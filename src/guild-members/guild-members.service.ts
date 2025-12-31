@@ -2,8 +2,9 @@ import {
   Injectable,
   NotFoundException,
   InternalServerErrorException,
-  Logger,
+  Inject,
 } from '@nestjs/common';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 import { Prisma } from '@prisma/client';
 import { UsersService } from '../users/users.service';
 import { CreateGuildMemberDto } from './dto/create-guild-member.dto';
@@ -22,7 +23,7 @@ import { GuildMemberSyncService } from './services/guild-member-sync.service';
  */
 @Injectable()
 export class GuildMembersService {
-  private readonly logger = new Logger(GuildMembersService.name);
+  private readonly serviceName = GuildMembersService.name;
 
   constructor(
     private guildMemberRepository: GuildMemberRepository,
@@ -30,6 +31,8 @@ export class GuildMembersService {
     private guildMemberQueryService: GuildMemberQueryService,
     private guildMemberStatisticsService: GuildMemberStatisticsService,
     private guildMemberSyncService: GuildMemberSyncService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
   ) {}
 
   /**
@@ -76,9 +79,10 @@ export class GuildMembersService {
         }
         throw new NotFoundException('Required record not found');
       }
-      this.logger.error(
-        `Failed to create guild member ${createGuildMemberDto.userId}:`,
-        error,
+      this.loggingService.error(
+        `Failed to create guild member ${createGuildMemberDto.userId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw new InternalServerErrorException('Failed to create guild member');
     }
@@ -117,9 +121,10 @@ export class GuildMembersService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(
-        `Failed to fetch member ${userId} in guild ${guildId}:`,
-        error,
+      this.loggingService.error(
+        `Failed to fetch member ${userId} in guild ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw new InternalServerErrorException('Failed to fetch guild member');
     }
@@ -156,9 +161,10 @@ export class GuildMembersService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(
-        `Failed to update member ${userId} in guild ${guildId}:`,
-        error,
+      this.loggingService.error(
+        `Failed to update member ${userId} in guild ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw new InternalServerErrorException('Failed to update guild member');
     }
@@ -184,14 +190,18 @@ export class GuildMembersService {
 
       await this.guildMemberRepository.deleteByCompositeKey(userId, guildId);
 
-      this.logger.log(`Removed member ${userId} from guild ${guildId}`);
+      this.loggingService.log(
+        `Removed member ${userId} from guild ${guildId}`,
+        this.serviceName,
+      );
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(
-        `Failed to remove member ${userId} from guild ${guildId}:`,
-        error,
+      this.loggingService.error(
+        `Failed to remove member ${userId} from guild ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw new InternalServerErrorException('Failed to remove guild member');
     }

@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TeamMemberRepository } from '../repositories/team-member.repository';
 import { TeamService } from '../../teams/services/team.service';
@@ -12,12 +13,14 @@ import {
 
 @Injectable()
 export class TeamMemberService {
-  private readonly logger = new Logger(TeamMemberService.name);
+  private readonly serviceName = TeamMemberService.name;
 
   constructor(
     private teamMemberRepository: TeamMemberRepository,
     private teamService: TeamService,
     private prisma: PrismaService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
   ) {}
 
   async findOne(id: string) {

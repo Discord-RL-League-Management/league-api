@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MmrCalculationService, TrackerData } from './mmr-calculation.service';
 import { TrackerDataExtractionService } from './tracker-data-extraction.service';
@@ -13,7 +14,7 @@ import { MmrCalculationConfig } from '../../guilds/interfaces/settings.interface
  */
 @Injectable()
 export class MmrCalculationIntegrationService {
-  private readonly logger = new Logger(MmrCalculationIntegrationService.name);
+  private readonly serviceName = MmrCalculationIntegrationService.name;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -21,6 +22,8 @@ export class MmrCalculationIntegrationService {
     private readonly trackerDataExtraction: TrackerDataExtractionService,
     private readonly settingsDefaults: SettingsDefaultsService,
     private readonly guildSettingsService: GuildSettingsService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
   ) {}
 
   /**
@@ -35,7 +38,7 @@ export class MmrCalculationIntegrationService {
       const trackerData =
         await this.trackerDataExtraction.extractTrackerData(trackerId);
       if (!trackerData) {
-        this.logger.debug(
+        this.loggingService.debug(
           `No tracker data available for tracker ${trackerId}, skipping MMR calculation`,
         );
         return;
@@ -47,8 +50,9 @@ export class MmrCalculationIntegrationService {
       });
 
       if (guildMemberships.length === 0) {
-        this.logger.debug(
+        this.loggingService.debug(
           `User ${userId} has no guild memberships, skipping MMR calculation`,
+          this.serviceName,
         );
         return;
       }
@@ -64,23 +68,26 @@ export class MmrCalculationIntegrationService {
       ).length;
       const failed = calculations.filter((r) => r.status === 'rejected').length;
 
-      this.logger.log(
+      this.loggingService.log(
         `MMR calculation completed for user ${userId}: ${successful} successful, ${failed} failed`,
+        this.serviceName,
       );
 
       calculations.forEach((result, index) => {
         if (result.status === 'rejected') {
-          this.logger.warn(
+          this.loggingService.warn(
             `Failed to calculate MMR for guild ${guildMemberships[index].guildId}: ${result.reason}`,
+            this.serviceName,
           );
         }
       });
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error(
+      this.loggingService.error(
         `Failed to calculate MMR for user ${userId}: ${errorMessage}`,
-        error,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
     }
   }
@@ -107,16 +114,18 @@ export class MmrCalculationIntegrationService {
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
-      this.logger.warn(
+      this.loggingService.warn(
         `Failed to get settings for guild ${guildId}, using defaults: ${errorMessage}`,
+        this.serviceName,
       );
       mmrConfig = this.getDefaultMmrConfig();
     }
 
     const calculatedMmr = this.mmrService.calculateMmr(trackerData, mmrConfig);
 
-    this.logger.debug(
+    this.loggingService.debug(
       `Calculated MMR for user ${userId} in guild ${guildId}: ${calculatedMmr}`,
+      this.serviceName,
     );
 
     return calculatedMmr;

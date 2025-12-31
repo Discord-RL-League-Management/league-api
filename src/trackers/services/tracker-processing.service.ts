@@ -1,10 +1,11 @@
 import {
   Injectable,
-  Logger,
   BadRequestException,
   NotFoundException,
   ForbiddenException,
+  Inject,
 } from '@nestjs/common';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TrackerService } from './tracker.service';
 import { TrackerValidationService } from './tracker-validation.service';
@@ -31,7 +32,7 @@ import { GamePlatform, Game, TrackerScrapingStatus } from '@prisma/client';
  */
 @Injectable()
 export class TrackerProcessingService {
-  private readonly logger = new Logger(TrackerProcessingService.name);
+  private readonly serviceName = TrackerProcessingService.name;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -42,6 +43,8 @@ export class TrackerProcessingService {
     private readonly batchProcessor: TrackerBatchProcessorService,
     private readonly processingGuard: TrackerProcessingGuardService,
     private readonly scrapingQueueService: TrackerScrapingQueueService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
   ) {}
 
   /**
@@ -153,8 +156,9 @@ export class TrackerProcessingService {
       await this.queueOrchestrator.enqueueTrackerWithGuard(tracker.id);
     }
 
-    this.logger.log(
+    this.loggingService.log(
       `Registered ${trackers.length} tracker(s) for user ${userId}`,
+      this.serviceName,
     );
     return trackers;
   }
@@ -199,8 +203,9 @@ export class TrackerProcessingService {
 
     await this.queueOrchestrator.enqueueTrackerWithGuard(tracker.id);
 
-    this.logger.log(
+    this.loggingService.log(
       `Added tracker ${tracker.id} for user ${userId} (${activeTrackers.length + 1}/4)`,
+      this.serviceName,
     );
     return tracker;
   }
@@ -234,7 +239,10 @@ export class TrackerProcessingService {
 
     await this.scrapingQueueService.addScrapingJob(trackerId);
 
-    this.logger.log(`Enqueued refresh job for tracker ${trackerId}`);
+    this.loggingService.log(
+      `Enqueued refresh job for tracker ${trackerId}`,
+      this.serviceName,
+    );
   }
 
   /**

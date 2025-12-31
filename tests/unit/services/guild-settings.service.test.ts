@@ -24,7 +24,12 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { Settings, Prisma } from '@prisma/client';
 import { GuildSettings } from '@/guilds/interfaces/settings.interface';
 import { GuildSettingsDto } from '@/guilds/dto/guild-settings.dto';
-import type { Cache } from 'cache-manager';
+import {
+  createMockLoggingService,
+  createMockTransactionService,
+  createMockCachingService,
+} from '@tests/utils/test-helpers';
+import type { ICachingService } from '@/infrastructure/caching/interfaces/caching.interface';
 
 describe('GuildSettingsService', () => {
   let service: GuildSettingsService;
@@ -35,7 +40,9 @@ describe('GuildSettingsService', () => {
   let mockSettingsService: SettingsService;
   let mockActivityLogService: ActivityLogService;
   let mockPrisma: PrismaService;
-  let mockCacheManager: Cache;
+  let mockCachingService: ICachingService;
+  let mockTransactionService: ReturnType<typeof createMockTransactionService>;
+  let mockLoggingService: ReturnType<typeof createMockLoggingService>;
 
   const guildId = '123456789012345678';
   const userId = '987654321098765432';
@@ -113,16 +120,9 @@ describe('GuildSettingsService', () => {
       }),
     } as unknown as PrismaService;
 
-    const mockGet = vi.fn().mockResolvedValue(undefined as unknown) as (
-      key: string,
-    ) => Promise<unknown>;
-    const mockSet = vi.fn().mockResolvedValue(undefined);
-    const mockDel = vi.fn().mockResolvedValue(undefined);
-    mockCacheManager = {
-      get: mockGet,
-      set: mockSet,
-      del: mockDel,
-    } as unknown as Cache;
+    mockCachingService = createMockCachingService();
+    mockTransactionService = createMockTransactionService();
+    mockLoggingService = createMockLoggingService();
 
     service = new GuildSettingsService(
       mockGuildRepository,
@@ -132,7 +132,9 @@ describe('GuildSettingsService', () => {
       mockSettingsService,
       mockActivityLogService,
       mockPrisma,
-      mockCacheManager,
+      mockCachingService,
+      mockTransactionService,
+      mockLoggingService,
     );
   });
 
@@ -146,7 +148,7 @@ describe('GuildSettingsService', () => {
         ...mockDefaultSettings,
         bot_command_channels: [{ id: '123', name: 'test-channel' }],
       };
-      vi.mocked(mockCacheManager.get).mockResolvedValue(cachedSettings);
+      vi.mocked(mockCachingService.get).mockResolvedValue(cachedSettings);
 
       const result = await service.getSettings(guildId);
 
@@ -155,7 +157,7 @@ describe('GuildSettingsService', () => {
     });
 
     it('should_return_settings_from_database_when_cache_miss_and_settings_exist', async () => {
-      vi.mocked(mockCacheManager.get).mockResolvedValue(null);
+      vi.mocked(mockCachingService.get).mockResolvedValue(undefined);
       vi.mocked(mockSettingsService.getSettings).mockResolvedValue(
         mockSettingsRecord,
       );
@@ -168,7 +170,7 @@ describe('GuildSettingsService', () => {
     });
 
     it('should_auto_create_default_settings_when_settings_do_not_exist', async () => {
-      vi.mocked(mockCacheManager.get).mockResolvedValue(null);
+      vi.mocked(mockCachingService.get).mockResolvedValue(undefined);
       vi.mocked(mockSettingsService.getSettings).mockResolvedValue(null);
       vi.mocked(mockGuildRepository.exists).mockResolvedValue(true);
       vi.mocked(mockSettingsService.upsertSettings).mockResolvedValue(
@@ -183,7 +185,7 @@ describe('GuildSettingsService', () => {
     });
 
     it('should_throw_NotFoundException_when_guild_does_not_exist', async () => {
-      vi.mocked(mockCacheManager.get).mockResolvedValue(null);
+      vi.mocked(mockCachingService.get).mockResolvedValue(undefined);
       vi.mocked(mockSettingsService.getSettings).mockResolvedValue(null);
       vi.mocked(mockGuildRepository.exists).mockResolvedValue(false);
 
@@ -206,7 +208,7 @@ describe('GuildSettingsService', () => {
         settings: oldSettings as Prisma.JsonValue,
       };
 
-      vi.mocked(mockCacheManager.get).mockResolvedValue(null);
+      vi.mocked(mockCachingService.get).mockResolvedValue(undefined);
       vi.mocked(mockSettingsService.getSettings).mockResolvedValue(
         oldSettingsRecord,
       );
@@ -227,7 +229,7 @@ describe('GuildSettingsService', () => {
     });
 
     it('should_throw_InternalServerErrorException_when_auto_creation_fails', async () => {
-      vi.mocked(mockCacheManager.get).mockResolvedValue(null);
+      vi.mocked(mockCachingService.get).mockResolvedValue(undefined);
       vi.mocked(mockSettingsService.getSettings).mockResolvedValue(null);
       vi.mocked(mockGuildRepository.exists).mockResolvedValue(true);
       vi.mocked(mockSettingsService.upsertSettings).mockRejectedValue(
@@ -240,7 +242,7 @@ describe('GuildSettingsService', () => {
     });
 
     it('should_throw_InternalServerErrorException_when_retrieval_fails', async () => {
-      vi.mocked(mockCacheManager.get).mockResolvedValue(null);
+      vi.mocked(mockCachingService.get).mockResolvedValue(undefined);
       vi.mocked(mockSettingsService.getSettings).mockRejectedValue(
         new Error('Database error'),
       );
@@ -251,7 +253,7 @@ describe('GuildSettingsService', () => {
     });
 
     it('should_cache_settings_after_retrieval', async () => {
-      vi.mocked(mockCacheManager.get).mockResolvedValue(null);
+      vi.mocked(mockCachingService.get).mockResolvedValue(undefined);
       vi.mocked(mockSettingsService.getSettings).mockResolvedValue(
         mockSettingsRecord,
       );
@@ -259,7 +261,7 @@ describe('GuildSettingsService', () => {
 
       await service.getSettings(guildId);
 
-      expect(mockCacheManager.set).toHaveBeenCalled();
+      expect(mockCachingService.set).toHaveBeenCalled();
     });
   });
 
@@ -283,9 +285,9 @@ describe('GuildSettingsService', () => {
       vi.mocked(mockSettingsDefaults.mergeSettings).mockReturnValue(
         mergedSettings,
       );
-      vi.mocked(mockPrisma.$transaction).mockImplementation(
+      const mockTx = {} as Prisma.TransactionClient;
+      vi.mocked(mockTransactionService.executeTransaction).mockImplementation(
         async (callback) => {
-          const mockTx = {} as Prisma.TransactionClient;
           vi.mocked(mockSettingsService.updateSettings).mockResolvedValue(
             updatedRecord,
           );
@@ -296,7 +298,7 @@ describe('GuildSettingsService', () => {
       const result = await service.updateSettings(guildId, updateDto, userId);
 
       expect(result).toEqual(updatedRecord);
-      expect(mockCacheManager.del).toHaveBeenCalledWith(`settings:${guildId}`);
+      expect(mockCachingService.del).toHaveBeenCalledWith(`settings:${guildId}`);
     });
 
     it('should_merge_with_defaults_when_current_settings_do_not_exist', async () => {
@@ -316,9 +318,9 @@ describe('GuildSettingsService', () => {
       vi.mocked(mockSettingsDefaults.mergeSettings).mockReturnValue(
         mergedSettings,
       );
-      vi.mocked(mockPrisma.$transaction).mockImplementation(
+      const mockTx = {} as Prisma.TransactionClient;
+      vi.mocked(mockTransactionService.executeTransaction).mockImplementation(
         async (callback) => {
-          const mockTx = {} as Prisma.TransactionClient;
           vi.mocked(mockSettingsService.updateSettings).mockResolvedValue(
             updatedRecord,
           );
@@ -355,9 +357,9 @@ describe('GuildSettingsService', () => {
       vi.mocked(mockSettingsDefaults.mergeSettings).mockReturnValue(
         mockDefaultSettings,
       );
-      vi.mocked(mockPrisma.$transaction).mockImplementation(
+      const mockTx = {} as Prisma.TransactionClient;
+      vi.mocked(mockTransactionService.executeTransaction).mockImplementation(
         async (callback) => {
-          const mockTx = {} as Prisma.TransactionClient;
           vi.mocked(mockSettingsService.updateSettings).mockResolvedValue(
             mockSettingsRecord,
           );
@@ -367,7 +369,7 @@ describe('GuildSettingsService', () => {
 
       await service.updateSettings(guildId, updateDto, userId);
 
-      expect(mockCacheManager.del).toHaveBeenCalledWith(`settings:${guildId}`);
+      expect(mockCachingService.del).toHaveBeenCalledWith(`settings:${guildId}`);
     });
 
     it('should_log_activity_during_update', async () => {
@@ -380,9 +382,9 @@ describe('GuildSettingsService', () => {
       vi.mocked(mockSettingsDefaults.mergeSettings).mockReturnValue(
         mockDefaultSettings,
       );
-      vi.mocked(mockPrisma.$transaction).mockImplementation(
+      const mockTx = {} as Prisma.TransactionClient;
+      vi.mocked(mockTransactionService.executeTransaction).mockImplementation(
         async (callback) => {
-          const mockTx = {} as Prisma.TransactionClient;
           vi.mocked(mockSettingsService.updateSettings).mockResolvedValue(
             mockSettingsRecord,
           );
@@ -392,7 +394,7 @@ describe('GuildSettingsService', () => {
 
       await service.updateSettings(guildId, updateDto, userId);
 
-      expect(mockPrisma.$transaction).toHaveBeenCalled();
+      expect(mockTransactionService.executeTransaction).toHaveBeenCalled();
     });
 
     it('should_propagate_errors_from_transaction', async () => {
@@ -405,7 +407,7 @@ describe('GuildSettingsService', () => {
       vi.mocked(mockSettingsDefaults.mergeSettings).mockReturnValue(
         mockDefaultSettings,
       );
-      vi.mocked(mockPrisma.$transaction).mockRejectedValue(
+      vi.mocked(mockTransactionService.executeTransaction).mockRejectedValue(
         new Error('Transaction failed'),
       );
 
@@ -422,9 +424,9 @@ describe('GuildSettingsService', () => {
         settings: mockDefaultSettings as unknown as Prisma.JsonValue,
       };
 
-      vi.mocked(mockPrisma.$transaction).mockImplementation(
+      const mockTx = {} as Prisma.TransactionClient;
+      vi.mocked(mockTransactionService.executeTransaction).mockImplementation(
         async (callback) => {
-          const mockTx = {} as Prisma.TransactionClient;
           vi.mocked(mockSettingsService.updateSettings).mockResolvedValue(
             resetRecord,
           );
@@ -435,13 +437,13 @@ describe('GuildSettingsService', () => {
       const result = await service.resetSettings(guildId, userId);
 
       expect(result).toEqual(resetRecord);
-      expect(mockCacheManager.del).toHaveBeenCalledWith(`settings:${guildId}`);
+      expect(mockCachingService.del).toHaveBeenCalledWith(`settings:${guildId}`);
     });
 
     it('should_invalidate_cache_after_reset', async () => {
-      vi.mocked(mockPrisma.$transaction).mockImplementation(
+      const mockTx = {} as Prisma.TransactionClient;
+      vi.mocked(mockTransactionService.executeTransaction).mockImplementation(
         async (callback) => {
-          const mockTx = {} as Prisma.TransactionClient;
           vi.mocked(mockSettingsService.updateSettings).mockResolvedValue(
             mockSettingsRecord,
           );
@@ -451,13 +453,13 @@ describe('GuildSettingsService', () => {
 
       await service.resetSettings(guildId, userId);
 
-      expect(mockCacheManager.del).toHaveBeenCalledWith(`settings:${guildId}`);
+      expect(mockCachingService.del).toHaveBeenCalledWith(`settings:${guildId}`);
     });
 
     it('should_log_activity_during_reset', async () => {
-      vi.mocked(mockPrisma.$transaction).mockImplementation(
+      const mockTx = {} as Prisma.TransactionClient;
+      vi.mocked(mockTransactionService.executeTransaction).mockImplementation(
         async (callback) => {
-          const mockTx = {} as Prisma.TransactionClient;
           vi.mocked(mockSettingsService.updateSettings).mockResolvedValue(
             mockSettingsRecord,
           );
@@ -467,11 +469,11 @@ describe('GuildSettingsService', () => {
 
       await service.resetSettings(guildId, userId);
 
-      expect(mockPrisma.$transaction).toHaveBeenCalled();
+      expect(mockTransactionService.executeTransaction).toHaveBeenCalled();
     });
 
     it('should_throw_InternalServerErrorException_when_reset_fails', async () => {
-      vi.mocked(mockPrisma.$transaction).mockRejectedValue(
+      vi.mocked(mockTransactionService.executeTransaction).mockRejectedValue(
         new Error('Transaction failed'),
       );
 

@@ -1,12 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Injectable, Inject } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
+import { IConfigurationService } from '../../infrastructure/configuration/interfaces/configuration.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { firstValueFrom } from 'rxjs';
 import { AxiosError } from 'axios';
 
 @Injectable()
 export class DiscordMessageService {
-  private readonly logger = new Logger(DiscordMessageService.name);
+  private readonly serviceName = DiscordMessageService.name;
   private readonly botToken: string;
   private readonly apiUrl: string;
 
@@ -19,7 +20,10 @@ export class DiscordMessageService {
 
   constructor(
     private readonly httpService: HttpService,
-    private readonly configService: ConfigService,
+    @Inject(IConfigurationService)
+    private readonly configService: IConfigurationService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
   ) {
     this.botToken = this.configService.get<string>('discord.botToken') || '';
     this.apiUrl =
@@ -42,19 +46,23 @@ export class DiscordMessageService {
    */
   async sendDirectMessage(userId: string, payload: any): Promise<void> {
     if (!this.botToken) {
-      this.logger.error('Discord bot token not configured');
+      this.loggingService.error(
+        'Discord bot token not configured',
+        undefined,
+        this.serviceName,
+      );
       throw new Error('Discord bot token not configured');
     }
 
-    // Check circuit breaker
     if (this.isCircuitOpen()) {
-      this.logger.warn('Circuit breaker is open, refusing to send Discord DM');
+      this.loggingService.warn(
+        'Circuit breaker is open, refusing to send Discord DM',
+        this.serviceName,
+      );
       throw new Error('Circuit breaker is open');
     }
 
     try {
-      // First, create or get the DM channel
-      // Discord API expects the recipient_id in the request body
       const dmChannelResponse = await firstValueFrom(
         this.httpService.post(
           `${this.apiUrl}/users/@me/channels`,
@@ -73,9 +81,10 @@ export class DiscordMessageService {
           axiosError.response?.data?.message ||
           axiosError.message ||
           'Unknown error';
-        this.logger.error(
+        this.loggingService.error(
           `Failed to create DM channel for user ${userId}: ${errorMessage}`,
-          error,
+          error instanceof Error ? error.stack : undefined,
+          this.serviceName,
         );
         throw error;
       });
@@ -84,7 +93,7 @@ export class DiscordMessageService {
 
       await this.sendMessage(channelId, payload);
 
-      this.logger.debug(`Sent DM to user ${userId}`);
+      this.loggingService.debug(`Sent DM to user ${userId}`, this.serviceName);
       this.recordSuccess();
     } catch (error: unknown) {
       this.recordFailure();
@@ -93,9 +102,10 @@ export class DiscordMessageService {
         axiosError.response?.data?.message ||
         axiosError.message ||
         'Unknown error';
-      this.logger.error(
+      this.loggingService.error(
         `Failed to send DM to user ${userId}: ${errorMessage}`,
-        error,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw error;
     }
@@ -112,27 +122,31 @@ export class DiscordMessageService {
     payload: any,
   ): Promise<void> {
     if (!this.botToken) {
-      this.logger.error('Discord bot token not configured');
+      this.loggingService.error(
+        'Discord bot token not configured',
+        undefined,
+        this.serviceName,
+      );
       throw new Error('Discord bot token not configured');
     }
 
-    // Validate interaction token
     if (!interactionToken || interactionToken.trim().length === 0) {
-      this.logger.warn(
+      this.loggingService.warn(
         'Invalid interaction token provided, skipping ephemeral follow-up',
+        this.serviceName,
       );
       throw new Error('Invalid interaction token provided');
     }
 
-    // Check circuit breaker
     if (this.isCircuitOpen()) {
-      this.logger.warn('Circuit breaker is open, skipping ephemeral follow-up');
+      this.loggingService.warn(
+        'Circuit breaker is open, skipping ephemeral follow-up',
+        this.serviceName,
+      );
       throw new Error('Circuit breaker is open');
     }
 
     try {
-      // Discord API endpoint for follow-up messages
-      // Using @me as application_id works with bot tokens
       const followUpPayload: Record<string, unknown> = {
         ...(payload as Record<string, unknown>),
         flags: 64, // EPHEMERAL flag
@@ -151,25 +165,23 @@ export class DiscordMessageService {
         ),
       );
 
-      // Safely log token prefix (token is guaranteed to be non-empty at this point)
       const tokenPrefix =
         interactionToken.length >= 10
           ? interactionToken.substring(0, 10)
           : interactionToken.substring(0, interactionToken.length);
-      this.logger.debug(
+      this.loggingService.debug(
         `Sent ephemeral follow-up with interaction token ${tokenPrefix}...`,
+        this.serviceName,
       );
       this.recordSuccess();
     } catch (error: unknown) {
-      // Handle token expiration gracefully (Discord returns 404 or 400)
       const axiosError = error as AxiosError<{ message?: string }>;
       const statusCode = axiosError.response?.status;
       if (statusCode === 404 || statusCode === 400) {
-        this.logger.warn(
+        this.loggingService.warn(
           `Interaction token expired or invalid, skipping ephemeral follow-up`,
+          this.serviceName,
         );
-        // Don't record as failure - token expiration is expected after 15 minutes
-        // Throw to trigger fallback to DM notification
         throw new Error('Interaction token expired or invalid');
       }
 
@@ -177,9 +189,10 @@ export class DiscordMessageService {
         axiosError.response?.data?.message ||
         axiosError.message ||
         'Unknown error';
-      this.logger.error(
+      this.loggingService.error(
         `Failed to send ephemeral follow-up: ${errorMessage}`,
-        error,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       this.recordFailure();
       throw error;
@@ -194,14 +207,18 @@ export class DiscordMessageService {
    */
   async sendMessage(channelId: string, payload: any): Promise<void> {
     if (!this.botToken) {
-      this.logger.error('Discord bot token not configured');
+      this.loggingService.error(
+        'Discord bot token not configured',
+        undefined,
+        this.serviceName,
+      );
       throw new Error('Discord bot token not configured');
     }
 
-    // Check circuit breaker
     if (this.isCircuitOpen()) {
-      this.logger.warn(
+      this.loggingService.warn(
         'Circuit breaker is open, refusing to send Discord message',
+        this.serviceName,
       );
       throw new Error(
         'Discord API circuit breaker is open - too many failures',
@@ -222,16 +239,16 @@ export class DiscordMessageService {
         ),
       );
 
-      // Record success
       this.recordSuccess();
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      this.logger.error(
+      this.loggingService.error(
         `Failed to send Discord message to channel ${channelId}: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
 
-      // Record failure
       this.recordFailure();
 
       throw error;
@@ -246,12 +263,14 @@ export class DiscordMessageService {
       return false;
     }
 
-    // Check if timeout has elapsed
     if (
       this.lastFailureTime &&
       Date.now() - this.lastFailureTime.getTime() > this.circuitBreakerTimeout
     ) {
-      this.logger.log('Circuit breaker timeout elapsed, attempting to close');
+      this.loggingService.log(
+        'Circuit breaker timeout elapsed, attempting to close',
+        this.serviceName,
+      );
       this.circuitOpen = false;
       this.failureCount = 0;
       return false;
@@ -269,8 +288,9 @@ export class DiscordMessageService {
 
     if (this.failureCount >= this.circuitBreakerThreshold) {
       this.circuitOpen = true;
-      this.logger.warn(
+      this.loggingService.warn(
         `Circuit breaker opened after ${this.failureCount} failures`,
+        this.serviceName,
       );
     }
   }
@@ -283,7 +303,10 @@ export class DiscordMessageService {
       this.failureCount = 0;
       if (this.circuitOpen) {
         this.circuitOpen = false;
-        this.logger.log('Circuit breaker closed after successful request');
+        this.loggingService.log(
+          'Circuit breaker closed after successful request',
+          this.serviceName,
+        );
       }
     }
     this.lastFailureTime = null;

@@ -3,10 +3,11 @@ import {
   ExceptionFilter,
   ArgumentsHost,
   HttpStatus,
-  Logger,
+  Inject,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { Request, Response } from 'express';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 
 /**
  * PrismaExceptionFilter - Handles Prisma-specific errors
@@ -25,7 +26,12 @@ import { Request, Response } from 'express';
   Prisma.PrismaClientRustPanicError,
 )
 export class PrismaExceptionFilter implements ExceptionFilter {
-  private readonly logger = new Logger(PrismaExceptionFilter.name);
+  private readonly serviceName = PrismaExceptionFilter.name;
+
+  constructor(
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
+  ) {}
 
   catch(
     exception:
@@ -126,11 +132,11 @@ export class PrismaExceptionFilter implements ExceptionFilter {
       };
     }
 
-    this.logger.error(`${method} ${path} - Prisma error: ${errorInfo.code}`, {
-      error: exception,
-      errorInfo,
-      request: { method, path, timestamp },
-    });
+    this.loggingService.error(
+      `${method} ${path} - Prisma error: ${errorInfo.code}: ${exception instanceof Error ? exception.message : String(exception)}`,
+      exception instanceof Error ? exception.stack : undefined,
+      this.serviceName,
+    );
 
     response.status(errorInfo.status).json({
       statusCode: errorInfo.status,

@@ -1,6 +1,7 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from '../../prisma/prisma.module';
+import { LoggingModule } from '../logging/logging.module';
 import { TrackersModule } from '../../trackers/trackers.module';
 import { OutboxService } from './services/outbox.service';
 import { OutboxProcessorService } from './services/outbox-processor.service';
@@ -14,7 +15,12 @@ import { OutboxRepository } from './repositories/outbox.repository';
  * This module is domain-agnostic and can be used by any module.
  */
 @Module({
-  imports: [PrismaModule, ConfigModule, forwardRef(() => TrackersModule)],
+  imports: [
+    PrismaModule,
+    ConfigModule,
+    LoggingModule,
+    forwardRef(() => TrackersModule),
+  ],
   providers: [
     OutboxService,
     OutboxProcessorService,

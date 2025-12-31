@@ -8,12 +8,17 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { ConfigService } from '@nestjs/config';
 import { TrackerBatchProcessorService } from '@/trackers/services/tracker-batch-processor.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import { TrackerRepository } from '@/trackers/repositories/tracker.repository';
 import { TrackerScrapingQueueService } from '@/trackers/queues/tracker-scraping.queue';
 import { TrackerProcessingGuardService } from '@/trackers/services/tracker-processing-guard.service';
+import {
+  createMockConfigurationService,
+  createMockLoggingService,
+} from '@tests/utils/test-helpers';
+import { IConfigurationService } from '@/infrastructure/configuration/interfaces/configuration.interface';
+import { ILoggingService } from '@/infrastructure/logging/interfaces/logging.interface';
 
 describe('TrackerBatchProcessorService', () => {
   let service: TrackerBatchProcessorService;
@@ -21,7 +26,8 @@ describe('TrackerBatchProcessorService', () => {
   let mockTrackerRepository: TrackerRepository;
   let mockScrapingQueueService: TrackerScrapingQueueService;
   let mockProcessingGuard: TrackerProcessingGuardService;
-  let mockConfigService: ConfigService;
+  let mockConfigService: IConfigurationService;
+  let mockLoggingService: ILoggingService;
 
   beforeEach(() => {
     mockPrisma = {
@@ -42,9 +48,8 @@ describe('TrackerBatchProcessorService', () => {
       filterProcessableTrackers: vi.fn(),
     } as unknown as TrackerProcessingGuardService;
 
-    mockConfigService = {
-      get: vi.fn(),
-    } as unknown as ConfigService;
+    mockConfigService = createMockConfigurationService();
+    mockLoggingService = createMockLoggingService();
   });
 
   afterEach(() => {
@@ -54,8 +59,10 @@ describe('TrackerBatchProcessorService', () => {
 
   describe('constructor', () => {
     it('should_initialize_service_when_config_is_valid', () => {
-      vi.mocked(mockConfigService.get).mockReturnValue({
-        refreshIntervalHours: 24,
+      mockConfigService = createMockConfigurationService({
+        tracker: {
+          refreshIntervalHours: 24,
+        },
       });
 
       service = new TrackerBatchProcessorService(
@@ -64,14 +71,14 @@ describe('TrackerBatchProcessorService', () => {
         mockScrapingQueueService,
         mockProcessingGuard,
         mockConfigService,
+        mockLoggingService,
       );
 
       expect(service).toBeInstanceOf(TrackerBatchProcessorService);
-      expect(mockConfigService.get).toHaveBeenCalledWith('tracker');
     });
 
     it('should_throw_error_when_tracker_config_is_missing', () => {
-      vi.mocked(mockConfigService.get).mockReturnValue(null);
+      mockConfigService = createMockConfigurationService();
 
       expect(() => {
         new TrackerBatchProcessorService(
@@ -80,13 +87,16 @@ describe('TrackerBatchProcessorService', () => {
           mockScrapingQueueService,
           mockProcessingGuard,
           mockConfigService,
+          mockLoggingService,
         );
       }).toThrow('Tracker configuration is missing');
     });
 
     it('should_use_default_value_when_refreshIntervalHours_is_undefined', () => {
-      vi.mocked(mockConfigService.get).mockReturnValue({
-        refreshIntervalHours: undefined,
+      mockConfigService = createMockConfigurationService({
+        tracker: {
+          refreshIntervalHours: undefined,
+        },
       });
 
       service = new TrackerBatchProcessorService(
@@ -95,14 +105,17 @@ describe('TrackerBatchProcessorService', () => {
         mockScrapingQueueService,
         mockProcessingGuard,
         mockConfigService,
+        mockLoggingService,
       );
 
       expect(service).toBeInstanceOf(TrackerBatchProcessorService);
     });
 
     it('should_use_custom_refreshIntervalHours_when_config_provides_value', () => {
-      vi.mocked(mockConfigService.get).mockReturnValue({
-        refreshIntervalHours: 48,
+      mockConfigService = createMockConfigurationService({
+        tracker: {
+          refreshIntervalHours: 48,
+        },
       });
 
       service = new TrackerBatchProcessorService(
@@ -111,6 +124,7 @@ describe('TrackerBatchProcessorService', () => {
         mockScrapingQueueService,
         mockProcessingGuard,
         mockConfigService,
+        mockLoggingService,
       );
 
       expect(service).toBeInstanceOf(TrackerBatchProcessorService);
@@ -120,8 +134,10 @@ describe('TrackerBatchProcessorService', () => {
   describe('processPendingTrackers', () => {
     beforeEach(() => {
       // Setup valid config for all processPendingTrackers tests
-      vi.mocked(mockConfigService.get).mockReturnValue({
-        refreshIntervalHours: 24,
+      mockConfigService = createMockConfigurationService({
+        tracker: {
+          refreshIntervalHours: 24,
+        },
       });
       service = new TrackerBatchProcessorService(
         mockPrisma,
@@ -129,6 +145,7 @@ describe('TrackerBatchProcessorService', () => {
         mockScrapingQueueService,
         mockProcessingGuard,
         mockConfigService,
+        mockLoggingService,
       );
     });
 
@@ -210,8 +227,10 @@ describe('TrackerBatchProcessorService', () => {
   describe('processPendingTrackersForGuild', () => {
     beforeEach(() => {
       // Setup valid config for all processPendingTrackersForGuild tests
-      vi.mocked(mockConfigService.get).mockReturnValue({
-        refreshIntervalHours: 24,
+      mockConfigService = createMockConfigurationService({
+        tracker: {
+          refreshIntervalHours: 24,
+        },
       });
       service = new TrackerBatchProcessorService(
         mockPrisma,
@@ -219,6 +238,7 @@ describe('TrackerBatchProcessorService', () => {
         mockScrapingQueueService,
         mockProcessingGuard,
         mockConfigService,
+        mockLoggingService,
       );
     });
 
@@ -333,8 +353,10 @@ describe('TrackerBatchProcessorService', () => {
 
     it('should_use_refreshIntervalHours_for_cutoff_calculation', async () => {
       const guildId = 'guild_123';
-      vi.mocked(mockConfigService.get).mockReturnValue({
-        refreshIntervalHours: 48,
+      mockConfigService = createMockConfigurationService({
+        tracker: {
+          refreshIntervalHours: 48,
+        },
       });
       service = new TrackerBatchProcessorService(
         mockPrisma,
@@ -342,6 +364,7 @@ describe('TrackerBatchProcessorService', () => {
         mockScrapingQueueService,
         mockProcessingGuard,
         mockConfigService,
+        mockLoggingService,
       );
       vi.mocked(
         mockTrackerRepository.findPendingAndStaleForGuild,

@@ -18,13 +18,13 @@ import { IConfigurationService } from './interfaces/configuration.interface';
   imports: [ConfigModule],
   providers: [
     {
-      provide: 'IConfigurationService',
+      provide: IConfigurationService,
       useFactory: (configService: ConfigService): IConfigurationService => {
         return new InAppConfigurationService(configService);
       },
       inject: [ConfigService],
     },
   ],
-  exports: ['IConfigurationService'],
+  exports: [IConfigurationService],
 })
 export class ConfigurationModule {}

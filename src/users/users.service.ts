@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserNotFoundException } from './exceptions/user.exceptions';
@@ -14,9 +15,13 @@ import { User } from '@prisma/client';
  */
 @Injectable()
 export class UsersService {
-  private readonly logger = new Logger(UsersService.name);
+  private readonly serviceName = UsersService.name;
 
-  constructor(private userRepository: UserRepository) {}
+  constructor(
+    private userRepository: UserRepository,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
+  ) {}
 
   async findOne(id: string): Promise<User> {
     const user = await this.userRepository.findById(id);
@@ -61,7 +66,6 @@ export class UsersService {
   }> {
     const tokens = await this.userRepository.getUserTokens(userId);
     if (!tokens || (!tokens.accessToken && !tokens.refreshToken)) {
-      // Check if user exists
       const exists = await this.userRepository.exists(userId);
       if (!exists) {
         throw new UserNotFoundException(userId);

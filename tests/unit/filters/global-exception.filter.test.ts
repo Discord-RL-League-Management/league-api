@@ -14,6 +14,7 @@ import {
 import { GlobalExceptionFilter } from '@/common/filters/global-exception.filter';
 import { ConfigService } from '@nestjs/config';
 import { ArgumentsHost } from '@nestjs/common';
+import { createMockLoggingService } from '@tests/utils/test-helpers';
 
 describe('GlobalExceptionFilter', () => {
   let filter: GlobalExceptionFilter;
@@ -48,7 +49,9 @@ describe('GlobalExceptionFilter', () => {
       }),
     } as unknown as ArgumentsHost;
 
-    filter = new GlobalExceptionFilter(mockConfigService);
+    const mockLoggingService = createMockLoggingService();
+
+    filter = new GlobalExceptionFilter(mockConfigService, mockLoggingService);
   });
 
   afterEach(() => {
@@ -108,7 +111,8 @@ describe('GlobalExceptionFilter', () => {
 
     it('should_exclude_stack_trace_in_production', () => {
       vi.mocked(mockConfigService.get).mockReturnValue('production');
-      const filterProd = new GlobalExceptionFilter(mockConfigService);
+      const mockLoggingService = createMockLoggingService();
+      const filterProd = new GlobalExceptionFilter(mockConfigService, mockLoggingService);
       const exception = new Error('Test error');
 
       filterProd.catch(exception, mockArgumentsHost);

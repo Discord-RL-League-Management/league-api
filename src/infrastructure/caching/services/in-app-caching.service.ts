@@ -25,7 +25,6 @@ export class InAppCachingService implements ICachingService {
     try {
       return await this.cache.get<T>(key);
     } catch {
-      // Return undefined to allow graceful degradation
       return undefined;
     }
   }
@@ -40,8 +39,7 @@ export class InAppCachingService implements ICachingService {
     try {
       await this.cache.set(key, value, ttl);
     } catch {
-      // Log error but don't throw - caching failures should not break the application
-      // In production, this could be logged to monitoring
+      // Caching failures should not break the application
     }
   }
 
@@ -53,7 +51,7 @@ export class InAppCachingService implements ICachingService {
     try {
       await this.cache.del(key);
     } catch {
-      // Log error but don't throw - cache deletion failures are non-critical
+      // Cache deletion failures are non-critical
     }
   }
 
@@ -61,9 +59,7 @@ export class InAppCachingService implements ICachingService {
    * Reset/clear the entire cache
    */
   async reset(): Promise<void> {
-    // Re-throw for reset as cache reset failures are critical
-    // Unlike other cache operations, reset failures should propagate
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    await this.cache.reset();
+    // Reset failures are critical and should propagate
+    await this.cache.clear();
   }
 }

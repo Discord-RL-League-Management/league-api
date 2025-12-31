@@ -3,11 +3,12 @@ import {
   CanActivate,
   ExecutionContext,
   ForbiddenException,
-  Logger,
+  Inject,
 } from '@nestjs/common';
 import { OrganizationMemberService } from '../services/organization-member.service';
 import type { AuthenticatedUser } from '../../common/interfaces/user.interface';
 import type { Request } from 'express';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 
 interface RequestWithUser extends Request {
   user: AuthenticatedUser | { type: 'bot'; id: string };
@@ -20,16 +21,23 @@ interface RequestWithUser extends Request {
  */
 @Injectable()
 export class OrganizationGmGuard implements CanActivate {
-  private readonly logger = new Logger(OrganizationGmGuard.name);
+  private readonly serviceName = OrganizationGmGuard.name;
 
-  constructor(private organizationMemberService: OrganizationMemberService) {}
+  constructor(
+    private organizationMemberService: OrganizationMemberService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<RequestWithUser>();
     const user = request.user;
 
     if (!user) {
-      this.logger.warn('OrganizationGmGuard: Missing user');
+      this.loggingService.warn(
+        'OrganizationGmGuard: Missing user',
+        this.serviceName,
+      );
       throw new ForbiddenException('Authentication required');
     }
 
@@ -37,7 +45,10 @@ export class OrganizationGmGuard implements CanActivate {
     const organizationId = request.params.id || request.params.organizationId;
 
     if (!organizationId) {
-      this.logger.warn('OrganizationGmGuard: Missing organizationId');
+      this.loggingService.warn(
+        'OrganizationGmGuard: Missing organizationId',
+        this.serviceName,
+      );
       throw new ForbiddenException('Organization ID required');
     }
 
@@ -59,16 +70,18 @@ export class OrganizationGmGuard implements CanActivate {
             organizationId,
           );
         if (!hasGMs && 'type' in user && user.type === 'bot') {
-          this.logger.log(
+          this.loggingService.log(
             `OrganizationGmGuard: Allowing bot user for organization ${organizationId} with no GMs`,
+            this.serviceName,
           );
           return true;
         }
 
         // For regular users (JWT-authenticated), still require GM even if org has no GMs
         // They should contact an admin to add a GM
-        this.logger.warn(
+        this.loggingService.warn(
           `OrganizationGmGuard: User ${user.id} is not a General Manager of organization ${organizationId}`,
+          this.serviceName,
         );
         throw new ForbiddenException(
           'You must be a General Manager of this organization',
@@ -80,9 +93,10 @@ export class OrganizationGmGuard implements CanActivate {
       if (error instanceof ForbiddenException) {
         throw error;
       }
-      this.logger.error(
-        `OrganizationGmGuard: Error checking permissions:`,
-        error,
+      this.loggingService.error(
+        `OrganizationGmGuard: Error checking permissions: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw new ForbiddenException('Failed to verify organization permissions');
     }

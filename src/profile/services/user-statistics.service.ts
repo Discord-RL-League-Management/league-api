@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { Prisma } from '@prisma/client';
 import { GuildMemberRepository } from '../../guild-members/repositories/guild-member.repository';
 
@@ -10,9 +11,13 @@ import { GuildMemberRepository } from '../../guild-members/repositories/guild-me
  */
 @Injectable()
 export class UserStatisticsService {
-  private readonly logger = new Logger(UserStatisticsService.name);
+  private readonly serviceName = UserStatisticsService.name;
 
-  constructor(private guildMemberRepository: GuildMemberRepository) {}
+  constructor(
+    private guildMemberRepository: GuildMemberRepository,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
+  ) {}
 
   /**
    * Get user statistics aggregated from guild memberships
@@ -60,7 +65,11 @@ export class UserStatisticsService {
         activeGuildsCount,
       };
     } catch (error) {
-      this.logger.error(`Failed to get stats for user ${userId}:`, error);
+      this.loggingService.error(
+        `Failed to get stats for user ${userId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       return {
         userId,
         gamesPlayed: 0,
@@ -111,9 +120,10 @@ export class UserStatisticsService {
         roles: membership.roles || [],
       };
     } catch (error) {
-      this.logger.error(
-        `Failed to get guild stats for user ${userId} in guild ${guildId}:`,
-        error,
+      this.loggingService.error(
+        `Failed to get guild stats for user ${userId} in guild ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       return {
         gamesPlayed: 0,

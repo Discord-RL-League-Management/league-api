@@ -1,6 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GuildMember, Prisma } from '@prisma/client';
+import {
+  ITransactionService,
+  ITransactionClient,
+} from '../../infrastructure/transactions/interfaces/transaction.interface';
 import { CreateGuildMemberDto } from '../dto/create-guild-member.dto';
 import { UpdateGuildMemberDto } from '../dto/update-guild-member.dto';
 import { BaseRepository } from '../../common/repositories/base.repository.interface';
@@ -17,7 +21,11 @@ export class GuildMemberRepository
   implements
     BaseRepository<GuildMember, CreateGuildMemberDto, UpdateGuildMemberDto>
 {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(ITransactionService)
+    private transactionService: ITransactionService,
+  ) {}
 
   /**
    * Find by composite key (userId + guildId)
@@ -480,27 +488,29 @@ export class GuildMemberRepository
       roles: string[];
     }>,
   ): Promise<{ synced: number }> {
-    return this.prisma.$transaction(async (tx) => {
-      // Delete existing members
-      await tx.guildMember.deleteMany({
-        where: { guildId },
-      });
+    return this.transactionService.executeTransaction(
+      async (tx: ITransactionClient) => {
+        // Delete existing members
+        await (tx as Prisma.TransactionClient).guildMember.deleteMany({
+          where: { guildId },
+        });
 
-      // Create new members
-      const memberData = members.map((member) => ({
-        userId: member.userId,
-        guildId,
-        username: member.username,
-        nickname: member.nickname || null,
-        roles: member.roles,
-      }));
+        // Create new members
+        const memberData = members.map((member) => ({
+          userId: member.userId,
+          guildId,
+          username: member.username,
+          nickname: member.nickname || null,
+          roles: member.roles,
+        }));
 
-      await tx.guildMember.createMany({
-        data: memberData,
-      });
+        await (tx as Prisma.TransactionClient).guildMember.createMany({
+          data: memberData,
+        });
 
-      return { synced: members.length };
-    });
+        return { synced: members.length };
+      },
+    );
   }
 
   /**

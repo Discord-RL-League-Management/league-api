@@ -25,9 +25,18 @@ describe('SettingsValidationService (Guilds)', () => {
       validateFormula: vi.fn(),
     } as unknown as FormulaValidationService;
 
+    const mockLoggingService = {
+      log: vi.fn(),
+      error: vi.fn(),
+      warn: vi.fn(),
+      debug: vi.fn(),
+      verbose: vi.fn(),
+    } as unknown as any;
+
     service = new SettingsValidationService(
       mockDiscordValidation,
       mockFormulaValidation,
+      mockLoggingService,
     );
   });
 

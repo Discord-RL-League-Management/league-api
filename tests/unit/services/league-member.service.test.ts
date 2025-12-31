@@ -24,6 +24,10 @@ import {
 import { JoinLeagueDto } from '@/league-members/dto/join-league.dto';
 import { UpdateLeagueMemberDto } from '@/league-members/dto/update-league-member.dto';
 import { LeagueMemberStatus, LeagueStatus, PlayerStatus } from '@prisma/client';
+import {
+  createMockLoggingService,
+  createMockTransactionService,
+} from '@tests/utils/test-helpers';
 
 describe('LeagueMemberService', () => {
   let service: LeagueMemberService;
@@ -34,6 +38,8 @@ describe('LeagueMemberService', () => {
   let mockActivityLog: ActivityLogService;
   let mockRatingService: PlayerLeagueRatingService;
   let mockPrisma: PrismaService;
+  let mockLoggingService: ReturnType<typeof createMockLoggingService>;
+  let mockTransactionService: ReturnType<typeof createMockTransactionService>;
 
   const mockLeagueMember = {
     id: 'member_123',
@@ -130,6 +136,9 @@ describe('LeagueMemberService', () => {
       ),
     } as unknown as PrismaService;
 
+    mockLoggingService = createMockLoggingService();
+    mockTransactionService = createMockTransactionService();
+
     service = new LeagueMemberService(
       mockRepository,
       mockJoinValidation,
@@ -138,6 +147,8 @@ describe('LeagueMemberService', () => {
       mockPrisma,
       mockActivityLog,
       mockRatingService,
+      mockLoggingService,
+      mockTransactionService,
     );
   });
 
@@ -284,19 +295,19 @@ describe('LeagueMemberService', () => {
       vi.mocked(mockRepository.findById).mockResolvedValue(pendingMember);
       vi.mocked(mockPrisma.player.findUnique).mockResolvedValue(mockPlayer);
       vi.mocked(mockPrisma.league.findUnique).mockResolvedValue(mockLeague);
-      vi.mocked(mockPrisma.$transaction).mockImplementation(
+      const tx = {
+        leagueMember: {
+          update: vi.fn().mockResolvedValue(approvedMember),
+        },
+        player: {
+          findUnique: vi.fn().mockResolvedValue(mockPlayer),
+        },
+        league: {
+          findUnique: vi.fn().mockResolvedValue(mockLeague),
+        },
+      };
+      vi.mocked(mockTransactionService.executeTransaction).mockImplementation(
         async (callback) => {
-          const tx = {
-            leagueMember: {
-              update: vi.fn().mockResolvedValue(approvedMember),
-            },
-            player: {
-              findUnique: vi.fn().mockResolvedValue(mockPlayer),
-            },
-            league: {
-              findUnique: vi.fn().mockResolvedValue(mockLeague),
-            },
-          };
           return callback(tx as any);
         },
       );
@@ -428,16 +439,15 @@ describe('LeagueMemberService', () => {
       } as any);
 
       // Mock transaction with all required operations
-      vi.mocked(mockPrisma.$transaction).mockImplementation(
+      const tx = {
+        leagueMember: {
+          findUnique: vi.fn().mockResolvedValue(null), // No existing member
+          create: vi.fn().mockResolvedValue(newMember),
+        },
+      };
+      vi.mocked(mockTransactionService.executeTransaction).mockImplementation(
         async (callback) => {
-          const tx = {
-            leagueMember: {
-              findUnique: vi.fn().mockResolvedValue(null), // No existing member
-              create: vi.fn().mockResolvedValue(newMember),
-            },
-          };
-          const result = await callback(tx as any);
-          return result;
+          return callback(tx as any);
         },
       );
 
@@ -529,20 +539,20 @@ describe('LeagueMemberService', () => {
       vi.mocked(mockRepository.findByPlayerAndLeague).mockResolvedValue(
         activeMember,
       );
-      vi.mocked(mockPrisma.$transaction).mockImplementation(
+      const tx = {
+        league: {
+          findUnique: vi.fn().mockResolvedValue(mockLeague),
+        },
+        player: {
+          findUnique: vi.fn().mockResolvedValue(mockPlayer),
+          update: vi.fn().mockResolvedValue(mockPlayer),
+        },
+        leagueMember: {
+          update: vi.fn().mockResolvedValue(inactiveMember),
+        },
+      };
+      vi.mocked(mockTransactionService.executeTransaction).mockImplementation(
         async (callback) => {
-          const tx = {
-            league: {
-              findUnique: vi.fn().mockResolvedValue(mockLeague),
-            },
-            player: {
-              findUnique: vi.fn().mockResolvedValue(mockPlayer),
-              update: vi.fn().mockResolvedValue(mockPlayer),
-            },
-            leagueMember: {
-              update: vi.fn().mockResolvedValue(inactiveMember),
-            },
-          };
           return callback(tx as any);
         },
       );

@@ -1,8 +1,9 @@
 import {
   Injectable,
   InternalServerErrorException,
-  Logger,
+  Inject,
 } from '@nestjs/common';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 import { CreateGuildDto } from './dto/create-guild.dto';
 import { UpdateGuildDto } from './dto/update-guild.dto';
 import { SettingsDefaultsService } from './services/settings-defaults.service';
@@ -25,12 +26,14 @@ import { GuildErrorHandlerService } from './services/guild-error-handler.service
  */
 @Injectable()
 export class GuildsService {
-  private readonly logger = new Logger(GuildsService.name);
+  private readonly serviceName = GuildsService.name;
 
   constructor(
     private settingsDefaults: SettingsDefaultsService,
     private guildRepository: GuildRepository,
     private errorHandler: GuildErrorHandlerService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
   ) {}
 
   /**
@@ -55,7 +58,10 @@ export class GuildsService {
         >,
       );
 
-      this.logger.log(`Created guild ${guild.id} with default settings`);
+      this.loggingService.log(
+        `Created guild ${guild.id} with default settings`,
+        this.serviceName,
+      );
       return guild;
     } catch (error) {
       if (
@@ -64,7 +70,11 @@ export class GuildsService {
       ) {
         throw error;
       }
-      this.logger.error(`Failed to create guild ${createGuildDto.id}:`, error);
+      this.loggingService.error(
+        `Failed to create guild ${createGuildDto.id}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       throw new InternalServerErrorException('Failed to create guild');
     }
   }
@@ -87,7 +97,11 @@ export class GuildsService {
         },
       };
     } catch (error) {
-      this.logger.error('Failed to fetch guilds:', error);
+      this.loggingService.error(
+        `Failed to fetch guilds: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       throw new InternalServerErrorException('Failed to fetch guilds');
     }
   }
@@ -112,7 +126,11 @@ export class GuildsService {
       if (error instanceof GuildNotFoundException) {
         throw error;
       }
-      this.logger.error(`Failed to fetch guild ${id}:`, error);
+      this.loggingService.error(
+        `Failed to fetch guild ${id}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       throw new InternalServerErrorException('Failed to fetch guild');
     }
   }
@@ -134,7 +152,11 @@ export class GuildsService {
       if (error instanceof GuildNotFoundException) {
         throw error;
       }
-      this.logger.error(`Failed to update guild ${id}:`, error);
+      this.loggingService.error(
+        `Failed to update guild ${id}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       throw new InternalServerErrorException('Failed to update guild');
     }
   }
@@ -153,13 +175,17 @@ export class GuildsService {
 
       const updatedGuild = await this.guildRepository.removeWithCleanup(id);
 
-      this.logger.log(`Soft deleted guild ${id}`);
+      this.loggingService.log(`Soft deleted guild ${id}`, this.serviceName);
       return updatedGuild;
     } catch (error) {
       if (error instanceof GuildNotFoundException) {
         throw error;
       }
-      this.logger.error(`Failed to remove guild ${id}:`, error);
+      this.loggingService.error(
+        `Failed to remove guild ${id}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       throw new InternalServerErrorException('Failed to remove guild');
     }
   }
@@ -172,7 +198,11 @@ export class GuildsService {
     try {
       return await this.guildRepository.findActiveGuildIds();
     } catch (error) {
-      this.logger.error('Failed to fetch active guild IDs:', error);
+      this.loggingService.error(
+        `Failed to fetch active guild IDs: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
+      );
       throw new InternalServerErrorException(
         'Failed to fetch active guild IDs',
       );
@@ -204,7 +234,10 @@ export class GuildsService {
         >,
       );
 
-      this.logger.log(`Upserted guild ${guild.id} (created or updated)`);
+      this.loggingService.log(
+        `Upserted guild ${guild.id} (created or updated)`,
+        this.serviceName,
+      );
       return guild;
     } catch (error) {
       const errorInfo = this.errorHandler.extractErrorInfo(
@@ -212,20 +245,10 @@ export class GuildsService {
         createGuildDto.id,
       );
 
-      this.logger.error(
-        `Failed to upsert guild ${createGuildDto.id} (${createGuildDto.name}):`,
-        {
-          error: errorInfo.message,
-          code: errorInfo.code,
-          details: errorInfo.details,
-          stack: error instanceof Error ? error.stack : undefined,
-          guildData: {
-            id: createGuildDto.id,
-            name: createGuildDto.name,
-            ownerId: createGuildDto.ownerId,
-            memberCount: createGuildDto.memberCount,
-          },
-        },
+      this.loggingService.error(
+        `Failed to upsert guild ${createGuildDto.id} (${createGuildDto.name}): ${errorInfo.message} (code: ${errorInfo.code})`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
 
       throw new InternalServerErrorException({

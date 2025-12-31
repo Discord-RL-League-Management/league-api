@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
+import { InfrastructureModule } from '../infrastructure/infrastructure.module';
 import { MatchService } from './services/match.service';
 import { MatchRepository } from './repositories/match.repository';
 import { MatchParticipantRepository } from './repositories/match-participant.repository';
@@ -8,7 +9,12 @@ import { PlayerStatsModule } from '../player-stats/player-stats.module';
 import { PlayerRatingsModule } from '../player-ratings/player-ratings.module';
 
 @Module({
-  imports: [PrismaModule, PlayerStatsModule, PlayerRatingsModule],
+  imports: [
+    PrismaModule,
+    InfrastructureModule, // Provides ITransactionService
+    PlayerStatsModule,
+    PlayerRatingsModule,
+  ],
   controllers: [MatchesController],
   providers: [MatchService, MatchRepository, MatchParticipantRepository],
   exports: [MatchService],

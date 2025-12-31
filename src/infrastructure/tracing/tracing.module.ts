@@ -18,12 +18,12 @@ import { ITracingService } from './interfaces/tracing.interface';
   imports: [ConfigModule],
   providers: [
     {
-      provide: 'ITracingService',
+      provide: ITracingService,
       useFactory: (): ITracingService => {
         return new InAppTracingService();
       },
     },
   ],
-  exports: ['ITracingService'],
+  exports: [ITracingService],
 })
 export class TracingModule {}

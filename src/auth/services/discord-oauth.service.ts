@@ -1,6 +1,7 @@
-import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Injectable, HttpException, HttpStatus, Inject } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
+import { IConfigurationService } from '../../infrastructure/configuration/interfaces/configuration.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { firstValueFrom } from 'rxjs';
 
 interface DiscordTokenResponse {
@@ -13,7 +14,7 @@ interface DiscordTokenResponse {
 
 @Injectable()
 export class DiscordOAuthService {
-  private readonly logger = new Logger(DiscordOAuthService.name);
+  private readonly serviceName = DiscordOAuthService.name;
   private readonly clientId: string;
   private readonly clientSecret: string;
   private readonly redirectUri: string;
@@ -22,18 +23,20 @@ export class DiscordOAuthService {
   private readonly tokenUrl = 'https://discord.com/api/oauth2/token';
 
   constructor(
-    private configService: ConfigService,
+    @Inject(IConfigurationService)
+    private configService: IConfigurationService,
     private httpService: HttpService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
   ) {
     this.clientId = this.configService.get<string>('discord.clientId')!;
     this.clientSecret = this.configService.get<string>('discord.clientSecret')!;
     this.redirectUri = this.configService.get<string>('discord.callbackUrl')!;
 
-    this.logger.debug('DiscordOAuthService Config', {
-      clientId: this.clientId,
-      redirectUri: this.redirectUri,
-      hasClientSecret: !!this.clientSecret,
-    });
+    this.loggingService.debug(
+      `DiscordOAuthService Config - clientId: ${this.clientId}, redirectUri: ${this.redirectUri}, hasClientSecret: ${!!this.clientSecret}`,
+      this.serviceName,
+    );
   }
 
   /**

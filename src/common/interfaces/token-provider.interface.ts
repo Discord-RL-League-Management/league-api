@@ -1,3 +1,5 @@
+import type { InjectionToken } from '@nestjs/common';
+
 /**
  * ITokenProvider - Interface for token management operations
  *
@@ -13,3 +15,7 @@ export interface ITokenProvider {
    */
   getValidAccessToken(userId: string): Promise<string | null>;
 }
+
+export const ITokenProvider = Symbol(
+  'ITokenProvider',
+) as InjectionToken<ITokenProvider>;

@@ -38,7 +38,23 @@ describe('GuildRepository', () => {
       },
     } as unknown as PrismaService;
 
-    repository = new GuildRepository(mockPrisma);
+    const mockTransactionService = {
+      executeInTransaction: vi.fn(),
+    } as unknown as any;
+
+    const mockLoggingService = {
+      log: vi.fn(),
+      error: vi.fn(),
+      warn: vi.fn(),
+      debug: vi.fn(),
+      verbose: vi.fn(),
+    } as unknown as any;
+
+    repository = new GuildRepository(
+      mockPrisma,
+      mockTransactionService,
+      mockLoggingService,
+    );
   });
 
   afterEach(() => {

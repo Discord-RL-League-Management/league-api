@@ -13,6 +13,7 @@ import { ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { AdminGuard } from '@/common/guards/admin.guard';
 import type { AuthenticatedUser } from '@/common/interfaces/user.interface';
 import type { Request } from 'express';
+import { createMockLoggingService } from '@tests/utils/test-helpers';
 
 describe('AdminGuard', () => {
   let guard: AdminGuard;
@@ -71,12 +72,15 @@ describe('AdminGuard', () => {
       }),
     } as unknown as ExecutionContext;
 
+    const mockLoggingService = createMockLoggingService();
+
     guard = new AdminGuard(
       mockPermissionProvider,
       mockAuditProvider,
       mockDiscordProvider,
       mockTokenProvider,
       mockGuildAccessProvider,
+      mockLoggingService,
     );
   });
 

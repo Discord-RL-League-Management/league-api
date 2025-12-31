@@ -1,4 +1,5 @@
-import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
+import { Injectable, ForbiddenException, Inject } from '@nestjs/common';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { LeagueMemberRole } from '@prisma/client';
 import { LeagueRepository } from '../repositories/league.repository';
 import { LeagueAccessValidationService } from './league-access-validation.service';
@@ -16,7 +17,7 @@ import { LeagueNotFoundException } from '../exceptions/league.exceptions';
  */
 @Injectable()
 export class LeaguePermissionService {
-  private readonly logger = new Logger(LeaguePermissionService.name);
+  private readonly serviceName = LeaguePermissionService.name;
 
   constructor(
     private leagueRepository: LeagueRepository,
@@ -25,6 +26,8 @@ export class LeaguePermissionService {
     private leagueMemberRepository: LeagueMemberRepository,
     private permissionCheckService: PermissionCheckService,
     private guildSettingsService: GuildSettingsService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
   ) {}
 
   /**
@@ -55,8 +58,9 @@ export class LeaguePermissionService {
         league.guildId,
       );
       if (isGuildAdmin) {
-        this.logger.debug(
+        this.loggingService.debug(
           `User ${userId} has league admin access via guild admin role for league ${leagueId}`,
+          this.serviceName,
         );
         return;
       }
@@ -66,16 +70,18 @@ export class LeaguePermissionService {
       ]);
 
       if (!isLeagueAdmin) {
-        this.logger.warn(
+        this.loggingService.warn(
           `User ${userId} does not have league admin access for league ${leagueId}`,
+          this.serviceName,
         );
         throw new ForbiddenException(
           'League admin access required - you must be a guild admin or league admin',
         );
       }
 
-      this.logger.debug(
+      this.loggingService.debug(
         `User ${userId} has league admin access via league admin role for league ${leagueId}`,
+        this.serviceName,
       );
     } catch (error) {
       if (
@@ -84,9 +90,10 @@ export class LeaguePermissionService {
       ) {
         throw error;
       }
-      this.logger.error(
-        `Failed to check league admin access for user ${userId}, league ${leagueId}:`,
-        error,
+      this.loggingService.error(
+        `Failed to check league admin access for user ${userId}, league ${leagueId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw new ForbiddenException('Error checking league admin permissions');
     }
@@ -121,8 +128,9 @@ export class LeaguePermissionService {
         league.guildId,
       );
       if (isGuildAdmin) {
-        this.logger.debug(
+        this.loggingService.debug(
           `User ${userId} has league admin/moderator access via guild admin role for league ${leagueId}`,
+          this.serviceName,
         );
         return;
       }
@@ -133,16 +141,18 @@ export class LeaguePermissionService {
       ]);
 
       if (!hasLeagueRole) {
-        this.logger.warn(
+        this.loggingService.warn(
           `User ${userId} does not have league admin/moderator access for league ${leagueId}`,
+          this.serviceName,
         );
         throw new ForbiddenException(
           'League admin or moderator access required - you must be a guild admin, league admin, or league moderator',
         );
       }
 
-      this.logger.debug(
+      this.loggingService.debug(
         `User ${userId} has league admin/moderator access via league role for league ${leagueId}`,
+        this.serviceName,
       );
     } catch (error) {
       if (
@@ -151,9 +161,10 @@ export class LeaguePermissionService {
       ) {
         throw error;
       }
-      this.logger.error(
-        `Failed to check league admin/moderator access for user ${userId}, league ${leagueId}:`,
-        error,
+      this.loggingService.error(
+        `Failed to check league admin/moderator access for user ${userId}, league ${leagueId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       throw new ForbiddenException('Error checking league permissions');
     }
@@ -173,13 +184,15 @@ export class LeaguePermissionService {
   ): Promise<void> {
     const isAdmin = await this.checkGuildAdminAccess(userId, guildId);
     if (!isAdmin) {
-      this.logger.warn(
+      this.loggingService.warn(
         `User ${userId} does not have guild admin access for guild ${guildId}`,
+        this.serviceName,
       );
       throw new ForbiddenException('Guild admin access required');
     }
-    this.logger.debug(
+    this.loggingService.debug(
       `User ${userId} has guild admin access for guild ${guildId}`,
+      this.serviceName,
     );
   }
 
@@ -205,9 +218,10 @@ export class LeaguePermissionService {
         settings,
       );
     } catch (error) {
-      this.logger.error(
-        `Failed to check guild admin access for user ${userId}, guild ${guildId}:`,
-        error,
+      this.loggingService.error(
+        `Failed to check guild admin access for user ${userId}, guild ${guildId}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+        this.serviceName,
       );
       return false;
     }
@@ -239,8 +253,9 @@ export class LeaguePermissionService {
       );
 
       if (!player) {
-        this.logger.debug(
+        this.loggingService.debug(
           `User ${userId} is not a player in guild ${league.guildId}`,
+          this.serviceName,
         );
         return false;
       }
@@ -252,8 +267,9 @@ export class LeaguePermissionService {
         );
 
       if (!leagueMember) {
-        this.logger.debug(
+        this.loggingService.debug(
           `Player ${player.id} is not a member of league ${leagueId}`,
+          this.serviceName,
         );
         return false;
       }
@@ -264,9 +280,12 @@ export class LeaguePermissionService {
 
       return hasRole;
     } catch (error) {
-      this.logger.error(
-        `Failed to check league role for user ${userId}, league ${leagueId}:`,
-        error,
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      this.loggingService.error(
+        `Failed to check league role for user ${userId}, league ${leagueId}: ${errorMessage}`,
+        errorStack,
       );
       return false;
     }

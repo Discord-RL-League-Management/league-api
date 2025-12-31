@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   LeagueMember,
@@ -26,8 +26,6 @@ export class LeagueMemberRepository
   implements
     BaseRepository<LeagueMember, CreateLeagueMemberDto, UpdateLeagueMemberDto>
 {
-  private readonly logger = new Logger(LeagueMemberRepository.name);
-
   constructor(private prisma: PrismaService) {}
 
   /**

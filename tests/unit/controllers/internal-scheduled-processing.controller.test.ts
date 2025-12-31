@@ -16,6 +16,8 @@ import { ScheduledTrackerProcessingService } from '@/trackers/services/scheduled
 import { ScheduleTrackerProcessingDto } from '@/internal/dto/schedule-tracker-processing.dto';
 import { GetSchedulesQueryDto } from '@/internal/dto/get-schedules-query.dto';
 import { ScheduledProcessingStatus } from '@prisma/client';
+import { createMockLoggingService } from '@tests/utils/test-helpers';
+import { ILoggingService } from '@/infrastructure/logging/interfaces/logging.interface';
 
 describe('InternalScheduledProcessingController', () => {
   let controller: InternalScheduledProcessingController;
@@ -39,12 +41,18 @@ describe('InternalScheduledProcessingController', () => {
       cancelSchedule: vi.fn(),
     } as unknown as ScheduledTrackerProcessingService;
 
+    const mockLoggingService = createMockLoggingService();
+
     const module = await Test.createTestingModule({
       controllers: [InternalScheduledProcessingController],
       providers: [
         {
           provide: ScheduledTrackerProcessingService,
           useValue: mockScheduledProcessingService,
+        },
+        {
+          provide: ILoggingService,
+          useValue: mockLoggingService,
         },
       ],
     }).compile();

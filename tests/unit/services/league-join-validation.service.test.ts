@@ -6,6 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { Test } from '@nestjs/testing';
 import { LeagueJoinValidationService } from '@/league-members/services/league-join-validation.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import { LeagueSettingsService } from '@/leagues/league-settings.service';
@@ -16,6 +17,9 @@ import { GuildMembersService } from '@/guild-members/guild-members.service';
 import { TrackerService } from '@/trackers/services/tracker.service';
 import { LeagueJoinValidationException } from '@/league-members/exceptions/league-member.exceptions';
 import { PlayerStatus } from '@prisma/client';
+import { ILeagueSettingsProvider } from '@/league-members/interfaces/league-settings-provider.interface';
+import { ILoggingService } from '@/infrastructure/logging/interfaces/logging.interface';
+import { createMockLoggingService } from '@tests/utils/test-helpers';
 
 describe('LeagueJoinValidationService', () => {
   let service: LeagueJoinValidationService;
@@ -27,7 +31,7 @@ describe('LeagueJoinValidationService', () => {
   let mockGuildMembersService: GuildMembersService;
   let mockTrackerService: TrackerService;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mockPrisma = {} as PrismaService;
 
     mockLeagueSettingsService = {
@@ -58,14 +62,59 @@ describe('LeagueJoinValidationService', () => {
       findBestTrackerForUser: vi.fn(),
     } as unknown as TrackerService;
 
-    service = new LeagueJoinValidationService(
-      mockPrisma,
-      mockLeagueSettingsService,
-      mockLeagueMemberRepository,
-      mockPlayerService,
-      mockPlayerValidationService,
-      mockGuildMembersService,
-      mockTrackerService,
+    const mockLeagueSettingsProvider = {
+      getSettings: vi.fn(),
+    };
+
+    const mockLoggingService = createMockLoggingService();
+
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        LeagueJoinValidationService,
+        {
+          provide: PrismaService,
+          useValue: mockPrisma,
+        },
+        {
+          provide: ILeagueSettingsProvider,
+          useValue: mockLeagueSettingsProvider,
+        },
+        {
+          provide: LeagueMemberRepository,
+          useValue: mockLeagueMemberRepository,
+        },
+        {
+          provide: PlayerService,
+          useValue: mockPlayerService,
+        },
+        {
+          provide: PlayerValidationService,
+          useValue: mockPlayerValidationService,
+        },
+        {
+          provide: GuildMembersService,
+          useValue: mockGuildMembersService,
+        },
+        {
+          provide: TrackerService,
+          useValue: mockTrackerService,
+        },
+        {
+          provide: ILoggingService,
+          useValue: mockLoggingService,
+        },
+      ],
+    }).compile();
+
+    service = moduleRef.get<LeagueJoinValidationService>(
+      LeagueJoinValidationService,
+    );
+
+    // Update the mock to use the provider's getSettings
+    vi.mocked(mockLeagueSettingsProvider.getSettings).mockImplementation(
+      async (leagueId: string) => {
+        return mockLeagueSettingsService.getSettings(leagueId);
+      },
     );
   });
 
@@ -110,6 +159,7 @@ describe('LeagueJoinValidationService', () => {
       expect(mockLeagueSettingsService.getSettings).toHaveBeenCalledWith(
         leagueId,
       );
+      expect(service).toBeDefined();
     });
 
     it('should_validate_guild_membership_when_required', async () => {

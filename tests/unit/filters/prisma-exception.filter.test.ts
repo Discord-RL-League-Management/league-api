@@ -10,6 +10,7 @@ import { HttpStatus } from '@nestjs/common';
 import { PrismaExceptionFilter } from '@/common/filters/prisma-exception.filter';
 import { Prisma } from '@prisma/client';
 import { ArgumentsHost } from '@nestjs/common';
+import { createMockLoggingService } from '@tests/utils/test-helpers';
 
 describe('PrismaExceptionFilter', () => {
   let filter: PrismaExceptionFilter;
@@ -35,7 +36,9 @@ describe('PrismaExceptionFilter', () => {
       }),
     } as unknown as ArgumentsHost;
 
-    filter = new PrismaExceptionFilter();
+    const mockLoggingService = createMockLoggingService();
+
+    filter = new PrismaExceptionFilter(mockLoggingService);
   });
 
   afterEach(() => {

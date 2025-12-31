@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards, Logger } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards, Inject } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -13,6 +13,7 @@ import { GuildMembersService } from '../guild-members/guild-members.service';
 import { GuildSettingsService } from '../guilds/guild-settings.service';
 import type { AuthenticatedUser } from '../common/interfaces/user.interface';
 import { GuildSettings } from '../guilds/interfaces/settings.interface';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 
 /**
  * Permissions Controller - Single Responsibility: Handle HTTP requests for permission state
@@ -24,12 +25,14 @@ import { GuildSettings } from '../guilds/interfaces/settings.interface';
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class PermissionsController {
-  private readonly logger = new Logger(PermissionsController.name);
+  private readonly serviceName = PermissionsController.name;
 
   constructor(
     private permissionCheckService: PermissionCheckService,
     private guildMembersService: GuildMembersService,
     private guildSettingsService: GuildSettingsService,
+    @Inject(ILoggingService)
+    private readonly loggingService: ILoggingService,
   ) {}
 
   @Get('me')
@@ -41,8 +44,9 @@ export class PermissionsController {
     @Param('guildId') guildId: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    this.logger.log(
+    this.loggingService.log(
       `User ${user.id} requested permissions for guild ${guildId}`,
+      this.serviceName,
     );
 
     // Fetch settings separately (settings are not a Prisma relation)
