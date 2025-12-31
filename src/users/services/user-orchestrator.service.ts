@@ -3,7 +3,7 @@ import {
   InternalServerErrorException,
   Inject,
 } from '@nestjs/common';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { UsersService } from '../users.service';
 import { DiscordProfileDto } from '../../auth/dto/discord-profile.dto';
 import { User } from '@prisma/client';
@@ -20,7 +20,7 @@ export class UserOrchestratorService {
 
   constructor(
     private usersService: UsersService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

@@ -1,7 +1,7 @@
 import { Injectable, NestMiddleware, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request, Response, NextFunction } from 'express';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 
 /**
  * AuthLoggerMiddleware - Logs authentication method for each request
@@ -17,7 +17,7 @@ export class AuthLoggerMiddleware implements NestMiddleware {
 
   constructor(
     private configService: ConfigService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {
     this.botApiKey = this.configService.get<string>('auth.botApiKey', '');

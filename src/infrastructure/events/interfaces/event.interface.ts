@@ -1,3 +1,4 @@
+import type { InjectionToken } from '@nestjs/common';
 import { ITransactionClient } from '../../transactions/interfaces/transaction.interface';
 
 /**
@@ -58,3 +59,7 @@ export interface IEventService {
     options?: EventPublishOptions,
   ): Promise<void>;
 }
+
+export const IEventService = Symbol(
+  'IEventService',
+) as InjectionToken<IEventService>;

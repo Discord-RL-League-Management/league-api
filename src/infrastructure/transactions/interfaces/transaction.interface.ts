@@ -1,3 +1,5 @@
+import type { InjectionToken } from '@nestjs/common';
+
 /**
  * ITransactionClient - Interface for transaction client operations
  *
@@ -35,3 +37,7 @@ export interface ITransactionService {
     callback: (tx: ITransactionClient) => Promise<T>,
   ): Promise<T>;
 }
+
+export const ITransactionService = Symbol(
+  'ITransactionService',
+) as InjectionToken<ITransactionService>;

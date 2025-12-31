@@ -1,5 +1,5 @@
 import { Injectable, ForbiddenException, Inject } from '@nestjs/common';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { PlayerService } from './player.service';
 import { PlayerNotFoundException } from '../exceptions/player.exceptions';
 
@@ -15,7 +15,7 @@ export class PlayerOwnershipService {
 
   constructor(
     private playerService: PlayerService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

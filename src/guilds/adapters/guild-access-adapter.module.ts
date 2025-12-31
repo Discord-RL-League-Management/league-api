@@ -4,6 +4,7 @@ import { GuildMembersModule } from '../../guild-members/guild-members.module';
 import { GuildAccessProviderAdapter } from './guild-access-provider.adapter';
 import { GuildSettingsService } from '../guild-settings.service';
 import { GuildMembersService } from '../../guild-members/guild-members.service';
+import { IGuildAccessProvider } from '../../common/interfaces/guild-access-provider.interface';
 
 /**
  * GuildAccessAdapterModule - Provides IGuildAccessProvider adapter
@@ -18,7 +19,7 @@ import { GuildMembersService } from '../../guild-members/guild-members.service';
   ],
   providers: [
     {
-      provide: 'IGuildAccessProvider',
+      provide: IGuildAccessProvider,
       useFactory: (
         guildSettingsService: GuildSettingsService,
         guildMembersService: GuildMembersService,
@@ -31,6 +32,6 @@ import { GuildMembersService } from '../../guild-members/guild-members.service';
       inject: [GuildSettingsService, GuildMembersService],
     },
   ],
-  exports: ['IGuildAccessProvider'], // Export token for GuardsModule
+  exports: [IGuildAccessProvider], // Export token for GuardsModule
 })
 export class GuildAccessAdapterModule {}

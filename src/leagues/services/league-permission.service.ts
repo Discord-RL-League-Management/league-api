@@ -1,5 +1,5 @@
 import { Injectable, ForbiddenException, Inject } from '@nestjs/common';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { LeagueMemberRole } from '@prisma/client';
 import { LeagueRepository } from '../repositories/league.repository';
 import { LeagueAccessValidationService } from './league-access-validation.service';
@@ -26,7 +26,7 @@ export class LeaguePermissionService {
     private leagueMemberRepository: LeagueMemberRepository,
     private permissionCheckService: PermissionCheckService,
     private guildSettingsService: GuildSettingsService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

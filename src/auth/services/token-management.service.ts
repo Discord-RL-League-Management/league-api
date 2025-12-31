@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import type { IConfigurationService } from '../../infrastructure/configuration/interfaces/configuration.interface';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { IConfigurationService } from '../../infrastructure/configuration/interfaces/configuration.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { firstValueFrom, timeout, retry, catchError, of } from 'rxjs';
 import { AxiosError, AxiosResponse } from 'axios';
 import { UsersService } from '../../users/users.service';
@@ -16,9 +16,9 @@ export class TokenManagementService {
   constructor(
     private usersService: UsersService,
     private httpService: HttpService,
-    @Inject('IConfigurationService')
+    @Inject(IConfigurationService)
     private configService: IConfigurationService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {
     this.discordApiUrl =

@@ -4,7 +4,7 @@ import {
   BadRequestException,
   Inject,
 } from '@nestjs/common';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TrackerSnapshotRepository } from '../repositories/tracker-snapshot.repository';
 import { TrackerRepository } from '../repositories/tracker.repository';
@@ -19,7 +19,7 @@ export class TrackerSnapshotService {
     private readonly snapshotRepository: TrackerSnapshotRepository,
     private readonly trackerRepository: TrackerRepository,
     private readonly visibilityService: VisibilityService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

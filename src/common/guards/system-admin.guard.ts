@@ -10,7 +10,7 @@ import { Request } from 'express';
 import { AuditLogService } from '../../audit/services/audit-log.service';
 import { AuditAction } from '../../audit/interfaces/audit-event.interface';
 import type { AuthenticatedUser } from '../../common/interfaces/user.interface';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 
 /**
  * SystemAdminGuard - Single Responsibility: System-wide admin permission checking
@@ -29,7 +29,7 @@ export class SystemAdminGuard implements CanActivate {
   constructor(
     private configService: ConfigService,
     private auditLogService: AuditLogService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

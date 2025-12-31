@@ -5,8 +5,8 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { SettingsService } from '../infrastructure/settings/services/settings.service';
-import type { ICachingService } from '../infrastructure/caching/interfaces/caching.interface';
-import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
+import { ICachingService } from '../infrastructure/caching/interfaces/caching.interface';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 import { LeagueRepository } from './repositories/league.repository';
 import { LeagueSettingsDefaultsService } from './services/league-settings-defaults.service';
 import { SettingsValidationService } from './services/settings-validation.service';
@@ -36,13 +36,13 @@ export class LeagueSettingsService {
     private settingsDefaults: LeagueSettingsDefaultsService,
     private settingsValidation: SettingsValidationService,
     private configMigration: ConfigMigrationService,
-    @Inject('ICachingService') private cachingService: ICachingService,
+    @Inject(ICachingService) private cachingService: ICachingService,
     private prisma: PrismaService,
     @Inject(forwardRef(() => OrganizationService))
     private organizationService: OrganizationService,
     @Inject(forwardRef(() => TeamRepository))
     private teamRepository: TeamRepository,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {
     this.cacheTtl = 300; // 5 minutes cache TTL

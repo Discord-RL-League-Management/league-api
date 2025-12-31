@@ -1,3 +1,5 @@
+import type { InjectionToken } from '@nestjs/common';
+
 /**
  * ITracingService - Interface for distributed tracing operations
  *
@@ -45,3 +47,7 @@ export interface ITracingService {
    */
   setSpanError(spanId: string, error: Error): void;
 }
+
+export const ITracingService = Symbol(
+  'ITracingService',
+) as InjectionToken<ITracingService>;

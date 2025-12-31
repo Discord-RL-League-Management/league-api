@@ -3,7 +3,7 @@ import {
   InternalServerErrorException,
   Inject,
 } from '@nestjs/common';
-import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 import { Prisma } from '@prisma/client';
 import { League, LeagueStatus } from '@prisma/client';
 import { CreateLeagueDto } from './dto/create-league.dto';
@@ -34,7 +34,7 @@ export class LeaguesService {
     private settingsDefaults: LeagueSettingsDefaultsService,
     private leagueRepository: LeagueRepository,
     private prisma: PrismaService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

@@ -17,6 +17,7 @@ import { LeagueJoinValidationService } from './services/league-join-validation.s
 import { LeagueMemberRepository } from './repositories/league-member.repository';
 
 import { LeagueMemberAccessAdapter } from './adapters/league-member-access.adapter';
+import { ILeagueMemberAccess } from '../leagues/interfaces/league-member-access.interface';
 
 @Module({
   imports: [
@@ -36,7 +37,7 @@ import { LeagueMemberAccessAdapter } from './adapters/league-member-access.adapt
     LeagueMemberRepository,
     // Provide adapter with injection token for LeaguesModule
     {
-      provide: 'ILeagueMemberAccess',
+      provide: ILeagueMemberAccess,
       useClass: LeagueMemberAccessAdapter,
     },
   ],
@@ -44,7 +45,7 @@ import { LeagueMemberAccessAdapter } from './adapters/league-member-access.adapt
     LeagueMemberService,
     LeagueJoinValidationService,
     LeagueMemberRepository,
-    'ILeagueMemberAccess', // Export token for LeaguesModule
+    ILeagueMemberAccess, // Export token for LeaguesModule
   ],
 })
 export class LeagueMembersModule {}

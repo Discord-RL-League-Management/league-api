@@ -1,3 +1,4 @@
+import type { InjectionToken } from '@nestjs/common';
 import { GuildSettings } from '../../guilds/interfaces/settings.interface';
 
 /**
@@ -35,3 +36,7 @@ export interface IGuildAccessProvider {
    */
   findOne(userId: string, guildId: string): Promise<GuildMember | null>;
 }
+
+export const IGuildAccessProvider = Symbol(
+  'IGuildAccessProvider',
+) as InjectionToken<IGuildAccessProvider>;

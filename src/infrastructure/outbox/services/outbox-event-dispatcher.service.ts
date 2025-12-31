@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import type { ILoggingService } from '../../logging/interfaces/logging.interface';
+import { ILoggingService } from '../../logging/interfaces/logging.interface';
 import { Outbox } from '@prisma/client';
 
 /**
@@ -13,7 +13,7 @@ export class OutboxEventDispatcher {
   private readonly serviceName = OutboxEventDispatcher.name;
 
   constructor(
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

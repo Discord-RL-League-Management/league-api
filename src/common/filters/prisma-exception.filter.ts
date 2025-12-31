@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { Request, Response } from 'express';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 
 /**
  * PrismaExceptionFilter - Handles Prisma-specific errors
@@ -29,7 +29,7 @@ export class PrismaExceptionFilter implements ExceptionFilter {
   private readonly serviceName = PrismaExceptionFilter.name;
 
   constructor(
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

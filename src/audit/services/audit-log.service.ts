@@ -4,8 +4,8 @@ import { RequestContextService } from '../../common/services/request-context.ser
 import { AuditEvent } from '../interfaces/audit-event.interface';
 import { ActivityLogService } from '../../infrastructure/activity-log/services/activity-log.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
-import type {
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import {
   ITransactionService,
   ITransactionClient,
 } from '../../infrastructure/transactions/interfaces/transaction.interface';
@@ -25,9 +25,9 @@ export class AuditLogService {
     private activityLogService: ActivityLogService,
     private contextService: RequestContextService,
     private prisma: PrismaService,
-    @Inject('ITransactionService')
+    @Inject(ITransactionService)
     private transactionService: ITransactionService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

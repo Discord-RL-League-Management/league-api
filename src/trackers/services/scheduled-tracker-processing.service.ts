@@ -6,7 +6,7 @@ import {
   OnApplicationShutdown,
   Inject,
 } from '@nestjs/common';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { CronJob } from 'cron';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -32,7 +32,7 @@ export class ScheduledTrackerProcessingService
     private readonly prisma: PrismaService,
     private readonly trackerProcessingService: TrackerProcessingService,
     private readonly schedulerRegistry: SchedulerRegistry,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

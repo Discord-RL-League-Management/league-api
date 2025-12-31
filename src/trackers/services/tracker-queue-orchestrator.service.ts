@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TrackerScrapingQueueService } from '../queues/tracker-scraping.queue';
 import { TrackerProcessingGuardService } from './tracker-processing-guard.service';
@@ -20,7 +20,7 @@ export class TrackerQueueOrchestratorService {
     private readonly prisma: PrismaService,
     private readonly scrapingQueueService: TrackerScrapingQueueService,
     private readonly processingGuard: TrackerProcessingGuardService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

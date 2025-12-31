@@ -9,7 +9,7 @@ import { UserGuildsService } from '../user-guilds/user-guilds.service';
 import { UserOrchestratorService } from '../users/services/user-orchestrator.service';
 import { User } from '@prisma/client';
 import type { UserGuild } from '../user-guilds/interfaces/user-guild.interface';
-import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 
 interface DiscordGuild {
   id: string;
@@ -35,7 +35,7 @@ export class AuthService {
     private userOrchestrator: UserOrchestratorService,
     private jwtService: JwtService,
     private userGuildsService: UserGuildsService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

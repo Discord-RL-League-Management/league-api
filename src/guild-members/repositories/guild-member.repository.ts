@@ -1,7 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GuildMember, Prisma } from '@prisma/client';
-import type {
+import {
   ITransactionService,
   ITransactionClient,
 } from '../../infrastructure/transactions/interfaces/transaction.interface';
@@ -23,7 +23,7 @@ export class GuildMemberRepository
 {
   constructor(
     private prisma: PrismaService,
-    @Inject('ITransactionService')
+    @Inject(ITransactionService)
     private transactionService: ITransactionService,
   ) {}
 

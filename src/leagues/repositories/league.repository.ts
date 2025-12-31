@@ -1,7 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
-import type { ITransactionService } from '../../infrastructure/transactions/interfaces/transaction.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ITransactionService } from '../../infrastructure/transactions/interfaces/transaction.interface';
 import { League, Prisma, LeagueStatus, Game } from '@prisma/client';
 import { CreateLeagueDto } from '../dto/create-league.dto';
 import { UpdateLeagueDto } from '../dto/update-league.dto';
@@ -31,9 +31,9 @@ export class LeagueRepository
 
   constructor(
     private prisma: PrismaService,
-    @Inject('ITransactionService')
+    @Inject(ITransactionService)
     private transactionService: ITransactionService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

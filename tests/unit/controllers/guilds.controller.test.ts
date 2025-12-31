@@ -19,6 +19,7 @@ import { DiscordBotService } from '@/discord/discord-bot.service';
 import { GuildAdminGuard } from '@/common/guards/guild-admin.guard';
 import type { AuthenticatedUser } from '@/common/interfaces/user.interface';
 import { createMockLoggingService } from '@tests/utils/test-helpers';
+import { ILoggingService } from '@/infrastructure/logging/interfaces/logging.interface';
 
 describe('GuildsController', () => {
   let controller: GuildsController;
@@ -86,7 +87,7 @@ describe('GuildsController', () => {
         },
         { provide: GuildSettingsService, useValue: mockGuildSettingsService },
         { provide: DiscordBotService, useValue: mockDiscordBotService },
-        { provide: 'ILoggingService', useValue: mockLoggingService },
+        { provide: ILoggingService, useValue: mockLoggingService },
       ],
     })
       .overrideGuard(GuildAdminGuard)

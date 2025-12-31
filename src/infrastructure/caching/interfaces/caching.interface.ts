@@ -1,3 +1,5 @@
+import type { InjectionToken } from '@nestjs/common';
+
 /**
  * ICachingService - Interface for caching operations
  *
@@ -35,3 +37,7 @@ export interface ICachingService {
    */
   reset(): Promise<void>;
 }
+
+export const ICachingService = Symbol(
+  'ICachingService',
+) as InjectionToken<ICachingService>;

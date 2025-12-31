@@ -4,7 +4,7 @@ import {
   InternalServerErrorException,
   Inject,
 } from '@nestjs/common';
-import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 import { Prisma } from '@prisma/client';
 import { UsersService } from '../users/users.service';
 import { CreateGuildMemberDto } from './dto/create-guild-member.dto';
@@ -31,7 +31,7 @@ export class GuildMembersService {
     private guildMemberQueryService: GuildMemberQueryService,
     private guildMemberStatisticsService: GuildMemberStatisticsService,
     private guildMemberSyncService: GuildMemberSyncService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

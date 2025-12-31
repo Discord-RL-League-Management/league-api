@@ -20,7 +20,7 @@ import { BotAuthGuard } from '../../auth/guards/bot-auth.guard';
 import { ScheduledTrackerProcessingService } from '../../trackers/services/scheduled-tracker-processing.service';
 import { ScheduleTrackerProcessingDto } from '../dto/schedule-tracker-processing.dto';
 import { GetSchedulesQueryDto } from '../dto/get-schedules-query.dto';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 
 /**
  * InternalScheduledProcessingController - Bot-only endpoints for scheduled tracker processing
@@ -36,7 +36,7 @@ export class InternalScheduledProcessingController {
 
   constructor(
     private readonly scheduledProcessingService: ScheduledTrackerProcessingService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

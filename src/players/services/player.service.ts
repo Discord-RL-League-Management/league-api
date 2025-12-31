@@ -4,10 +4,10 @@ import {
   InternalServerErrorException,
   Inject,
 } from '@nestjs/common';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { Prisma, PlayerStatus, Player } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import type {
+import {
   ITransactionService,
   ITransactionClient,
 } from '../../infrastructure/transactions/interfaces/transaction.interface';
@@ -39,9 +39,9 @@ export class PlayerService {
     private validationService: PlayerValidationService,
     private prisma: PrismaService,
     private activityLogService: ActivityLogService,
-    @Inject('ITransactionService')
+    @Inject(ITransactionService)
     private transactionService: ITransactionService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PlayerStatus } from '@prisma/client';
 import {
@@ -22,7 +22,7 @@ export class PlayerValidationService {
     private prisma: PrismaService,
     private trackerService: TrackerService,
     private guildMembersService: GuildMembersService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

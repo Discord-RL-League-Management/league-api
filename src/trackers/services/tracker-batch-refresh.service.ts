@@ -1,7 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { TrackerScrapingQueueService } from '../queues/tracker-scraping.queue';
-import type { IConfigurationService } from '../../infrastructure/configuration/interfaces/configuration.interface';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { IConfigurationService } from '../../infrastructure/configuration/interfaces/configuration.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 
 @Injectable()
 export class TrackerBatchRefreshService {
@@ -10,9 +10,9 @@ export class TrackerBatchRefreshService {
 
   constructor(
     private readonly scrapingQueueService: TrackerScrapingQueueService,
-    @Inject('IConfigurationService')
+    @Inject(IConfigurationService)
     private readonly configService: IConfigurationService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {
     // Delay between batches to respect rate limits

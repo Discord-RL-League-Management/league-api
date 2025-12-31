@@ -17,6 +17,7 @@ import { ScheduleTrackerProcessingDto } from '@/internal/dto/schedule-tracker-pr
 import { GetSchedulesQueryDto } from '@/internal/dto/get-schedules-query.dto';
 import { ScheduledProcessingStatus } from '@prisma/client';
 import { createMockLoggingService } from '@tests/utils/test-helpers';
+import { ILoggingService } from '@/infrastructure/logging/interfaces/logging.interface';
 
 describe('InternalScheduledProcessingController', () => {
   let controller: InternalScheduledProcessingController;
@@ -50,7 +51,7 @@ describe('InternalScheduledProcessingController', () => {
           useValue: mockScheduledProcessingService,
         },
         {
-          provide: 'ILoggingService',
+          provide: ILoggingService,
           useValue: mockLoggingService,
         },
       ],

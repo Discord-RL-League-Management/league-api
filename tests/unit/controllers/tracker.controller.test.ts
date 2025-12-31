@@ -23,6 +23,7 @@ import {
 } from '@/trackers/dto/tracker.dto';
 import type { AuthenticatedUser } from '@/common/interfaces/user.interface';
 import { createMockLoggingService } from '@tests/utils/test-helpers';
+import { ILoggingService } from '@/infrastructure/logging/interfaces/logging.interface';
 
 describe('TrackerController', () => {
   let controller: TrackerController;
@@ -107,7 +108,7 @@ describe('TrackerController', () => {
           useValue: mockResponseMapper,
         },
         {
-          provide: 'ILoggingService',
+          provide: ILoggingService,
           useValue: mockLoggingService,
         },
       ],

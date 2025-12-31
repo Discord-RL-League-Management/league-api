@@ -23,7 +23,7 @@ import { CalculateMmrDto } from '../dto/calculate-mmr.dto';
 import { GuildSettingsService } from '../../guilds/guild-settings.service';
 import { SettingsDefaultsService } from '../../guilds/services/settings-defaults.service';
 import { MmrCalculationConfig } from '../../guilds/interfaces/settings.interface';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 
 /**
  * MmrCalculationController - Single Responsibility: MMR calculation API endpoints
@@ -43,7 +43,7 @@ export class MmrCalculationController {
     private readonly formulaValidation: FormulaValidationService,
     private readonly guildSettingsService: GuildSettingsService,
     private readonly settingsDefaults: SettingsDefaultsService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

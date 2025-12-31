@@ -22,7 +22,7 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
-import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 
 @ApiTags('Guild Members')
 @Controller('api/guilds/:guildId/members')
@@ -33,7 +33,7 @@ export class GuildMembersController {
 
   constructor(
     private guildMembersService: GuildMembersService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

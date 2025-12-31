@@ -5,7 +5,7 @@ import {
   ForbiddenException,
   Inject,
 } from '@nestjs/common';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TrackerService } from './tracker.service';
 import { TrackerValidationService } from './tracker-validation.service';
@@ -43,7 +43,7 @@ export class TrackerProcessingService {
     private readonly batchProcessor: TrackerBatchProcessorService,
     private readonly processingGuard: TrackerProcessingGuardService,
     private readonly scrapingQueueService: TrackerScrapingQueueService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

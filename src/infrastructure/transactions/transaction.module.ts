@@ -19,13 +19,13 @@ import { ITransactionService } from './interfaces/transaction.interface';
   imports: [PrismaModule],
   providers: [
     {
-      provide: 'ITransactionService',
+      provide: ITransactionService,
       useFactory: (prisma: PrismaService): ITransactionService => {
         return new InAppTransactionService(prisma);
       },
       inject: [PrismaService],
     },
   ],
-  exports: ['ITransactionService'],
+  exports: [ITransactionService],
 })
 export class TransactionModule {}

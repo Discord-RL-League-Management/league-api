@@ -3,7 +3,7 @@ import {
   InternalServerErrorException,
   Inject,
 } from '@nestjs/common';
-import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 import { CreateGuildDto } from './dto/create-guild.dto';
 import { UpdateGuildDto } from './dto/update-guild.dto';
 import { SettingsDefaultsService } from './services/settings-defaults.service';
@@ -32,7 +32,7 @@ export class GuildsService {
     private settingsDefaults: SettingsDefaultsService,
     private guildRepository: GuildRepository,
     private errorHandler: GuildErrorHandlerService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

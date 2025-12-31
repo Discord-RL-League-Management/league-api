@@ -1,5 +1,5 @@
 import { Injectable, BadRequestException, Inject } from '@nestjs/common';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { create, all, MathJsInstance } from 'mathjs';
 import { FormulaValidationService } from './formula-validation.service';
 import { MmrCalculationConfig } from '../../guilds/interfaces/settings.interface';
@@ -31,7 +31,7 @@ export class MmrCalculationService {
 
   constructor(
     private readonly formulaValidation: FormulaValidationService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {
     this.math = create(all);

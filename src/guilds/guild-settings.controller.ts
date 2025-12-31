@@ -25,7 +25,7 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../common/interfaces/user.interface';
-import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 
 @ApiTags('Guild Settings')
 @Controller('api/guilds/:guildId/settings')
@@ -37,7 +37,7 @@ export class GuildSettingsController {
   constructor(
     private guildSettingsService: GuildSettingsService,
     private guildAccessValidationService: GuildAccessValidationService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

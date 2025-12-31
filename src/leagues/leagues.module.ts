@@ -24,6 +24,7 @@ import { LeaguePermissionService } from './services/league-permission.service';
 import { LeagueRepository } from './repositories/league.repository';
 
 import { LeagueSettingsProviderAdapter } from './adapters/league-settings-provider.adapter';
+import { ILeagueSettingsProvider } from '../league-members/interfaces/league-settings-provider.interface';
 
 @Module({
   imports: [
@@ -53,7 +54,7 @@ import { LeagueSettingsProviderAdapter } from './adapters/league-settings-provid
     LeagueRepository,
     // Provide adapter with injection token for LeagueMembersModule
     {
-      provide: 'ILeagueSettingsProvider',
+      provide: ILeagueSettingsProvider,
       useClass: LeagueSettingsProviderAdapter,
     },
   ],
@@ -63,7 +64,7 @@ import { LeagueSettingsProviderAdapter } from './adapters/league-settings-provid
     LeagueSettingsDefaultsService,
     LeaguePermissionService,
     LeagueRepository,
-    'ILeagueSettingsProvider', // Export token for LeagueMembersModule
+    ILeagueSettingsProvider, // Export token for LeagueMembersModule
   ],
 })
 export class LeaguesModule {}

@@ -4,7 +4,7 @@ import {
   ForbiddenException,
   Inject,
 } from '@nestjs/common';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { GuildMembersService } from '../../guild-members/guild-members.service';
 import { GuildsService } from '../guilds.service';
 import { TokenManagementService } from '../../auth/services/token-management.service';
@@ -26,7 +26,7 @@ export class GuildAccessValidationService {
     private guildsService: GuildsService,
     private tokenManagementService: TokenManagementService,
     private discordApiService: DiscordApiService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

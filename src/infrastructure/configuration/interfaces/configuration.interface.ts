@@ -1,3 +1,5 @@
+import type { InjectionToken } from '@nestjs/common';
+
 /**
  * IConfigurationService - Interface for configuration access operations
  *
@@ -18,3 +20,7 @@ export interface IConfigurationService {
    */
   get<T>(key: string, defaultValue?: T): T | undefined;
 }
+
+export const IConfigurationService = Symbol(
+  'IConfigurationService',
+) as InjectionToken<IConfigurationService>;

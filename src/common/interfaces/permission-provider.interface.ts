@@ -1,3 +1,4 @@
+import type { InjectionToken } from '@nestjs/common';
 import { GuildSettings } from '../../guilds/interfaces/settings.interface';
 
 /**
@@ -23,3 +24,7 @@ export interface IPermissionProvider {
     validateWithDiscord: boolean,
   ): Promise<boolean>;
 }
+
+export const IPermissionProvider = Symbol(
+  'IPermissionProvider',
+) as InjectionToken<IPermissionProvider>;

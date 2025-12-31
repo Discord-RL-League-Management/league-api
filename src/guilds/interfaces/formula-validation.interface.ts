@@ -1,3 +1,5 @@
+import type { InjectionToken } from '@nestjs/common';
+
 /**
  * IFormulaValidationService - Interface for formula validation
  *
@@ -17,3 +19,7 @@ export interface IFormulaValidationService {
     parsedExpression?: unknown;
   };
 }
+
+export const IFormulaValidationService = Symbol(
+  'IFormulaValidationService',
+) as InjectionToken<IFormulaValidationService>;

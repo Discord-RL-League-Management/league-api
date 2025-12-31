@@ -20,6 +20,10 @@ import { PermissionCheckService } from '../permissions/modules/permission-check/
 import { AuditLogService } from '../audit/services/audit-log.service';
 import { DiscordApiService } from '../discord/discord-api.service';
 import { TokenManagementService } from '../auth/services/token-management.service';
+import { IPermissionProvider } from '../common/interfaces/permission-provider.interface';
+import { IAuditProvider } from '../common/interfaces/audit-provider.interface';
+import { IDiscordProvider } from '../common/interfaces/discord-provider.interface';
+import { ITokenProvider } from '../common/interfaces/token-provider.interface';
 
 /**
  * GuardsModule - Single Responsibility: Provides authentication and authorization guards
@@ -59,28 +63,28 @@ import { TokenManagementService } from '../auth/services/token-management.servic
   providers: [
     ResourceOwnershipGuard,
     {
-      provide: 'IPermissionProvider',
+      provide: IPermissionProvider,
       useFactory: (permissionCheckService: PermissionCheckService) => {
         return new PermissionProviderAdapter(permissionCheckService);
       },
       inject: [PermissionCheckService],
     },
     {
-      provide: 'IAuditProvider',
+      provide: IAuditProvider,
       useFactory: (auditLogService: AuditLogService) => {
         return new AuditProviderAdapter(auditLogService);
       },
       inject: [AuditLogService],
     },
     {
-      provide: 'IDiscordProvider',
+      provide: IDiscordProvider,
       useFactory: (discordApiService: DiscordApiService) => {
         return new DiscordProviderAdapter(discordApiService);
       },
       inject: [DiscordApiService],
     },
     {
-      provide: 'ITokenProvider',
+      provide: ITokenProvider,
       useFactory: (tokenManagementService: TokenManagementService) => {
         return new TokenProviderAdapter(tokenManagementService);
       },
@@ -95,10 +99,10 @@ import { TokenManagementService } from '../auth/services/token-management.servic
     AdminGuard,
     SystemAdminGuard,
     GuildAdminGuard,
-    'IPermissionProvider',
-    'IAuditProvider',
-    'IDiscordProvider',
-    'ITokenProvider',
+    IPermissionProvider,
+    IAuditProvider,
+    IDiscordProvider,
+    ITokenProvider,
   ],
 })
 export class GuardsModule {}

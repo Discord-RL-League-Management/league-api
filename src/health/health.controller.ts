@@ -9,7 +9,7 @@ import { PrismaHealthIndicator } from '@nestjs/terminus';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import type { IConfigurationService } from '../infrastructure/configuration/interfaces/configuration.interface';
+import { IConfigurationService } from '../infrastructure/configuration/interfaces/configuration.interface';
 import { DiscordApiHealthIndicator } from './indicators/discord-api.health';
 import { Public } from '../common/decorators';
 
@@ -24,7 +24,7 @@ export class HealthController {
     private memory: MemoryHealthIndicator,
     private disk: DiskHealthIndicator,
     private discordApi: DiscordApiHealthIndicator,
-    @Inject('IConfigurationService')
+    @Inject(IConfigurationService)
     private configService: IConfigurationService,
   ) {}
 

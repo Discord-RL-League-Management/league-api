@@ -27,7 +27,7 @@ import type { Cache } from 'cache-manager';
   ],
   providers: [
     {
-      provide: 'ICachingService',
+      provide: ICachingService,
       useFactory: (
         configService: ConfigService,
         cache: Cache,
@@ -41,6 +41,6 @@ import type { Cache } from 'cache-manager';
       inject: [ConfigService, CACHE_MANAGER],
     },
   ],
-  exports: ['ICachingService'],
+  exports: [ICachingService],
 })
 export class CachingModule {}

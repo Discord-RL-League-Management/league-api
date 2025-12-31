@@ -35,7 +35,7 @@ import type { TrackerQueryOptions } from '../interfaces/tracker-query.options';
 import { TrackerQueryDto } from '../dto/tracker-query.dto';
 import { TrackerAuthorizationService } from '../services/tracker-authorization.service';
 import { TrackerResponseMapperService } from '../services/tracker-response-mapper.service';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 
 @ApiTags('Trackers')
 @Controller('api/trackers')
@@ -50,7 +50,7 @@ export class TrackerController {
     private readonly snapshotService: TrackerSnapshotService,
     private readonly trackerAuthorizationService: TrackerAuthorizationService,
     private readonly responseMapper: TrackerResponseMapperService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

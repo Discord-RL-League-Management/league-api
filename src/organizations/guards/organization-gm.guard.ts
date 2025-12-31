@@ -8,7 +8,7 @@ import {
 import { OrganizationMemberService } from '../services/organization-member.service';
 import type { AuthenticatedUser } from '../../common/interfaces/user.interface';
 import type { Request } from 'express';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 
 interface RequestWithUser extends Request {
   user: AuthenticatedUser | { type: 'bot'; id: string };
@@ -25,7 +25,7 @@ export class OrganizationGmGuard implements CanActivate {
 
   constructor(
     private organizationMemberService: OrganizationMemberService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

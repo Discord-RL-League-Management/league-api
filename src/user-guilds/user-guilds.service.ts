@@ -1,12 +1,12 @@
 import { Injectable, Inject } from '@nestjs/common';
-import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 import { GuildMembersService } from '../guild-members/guild-members.service';
 import { DiscordApiService } from '../discord/discord-api.service';
 import { TokenManagementService } from '../auth/services/token-management.service';
 import { PermissionCheckService } from '../permissions/modules/permission-check/permission-check.service';
 import { GuildsService } from '../guilds/guilds.service';
 import { UserGuild } from './interfaces/user-guild.interface';
-import type { ICachingService } from '../infrastructure/caching/interfaces/caching.interface';
+import { ICachingService } from '../infrastructure/caching/interfaces/caching.interface';
 import { GuildSettings } from '../guilds/interfaces/settings.interface';
 
 interface DiscordGuild {
@@ -29,8 +29,8 @@ export class UserGuildsService {
     private discordApiService: DiscordApiService,
     private tokenManagementService: TokenManagementService,
     private permissionCheckService: PermissionCheckService,
-    @Inject('ICachingService') private cachingService: ICachingService,
-    @Inject('ILoggingService')
+    @Inject(ICachingService) private cachingService: ICachingService,
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {
     this.cacheTtl = 300; // 5 minutes cache TTL

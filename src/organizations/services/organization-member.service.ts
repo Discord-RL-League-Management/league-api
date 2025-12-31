@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { OrganizationRepository } from '../repositories/organization.repository';
 import { OrganizationValidationService } from './organization-validation.service';
 import { UpdateOrganizationMemberDto } from '../dto/update-organization-member.dto';
@@ -19,7 +19,7 @@ export class OrganizationMemberService {
   constructor(
     private organizationRepository: OrganizationRepository,
     private validationService: OrganizationValidationService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

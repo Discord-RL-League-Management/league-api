@@ -4,10 +4,10 @@ import {
   NotFoundException,
   Inject,
 } from '@nestjs/common';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import type {
+import {
   ITransactionService,
   ITransactionClient,
 } from '../../infrastructure/transactions/interfaces/transaction.interface';
@@ -37,9 +37,9 @@ export class GuildSyncService {
     private errorHandler: GuildErrorHandlerService,
     private userRepository: UserRepository,
     private settingsService: SettingsService,
-    @Inject('ITransactionService')
+    @Inject(ITransactionService)
     private transactionService: ITransactionService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

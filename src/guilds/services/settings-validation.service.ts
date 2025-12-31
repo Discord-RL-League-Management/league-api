@@ -1,9 +1,9 @@
 import { Injectable, BadRequestException, Inject } from '@nestjs/common';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { DiscordBotService } from '../../discord/discord-bot.service';
 import { GuildSettingsDto } from '../dto/guild-settings.dto';
 import { MAX_CHANNEL_NAME_LENGTH } from '../constants/settings.constants';
-import type { IFormulaValidationService } from '../interfaces/formula-validation.interface';
+import { IFormulaValidationService } from '../interfaces/formula-validation.interface';
 import {
   ChannelConfig,
   MmrCalculationConfig,
@@ -16,9 +16,9 @@ export class SettingsValidationService {
 
   constructor(
     private discordValidation: DiscordBotService,
-    @Inject('IFormulaValidationService')
+    @Inject(IFormulaValidationService)
     private formulaValidation: IFormulaValidationService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

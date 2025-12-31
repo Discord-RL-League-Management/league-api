@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TrackerData } from './mmr-calculation.service';
 import { PlaylistData } from '../../trackers/interfaces/scraper.interfaces';
@@ -15,7 +15,7 @@ export class TrackerDataExtractionService {
 
   constructor(
     private readonly prisma: PrismaService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

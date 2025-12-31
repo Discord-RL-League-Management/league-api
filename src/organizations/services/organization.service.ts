@@ -6,10 +6,10 @@ import {
   Inject,
   forwardRef,
 } from '@nestjs/common';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { OrganizationRepository } from '../repositories/organization.repository';
 import { OrganizationMemberService } from './organization-member.service';
-import type {
+import {
   ITransactionService,
   ITransactionClient,
 } from '../../infrastructure/transactions/interfaces/transaction.interface';
@@ -46,9 +46,9 @@ export class OrganizationService {
     private leagueSettingsService: LeagueSettingsService,
     private teamRepository: TeamRepository,
     private prisma: PrismaService,
-    @Inject('ITransactionService')
+    @Inject(ITransactionService)
     private transactionService: ITransactionService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

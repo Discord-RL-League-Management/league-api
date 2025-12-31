@@ -17,8 +17,8 @@ import {
 import { SkipThrottle } from '@nestjs/throttler';
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
-import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
-import type { IConfigurationService } from '../infrastructure/configuration/interfaces/configuration.interface';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
+import { IConfigurationService } from '../infrastructure/configuration/interfaces/configuration.interface';
 import { DiscordOAuthService } from './services/discord-oauth.service';
 import { DiscordApiService } from '../discord/discord-api.service';
 import { AuthOrchestrationService } from './services/auth-orchestration.service';
@@ -40,9 +40,9 @@ export class AuthController {
     private discordApiService: DiscordApiService,
     private authOrchestrationService: AuthOrchestrationService,
     private tokenManagementService: TokenManagementService,
-    @Inject('IConfigurationService')
+    @Inject(IConfigurationService)
     private configService: IConfigurationService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

@@ -1,3 +1,5 @@
+import type { InjectionToken } from '@nestjs/common';
+
 /**
  * IMetricsService - Interface for metrics collection operations
  *
@@ -53,3 +55,7 @@ export interface IMetricsService {
     tags?: Record<string, string>,
   ): void;
 }
+
+export const IMetricsService = Symbol(
+  'IMetricsService',
+) as InjectionToken<IMetricsService>;

@@ -1,8 +1,8 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Organization, OrganizationMember, Prisma } from '@prisma/client';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
-import type {
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import {
   ITransactionService,
   ITransactionClient,
 } from '../../infrastructure/transactions/interfaces/transaction.interface';
@@ -28,9 +28,9 @@ export class OrganizationRepository
 
   constructor(
     private prisma: PrismaService,
-    @Inject('ITransactionService')
+    @Inject(ITransactionService)
     private transactionService: ITransactionService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

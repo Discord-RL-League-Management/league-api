@@ -17,8 +17,8 @@ import {
   createMockConfigurationService,
   createMockLoggingService,
 } from '@tests/utils/test-helpers';
-import type { IConfigurationService } from '@/infrastructure/configuration/interfaces/configuration.interface';
-import type { ILoggingService } from '@/infrastructure/logging/interfaces/logging.interface';
+import { IConfigurationService } from '@/infrastructure/configuration/interfaces/configuration.interface';
+import { ILoggingService } from '@/infrastructure/logging/interfaces/logging.interface';
 
 describe('TrackerBatchProcessorService', () => {
   let service: TrackerBatchProcessorService;

@@ -5,7 +5,7 @@ import {
   OnApplicationShutdown,
   Inject,
 } from '@nestjs/common';
-import type { ILoggingService } from '../../logging/interfaces/logging.interface';
+import { ILoggingService } from '../../logging/interfaces/logging.interface';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { OutboxStatus } from '@prisma/client';
@@ -33,7 +33,7 @@ export class OutboxProcessorService
     private readonly outboxService: OutboxService,
     private readonly eventDispatcher: OutboxEventDispatcher,
     private readonly configService: ConfigService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {
     this.pollIntervalMs =
