@@ -26,7 +26,7 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { ParseCUIDPipe } from '../common/pipes';
-import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 
 @ApiTags('Internal Leagues')
 @Controller('internal/leagues')
@@ -39,7 +39,7 @@ export class InternalLeaguesController {
   constructor(
     private leaguesService: LeaguesService,
     private leagueSettingsService: LeagueSettingsService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

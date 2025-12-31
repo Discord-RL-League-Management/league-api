@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { DiscordApiService } from '../../discord/discord-api.service';
 import { UserGuildsService } from '../../user-guilds/user-guilds.service';
 import { GuildsService } from '../../guilds/guilds.service';
@@ -23,7 +23,7 @@ export class AuthOrchestrationService {
     private readonly discordApiService: DiscordApiService,
     private readonly userGuildsService: UserGuildsService,
     private readonly guildsService: GuildsService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

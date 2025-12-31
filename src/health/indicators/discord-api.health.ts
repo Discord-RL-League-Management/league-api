@@ -3,13 +3,13 @@ import {
   HealthIndicatorService,
   HealthIndicatorResult,
 } from '@nestjs/terminus';
-import type { IConfigurationService } from '../../infrastructure/configuration/interfaces/configuration.interface';
+import { IConfigurationService } from '../../infrastructure/configuration/interfaces/configuration.interface';
 
 @Injectable()
 export class DiscordApiHealthIndicator {
   constructor(
     private healthIndicatorService: HealthIndicatorService,
-    @Inject('IConfigurationService')
+    @Inject(IConfigurationService)
     private configService: IConfigurationService,
   ) {}
 

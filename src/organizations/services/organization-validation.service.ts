@@ -1,5 +1,5 @@
 import { Injectable, Inject, forwardRef } from '@nestjs/common';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { OrganizationRepository } from '../repositories/organization.repository';
 import { LeagueRepository } from '../../leagues/repositories/league.repository';
 import { PlayerService } from '../../players/services/player.service';
@@ -29,7 +29,7 @@ export class OrganizationValidationService {
     private organizationRepository: OrganizationRepository,
     private leagueRepository: LeagueRepository,
     private playerService: PlayerService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
     @Inject(forwardRef(() => LeagueSettingsService))
     private leagueSettingsService: LeagueSettingsService,

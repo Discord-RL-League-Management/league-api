@@ -1,5 +1,5 @@
 import { Injectable, BadRequestException, Inject } from '@nestjs/common';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 
 @Injectable()
 export class TrackerUrlConverterService {
@@ -10,7 +10,7 @@ export class TrackerUrlConverterService {
     'https://api.tracker.gg/api/v2/rocket-league/standard/profile';
 
   constructor(
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

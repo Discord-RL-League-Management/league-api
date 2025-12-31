@@ -1,3 +1,5 @@
+import type { InjectionToken } from '@nestjs/common';
+
 /**
  * IRateLimitingService - Interface for rate limiting operations
  *
@@ -26,3 +28,7 @@ export interface IRateLimitingService {
    */
   increment(key: string, ttl: number): Promise<number>;
 }
+
+export const IRateLimitingService = Symbol(
+  'IRateLimitingService',
+) as InjectionToken<IRateLimitingService>;

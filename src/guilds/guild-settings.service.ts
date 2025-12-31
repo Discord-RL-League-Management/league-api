@@ -5,19 +5,19 @@ import {
   Inject,
 } from '@nestjs/common';
 import { GuildSettingsDto } from './dto/guild-settings.dto';
-import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 import { SettingsDefaultsService } from './services/settings-defaults.service';
 import { SettingsValidationService } from './services/settings-validation.service';
 import { ConfigMigrationService } from './services/config-migration.service';
 import { SETTINGS_CACHE_TTL } from './constants/settings.constants';
-import type { ICachingService } from '../infrastructure/caching/interfaces/caching.interface';
+import { ICachingService } from '../infrastructure/caching/interfaces/caching.interface';
 import { GuildSettings } from './interfaces/settings.interface';
 import { GuildRepository } from './repositories/guild.repository';
 import { SettingsService } from '../infrastructure/settings/services/settings.service';
 import { ActivityLogService } from '../infrastructure/activity-log/services/activity-log.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
-import type {
+import {
   ITransactionService,
   ITransactionClient,
 } from '../infrastructure/transactions/interfaces/transaction.interface';
@@ -34,10 +34,10 @@ export class GuildSettingsService {
     private settingsService: SettingsService,
     private activityLogService: ActivityLogService,
     private prisma: PrismaService,
-    @Inject('ICachingService') private cachingService: ICachingService,
-    @Inject('ITransactionService')
+    @Inject(ICachingService) private cachingService: ICachingService,
+    @Inject(ITransactionService)
     private transactionService: ITransactionService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

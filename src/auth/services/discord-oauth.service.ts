@@ -1,7 +1,7 @@
 import { Injectable, HttpException, HttpStatus, Inject } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import type { IConfigurationService } from '../../infrastructure/configuration/interfaces/configuration.interface';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { IConfigurationService } from '../../infrastructure/configuration/interfaces/configuration.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { firstValueFrom } from 'rxjs';
 
 interface DiscordTokenResponse {
@@ -23,10 +23,10 @@ export class DiscordOAuthService {
   private readonly tokenUrl = 'https://discord.com/api/oauth2/token';
 
   constructor(
-    @Inject('IConfigurationService')
+    @Inject(IConfigurationService)
     private configService: IConfigurationService,
     private httpService: HttpService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {
     this.clientId = this.configService.get<string>('discord.clientId')!;

@@ -13,7 +13,7 @@ import { GuildMembersService } from '../guild-members/guild-members.service';
 import { GuildSettingsService } from '../guilds/guild-settings.service';
 import type { AuthenticatedUser } from '../common/interfaces/user.interface';
 import { GuildSettings } from '../guilds/interfaces/settings.interface';
-import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 
 /**
  * Permissions Controller - Single Responsibility: Handle HTTP requests for permission state
@@ -31,7 +31,7 @@ export class PermissionsController {
     private permissionCheckService: PermissionCheckService,
     private guildMembersService: GuildMembersService,
     private guildSettingsService: GuildSettingsService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

@@ -28,7 +28,7 @@ import {
   ApiBearerAuth,
   ApiParam,
 } from '@nestjs/swagger';
-import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 
 @ApiTags('Internal Guilds')
 @Controller('internal/guilds')
@@ -42,7 +42,7 @@ export class InternalGuildsController {
     private guildsService: GuildsService,
     private guildSettingsService: GuildSettingsService,
     private guildSyncService: GuildSyncService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

@@ -1,3 +1,4 @@
+import type { InjectionToken } from '@nestjs/common';
 import { LeagueConfiguration } from '../../leagues/interfaces/league-settings.interface';
 
 /**
@@ -14,3 +15,7 @@ export interface ILeagueSettingsProvider {
    */
   getSettings(leagueId: string): Promise<LeagueConfiguration>;
 }
+
+export const ILeagueSettingsProvider = Symbol(
+  'ILeagueSettingsProvider',
+) as InjectionToken<ILeagueSettingsProvider>;

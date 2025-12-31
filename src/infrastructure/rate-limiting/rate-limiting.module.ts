@@ -27,7 +27,7 @@ import type { Cache } from 'cache-manager';
   ],
   providers: [
     {
-      provide: 'IRateLimitingService',
+      provide: IRateLimitingService,
       useFactory: (
         configService: ConfigService,
         cache: Cache,
@@ -41,6 +41,6 @@ import type { Cache } from 'cache-manager';
       inject: [ConfigService, CACHE_MANAGER],
     },
   ],
-  exports: ['IRateLimitingService'],
+  exports: [IRateLimitingService],
 })
 export class RateLimitingModule {}

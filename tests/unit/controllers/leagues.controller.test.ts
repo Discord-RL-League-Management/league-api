@@ -20,6 +20,7 @@ import { UpdateLeagueDto } from '@/leagues/dto/update-league.dto';
 import { LeagueStatus, Game } from '@prisma/client';
 import type { AuthenticatedUser } from '@/common/interfaces/user.interface';
 import { createMockLoggingService } from '@tests/utils/test-helpers';
+import { ILoggingService } from '@/infrastructure/logging/interfaces/logging.interface';
 
 describe('LeaguesController', () => {
   let controller: LeaguesController;
@@ -81,7 +82,7 @@ describe('LeaguesController', () => {
           provide: LeaguePermissionService,
           useValue: mockLeaguePermissionService,
         },
-        { provide: 'ILoggingService', useValue: mockLoggingService },
+        { provide: ILoggingService, useValue: mockLoggingService },
       ],
     }).compile();
 

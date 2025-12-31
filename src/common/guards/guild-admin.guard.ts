@@ -12,7 +12,7 @@ import { PermissionCheckService } from '../../permissions/modules/permission-che
 import { GuildSettings } from '../../guilds/interfaces/settings.interface';
 import type { AuthenticatedUser } from '../interfaces/user.interface';
 import type { Request } from 'express';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 
 interface RequestWithUser extends Request {
   user: AuthenticatedUser;
@@ -41,7 +41,7 @@ export class GuildAdminGuard implements CanActivate {
     private readonly guildMembersService: GuildMembersService,
     private readonly guildSettingsService: GuildSettingsService,
     private readonly permissionCheckService: PermissionCheckService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

@@ -1,7 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
-import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 
 @Injectable()
 export class EncryptionService {
@@ -15,7 +15,7 @@ export class EncryptionService {
 
   constructor(
     private configService: ConfigService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 
@@ -41,7 +41,6 @@ export class EncryptionService {
 
   /**
    * Encrypt sensitive data (refresh tokens)
-   * Single Responsibility: Data encryption
    */
   encrypt(text: string): string {
     if (!text) {
@@ -55,7 +54,6 @@ export class EncryptionService {
 
       const cipher = crypto.createCipheriv(this.algorithm, key, iv);
 
-      // Encrypt data
       const encrypted = Buffer.concat([
         cipher.update(text, 'utf8'),
         cipher.final(),
@@ -63,7 +61,6 @@ export class EncryptionService {
 
       const tag = cipher.getAuthTag();
 
-      // Combine: salt + iv + tag + encrypted data
       const combined = Buffer.concat([salt, iv, tag, encrypted]);
 
       return combined.toString('base64');
@@ -79,7 +76,6 @@ export class EncryptionService {
 
   /**
    * Decrypt sensitive data (refresh tokens)
-   * Single Responsibility: Data decryption
    */
   decrypt(encryptedText: string): string {
     if (!encryptedText) {
@@ -89,7 +85,6 @@ export class EncryptionService {
     try {
       const combined = Buffer.from(encryptedText, 'base64');
 
-      // Extract components
       // Skip salt bytes (salt is stored but not used in decryption - key is derived from config)
       combined.subarray(0, this.saltLength);
       const iv = combined.subarray(
@@ -107,7 +102,6 @@ export class EncryptionService {
       const decipher = crypto.createDecipheriv(this.algorithm, key, iv);
       decipher.setAuthTag(tag);
 
-      // Decrypt data
       const decrypted = Buffer.concat([
         decipher.update(encrypted),
         decipher.final(),
@@ -126,7 +120,6 @@ export class EncryptionService {
 
   /**
    * Check if data is encrypted
-   * Single Responsibility: Encryption state detection
    */
   isEncrypted(data: string): boolean {
     if (!data) {

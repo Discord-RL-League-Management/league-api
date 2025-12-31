@@ -4,10 +4,10 @@ import {
   ServiceUnavailableException,
   Inject,
 } from '@nestjs/common';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom, retry, catchError } from 'rxjs';
-import type { IConfigurationService } from '../../infrastructure/configuration/interfaces/configuration.interface';
+import { IConfigurationService } from '../../infrastructure/configuration/interfaces/configuration.interface';
 import { AxiosError, AxiosResponse } from 'axios';
 import { TrackerUrlConverterService } from './tracker-url-converter.service';
 import {
@@ -52,10 +52,10 @@ export class TrackerScraperService {
 
   constructor(
     private readonly httpService: HttpService,
-    @Inject('IConfigurationService')
+    @Inject(IConfigurationService)
     private readonly configService: IConfigurationService,
     private readonly urlConverter: TrackerUrlConverterService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {
     const flaresolverrConfig = this.configService.get<{

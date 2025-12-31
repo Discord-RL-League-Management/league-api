@@ -1,7 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import type { IConfigurationService } from '../../infrastructure/configuration/interfaces/configuration.interface';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { IConfigurationService } from '../../infrastructure/configuration/interfaces/configuration.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { TrackerRepository } from '../repositories/tracker.repository';
 import { TrackerScrapingQueueService } from '../queues/tracker-scraping.queue';
 import { TrackerProcessingGuardService } from './tracker-processing-guard.service';
@@ -23,9 +23,9 @@ export class TrackerBatchProcessorService {
     private readonly trackerRepository: TrackerRepository,
     private readonly scrapingQueueService: TrackerScrapingQueueService,
     private readonly processingGuard: TrackerProcessingGuardService,
-    @Inject('IConfigurationService')
+    @Inject(IConfigurationService)
     private readonly configService: IConfigurationService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {
     const trackerConfig = this.configService.get<{

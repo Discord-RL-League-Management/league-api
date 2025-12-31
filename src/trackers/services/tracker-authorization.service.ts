@@ -1,5 +1,5 @@
 import { Injectable, ForbiddenException, Inject } from '@nestjs/common';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { GuildMembersService } from '../../guild-members/guild-members.service';
 import { PermissionCheckService } from '../../permissions/modules/permission-check/permission-check.service';
 import { GuildSettingsService } from '../../guilds/guild-settings.service';
@@ -30,7 +30,7 @@ export class TrackerAuthorizationService {
     private guildMembersService: GuildMembersService,
     private permissionCheckService: PermissionCheckService,
     private guildSettingsService: GuildSettingsService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

@@ -1,7 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import type { IConfigurationService } from '../../infrastructure/configuration/interfaces/configuration.interface';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { IConfigurationService } from '../../infrastructure/configuration/interfaces/configuration.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { DiscordMessageService } from './discord-message.service';
 import { NotificationBuilderService } from './notification-builder.service';
 
@@ -11,12 +11,12 @@ export class TrackerNotificationService {
   private readonly frontendUrl: string;
 
   constructor(
-    @Inject('IConfigurationService')
+    @Inject(IConfigurationService)
     private readonly configService: IConfigurationService,
     private readonly prisma: PrismaService,
     private readonly discordMessageService: DiscordMessageService,
     private readonly notificationBuilderService: NotificationBuilderService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {
     this.frontendUrl = this.configService.get<string>('frontend.url') || '';

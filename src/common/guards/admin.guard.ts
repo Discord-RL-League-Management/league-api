@@ -9,12 +9,12 @@ import { AuditAction } from '../../audit/interfaces/audit-event.interface';
 import { GuildSettings } from '../../guilds/interfaces/settings.interface';
 import type { AuthenticatedUser } from '../interfaces/user.interface';
 import type { Request } from 'express';
-import type { IPermissionProvider } from '../interfaces/permission-provider.interface';
-import type { IAuditProvider } from '../interfaces/audit-provider.interface';
-import type { IDiscordProvider } from '../interfaces/discord-provider.interface';
-import type { ITokenProvider } from '../interfaces/token-provider.interface';
-import type { IGuildAccessProvider } from '../interfaces/guild-access-provider.interface';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { IPermissionProvider } from '../interfaces/permission-provider.interface';
+import { IAuditProvider } from '../interfaces/audit-provider.interface';
+import { IDiscordProvider } from '../interfaces/discord-provider.interface';
+import { ITokenProvider } from '../interfaces/token-provider.interface';
+import { IGuildAccessProvider } from '../interfaces/guild-access-provider.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 
 interface RequestWithUser extends Request {
   user: AuthenticatedUser | { type: 'bot'; id: string };
@@ -36,17 +36,17 @@ export class AdminGuard implements CanActivate {
    * and registered in CommonModule via dependency injection tokens.
    */
   constructor(
-    @Inject('IPermissionProvider')
+    @Inject(IPermissionProvider)
     private permissionProvider: IPermissionProvider,
-    @Inject('IAuditProvider')
+    @Inject(IAuditProvider)
     private auditProvider: IAuditProvider,
-    @Inject('IDiscordProvider')
+    @Inject(IDiscordProvider)
     private discordProvider: IDiscordProvider,
-    @Inject('ITokenProvider')
+    @Inject(ITokenProvider)
     private tokenProvider: ITokenProvider,
-    @Inject('IGuildAccessProvider')
+    @Inject(IGuildAccessProvider)
     private guildAccessProvider: IGuildAccessProvider,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

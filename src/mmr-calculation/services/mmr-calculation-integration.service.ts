@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MmrCalculationService, TrackerData } from './mmr-calculation.service';
 import { TrackerDataExtractionService } from './tracker-data-extraction.service';
@@ -22,7 +22,7 @@ export class MmrCalculationIntegrationService {
     private readonly trackerDataExtraction: TrackerDataExtractionService,
     private readonly settingsDefaults: SettingsDefaultsService,
     private readonly guildSettingsService: GuildSettingsService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

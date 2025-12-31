@@ -25,7 +25,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { BatchRefreshDto } from '../dto/batch-refresh.dto';
 import { TrackerScrapingStatus, Prisma, GamePlatform } from '@prisma/client';
 import { ParseCUIDPipe, ParseEnumPipe } from '../../common/pipes';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 
 @ApiTags('Admin - Trackers')
 @Controller('api/admin/trackers')
@@ -39,7 +39,7 @@ export class TrackerAdminController {
     private readonly trackerProcessingService: TrackerProcessingService,
     private readonly refreshScheduler: TrackerRefreshSchedulerService,
     private readonly prisma: PrismaService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

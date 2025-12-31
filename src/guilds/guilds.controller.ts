@@ -14,7 +14,7 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import type { AuthenticatedUser } from '../common/interfaces/user.interface';
-import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 
 @ApiTags('Guilds')
 @Controller('api/guilds')
@@ -28,7 +28,7 @@ export class GuildsController {
     private guildSettingsService: GuildSettingsService,
     private guildAccessValidationService: GuildAccessValidationService,
     private discordBotService: DiscordBotService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 
@@ -76,7 +76,6 @@ export class GuildsController {
       `User ${user.id} requested settings for guild ${id}`,
       this.serviceName,
     );
-    // GuildAdminGuard handles all permission checks
     return this.guildSettingsService.getSettings(id);
   }
 
@@ -96,7 +95,6 @@ export class GuildsController {
       `User ${user.id} requested channels for guild ${id}`,
       this.serviceName,
     );
-    // GuildAdminGuard handles all permission checks
     return this.discordBotService.getGuildChannels(id);
   }
 
@@ -116,7 +114,6 @@ export class GuildsController {
       `User ${user.id} requested roles for guild ${id}`,
       this.serviceName,
     );
-    // GuildAdminGuard handles all permission checks
     return this.discordBotService.getGuildRoles(id);
   }
 }

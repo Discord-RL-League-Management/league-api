@@ -31,7 +31,7 @@ import {
 } from '@nestjs/swagger';
 import type { AuthenticatedUser } from '../common/interfaces/user.interface';
 import { ParseCUIDPipe, ParseEnumPipe } from '../common/pipes';
-import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 
 @ApiTags('Leagues')
 @Controller('api/leagues')
@@ -44,7 +44,7 @@ export class LeaguesController {
     private leaguesService: LeaguesService,
     private leagueAccessValidationService: LeagueAccessValidationService,
     private leaguePermissionService: LeaguePermissionService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

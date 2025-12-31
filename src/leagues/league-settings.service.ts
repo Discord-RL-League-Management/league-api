@@ -5,8 +5,8 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { SettingsService } from '../infrastructure/settings/services/settings.service';
-import type { ICachingService } from '../infrastructure/caching/interfaces/caching.interface';
-import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
+import { ICachingService } from '../infrastructure/caching/interfaces/caching.interface';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 import { LeagueRepository } from './repositories/league.repository';
 import { LeagueSettingsDefaultsService } from './services/league-settings-defaults.service';
 import { SettingsValidationService } from './services/settings-validation.service';
@@ -36,13 +36,13 @@ export class LeagueSettingsService {
     private settingsDefaults: LeagueSettingsDefaultsService,
     private settingsValidation: SettingsValidationService,
     private configMigration: ConfigMigrationService,
-    @Inject('ICachingService') private cachingService: ICachingService,
+    @Inject(ICachingService) private cachingService: ICachingService,
     private prisma: PrismaService,
     @Inject(forwardRef(() => OrganizationService))
     private organizationService: OrganizationService,
     @Inject(forwardRef(() => TeamRepository))
     private teamRepository: TeamRepository,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {
     this.cacheTtl = 300; // 5 minutes cache TTL
@@ -185,7 +185,6 @@ export class LeagueSettingsService {
           mergedSettings as unknown as Prisma.InputJsonValue,
         );
 
-        // Invalidate cache after successful update
         const cacheKey = `league:${leagueId}:settings`;
         await this.cachingService.del(cacheKey);
 
@@ -251,7 +250,6 @@ export class LeagueSettingsService {
       await this.organizationService.findByLeagueId(leagueId);
 
     // If no organizations exist, create a default one
-    // Pass merged settings to validate against updated capacity limits
     let defaultOrgId: string;
     let createdDefaultOrg = false;
     if (organizations.length === 0) {
@@ -263,7 +261,7 @@ export class LeagueSettingsService {
           description: 'Default organization for teams without an organization',
         },
         'system', // System user ID for auto-creation
-        mergedSettings, // Pass merged settings for validation
+        mergedSettings,
       );
       defaultOrgId = defaultOrg.id;
       createdDefaultOrg = true;

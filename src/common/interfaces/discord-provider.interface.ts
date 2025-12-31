@@ -1,3 +1,5 @@
+import type { InjectionToken } from '@nestjs/common';
+
 /**
  * GuildPermissions - Result of guild permission check
  */
@@ -27,3 +29,7 @@ export interface IDiscordProvider {
     guildId: string,
   ): Promise<GuildPermissions>;
 }
+
+export const IDiscordProvider = Symbol(
+  'IDiscordProvider',
+) as InjectionToken<IDiscordProvider>;

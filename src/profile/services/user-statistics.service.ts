@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { Prisma } from '@prisma/client';
 import { GuildMemberRepository } from '../../guild-members/repositories/guild-member.repository';
 
@@ -15,7 +15,7 @@ export class UserStatisticsService {
 
   constructor(
     private guildMemberRepository: GuildMemberRepository,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

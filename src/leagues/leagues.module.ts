@@ -24,18 +24,19 @@ import { LeaguePermissionService } from './services/league-permission.service';
 import { LeagueRepository } from './repositories/league.repository';
 
 import { LeagueSettingsProviderAdapter } from './adapters/league-settings-provider.adapter';
+import { ILeagueSettingsProvider } from '../league-members/interfaces/league-settings-provider.interface';
 
 @Module({
   imports: [
     PrismaModule,
-    InfrastructureModule, // Provides ICachingService
+    InfrastructureModule,
     AuthModule,
-    GuildsModule, // For GuildsService dependency
-    PlayersModule, // For PlayerService dependency
-    PermissionCheckModule, // For PermissionCheckService dependency
-    forwardRef(() => LeagueMembersModule), // Circular dependency: LeagueMembersModule also imports LeaguesModule for ILeagueSettingsProvider
-    forwardRef(() => OrganizationsModule), // For OrganizationService dependency (circular dependency resolved)
-    forwardRef(() => TeamsModule), // For TeamRepository dependency (circular dependency resolved)
+    GuildsModule,
+    PlayersModule,
+    PermissionCheckModule,
+    forwardRef(() => LeagueMembersModule),
+    forwardRef(() => OrganizationsModule),
+    forwardRef(() => TeamsModule),
   ],
   controllers: [
     LeaguesController,
@@ -51,9 +52,8 @@ import { LeagueSettingsProviderAdapter } from './adapters/league-settings-provid
     LeagueAccessValidationService,
     LeaguePermissionService,
     LeagueRepository,
-    // Provide adapter with injection token for LeagueMembersModule
     {
-      provide: 'ILeagueSettingsProvider',
+      provide: ILeagueSettingsProvider,
       useClass: LeagueSettingsProviderAdapter,
     },
   ],
@@ -63,7 +63,7 @@ import { LeagueSettingsProviderAdapter } from './adapters/league-settings-provid
     LeagueSettingsDefaultsService,
     LeaguePermissionService,
     LeagueRepository,
-    'ILeagueSettingsProvider', // Export token for LeagueMembersModule
+    ILeagueSettingsProvider,
   ],
 })
 export class LeaguesModule {}

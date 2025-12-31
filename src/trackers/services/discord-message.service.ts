@@ -1,7 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import type { IConfigurationService } from '../../infrastructure/configuration/interfaces/configuration.interface';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { IConfigurationService } from '../../infrastructure/configuration/interfaces/configuration.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { firstValueFrom } from 'rxjs';
 import { AxiosError } from 'axios';
 
@@ -20,9 +20,9 @@ export class DiscordMessageService {
 
   constructor(
     private readonly httpService: HttpService,
-    @Inject('IConfigurationService')
+    @Inject(IConfigurationService)
     private readonly configService: IConfigurationService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {
     this.botToken = this.configService.get<string>('discord.botToken') || '';

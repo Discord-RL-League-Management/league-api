@@ -5,8 +5,8 @@ import {
   Inject,
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import type { IConfigurationService } from '../infrastructure/configuration/interfaces/configuration.interface';
-import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
+import { IConfigurationService } from '../infrastructure/configuration/interfaces/configuration.interface';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 import {
   firstValueFrom,
   timeout,
@@ -51,9 +51,9 @@ export class DiscordApiService {
 
   constructor(
     private httpService: HttpService,
-    @Inject('IConfigurationService')
+    @Inject(IConfigurationService)
     private configService: IConfigurationService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {
     this.apiUrl =

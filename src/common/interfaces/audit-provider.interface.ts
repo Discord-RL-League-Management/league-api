@@ -1,3 +1,4 @@
+import type { InjectionToken } from '@nestjs/common';
 import type { Request } from 'express';
 import { AuditEvent } from '../../audit/interfaces/audit-event.interface';
 
@@ -16,3 +17,7 @@ export interface IAuditProvider {
    */
   logAdminAction(event: AuditEvent, request: Request): Promise<void>;
 }
+
+export const IAuditProvider = Symbol(
+  'IAuditProvider',
+) as InjectionToken<IAuditProvider>;

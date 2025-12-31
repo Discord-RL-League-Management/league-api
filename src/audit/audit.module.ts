@@ -22,10 +22,10 @@ import { AuditProviderAdapter } from './adapters/audit-provider.adapter';
     PrismaModule,
     forwardRef(() => InfrastructureModule),
     forwardRef(() => GuardsModule),
-    forwardRef(() => GuildAccessAdapterModule), // Required for AdminGuard (IGuildAccessProvider)
+    forwardRef(() => GuildAccessAdapterModule),
   ],
   providers: [AuditLogService, RequestContextService, AuditProviderAdapter],
   controllers: [AuditLogController],
-  exports: [AuditLogService, AuditProviderAdapter], // Export for use in other modules
+  exports: [AuditLogService, AuditProviderAdapter],
 })
 export class AuditModule {}

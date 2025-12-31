@@ -18,12 +18,12 @@ import { IMetricsService } from './interfaces/metrics.interface';
   imports: [ConfigModule],
   providers: [
     {
-      provide: 'IMetricsService',
+      provide: IMetricsService,
       useFactory: (): IMetricsService => {
         return new InAppMetricsService();
       },
     },
   ],
-  exports: ['IMetricsService'],
+  exports: [IMetricsService],
 })
 export class MetricsModule {}

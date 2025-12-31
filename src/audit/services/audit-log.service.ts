@@ -4,17 +4,16 @@ import { RequestContextService } from '../../common/services/request-context.ser
 import { AuditEvent } from '../interfaces/audit-event.interface';
 import { ActivityLogService } from '../../infrastructure/activity-log/services/activity-log.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
-import type {
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import {
   ITransactionService,
   ITransactionClient,
 } from '../../infrastructure/transactions/interfaces/transaction.interface';
 import { Prisma } from '@prisma/client';
 
 /**
- * Audit Log Service - Single Responsibility: Business logic for audit logging
+ * Audit Log Service - Business logic for audit logging
  *
- * Separation of Concerns: Business logic separate from persistence.
  * Coordinates between repository and context services.
  */
 @Injectable()
@@ -25,15 +24,14 @@ export class AuditLogService {
     private activityLogService: ActivityLogService,
     private contextService: RequestContextService,
     private prisma: PrismaService,
-    @Inject('ITransactionService')
+    @Inject(ITransactionService)
     private transactionService: ITransactionService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 
   /**
    * Log permission check event
-   * Single Responsibility: Log permission-related events
    */
   async logPermissionCheck(event: AuditEvent, request: Request): Promise<void> {
     try {
@@ -64,13 +62,11 @@ export class AuditLogService {
         _error instanceof Error ? _error.stack : undefined,
         this.serviceName,
       );
-      // Don't throw - audit logging failure shouldn't break the request
     }
   }
 
   /**
    * Log admin action event
-   * Single Responsibility: Log admin-related events
    */
   async logAdminAction(event: AuditEvent, request: Request): Promise<void> {
     try {
@@ -102,13 +98,11 @@ export class AuditLogService {
         error instanceof Error ? error.stack : undefined,
         this.serviceName,
       );
-      // Don't throw - audit logging failure shouldn't break the request
     }
   }
 
   /**
    * Query audit logs for a guild
-   * Single Responsibility: Retrieve audit logs with filters
    */
   async queryLogs(
     guildId: string,

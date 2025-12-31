@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { TeamRepository } from '../repositories/team.repository';
 import { TeamValidationService } from './team-validation.service';
 import { CreateTeamDto } from '../dto/create-team.dto';
@@ -13,7 +13,7 @@ export class TeamService {
   constructor(
     private teamRepository: TeamRepository,
     private teamValidationService: TeamValidationService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

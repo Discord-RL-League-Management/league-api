@@ -19,7 +19,7 @@ import { AdminGuard } from '../common/guards/admin.guard';
 import { AuditLogService } from './services/audit-log.service';
 import type { AuthenticatedUser } from '../common/interfaces/user.interface';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 
 /**
  * Audit Log Controller - Single Responsibility: Handle HTTP requests for audit logs
@@ -35,7 +35,7 @@ export class AuditLogController {
 
   constructor(
     private auditLogService: AuditLogService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

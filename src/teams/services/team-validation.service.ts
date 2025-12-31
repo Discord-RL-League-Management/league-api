@@ -4,7 +4,7 @@ import {
   NotFoundException,
   Inject,
 } from '@nestjs/common';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { LeagueSettingsService } from '../../leagues/league-settings.service';
 import { OrganizationRepository } from '../../organizations/repositories/organization.repository';
 import { OrganizationValidationService } from '../../organizations/services/organization-validation.service';
@@ -20,7 +20,7 @@ export class TeamValidationService {
     private leagueSettingsService: LeagueSettingsService,
     private organizationRepository: OrganizationRepository,
     private organizationValidationService: OrganizationValidationService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

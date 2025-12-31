@@ -14,6 +14,7 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { GuildSettingsService } from '@/guilds/guild-settings.service';
 import { GuildSettings } from '@/guilds/interfaces/settings.interface';
 import { createMockLoggingService } from '@tests/utils/test-helpers';
+import { ILoggingService } from '@/infrastructure/logging/interfaces/logging.interface';
 
 describe('TrackerProcessingGuardService', () => {
   let service: TrackerProcessingGuardService;
@@ -49,7 +50,7 @@ describe('TrackerProcessingGuardService', () => {
           useValue: mockGuildSettingsService,
         },
         {
-          provide: 'ILoggingService',
+          provide: ILoggingService,
           useValue: mockLoggingService,
         },
       ],

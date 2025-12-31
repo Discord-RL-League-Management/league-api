@@ -1,11 +1,11 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TrackerSeason, Prisma } from '@prisma/client';
-import type {
+import {
   ITransactionService,
   ITransactionClient,
 } from '../../infrastructure/transactions/interfaces/transaction.interface';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { SeasonData } from '../interfaces/scraper.interfaces';
 
 @Injectable()
@@ -14,9 +14,9 @@ export class TrackerSeasonService {
 
   constructor(
     private readonly prisma: PrismaService,
-    @Inject('ITransactionService')
+    @Inject(ITransactionService)
     private readonly transactionService: ITransactionService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

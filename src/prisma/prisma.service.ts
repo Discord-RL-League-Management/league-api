@@ -6,7 +6,7 @@ import {
   Inject,
 } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
-import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 
 /**
  * PrismaService - Manages database connections and ensures graceful shutdown
@@ -21,7 +21,7 @@ export class PrismaService
   private readonly serviceName = PrismaService.name;
 
   constructor(
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {
     super();

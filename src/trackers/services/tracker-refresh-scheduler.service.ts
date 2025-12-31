@@ -7,8 +7,8 @@ import {
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { CronJob } from 'cron';
 import { PrismaService } from '../../prisma/prisma.service';
-import type { IConfigurationService } from '../../infrastructure/configuration/interfaces/configuration.interface';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { IConfigurationService } from '../../infrastructure/configuration/interfaces/configuration.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { TrackerScrapingQueueService } from '../queues/tracker-scraping.queue';
 import { TrackerBatchRefreshService } from './tracker-batch-refresh.service';
 import { TrackerProcessingGuardService } from './tracker-processing-guard.service';
@@ -28,11 +28,11 @@ export class TrackerRefreshSchedulerService
     private readonly prisma: PrismaService,
     private readonly scrapingQueueService: TrackerScrapingQueueService,
     private readonly batchRefreshService: TrackerBatchRefreshService,
-    @Inject('IConfigurationService')
+    @Inject(IConfigurationService)
     private readonly configService: IConfigurationService,
     private readonly schedulerRegistry: SchedulerRegistry,
     private readonly processingGuard: TrackerProcessingGuardService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {
     const trackerConfig = this.configService.get<{

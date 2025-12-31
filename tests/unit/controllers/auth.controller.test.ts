@@ -21,6 +21,8 @@ import { TokenManagementService } from '@/auth/services/token-management.service
 import type { AuthenticatedUser } from '@/common/interfaces/user.interface';
 import type { Response } from 'express';
 import { createMockLoggingService } from '@tests/utils/test-helpers';
+import { ILoggingService } from '@/infrastructure/logging/interfaces/logging.interface';
+import { IConfigurationService } from '@/infrastructure/configuration/interfaces/configuration.interface';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -96,8 +98,8 @@ describe('AuthController', () => {
           provide: TokenManagementService,
           useValue: mockTokenManagementService,
         },
-        { provide: 'IConfigurationService', useValue: mockConfigService },
-        { provide: 'ILoggingService', useValue: mockLoggingService },
+        { provide: IConfigurationService, useValue: mockConfigService },
+        { provide: ILoggingService, useValue: mockLoggingService },
       ],
     }).compile();
 

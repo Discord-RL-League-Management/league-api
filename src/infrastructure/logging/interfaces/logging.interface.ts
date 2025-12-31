@@ -1,3 +1,5 @@
+import type { InjectionToken } from '@nestjs/common';
+
 /**
  * ILoggingService - Interface for logging operations
  *
@@ -46,3 +48,7 @@ export interface ILoggingService {
    */
   verbose(message: string, context?: string): void;
 }
+
+export const ILoggingService = Symbol(
+  'ILoggingService',
+) as InjectionToken<ILoggingService>;

@@ -25,7 +25,7 @@ import { UpdateLeagueMemberDto } from './dto/update-league-member.dto';
 import { ApproveLeagueMemberDto } from './dto/approve-league-member.dto';
 import { LeagueMemberNotFoundException } from './exceptions/league-member.exceptions';
 import type { LeagueMemberQueryOptions } from './interfaces/league-member.interface';
-import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 
 /**
  * InternalLeagueMembersController - Bot-only endpoints for league member management
@@ -40,7 +40,7 @@ export class InternalLeagueMembersController {
 
   constructor(
     private leagueMemberService: LeagueMemberService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

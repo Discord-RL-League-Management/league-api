@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { GuildSettings } from '../interfaces/settings.interface';
 import {
   CURRENT_SCHEMA_VERSION,
@@ -24,7 +24,7 @@ export class ConfigMigrationService {
 
   constructor(
     private readonly settingsDefaults: SettingsDefaultsService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

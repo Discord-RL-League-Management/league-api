@@ -2,8 +2,8 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { Injectable, Inject } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
-import type {
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import {
   ITransactionService,
   ITransactionClient,
 } from '../../infrastructure/transactions/interfaces/transaction.interface';
@@ -34,9 +34,9 @@ export class TrackerScrapingProcessor extends WorkerHost {
     private readonly notificationService: TrackerNotificationService,
     private readonly activityLogService: ActivityLogService,
     private readonly mmrCalculationIntegration: MmrCalculationIntegrationService,
-    @Inject('ITransactionService')
+    @Inject(ITransactionService)
     private readonly transactionService: ITransactionService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {
     super();

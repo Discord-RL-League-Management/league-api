@@ -24,7 +24,7 @@ import { CreatePlayerDto } from './dto/create-player.dto';
 import { UpdatePlayerDto } from './dto/update-player.dto';
 import type { PlayerQueryOptions } from './interfaces/player.interface';
 import { ParseCUIDPipe } from '../common/pipes';
-import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 
 /**
  * InternalPlayersController - Bot-only endpoints for full player management
@@ -39,7 +39,7 @@ export class InternalPlayersController {
 
   constructor(
     private playerService: PlayerService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

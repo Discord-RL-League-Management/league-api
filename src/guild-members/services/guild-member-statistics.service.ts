@@ -3,7 +3,7 @@ import {
   InternalServerErrorException,
   Inject,
 } from '@nestjs/common';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { GuildMemberRepository } from '../repositories/guild-member.repository';
 
 /**
@@ -18,7 +18,7 @@ export class GuildMemberStatisticsService {
 
   constructor(
     private guildMemberRepository: GuildMemberRepository,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

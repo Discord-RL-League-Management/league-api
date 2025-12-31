@@ -11,7 +11,7 @@ import {
 import { InternalRegisterTrackersDto } from './dto/register-trackers.dto';
 import { InternalAddTrackerDto } from './dto/add-tracker.dto';
 import { ProcessTrackersDto } from './dto/process-trackers.dto';
-import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 
 @ApiTags('Internal - Trackers')
 @Controller('internal/trackers')
@@ -23,7 +23,7 @@ export class InternalTrackerController {
 
   constructor(
     private readonly trackerProcessingService: TrackerProcessingService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

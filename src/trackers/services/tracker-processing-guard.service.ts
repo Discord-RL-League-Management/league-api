@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import type { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../../infrastructure/logging/interfaces/logging.interface';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GuildSettingsService } from '../../guilds/guild-settings.service';
 import { GuildSettings } from '../../guilds/interfaces/settings.interface';
@@ -19,7 +19,7 @@ export class TrackerProcessingGuardService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly guildSettingsService: GuildSettingsService,
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 

@@ -5,10 +5,10 @@ import {
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom, timeout, retry, catchError, throwError } from 'rxjs';
-import type { IConfigurationService } from '../infrastructure/configuration/interfaces/configuration.interface';
+import { IConfigurationService } from '../infrastructure/configuration/interfaces/configuration.interface';
 import { AxiosError } from 'axios';
-import type { ICachingService } from '../infrastructure/caching/interfaces/caching.interface';
-import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
+import { ICachingService } from '../infrastructure/caching/interfaces/caching.interface';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 
 export interface DiscordRole {
   id: string;
@@ -33,10 +33,10 @@ export class DiscordBotService {
 
   constructor(
     private httpService: HttpService,
-    @Inject('IConfigurationService')
+    @Inject(IConfigurationService)
     private configService: IConfigurationService,
-    @Inject('ICachingService') private cachingService: ICachingService,
-    @Inject('ILoggingService')
+    @Inject(ICachingService) private cachingService: ICachingService,
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {
     this.botToken = this.configService.get<string>('discord.botToken') || '';

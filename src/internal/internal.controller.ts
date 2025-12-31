@@ -2,7 +2,7 @@ import { Controller, Get, UseGuards, Inject } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { BotAuthGuard } from '../auth/guards/bot-auth.guard';
 import { HealthCheckResponseDto } from '../common/dto/health-check.dto';
-import type { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
+import { ILoggingService } from '../infrastructure/logging/interfaces/logging.interface';
 
 @Controller('internal')
 @UseGuards(BotAuthGuard)
@@ -11,7 +11,7 @@ export class InternalController {
   private readonly serviceName = InternalController.name;
 
   constructor(
-    @Inject('ILoggingService')
+    @Inject(ILoggingService)
     private readonly loggingService: ILoggingService,
   ) {}
 
