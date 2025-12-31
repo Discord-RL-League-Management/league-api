@@ -22,7 +22,6 @@ interface DiscordGuild {
 
 /**
  * AuthService - Orchestrates authentication flows
- * Single Responsibility: Coordinates authentication processes
  *
  * Delegates user operations to UserOrchestratorService,
  * keeping authentication logic separate from user management.
@@ -41,7 +40,6 @@ export class AuthService {
 
   /**
    * Validate and sync Discord user during OAuth flow
-   * Single Responsibility: OAuth user validation and synchronization
    */
   async validateDiscordUser(discordData: DiscordProfileDto): Promise<User> {
     const user = await this.userOrchestrator.upsertUserFromOAuth(discordData);
@@ -66,7 +64,7 @@ export class AuthService {
       globalName: user.globalName,
       avatar: user.avatar,
       email: user.email,
-      guilds: user.guilds?.map((g) => g.id) || [], // Only guild IDs
+      guilds: user.guilds?.map((g) => g.id) || [],
       // SECURITY: Never include OAuth tokens in JWT
     };
 
@@ -84,7 +82,6 @@ export class AuthService {
 
   /**
    * Get user's available guilds with proper error handling
-   * Single Responsibility: Guild data retrieval
    */
   async getUserAvailableGuilds(userId: string): Promise<UserGuild[]> {
     try {
@@ -103,7 +100,6 @@ export class AuthService {
 
   /**
    * Complete OAuth flow with guild synchronization
-   * Single Responsibility: OAuth completion orchestration
    */
   async completeOAuthFlow(
     userId: string,

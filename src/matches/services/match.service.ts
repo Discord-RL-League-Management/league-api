@@ -70,7 +70,6 @@ export class MatchService {
     });
   }
 
-  // Completes match and updates player stats/ratings atomically to maintain data consistency.
   async completeMatch(matchId: string, winnerId?: string) {
     const match = await this.matchRepository.findById(matchId);
     if (!match) {

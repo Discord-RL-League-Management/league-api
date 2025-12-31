@@ -76,7 +76,6 @@ export class GuildsController {
       `User ${user.id} requested settings for guild ${id}`,
       this.serviceName,
     );
-    // GuildAdminGuard handles all permission checks
     return this.guildSettingsService.getSettings(id);
   }
 
@@ -96,7 +95,6 @@ export class GuildsController {
       `User ${user.id} requested channels for guild ${id}`,
       this.serviceName,
     );
-    // GuildAdminGuard handles all permission checks
     return this.discordBotService.getGuildChannels(id);
   }
 
@@ -116,7 +114,6 @@ export class GuildsController {
       `User ${user.id} requested roles for guild ${id}`,
       this.serviceName,
     );
-    // GuildAdminGuard handles all permission checks
     return this.discordBotService.getGuildRoles(id);
   }
 }

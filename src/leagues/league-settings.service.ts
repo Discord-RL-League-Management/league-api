@@ -185,7 +185,6 @@ export class LeagueSettingsService {
           mergedSettings as unknown as Prisma.InputJsonValue,
         );
 
-        // Invalidate cache after successful update
         const cacheKey = `league:${leagueId}:settings`;
         await this.cachingService.del(cacheKey);
 
@@ -251,7 +250,6 @@ export class LeagueSettingsService {
       await this.organizationService.findByLeagueId(leagueId);
 
     // If no organizations exist, create a default one
-    // Pass merged settings to validate against updated capacity limits
     let defaultOrgId: string;
     let createdDefaultOrg = false;
     if (organizations.length === 0) {
@@ -263,7 +261,7 @@ export class LeagueSettingsService {
           description: 'Default organization for teams without an organization',
         },
         'system', // System user ID for auto-creation
-        mergedSettings, // Pass merged settings for validation
+        mergedSettings,
       );
       defaultOrgId = defaultOrg.id;
       createdDefaultOrg = true;

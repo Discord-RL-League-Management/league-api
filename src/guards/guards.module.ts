@@ -26,27 +26,10 @@ import { IDiscordProvider } from '../common/interfaces/discord-provider.interfac
 import { ITokenProvider } from '../common/interfaces/token-provider.interface';
 
 /**
- * GuardsModule - Single Responsibility: Provides authentication and authorization guards
+ * GuardsModule - Provides authentication and authorization guards
  *
  * This module consolidates all guards to break circular dependencies between CommonModule
  * and other modules (AuditModule, GuildsModule).
- *
- * Exports:
- * - AdminGuard: Validates admin permissions in guilds
- * - SystemAdminGuard: Validates system-wide admin permissions
- * - GuildAdminGuard: Validates guild admin access
- * - ResourceOwnershipGuard: Validates resource ownership
- * - Adapter provider tokens: For modules that need the adapter interfaces
- *
- * Dependencies:
- * - ConfigModule: For SystemAdminGuard
- * - AuditModule: For AuditLogService and AuditProviderAdapter
- * - PermissionCheckModule: For PermissionCheckService and PermissionProviderAdapter
- * - GuildAccessAdapterModule: For IGuildAccessProvider (breaks circular dependency with GuildsModule)
- * - GuildsModule: For GuildAccessValidationService and GuildSettingsService (required by GuildAdminGuard)
- * - GuildMembersModule: For GuildMembersService
- * - DiscordModule: For DiscordApiService and DiscordProviderAdapter
- * - TokenManagementModule: For TokenManagementService and TokenProviderAdapter
  */
 @Module({
   imports: [
@@ -54,8 +37,8 @@ import { ITokenProvider } from '../common/interfaces/token-provider.interface';
     InfrastructureModule,
     forwardRef(() => AuditModule),
     PermissionCheckModule,
-    forwardRef(() => GuildAccessAdapterModule), // Use forwardRef to break circular dependency
-    forwardRef(() => GuildsModule), // Required for GuildAdminGuard (GuildAccessValidationService, GuildSettingsService)
+    forwardRef(() => GuildAccessAdapterModule),
+    forwardRef(() => GuildsModule),
     GuildMembersModule,
     DiscordModule,
     TokenManagementModule,

@@ -12,9 +12,8 @@ import {
 import { Prisma } from '@prisma/client';
 
 /**
- * Audit Log Service - Single Responsibility: Business logic for audit logging
+ * Audit Log Service - Business logic for audit logging
  *
- * Separation of Concerns: Business logic separate from persistence.
  * Coordinates between repository and context services.
  */
 @Injectable()
@@ -33,7 +32,6 @@ export class AuditLogService {
 
   /**
    * Log permission check event
-   * Single Responsibility: Log permission-related events
    */
   async logPermissionCheck(event: AuditEvent, request: Request): Promise<void> {
     try {
@@ -64,13 +62,11 @@ export class AuditLogService {
         _error instanceof Error ? _error.stack : undefined,
         this.serviceName,
       );
-      // Don't throw - audit logging failure shouldn't break the request
     }
   }
 
   /**
    * Log admin action event
-   * Single Responsibility: Log admin-related events
    */
   async logAdminAction(event: AuditEvent, request: Request): Promise<void> {
     try {
@@ -102,13 +98,11 @@ export class AuditLogService {
         error instanceof Error ? error.stack : undefined,
         this.serviceName,
       );
-      // Don't throw - audit logging failure shouldn't break the request
     }
   }
 
   /**
    * Query audit logs for a guild
-   * Single Responsibility: Retrieve audit logs with filters
    */
   async queryLogs(
     guildId: string,

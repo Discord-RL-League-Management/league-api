@@ -27,7 +27,6 @@ import { LeagueMemberQueryOptions } from '../interfaces/league-member.interface'
 
 /**
  * LeagueMemberService - Business logic layer for LeagueMember operations
- * Single Responsibility: Orchestrates league member-related business logic
  *
  * Uses LeagueMemberRepository for data access, keeping concerns separated.
  * This service handles business rules and validation logic.
@@ -99,7 +98,6 @@ export class LeagueMemberService {
 
   /**
    * Join league with full validation
-   * Single Responsibility: League join with validation and auto-creation
    */
   async joinLeague(
     leagueId: string,
@@ -276,7 +274,6 @@ export class LeagueMemberService {
 
   /**
    * Leave league (handle cooldown)
-   * Single Responsibility: League leave with cooldown tracking
    */
   async leaveLeague(
     playerId: string,

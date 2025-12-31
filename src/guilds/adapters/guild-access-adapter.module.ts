@@ -9,14 +9,10 @@ import { IGuildAccessProvider } from '../../common/interfaces/guild-access-provi
 /**
  * GuildAccessAdapterModule - Provides IGuildAccessProvider adapter
  *
- * This module breaks the circular dependency between GuardsModule and GuildsModule
- * by providing the adapter factory in a separate module that only depends on GuildsModule.
+ * Breaks the circular dependency between GuardsModule and GuildsModule.
  */
 @Module({
-  imports: [
-    forwardRef(() => GuildsModule), // Use forwardRef to break circular dependency
-    GuildMembersModule,
-  ],
+  imports: [forwardRef(() => GuildsModule), GuildMembersModule],
   providers: [
     {
       provide: IGuildAccessProvider,
@@ -32,6 +28,6 @@ import { IGuildAccessProvider } from '../../common/interfaces/guild-access-provi
       inject: [GuildSettingsService, GuildMembersService],
     },
   ],
-  exports: [IGuildAccessProvider], // Export token for GuardsModule
+  exports: [IGuildAccessProvider],
 })
 export class GuildAccessAdapterModule {}

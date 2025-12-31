@@ -28,14 +28,13 @@ import { ILeagueMemberAccess } from '../leagues/interfaces/league-member-access.
     GuildMembersModule,
     InfrastructureModule,
     PlayerRatingsModule,
-    forwardRef(() => LeaguesModule), // Required for ILeagueSettingsProvider
+    forwardRef(() => LeaguesModule),
   ],
   controllers: [LeagueMembersController, InternalLeagueMembersController],
   providers: [
     LeagueMemberService,
     LeagueJoinValidationService,
     LeagueMemberRepository,
-    // Provide adapter with injection token for LeaguesModule
     {
       provide: ILeagueMemberAccess,
       useClass: LeagueMemberAccessAdapter,
@@ -45,7 +44,7 @@ import { ILeagueMemberAccess } from '../leagues/interfaces/league-member-access.
     LeagueMemberService,
     LeagueJoinValidationService,
     LeagueMemberRepository,
-    ILeagueMemberAccess, // Export token for LeaguesModule
+    ILeagueMemberAccess,
   ],
 })
 export class LeagueMembersModule {}

@@ -69,7 +69,6 @@ export class TrackerService {
 
   /**
    * Get trackers for a user with optional query options and pagination
-   * Single Responsibility: User tracker retrieval with query options
    *
    * @param userId - User ID to find trackers for
    * @param options - Optional query options for filtering, sorting, and pagination
@@ -93,8 +92,6 @@ export class TrackerService {
   /**
    * Find the best/most recent tracker from a user's active trackers
    * Used for skill validation when checking league requirements
-   *
-   * Delegates to repository for data access.
    *
    * @param userId - User ID to find trackers for
    * @returns Best tracker with seasons or null if no active trackers exist
