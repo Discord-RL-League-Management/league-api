@@ -164,7 +164,7 @@ export class OrganizationRepository
     return this.prisma.organizationMember.findMany({
       where: {
         organizationId,
-        status: OrganizationMemberStatus.ACTIVE, // Only return active members
+        status: OrganizationMemberStatus.ACTIVE,
       },
       include: {
         player: { include: { user: true } },
