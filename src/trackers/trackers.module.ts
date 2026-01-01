@@ -118,16 +118,18 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
     NotificationBuilderService,
     TrackerAuthorizationService,
     TrackerResponseMapperService,
-    TrackerServiceAdapter,
+    {
+      provide: 'ITrackerService',
+      useClass: TrackerServiceAdapter,
+    },
   ],
   exports: [
-    TrackerService,
     TrackerProcessingService,
     TrackerSnapshotService,
     TrackerScrapingQueueService,
     TrackerSeasonService,
     ScheduledTrackerProcessingService,
-    TrackerServiceAdapter,
+    'ITrackerService',
   ],
 })
 export class TrackersModule {}

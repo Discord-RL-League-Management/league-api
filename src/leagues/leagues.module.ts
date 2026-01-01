@@ -60,18 +60,22 @@ import { LeagueSettingsServiceAdapter } from './adapters/league-settings-service
       provide: 'ILeagueSettingsProvider',
       useClass: LeagueSettingsProviderAdapter,
     },
-    LeagueServiceAdapter,
-    LeagueSettingsServiceAdapter,
+    {
+      provide: 'ILeagueService',
+      useClass: LeagueServiceAdapter,
+    },
+    {
+      provide: 'ILeagueSettingsService',
+      useClass: LeagueSettingsServiceAdapter,
+    },
   ],
   exports: [
-    LeaguesService,
-    LeagueSettingsService,
     LeagueSettingsDefaultsService,
     LeaguePermissionService,
     LeagueRepository,
     'ILeagueSettingsProvider', // Export token for LeagueMembersModule
-    LeagueServiceAdapter,
-    LeagueSettingsServiceAdapter,
+    'ILeagueService',
+    'ILeagueSettingsService',
   ],
 })
 export class LeaguesModule {}
