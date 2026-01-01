@@ -34,6 +34,7 @@ import { TrackerQueueOrchestratorService } from './services/tracker-queue-orches
 import { TrackerBatchProcessorService } from './services/tracker-batch-processor.service';
 import { TrackerAuthorizationService } from './services/tracker-authorization.service';
 import { TrackerResponseMapperService } from './services/tracker-response-mapper.service';
+import { TrackerServiceAdapter } from './adapters/tracker-service.adapter';
 import { GuildMembersModule } from '../guild-members/guild-members.module';
 import { PermissionCheckModule } from '../permissions/modules/permission-check/permission-check.module';
 
@@ -44,7 +45,7 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
     forwardRef(() => AuditModule),
     MmrCalculationModule,
     forwardRef(() => GuildsModule),
-    forwardRef(() => GuardsModule), // Use forwardRef to break circular dependency with GuardsModule <-> GuildsModule
+    forwardRef(() => GuardsModule), // Break circular dependency with GuardsModule <-> GuildsModule
     GuildMembersModule,
     PermissionCheckModule,
     HttpModule,
@@ -117,6 +118,7 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
     NotificationBuilderService,
     TrackerAuthorizationService,
     TrackerResponseMapperService,
+    TrackerServiceAdapter,
   ],
   exports: [
     TrackerService,
@@ -125,6 +127,7 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
     TrackerScrapingQueueService,
     TrackerSeasonService,
     ScheduledTrackerProcessingService,
+    TrackerServiceAdapter,
   ],
 })
 export class TrackersModule {}

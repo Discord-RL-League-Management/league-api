@@ -25,6 +25,8 @@ import { LeaguePermissionService } from './services/league-permission.service';
 import { LeagueRepository } from './repositories/league.repository';
 
 import { LeagueSettingsProviderAdapter } from './adapters/league-settings-provider.adapter';
+import { LeagueServiceAdapter } from './adapters/league-service.adapter';
+import { LeagueSettingsServiceAdapter } from './adapters/league-settings-service.adapter';
 
 @Module({
   imports: [
@@ -32,12 +34,12 @@ import { LeagueSettingsProviderAdapter } from './adapters/league-settings-provid
     InfrastructureModule,
     CacheModule.register(),
     AuthModule,
-    GuildsModule, // For GuildsService dependency
-    PlayersModule, // For PlayerService dependency
-    PermissionCheckModule, // For PermissionCheckService dependency
-    forwardRef(() => LeagueMembersModule), // Circular dependency: LeagueMembersModule also imports LeaguesModule for ILeagueSettingsProvider
-    forwardRef(() => OrganizationsModule), // For OrganizationService dependency (circular dependency resolved)
-    forwardRef(() => TeamsModule), // For TeamRepository dependency (circular dependency resolved)
+    GuildsModule,
+    PlayersModule,
+    PermissionCheckModule,
+    forwardRef(() => LeagueMembersModule), // Circular dependency: LeagueMembersModule imports LeaguesModule for ILeagueSettingsProvider
+    forwardRef(() => OrganizationsModule), // Circular dependency resolved
+    forwardRef(() => TeamsModule), // Circular dependency resolved
   ],
   controllers: [
     LeaguesController,
@@ -58,6 +60,8 @@ import { LeagueSettingsProviderAdapter } from './adapters/league-settings-provid
       provide: 'ILeagueSettingsProvider',
       useClass: LeagueSettingsProviderAdapter,
     },
+    LeagueServiceAdapter,
+    LeagueSettingsServiceAdapter,
   ],
   exports: [
     LeaguesService,
@@ -66,6 +70,8 @@ import { LeagueSettingsProviderAdapter } from './adapters/league-settings-provid
     LeaguePermissionService,
     LeagueRepository,
     'ILeagueSettingsProvider', // Export token for LeagueMembersModule
+    LeagueServiceAdapter,
+    LeagueSettingsServiceAdapter,
   ],
 })
 export class LeaguesModule {}
