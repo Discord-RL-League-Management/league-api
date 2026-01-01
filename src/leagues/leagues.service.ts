@@ -189,6 +189,9 @@ export class LeaguesService {
   /**
    * Update league information with validation
    * Single Responsibility: League data updates with error handling
+   *
+   * Ensures atomicity when updating both status and other fields by using
+   * explicit transactions, following the same pattern as GuildSettingsService.
    */
   async update(id: string, updateLeagueDto: UpdateLeagueDto): Promise<League> {
     try {
@@ -204,19 +207,29 @@ export class LeaguesService {
         );
       }
 
-      // If status is being updated, use the validated updateStatus method instead
+      // If status is being updated, validate transition and use transaction for atomicity
       if (
         updateLeagueDto.status !== undefined &&
         updateLeagueDto.status !== league.status
       ) {
-        // Remove status from updateDto to prevent bypassing validation
-        const { status, ...updateData } = updateLeagueDto;
-        await this.updateStatus(id, status);
-        // If there are other fields to update, update them separately
-        if (Object.keys(updateData).length > 0) {
-          return await this.leagueRepository.update(id, updateData);
-        }
-        return await this.findOne(id);
+        // Validate status transition before starting transaction
+        this.validateStatusTransition(league.status, updateLeagueDto.status);
+
+        // Use transaction to ensure atomicity when updating both status and other fields
+        return await this.prisma.$transaction(async (tx) => {
+          const { status, ...updateData } = updateLeagueDto;
+
+          // Update status first within transaction
+          await this.leagueRepository.update(id, { status }, tx);
+
+          // If there are other fields, update them in the same transaction
+          if (Object.keys(updateData).length > 0) {
+            return await this.leagueRepository.update(id, updateData, tx);
+          }
+
+          // Return the updated league
+          return await this.leagueRepository.findOne(id, undefined, tx);
+        });
       }
 
       return await this.leagueRepository.update(id, updateLeagueDto);
