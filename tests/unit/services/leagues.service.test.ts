@@ -470,6 +470,7 @@ describe('LeaguesService', () => {
       vi.mocked(mockLeagueRepository.update)
         .mockResolvedValueOnce({ ...mockLeague, status: newStatus } as any)
         .mockResolvedValueOnce(updatedLeague as any);
+      // findOne is called after all updates to return the complete entity
       vi.mocked(mockLeagueRepository.findOne)
         .mockResolvedValueOnce(mockLeague)
         .mockResolvedValueOnce(updatedLeague as any);
@@ -488,6 +489,12 @@ describe('LeaguesService', () => {
       expect(mockLeagueRepository.update).toHaveBeenCalledWith(
         leagueId,
         { name: 'Updated Name' },
+        expect.anything(), // transaction client
+      );
+      // Verify findOne is called after all updates to return the complete entity
+      expect(mockLeagueRepository.findOne).toHaveBeenCalledWith(
+        leagueId,
+        undefined,
         expect.anything(), // transaction client
       );
       expect(result).toEqual(updatedLeague);

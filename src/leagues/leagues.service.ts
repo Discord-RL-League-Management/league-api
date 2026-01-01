@@ -224,10 +224,10 @@ export class LeaguesService {
 
           // If there are other fields, update them in the same transaction
           if (Object.keys(updateData).length > 0) {
-            return await this.leagueRepository.update(id, updateData, tx);
+            await this.leagueRepository.update(id, updateData, tx);
           }
 
-          // Return the updated league
+          // Always return the complete entity after all updates
           return await this.leagueRepository.findOne(id, undefined, tx);
         });
       }
