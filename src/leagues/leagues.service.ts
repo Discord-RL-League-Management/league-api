@@ -40,7 +40,7 @@ export class LeaguesService {
    * Single Responsibility: League creation and initialization with atomicity
    */
   async create(
-    createLeagueDto: CreateLeagueDto & { createdBy: string },
+    createLeagueDto: CreateLeagueDto,
     createdBy: string,
   ): Promise<League> {
     try {
@@ -192,15 +192,39 @@ export class LeaguesService {
    */
   async update(id: string, updateLeagueDto: UpdateLeagueDto): Promise<League> {
     try {
-      const exists = await this.leagueRepository.exists(id);
+      const league = await this.findOne(id);
 
-      if (!exists) {
-        throw new LeagueNotFoundException(id);
+      // Prevent modifications to leagues in terminal states
+      if (
+        league.status === LeagueStatus.ARCHIVED ||
+        league.status === LeagueStatus.CANCELLED
+      ) {
+        throw new InvalidLeagueStatusException(
+          `Cannot modify league in ${league.status} state`,
+        );
+      }
+
+      // If status is being updated, use the validated updateStatus method instead
+      if (
+        updateLeagueDto.status !== undefined &&
+        updateLeagueDto.status !== league.status
+      ) {
+        // Remove status from updateDto to prevent bypassing validation
+        const { status, ...updateData } = updateLeagueDto;
+        await this.updateStatus(id, status);
+        // If there are other fields to update, update them separately
+        if (Object.keys(updateData).length > 0) {
+          return await this.leagueRepository.update(id, updateData);
+        }
+        return await this.findOne(id);
       }
 
       return await this.leagueRepository.update(id, updateLeagueDto);
     } catch (error) {
-      if (error instanceof LeagueNotFoundException) {
+      if (
+        error instanceof LeagueNotFoundException ||
+        error instanceof InvalidLeagueStatusException
+      ) {
         throw error;
       }
       this.logger.error(`Failed to update league ${id}:`, error);
