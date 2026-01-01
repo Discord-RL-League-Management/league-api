@@ -14,6 +14,9 @@ import { GuildErrorHandlerService } from './services/guild-error-handler.service
 import { GuildRepository } from './repositories/guild.repository';
 import { GuildMembersModule } from '../guild-members/guild-members.module';
 import { GuildAccessProviderAdapter } from './adapters/guild-access-provider.adapter';
+import { GuildServiceAdapter } from './adapters/guild-service.adapter';
+import { GuildSettingsServiceAdapter } from './adapters/guild-settings-service.adapter';
+import { GuildAccessValidationServiceAdapter } from './adapters/guild-access-validation-service.adapter';
 import { SettingsModule } from '../infrastructure/settings/settings.module';
 import { ActivityLogModule } from '../infrastructure/activity-log/activity-log.module';
 import { DiscordModule } from '../discord/discord.module';
@@ -31,13 +34,13 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
     TokenManagementModule,
     GuildMembersModule,
     DiscordModule,
-    PermissionCheckModule, // Required for GuildAdminGuard (PermissionCheckService) - import before GuardsModule
-    forwardRef(() => GuardsModule), // Use forwardRef to break circular dependency with GuardsModule <-> GuildsModule
-    forwardRef(() => GuildAccessAdapterModule), // Required for AdminGuard (IGuildAccessProvider)
+    PermissionCheckModule, // Import before GuardsModule (order matters for GuildAdminGuard)
+    forwardRef(() => GuardsModule), // Break circular dependency with GuardsModule <-> GuildsModule
+    forwardRef(() => GuildAccessAdapterModule),
     PrismaModule,
-    SettingsModule, // Required for GuildSettingsService (SettingsService)
-    ActivityLogModule, // Required for GuildSettingsService (ActivityLogService)
-    FormulaValidationAdapterModule, // Required for SettingsValidationService (IFormulaValidationService)
+    SettingsModule,
+    ActivityLogModule,
+    FormulaValidationAdapterModule,
     UsersModule,
     CacheModule.register(cacheModuleOptions),
   ],
@@ -57,6 +60,9 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
     GuildErrorHandlerService,
     GuildRepository,
     GuildAccessProviderAdapter,
+    GuildServiceAdapter,
+    GuildSettingsServiceAdapter,
+    GuildAccessValidationServiceAdapter,
   ],
   exports: [
     GuildsService,
@@ -64,6 +70,9 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
     GuildSettingsService,
     SettingsDefaultsService,
     GuildAccessProviderAdapter,
+    GuildServiceAdapter,
+    GuildSettingsServiceAdapter,
+    GuildAccessValidationServiceAdapter,
   ],
 })
 export class GuildsModule {}
