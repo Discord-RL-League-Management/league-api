@@ -9,7 +9,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { NotFoundException } from '@nestjs/common';
 import { LeagueAccessValidationService } from '@/leagues/services/league-access-validation.service';
 import { LeagueRepository } from '@/leagues/repositories/league.repository';
-import { GuildsService } from '@/guilds/guilds.service';
+import type { IGuildService } from '@/guilds/interfaces/guild-service.interface';
 import { PlayerService } from '@/players/services/player.service';
 import { LeagueMemberRepository } from '@/league-members/repositories/league-member.repository';
 import {
@@ -20,7 +20,7 @@ import {
 describe('LeagueAccessValidationService', () => {
   let service: LeagueAccessValidationService;
   let mockLeagueRepository: LeagueRepository;
-  let mockGuildsService: GuildsService;
+  let mockGuildsService: IGuildService;
   let mockPlayerService: PlayerService;
   let mockLeagueMemberRepository: LeagueMemberRepository;
 
@@ -32,7 +32,7 @@ describe('LeagueAccessValidationService', () => {
 
     mockGuildsService = {
       findOne: vi.fn(),
-    } as unknown as GuildsService;
+    } as unknown as IGuildService;
 
     mockPlayerService = {
       findByUserIdAndGuildId: vi.fn(),

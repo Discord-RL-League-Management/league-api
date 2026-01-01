@@ -60,19 +60,27 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
     GuildErrorHandlerService,
     GuildRepository,
     GuildAccessProviderAdapter,
-    GuildServiceAdapter,
-    GuildSettingsServiceAdapter,
-    GuildAccessValidationServiceAdapter,
+    {
+      provide: 'IGuildService',
+      useClass: GuildServiceAdapter,
+    },
+    {
+      provide: 'IGuildSettingsService',
+      useClass: GuildSettingsServiceAdapter,
+    },
+    {
+      provide: 'IGuildAccessValidationService',
+      useClass: GuildAccessValidationServiceAdapter,
+    },
   ],
   exports: [
-    GuildsService,
-    GuildAccessValidationService,
-    GuildSettingsService,
     SettingsDefaultsService,
     GuildAccessProviderAdapter,
-    GuildServiceAdapter,
-    GuildSettingsServiceAdapter,
-    GuildAccessValidationServiceAdapter,
+    GuildSettingsService, // Export for GuildAccessAdapterModule
+    GuildAccessValidationService, // Export for GuardsModule (GuildAdminGuard)
+    'IGuildService',
+    'IGuildSettingsService',
+    'IGuildAccessValidationService',
   ],
 })
 export class GuildsModule {}

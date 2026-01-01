@@ -483,7 +483,7 @@ describe('LeagueSettingsService', () => {
       );
       vi.mocked(
         mockOrganizationService.assignTeamsToOrganization,
-      ).mockResolvedValue(undefined);
+      ).mockResolvedValue([]);
       vi.mocked(mockSettingsService.updateSettings).mockResolvedValue({
         ...mockSettingsRecord,
         settings: mergedSettings as unknown as Prisma.JsonValue,
@@ -549,7 +549,9 @@ describe('LeagueSettingsService', () => {
       vi.mocked(
         mockOrganizationService.assignTeamsToOrganization,
       ).mockRejectedValue(assignmentError);
-      vi.mocked(mockOrganizationService.delete).mockResolvedValue(undefined);
+      vi.mocked(mockOrganizationService.delete).mockResolvedValue(
+        defaultOrg as any,
+      );
 
       await expect(service.updateSettings(leagueId, updateDto)).rejects.toThrow(
         assignmentError,

@@ -5,10 +5,12 @@ import { LeagueMemberRepository } from '../repositories/league-member.repository
 import { PlayerService } from '../../players/services/player.service';
 import { PlayerValidationService } from '../../players/services/player-validation.service';
 import { GuildMembersService } from '../../guild-members/guild-members.service';
-import { TrackerService } from '../../trackers/services/tracker.service';
 import { LeagueJoinValidationException } from '../exceptions/league-member.exceptions';
-import { PlaylistData } from '../../trackers/interfaces/scraper.interfaces';
 import { Player, PlayerStatus } from '@prisma/client';
+import type { ITrackerService } from '../../trackers/interfaces/tracker-service.interface';
+import { SkillValidationService } from './skill-validation.service';
+import { RegistrationWindowValidator } from './registration-window-validator';
+import { CapacityValidator } from './capacity-validator';
 
 /**
  * LeagueJoinValidationService - Single Responsibility: League join validation logic
@@ -27,7 +29,10 @@ export class LeagueJoinValidationService {
     private playerService: PlayerService,
     private playerValidationService: PlayerValidationService,
     private guildMembersService: GuildMembersService,
-    private trackerService: TrackerService,
+    @Inject('ITrackerService') private trackerService: ITrackerService,
+    private skillValidationService: SkillValidationService,
+    private registrationWindowValidator: RegistrationWindowValidator,
+    private capacityValidator: CapacityValidator,
   ) {}
 
   /**
@@ -70,15 +75,17 @@ export class LeagueJoinValidationService {
     }
 
     if (membershipConfig.skillRequirements) {
-      await this.validateSkillRequirements(
+      await this.skillValidationService.validateSkillRequirements(
         player,
         membershipConfig.skillRequirements,
       );
     }
 
-    this.validateRegistrationWindow(membershipConfig);
+    this.registrationWindowValidator.validateRegistrationWindow(
+      membershipConfig,
+    );
 
-    await this.validateCapacity(leagueId, membershipConfig);
+    await this.capacityValidator.validateCapacity(leagueId, membershipConfig);
 
     if (!membershipConfig.allowMultipleLeagues) {
       const existingMemberships =
@@ -110,140 +117,6 @@ export class LeagueJoinValidationService {
         throw new LeagueJoinValidationException(
           'This league does not allow self-registration',
         );
-      }
-    }
-  }
-
-  /**
-   * Validate skill requirements
-   * Single Responsibility: Skill validation
-   */
-  private async validateSkillRequirements(
-    player: { userId: string },
-    skillRequirements: {
-      minSkill?: number;
-      maxSkill?: number;
-      skillMetric: 'MMR' | 'RANK' | 'ELO' | 'CUSTOM';
-    },
-  ): Promise<void> {
-    const tracker = await this.trackerService.findBestTrackerForUser(
-      player.userId,
-    );
-
-    if (!tracker) {
-      throw new LeagueJoinValidationException(
-        'Player must have at least one active tracker with data to validate skill requirements',
-      );
-    }
-
-    const latestSeason = tracker.seasons?.[0];
-    if (!latestSeason) {
-      throw new LeagueJoinValidationException(
-        'Player tracker has no season data',
-      );
-    }
-
-    let skillValue: number | null = null;
-
-    const playlist2v2 = latestSeason.playlist2v2 as PlaylistData | null;
-    switch (skillRequirements.skillMetric) {
-      case 'MMR':
-        skillValue = playlist2v2?.rating ?? null;
-        break;
-      case 'RANK':
-        skillValue = playlist2v2?.rankValue ?? null;
-        break;
-      case 'ELO':
-        skillValue = null;
-        break;
-      case 'CUSTOM':
-        throw new LeagueJoinValidationException(
-          'Custom skill metric validation not yet implemented',
-        );
-    }
-
-    if (skillValue == null) {
-      throw new LeagueJoinValidationException(
-        `Unable to determine ${skillRequirements.skillMetric} value from tracker`,
-      );
-    }
-
-    if (
-      skillRequirements.minSkill !== undefined &&
-      skillValue < skillRequirements.minSkill
-    ) {
-      throw new LeagueJoinValidationException(
-        `Player skill (${skillValue}) is below minimum required (${skillRequirements.minSkill})`,
-      );
-    }
-
-    if (
-      skillRequirements.maxSkill !== undefined &&
-      skillValue > skillRequirements.maxSkill
-    ) {
-      throw new LeagueJoinValidationException(
-        `Player skill (${skillValue}) is above maximum allowed (${skillRequirements.maxSkill})`,
-      );
-    }
-  }
-
-  /**
-   * Validate registration window
-   * Single Responsibility: Registration window validation
-   */
-  private validateRegistrationWindow(membershipConfig: {
-    registrationOpen: boolean;
-    registrationStartDate?: Date | string | null;
-    registrationEndDate?: Date | string | null;
-  }): void {
-    if (!membershipConfig.registrationOpen) {
-      throw new LeagueJoinValidationException(
-        'League registration is currently closed',
-      );
-    }
-
-    const now = new Date();
-
-    if (membershipConfig.registrationStartDate) {
-      const startDate = new Date(membershipConfig.registrationStartDate);
-      if (now < startDate) {
-        throw new LeagueJoinValidationException(
-          `Registration opens on ${startDate.toISOString()}`,
-        );
-      }
-    }
-
-    if (membershipConfig.registrationEndDate) {
-      const endDate = new Date(membershipConfig.registrationEndDate);
-      if (now > endDate) {
-        throw new LeagueJoinValidationException(
-          `Registration closed on ${endDate.toISOString()}`,
-        );
-      }
-    }
-  }
-
-  /**
-   * Validate capacity limits
-   * Single Responsibility: Capacity validation
-   */
-  private async validateCapacity(
-    leagueId: string,
-    membershipConfig: { maxPlayers?: number | null; autoCloseOnFull: boolean },
-  ): Promise<void> {
-    if (membershipConfig.maxPlayers) {
-      const activeCount =
-        await this.leagueMemberRepository.countActiveMembers(leagueId);
-      if (activeCount >= membershipConfig.maxPlayers) {
-        if (membershipConfig.autoCloseOnFull) {
-          throw new LeagueJoinValidationException(
-            'League is full and registration is closed',
-          );
-        } else {
-          throw new LeagueJoinValidationException(
-            `League is full (${activeCount}/${membershipConfig.maxPlayers} players)`,
-          );
-        }
       }
     }
   }

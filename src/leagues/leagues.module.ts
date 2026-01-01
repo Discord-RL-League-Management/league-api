@@ -38,8 +38,8 @@ import { LeagueSettingsServiceAdapter } from './adapters/league-settings-service
     PlayersModule,
     PermissionCheckModule,
     forwardRef(() => LeagueMembersModule), // Circular dependency: LeagueMembersModule imports LeaguesModule for ILeagueSettingsProvider
-    forwardRef(() => OrganizationsModule), // Circular dependency resolved
-    forwardRef(() => TeamsModule), // Circular dependency resolved
+    forwardRef(() => OrganizationsModule),
+    forwardRef(() => TeamsModule),
   ],
   controllers: [
     LeaguesController,
@@ -55,23 +55,27 @@ import { LeagueSettingsServiceAdapter } from './adapters/league-settings-service
     LeagueAccessValidationService,
     LeaguePermissionService,
     LeagueRepository,
-    // Provide adapter with injection token for LeagueMembersModule
     {
       provide: 'ILeagueSettingsProvider',
       useClass: LeagueSettingsProviderAdapter,
     },
-    LeagueServiceAdapter,
-    LeagueSettingsServiceAdapter,
+    {
+      provide: 'ILeagueService',
+      useClass: LeagueServiceAdapter,
+    },
+    {
+      provide: 'ILeagueSettingsService',
+      useClass: LeagueSettingsServiceAdapter,
+    },
   ],
   exports: [
-    LeaguesService,
-    LeagueSettingsService,
     LeagueSettingsDefaultsService,
     LeaguePermissionService,
     LeagueRepository,
-    'ILeagueSettingsProvider', // Export token for LeagueMembersModule
-    LeagueServiceAdapter,
-    LeagueSettingsServiceAdapter,
+    LeagueSettingsService, // Export for TeamsModule (TeamValidationService)
+    'ILeagueSettingsProvider',
+    'ILeagueService',
+    'ILeagueSettingsService',
   ],
 })
 export class LeaguesModule {}

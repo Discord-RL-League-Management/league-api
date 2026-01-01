@@ -48,8 +48,6 @@ export class LeaguesService {
       // Instead, we'll check for duplicate name within the same guild if needed
       // For now, we'll allow multiple leagues with the same name in a guild
 
-      // Create league with settings in transaction (handled by repository)
-      // Ensure createdBy is included in the data
       const leagueData: CreateLeagueDto & { createdBy: string } = {
         ...createLeagueDto,
         createdBy,
@@ -189,12 +187,14 @@ export class LeaguesService {
   /**
    * Update league information with validation
    * Single Responsibility: League data updates with error handling
+   *
+   * Ensures atomicity when updating both status and other fields by using
+   * explicit transactions, following the same pattern as GuildSettingsService.
    */
   async update(id: string, updateLeagueDto: UpdateLeagueDto): Promise<League> {
     try {
       const league = await this.findOne(id);
 
-      // Prevent modifications to leagues in terminal states
       if (
         league.status === LeagueStatus.ARCHIVED ||
         league.status === LeagueStatus.CANCELLED
@@ -204,19 +204,28 @@ export class LeaguesService {
         );
       }
 
-      // If status is being updated, use the validated updateStatus method instead
       if (
         updateLeagueDto.status !== undefined &&
         updateLeagueDto.status !== league.status
       ) {
-        // Remove status from updateDto to prevent bypassing validation
-        const { status, ...updateData } = updateLeagueDto;
-        await this.updateStatus(id, status);
-        // If there are other fields to update, update them separately
-        if (Object.keys(updateData).length > 0) {
-          return await this.leagueRepository.update(id, updateData);
-        }
-        return await this.findOne(id);
+        this.validateStatusTransition(league.status, updateLeagueDto.status);
+
+        const updatedLeague = await this.prisma.$transaction(async (tx) => {
+          const { status, ...updateData } = updateLeagueDto;
+
+          await this.leagueRepository.update(id, { status }, tx);
+
+          if (Object.keys(updateData).length > 0) {
+            await this.leagueRepository.update(id, updateData, tx);
+          }
+
+          const result = await this.leagueRepository.findOne(id, undefined, tx);
+          if (!result) {
+            throw new LeagueNotFoundException(id);
+          }
+          return result;
+        });
+        return updatedLeague;
       }
 
       return await this.leagueRepository.update(id, updateLeagueDto);

@@ -1,12 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PlayerStatus } from '@prisma/client';
-import {
-  PlayerValidationException,
-  InvalidPlayerStatusException,
-} from '../exceptions/player.exceptions';
-import { TrackerService } from '../../trackers/services/tracker.service';
-import { GuildMembersService } from '../../guild-members/guild-members.service';
+import { PlayerValidationException } from '../exceptions/player.exceptions';
+import type { ITrackerService } from '../../trackers/interfaces/tracker-service.interface';
+import { PlayerStatusValidator } from './player-status-validator';
+import { PlayerTrackerValidator } from './player-tracker-validator';
+import { PlayerGuildValidator } from './player-guild-validator';
+import { PlayerCooldownValidator } from './player-cooldown-validator';
 
 /**
  * PlayerValidationService - Single Responsibility: Player validation logic
@@ -19,8 +19,11 @@ export class PlayerValidationService {
 
   constructor(
     private prisma: PrismaService,
-    private trackerService: TrackerService,
-    private guildMembersService: GuildMembersService,
+    @Inject('ITrackerService') private trackerService: ITrackerService,
+    private playerStatusValidator: PlayerStatusValidator,
+    private playerTrackerValidator: PlayerTrackerValidator,
+    private playerGuildValidator: PlayerGuildValidator,
+    private playerCooldownValidator: PlayerCooldownValidator,
   ) {}
 
   /**
@@ -28,14 +31,7 @@ export class PlayerValidationService {
    * Single Responsibility: Status validation
    */
   validatePlayerStatus(playerStatus: PlayerStatus): void {
-    if (
-      playerStatus === PlayerStatus.BANNED ||
-      playerStatus === PlayerStatus.SUSPENDED
-    ) {
-      throw new InvalidPlayerStatusException(
-        `Player status '${playerStatus}' does not allow league operations`,
-      );
-    }
+    this.playerStatusValidator.validatePlayerStatus(playerStatus);
   }
 
   /**
@@ -46,30 +42,7 @@ export class PlayerValidationService {
     trackerId: string | null | undefined,
     userId: string,
   ): Promise<void> {
-    if (!trackerId) {
-      return; // Optional field
-    }
-
-    try {
-      const tracker = await this.trackerService.getTrackerById(trackerId);
-
-      if (tracker.userId !== userId) {
-        throw new PlayerValidationException(
-          `Tracker ${trackerId} does not belong to user ${userId}`,
-        );
-      }
-
-      if (!tracker.isActive || tracker.isDeleted) {
-        throw new PlayerValidationException(
-          `Tracker ${trackerId} is not active`,
-        );
-      }
-    } catch (error) {
-      if (error instanceof PlayerValidationException) {
-        throw error;
-      }
-      throw new PlayerValidationException(`Tracker ${trackerId} not found`);
-    }
+    await this.playerTrackerValidator.validateTrackerLink(trackerId, userId);
   }
 
   /**
@@ -80,13 +53,7 @@ export class PlayerValidationService {
     userId: string,
     guildId: string,
   ): Promise<void> {
-    try {
-      await this.guildMembersService.findOne(userId, guildId);
-    } catch {
-      throw new PlayerValidationException(
-        `User ${userId} is not a member of guild ${guildId}`,
-      );
-    }
+    await this.playerGuildValidator.validateGuildMembership(userId, guildId);
   }
 
   /**
@@ -97,22 +64,10 @@ export class PlayerValidationService {
     lastLeftLeagueAt: Date | null | undefined,
     cooldownDays: number | null | undefined,
   ): void {
-    if (!lastLeftLeagueAt || !cooldownDays || cooldownDays <= 0) {
-      return; // No cooldown or cooldown expired
-    }
-
-    const now = new Date();
-    const cooldownEnd = new Date(lastLeftLeagueAt);
-    cooldownEnd.setDate(cooldownEnd.getDate() + cooldownDays);
-
-    if (now < cooldownEnd) {
-      const daysRemaining = Math.ceil(
-        (cooldownEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
-      );
-      throw new PlayerValidationException(
-        `Player is in cooldown period. ${daysRemaining} day(s) remaining.`,
-      );
-    }
+    this.playerCooldownValidator.validateCooldown(
+      lastLeftLeagueAt,
+      cooldownDays,
+    );
   }
 
   /**
@@ -133,7 +88,6 @@ export class PlayerValidationService {
 
     this.validatePlayerStatus(player.status);
 
-    // Validate tracker if required - check if user has any active trackers
     if (requireTracker) {
       const bestTracker = await this.trackerService.findBestTrackerForUser(
         player.userId,

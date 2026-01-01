@@ -70,7 +70,36 @@ export class LeagueRepository
   async findOne(
     id: string,
     options?: LeagueQueryOptions,
+    tx?: Prisma.TransactionClient,
   ): Promise<League | null> {
+    if (tx) {
+      const opts = { ...defaultLeagueQueryOptions, ...options };
+      const include: Prisma.LeagueInclude = {};
+
+      if (opts.includeGuild) {
+        include.guild = true;
+      }
+
+      if (opts.includeMembers) {
+        (include as Record<string, unknown>).leagueMembers = {
+          where: { status: 'ACTIVE' },
+          include: { player: true },
+        };
+      }
+      if (opts.includeTeams) {
+        (include as Record<string, unknown>).teams = {
+          include: { members: { where: { status: 'ACTIVE' } } },
+        };
+      }
+      if (opts.includeTournaments) {
+        (include as Record<string, unknown>).tournaments = true;
+      }
+
+      return tx.league.findUnique({
+        where: { id },
+        ...(Object.keys(include).length > 0 ? { include } : {}),
+      });
+    }
     return this.findById(id, options);
   }
 
@@ -178,8 +207,13 @@ export class LeagueRepository
     return this.prisma.league.create({ data });
   }
 
-  async update(id: string, data: UpdateLeagueDto): Promise<League> {
-    return this.prisma.league.update({
+  async update(
+    id: string,
+    data: UpdateLeagueDto,
+    tx?: Prisma.TransactionClient,
+  ): Promise<League> {
+    const client = tx || this.prisma;
+    return client.league.update({
       where: { id },
       data,
     });
@@ -207,7 +241,6 @@ export class LeagueRepository
     tx?: Prisma.TransactionClient,
   ): Promise<League> {
     if (tx) {
-      // If transaction client provided, use it directly
       const league = await tx.league.create({
         data: leagueData,
       });
@@ -233,7 +266,6 @@ export class LeagueRepository
       return league;
     }
 
-    // Otherwise, create a new transaction
     return this.prisma.$transaction(async (transaction) => {
       const league = await transaction.league.create({
         data: leagueData,

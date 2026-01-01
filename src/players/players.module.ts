@@ -14,6 +14,10 @@ import { InternalPlayersController } from './internal-players.controller';
 import { PlayerService } from './services/player.service';
 import { PlayerValidationService } from './services/player-validation.service';
 import { PlayerOwnershipService } from './services/player-ownership.service';
+import { PlayerStatusValidator } from './services/player-status-validator';
+import { PlayerTrackerValidator } from './services/player-tracker-validator';
+import { PlayerGuildValidator } from './services/player-guild-validator';
+import { PlayerCooldownValidator } from './services/player-cooldown-validator';
 
 // Repositories
 import { PlayerRepository } from './repositories/player.repository';
@@ -32,6 +36,10 @@ import { PlayerRepository } from './repositories/player.repository';
     PlayerService,
     PlayerValidationService,
     PlayerOwnershipService,
+    PlayerStatusValidator,
+    PlayerTrackerValidator,
+    PlayerGuildValidator,
+    PlayerCooldownValidator,
     PlayerRepository,
   ],
   exports: [

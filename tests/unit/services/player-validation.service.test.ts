@@ -10,19 +10,25 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { PlayerValidationService } from '@/players/services/player-validation.service';
 import { PrismaService } from '@/prisma/prisma.service';
-import { TrackerService } from '@/trackers/services/tracker.service';
-import { GuildMembersService } from '@/guild-members/guild-members.service';
+import type { ITrackerService } from '@/trackers/interfaces/tracker-service.interface';
 import { PlayerStatus } from '@prisma/client';
 import {
   InvalidPlayerStatusException,
   PlayerValidationException,
 } from '@/players/exceptions/player.exceptions';
+import { PlayerStatusValidator } from '@/players/services/player-status-validator';
+import { PlayerTrackerValidator } from '@/players/services/player-tracker-validator';
+import { PlayerGuildValidator } from '@/players/services/player-guild-validator';
+import { PlayerCooldownValidator } from '@/players/services/player-cooldown-validator';
 
 describe('PlayerValidationService', () => {
   let service: PlayerValidationService;
   let mockPrisma: PrismaService;
-  let mockTrackerService: TrackerService;
-  let mockGuildMembersService: GuildMembersService;
+  let mockTrackerService: ITrackerService;
+  let mockPlayerStatusValidator: PlayerStatusValidator;
+  let mockPlayerTrackerValidator: PlayerTrackerValidator;
+  let mockPlayerGuildValidator: PlayerGuildValidator;
+  let mockPlayerCooldownValidator: PlayerCooldownValidator;
 
   beforeEach(() => {
     mockPrisma = {
@@ -34,16 +40,31 @@ describe('PlayerValidationService', () => {
     mockTrackerService = {
       getTrackerById: vi.fn(),
       findBestTrackerForUser: vi.fn(),
-    } as unknown as TrackerService;
+    } as unknown as ITrackerService;
 
-    mockGuildMembersService = {
-      findOne: vi.fn(),
-    } as unknown as GuildMembersService;
+    mockPlayerStatusValidator = {
+      validatePlayerStatus: vi.fn(),
+    } as unknown as PlayerStatusValidator;
+
+    mockPlayerTrackerValidator = {
+      validateTrackerLink: vi.fn(),
+    } as unknown as PlayerTrackerValidator;
+
+    mockPlayerGuildValidator = {
+      validateGuildMembership: vi.fn(),
+    } as unknown as PlayerGuildValidator;
+
+    mockPlayerCooldownValidator = {
+      validateCooldown: vi.fn(),
+    } as unknown as PlayerCooldownValidator;
 
     service = new PlayerValidationService(
       mockPrisma,
       mockTrackerService,
-      mockGuildMembersService,
+      mockPlayerStatusValidator,
+      mockPlayerTrackerValidator,
+      mockPlayerGuildValidator,
+      mockPlayerCooldownValidator,
     );
   });
 
@@ -52,277 +73,138 @@ describe('PlayerValidationService', () => {
   });
 
   describe('validatePlayerStatus', () => {
-    it('should_pass_when_player_status_is_ACTIVE', () => {
+    it('should_delegate_to_player_status_validator', () => {
       const status = PlayerStatus.ACTIVE;
 
-      expect(() => service.validatePlayerStatus(status)).not.toThrow();
+      vi.mocked(mockPlayerStatusValidator.validatePlayerStatus).mockReturnValue(
+        undefined,
+      );
+
+      service.validatePlayerStatus(status);
+
+      expect(
+        mockPlayerStatusValidator.validatePlayerStatus,
+      ).toHaveBeenCalledWith(status);
     });
 
-    it('should_pass_when_player_status_is_INACTIVE', () => {
-      const status = PlayerStatus.INACTIVE;
-
-      expect(() => service.validatePlayerStatus(status)).not.toThrow();
-    });
-
-    it('should_throw_InvalidPlayerStatusException_when_player_status_is_BANNED', () => {
+    it('should_propagate_exception_from_validator', () => {
       const status = PlayerStatus.BANNED;
 
-      expect(() => service.validatePlayerStatus(status)).toThrow(
-        InvalidPlayerStatusException,
-      );
-      expect(() => service.validatePlayerStatus(status)).toThrow(
-        "Player status 'BANNED' does not allow league operations",
-      );
-    });
-
-    it('should_throw_InvalidPlayerStatusException_when_player_status_is_SUSPENDED', () => {
-      const status = PlayerStatus.SUSPENDED;
+      vi.mocked(
+        mockPlayerStatusValidator.validatePlayerStatus,
+      ).mockImplementation(() => {
+        throw new InvalidPlayerStatusException(
+          "Player status 'BANNED' does not allow league operations",
+        );
+      });
 
       expect(() => service.validatePlayerStatus(status)).toThrow(
         InvalidPlayerStatusException,
-      );
-      expect(() => service.validatePlayerStatus(status)).toThrow(
-        "Player status 'SUSPENDED' does not allow league operations",
       );
     });
   });
 
   describe('validateTrackerLink', () => {
-    it('should_pass_when_tracker_id_is_null', async () => {
-      const trackerId = null;
+    it('should_delegate_to_tracker_validator', async () => {
+      const trackerId = 'tracker123';
       const userId = 'user123';
+
+      vi.mocked(
+        mockPlayerTrackerValidator.validateTrackerLink,
+      ).mockResolvedValue(undefined);
 
       await service.validateTrackerLink(trackerId, userId);
 
-      expect(mockTrackerService.getTrackerById).not.toHaveBeenCalled();
+      expect(
+        mockPlayerTrackerValidator.validateTrackerLink,
+      ).toHaveBeenCalledWith(trackerId, userId);
     });
 
-    it('should_pass_when_tracker_id_is_undefined', async () => {
-      const trackerId = undefined;
-      const userId = 'user123';
-
-      await service.validateTrackerLink(trackerId, userId);
-
-      expect(mockTrackerService.getTrackerById).not.toHaveBeenCalled();
-    });
-
-    it('should_pass_when_tracker_belongs_to_user_and_is_active', async () => {
+    it('should_propagate_exception_from_validator', async () => {
       const trackerId = 'tracker123';
       const userId = 'user123';
-      const tracker = {
-        id: trackerId,
-        userId: userId,
-        isActive: true,
-        isDeleted: false,
-      };
 
-      vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
-        tracker as any,
-      );
-
-      await service.validateTrackerLink(trackerId, userId);
-
-      expect(mockTrackerService.getTrackerById).toHaveBeenCalledWith(trackerId);
-    });
-
-    it('should_throw_PlayerValidationException_when_tracker_does_not_belong_to_user', async () => {
-      const trackerId = 'tracker123';
-      const userId = 'user123';
-      const differentUserId = 'user456';
-      const tracker = {
-        id: trackerId,
-        userId: differentUserId,
-        isActive: true,
-        isDeleted: false,
-      };
-
-      vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
-        tracker as any,
+      vi.mocked(
+        mockPlayerTrackerValidator.validateTrackerLink,
+      ).mockRejectedValue(
+        new PlayerValidationException(`Tracker ${trackerId} not found`),
       );
 
       await expect(
         service.validateTrackerLink(trackerId, userId),
       ).rejects.toThrow(PlayerValidationException);
-      await expect(
-        service.validateTrackerLink(trackerId, userId),
-      ).rejects.toThrow(
-        `Tracker ${trackerId} does not belong to user ${userId}`,
-      );
-    });
-
-    it('should_throw_PlayerValidationException_when_tracker_is_not_active', async () => {
-      const trackerId = 'tracker123';
-      const userId = 'user123';
-      const tracker = {
-        id: trackerId,
-        userId: userId,
-        isActive: false,
-        isDeleted: false,
-      };
-
-      vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
-        tracker as any,
-      );
-
-      await expect(
-        service.validateTrackerLink(trackerId, userId),
-      ).rejects.toThrow(PlayerValidationException);
-      await expect(
-        service.validateTrackerLink(trackerId, userId),
-      ).rejects.toThrow(`Tracker ${trackerId} is not active`);
-    });
-
-    it('should_throw_PlayerValidationException_when_tracker_is_deleted', async () => {
-      const trackerId = 'tracker123';
-      const userId = 'user123';
-      const tracker = {
-        id: trackerId,
-        userId: userId,
-        isActive: true,
-        isDeleted: true,
-      };
-
-      vi.mocked(mockTrackerService.getTrackerById).mockResolvedValue(
-        tracker as any,
-      );
-
-      await expect(
-        service.validateTrackerLink(trackerId, userId),
-      ).rejects.toThrow(PlayerValidationException);
-      await expect(
-        service.validateTrackerLink(trackerId, userId),
-      ).rejects.toThrow(`Tracker ${trackerId} is not active`);
-    });
-
-    it('should_throw_PlayerValidationException_when_tracker_not_found', async () => {
-      const trackerId = 'tracker123';
-      const userId = 'user123';
-
-      vi.mocked(mockTrackerService.getTrackerById).mockRejectedValue(
-        new Error('Tracker not found'),
-      );
-
-      await expect(
-        service.validateTrackerLink(trackerId, userId),
-      ).rejects.toThrow(PlayerValidationException);
-      await expect(
-        service.validateTrackerLink(trackerId, userId),
-      ).rejects.toThrow(`Tracker ${trackerId} not found`);
     });
   });
 
   describe('validateGuildMembership', () => {
-    it('should_pass_when_user_is_member_of_guild', async () => {
+    it('should_delegate_to_guild_validator', async () => {
       const userId = 'user123';
       const guildId = 'guild123';
-      const membership = {
-        userId,
-        guildId,
-      };
 
-      vi.mocked(mockGuildMembersService.findOne).mockResolvedValue(
-        membership as any,
-      );
+      vi.mocked(
+        mockPlayerGuildValidator.validateGuildMembership,
+      ).mockResolvedValue(undefined);
 
       await service.validateGuildMembership(userId, guildId);
 
-      expect(mockGuildMembersService.findOne).toHaveBeenCalledWith(
-        userId,
-        guildId,
-      );
+      expect(
+        mockPlayerGuildValidator.validateGuildMembership,
+      ).toHaveBeenCalledWith(userId, guildId);
     });
 
-    it('should_throw_PlayerValidationException_when_user_is_not_member_of_guild', async () => {
+    it('should_propagate_exception_from_validator', async () => {
       const userId = 'user123';
       const guildId = 'guild123';
 
-      vi.mocked(mockGuildMembersService.findOne).mockRejectedValue(
-        new Error('Not found'),
+      vi.mocked(
+        mockPlayerGuildValidator.validateGuildMembership,
+      ).mockRejectedValue(
+        new PlayerValidationException(
+          `User ${userId} is not a member of guild ${guildId}`,
+        ),
       );
 
       await expect(
         service.validateGuildMembership(userId, guildId),
       ).rejects.toThrow(PlayerValidationException);
-      await expect(
-        service.validateGuildMembership(userId, guildId),
-      ).rejects.toThrow(`User ${userId} is not a member of guild ${guildId}`);
     });
   });
 
   describe('validateCooldown', () => {
-    it('should_pass_when_lastLeftLeagueAt_is_null', () => {
-      const lastLeftLeagueAt = null;
+    it('should_delegate_to_cooldown_validator', () => {
+      const lastLeftLeagueAt = new Date();
       const cooldownDays = 7;
 
-      expect(() =>
-        service.validateCooldown(lastLeftLeagueAt, cooldownDays),
-      ).not.toThrow();
+      vi.mocked(mockPlayerCooldownValidator.validateCooldown).mockReturnValue(
+        undefined,
+      );
+
+      service.validateCooldown(lastLeftLeagueAt, cooldownDays);
+
+      expect(mockPlayerCooldownValidator.validateCooldown).toHaveBeenCalledWith(
+        lastLeftLeagueAt,
+        cooldownDays,
+      );
     });
 
-    it('should_pass_when_cooldownDays_is_null', () => {
-      const lastLeftLeagueAt = new Date();
-      const cooldownDays = null;
-
-      expect(() =>
-        service.validateCooldown(lastLeftLeagueAt, cooldownDays),
-      ).not.toThrow();
-    });
-
-    it('should_pass_when_cooldownDays_is_zero', () => {
-      const lastLeftLeagueAt = new Date();
-      const cooldownDays = 0;
-
-      expect(() =>
-        service.validateCooldown(lastLeftLeagueAt, cooldownDays),
-      ).not.toThrow();
-    });
-
-    it('should_pass_when_cooldownDays_is_negative', () => {
-      const lastLeftLeagueAt = new Date();
-      const cooldownDays = -1;
-
-      expect(() =>
-        service.validateCooldown(lastLeftLeagueAt, cooldownDays),
-      ).not.toThrow();
-    });
-
-    it('should_pass_when_cooldown_period_has_expired', () => {
-      const now = new Date();
-      const lastLeftLeagueAt = new Date(
-        now.getTime() - 8 * 24 * 60 * 60 * 1000,
-      ); // 8 days ago
-      const cooldownDays = 7;
-
-      expect(() =>
-        service.validateCooldown(lastLeftLeagueAt, cooldownDays),
-      ).not.toThrow();
-    });
-
-    it('should_throw_PlayerValidationException_when_cooldown_period_is_active', () => {
+    it('should_propagate_exception_from_validator', () => {
       const now = new Date();
       const lastLeftLeagueAt = new Date(
         now.getTime() - 3 * 24 * 60 * 60 * 1000,
       ); // 3 days ago
       const cooldownDays = 7;
+
+      vi.mocked(
+        mockPlayerCooldownValidator.validateCooldown,
+      ).mockImplementation(() => {
+        throw new PlayerValidationException(
+          'Player is in cooldown period. 4 day(s) remaining.',
+        );
+      });
 
       expect(() =>
         service.validateCooldown(lastLeftLeagueAt, cooldownDays),
       ).toThrow(PlayerValidationException);
-      expect(() =>
-        service.validateCooldown(lastLeftLeagueAt, cooldownDays),
-      ).toThrow('Player is in cooldown period');
-    });
-
-    it('should_include_days_remaining_in_error_message', () => {
-      const now = new Date();
-      const lastLeftLeagueAt = new Date(
-        now.getTime() - 3 * 24 * 60 * 60 * 1000,
-      ); // 3 days ago
-      const cooldownDays = 7;
-
-      expect(() =>
-        service.validateCooldown(lastLeftLeagueAt, cooldownDays),
-      ).toThrow(/day\(s\) remaining/);
     });
   });
 
@@ -368,6 +250,13 @@ describe('PlayerValidationService', () => {
       };
 
       vi.mocked(mockPrisma.player.findUnique).mockResolvedValue(player as any);
+      vi.mocked(
+        mockPlayerStatusValidator.validatePlayerStatus,
+      ).mockImplementation(() => {
+        throw new InvalidPlayerStatusException(
+          "Player status 'BANNED' does not allow league operations",
+        );
+      });
 
       await expect(
         service.validatePlayerForLeague(playerId, false),

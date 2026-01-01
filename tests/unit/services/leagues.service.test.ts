@@ -66,7 +66,9 @@ describe('LeaguesService', () => {
       getDefaults: vi.fn().mockReturnValue(mockDefaultSettings),
     } as unknown as LeagueSettingsDefaultsService;
 
-    mockPrisma = {} as unknown as PrismaService;
+    mockPrisma = {
+      $transaction: vi.fn(),
+    } as unknown as PrismaService;
 
     service = new LeaguesService(
       mockSettingsDefaults,
@@ -440,7 +442,7 @@ describe('LeaguesService', () => {
       );
     });
 
-    it('should_use_updateStatus_when_status_provided_in_updateDto', async () => {
+    it('should_update_status_and_other_fields_atomically_using_transaction', async () => {
       const leagueId = 'league_123456789012345678';
       const newStatus = LeagueStatus.PAUSED;
       const updateDto: UpdateLeagueDto = {
@@ -453,24 +455,46 @@ describe('LeaguesService', () => {
         name: 'Updated Name',
       };
 
+      // Mock transaction callback
+      const mockTransaction = vi.fn((callback: any) => {
+        const mockTx = {} as any; // Transaction client mock
+        return callback(mockTx);
+      }) as any;
+
+      vi.mocked(mockLeagueRepository.findOne).mockResolvedValue(mockLeague);
+      vi.mocked(mockPrisma.$transaction).mockImplementation(mockTransaction);
+
+      // Mock repository methods to accept transaction client
+      vi.mocked(mockLeagueRepository.update)
+        .mockResolvedValueOnce({ ...mockLeague, status: newStatus } as any)
+        .mockResolvedValueOnce(updatedLeague as any);
+      // findOne is called after all updates to return the complete entity
       vi.mocked(mockLeagueRepository.findOne)
         .mockResolvedValueOnce(mockLeague)
         .mockResolvedValueOnce(updatedLeague as any);
-      vi.mocked(mockLeagueRepository.update).mockResolvedValue(
-        updatedLeague as any,
-      );
-
-      // Mock updateStatus to be called (it will call findOne and update internally)
-      const updateStatusSpy = vi
-        .spyOn(service, 'updateStatus')
-        .mockResolvedValue(updatedLeague as any);
 
       const result = await service.update(leagueId, updateDto);
 
-      expect(updateStatusSpy).toHaveBeenCalledWith(leagueId, newStatus);
-      expect(mockLeagueRepository.update).toHaveBeenCalledWith(leagueId, {
-        name: 'Updated Name',
-      });
+      // Verify transaction was used
+      expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
+
+      // Verify both updates were called within transaction
+      expect(mockLeagueRepository.update).toHaveBeenCalledWith(
+        leagueId,
+        { status: newStatus },
+        expect.anything(), // transaction client
+      );
+      expect(mockLeagueRepository.update).toHaveBeenCalledWith(
+        leagueId,
+        { name: 'Updated Name' },
+        expect.anything(), // transaction client
+      );
+      // Verify findOne is called after all updates to return the complete entity
+      expect(mockLeagueRepository.findOne).toHaveBeenCalledWith(
+        leagueId,
+        undefined,
+        expect.anything(), // transaction client
+      );
       expect(result).toEqual(updatedLeague);
     });
 
@@ -493,6 +517,52 @@ describe('LeaguesService', () => {
       expect(mockLeagueRepository.update).toHaveBeenCalledWith(
         leagueId,
         updateDto,
+      );
+      // Verify transaction was NOT used when status unchanged
+      expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('should_rollback_transaction_when_second_update_fails', async () => {
+      const leagueId = 'league_123456789012345678';
+      const newStatus = LeagueStatus.PAUSED;
+      const updateDto: UpdateLeagueDto = {
+        name: 'Updated Name',
+        status: newStatus,
+      };
+      const updateError = new Error('Database update failed');
+
+      // Mock transaction callback
+      const mockTransaction = vi.fn((callback: any) => {
+        const mockTx = {} as any; // Transaction client mock
+        return callback(mockTx);
+      }) as any;
+
+      vi.mocked(mockLeagueRepository.findOne).mockResolvedValue(mockLeague);
+      vi.mocked(mockPrisma.$transaction).mockImplementation(mockTransaction);
+
+      // First update (status) succeeds, second update (name) fails
+      vi.mocked(mockLeagueRepository.update)
+        .mockResolvedValueOnce({ ...mockLeague, status: newStatus } as any)
+        .mockRejectedValueOnce(updateError);
+
+      // Verify that when second update fails, transaction rolls back
+      await expect(service.update(leagueId, updateDto)).rejects.toThrow(
+        InternalServerErrorException,
+      );
+
+      // Verify transaction was used
+      expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
+
+      // Verify both updates were attempted within transaction
+      expect(mockLeagueRepository.update).toHaveBeenCalledWith(
+        leagueId,
+        { status: newStatus },
+        expect.anything(), // transaction client
+      );
+      expect(mockLeagueRepository.update).toHaveBeenCalledWith(
+        leagueId,
+        { name: 'Updated Name' },
+        expect.anything(), // transaction client
       );
     });
   });

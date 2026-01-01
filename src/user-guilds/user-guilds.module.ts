@@ -2,6 +2,9 @@ import { Module, forwardRef } from '@nestjs/common';
 import { CacheModule } from '@nestjs/cache-manager';
 import { HttpModule } from '@nestjs/axios';
 import { UserGuildsService } from './user-guilds.service';
+import { GuildMembershipSyncService } from './services/guild-membership-sync.service';
+import { GuildPermissionEnrichmentService } from './services/guild-permission-enrichment.service';
+import { OAuthGuildFilterService } from './services/oauth-guild-filter.service';
 import { GuildMembersModule } from '../guild-members/guild-members.module';
 import { GuildsModule } from '../guilds/guilds.module';
 import { DiscordModule } from '../discord/discord.module';
@@ -24,7 +27,12 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
       max: 1000, // Maximum number of items in cache
     }),
   ],
-  providers: [UserGuildsService],
+  providers: [
+    UserGuildsService,
+    GuildMembershipSyncService,
+    GuildPermissionEnrichmentService,
+    OAuthGuildFilterService,
+  ],
   exports: [UserGuildsService],
 })
 export class UserGuildsModule {}
