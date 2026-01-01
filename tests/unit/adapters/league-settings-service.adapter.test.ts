@@ -22,10 +22,45 @@ describe('LeagueSettingsServiceAdapter', () => {
     membership: {
       joinMethod: 'OPEN',
       requiresApproval: false,
+      allowSelfRegistration: true,
+      maxPlayers: null,
+      minPlayers: 2,
+      maxTeams: null,
+      registrationOpen: true,
+      registrationStartDate: null,
+      registrationEndDate: null,
+      autoCloseOnFull: false,
+      requireGuildMembership: true,
+      requirePlayerStatus: false,
+      skillRequirements: null,
+      allowMultipleLeagues: true,
+      cooldownAfterLeave: null,
+      requireOrganization: false,
+      maxOrganizations: null,
+      maxTeamsPerOrganization: null,
     },
-    mmr: {
-      minMmr: 1000,
-      maxMmr: 2000,
+    game: {
+      gameType: null,
+      platform: null,
+    },
+    skill: {
+      isSkillBased: false,
+      skillMetric: null,
+      minSkillLevel: null,
+      maxSkillLevel: null,
+      requireTracker: false,
+      trackerPlatforms: null,
+    },
+    visibility: {
+      isPublic: true,
+      showInDirectory: true,
+      allowSpectators: true,
+    },
+    administration: {
+      adminRoles: [],
+      allowPlayerReports: true,
+      allowSuspensions: true,
+      allowBans: true,
     },
   };
 
@@ -73,7 +108,10 @@ describe('LeagueSettingsServiceAdapter', () => {
       };
       const updatedConfiguration = {
         ...mockLeagueConfiguration,
-        membership: dto.membership,
+        membership: {
+          ...mockLeagueConfiguration.membership,
+          ...dto.membership,
+        },
       };
       vi.spyOn(mockLeagueSettingsService, 'updateSettings').mockResolvedValue(
         updatedConfiguration,

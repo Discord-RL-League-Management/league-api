@@ -14,6 +14,7 @@ import { GuildSettingsService } from '@/guilds/guild-settings.service';
 import { GuildSettingsDto } from '@/guilds/dto/guild-settings.dto';
 import { GuildSettings } from '@/guilds/interfaces/settings.interface';
 import { Settings } from '@prisma/client';
+import { JsonValue } from '@prisma/client/runtime/library';
 
 describe('GuildSettingsServiceAdapter', () => {
   let adapter: GuildSettingsServiceAdapter;
@@ -21,16 +22,19 @@ describe('GuildSettingsServiceAdapter', () => {
 
   const mockGuildSettings: GuildSettings = {
     _metadata: {
-      schemaVersion: '1.0.0',
-      configVersion: 1,
+      version: '1.0.0',
+      schemaVersion: 1,
     },
     bot_command_channels: [],
   };
 
   const mockSettings: Settings = {
     id: 'settings_123',
-    guildId: 'guild_123',
-    config: mockGuildSettings,
+    ownerType: 'guild',
+    ownerId: 'guild_123',
+    settings: mockGuildSettings as unknown as JsonValue,
+    schemaVersion: 1,
+    configVersion: '1.0.0',
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -75,7 +79,7 @@ describe('GuildSettingsServiceAdapter', () => {
       const guildId = '123456789012345678';
       const userId = 'user_123456789012345678';
       const dto: GuildSettingsDto = {
-        bot_command_channels: ['channel_123'],
+        bot_command_channels: [{ id: 'channel_123', name: 'Test Channel' }],
       };
       vi.spyOn(mockGuildSettingsService, 'updateSettings').mockResolvedValue(
         mockSettings,
@@ -120,8 +124,30 @@ describe('GuildSettingsServiceAdapter', () => {
       // ARRANGE
       const guildId = '123456789012345678';
       const expectedHistory = [
-        { id: 'log_1', action: 'update', timestamp: new Date() },
-        { id: 'log_2', action: 'reset', timestamp: new Date() },
+        {
+          id: 'log_1',
+          action: 'update',
+          timestamp: new Date(),
+          userId: 'user_123',
+          guildId: 'guild_123',
+          entityType: 'guild_settings',
+          entityId: 'guild_123',
+          eventType: 'SETTINGS_UPDATED',
+          changes: {},
+          metadata: {},
+        },
+        {
+          id: 'log_2',
+          action: 'reset',
+          timestamp: new Date(),
+          userId: 'user_123',
+          guildId: 'guild_123',
+          entityType: 'guild_settings',
+          entityId: 'guild_123',
+          eventType: 'SETTINGS_UPDATED',
+          changes: {},
+          metadata: {},
+        },
       ];
       vi.spyOn(
         mockGuildSettingsService,
@@ -144,7 +170,18 @@ describe('GuildSettingsServiceAdapter', () => {
       const guildId = '123456789012345678';
       const limit = 10;
       const expectedHistory = [
-        { id: 'log_1', action: 'update', timestamp: new Date() },
+        {
+          id: 'log_1',
+          action: 'update',
+          timestamp: new Date(),
+          userId: 'user_123',
+          guildId: 'guild_123',
+          entityType: 'guild_settings',
+          entityId: 'guild_123',
+          eventType: 'SETTINGS_UPDATED',
+          changes: {},
+          metadata: {},
+        },
       ];
       vi.spyOn(
         mockGuildSettingsService,
