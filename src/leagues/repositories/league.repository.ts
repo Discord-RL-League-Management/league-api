@@ -73,7 +73,6 @@ export class LeagueRepository
     tx?: Prisma.TransactionClient,
   ): Promise<League | null> {
     if (tx) {
-      // If transaction client provided, use it directly
       const opts = { ...defaultLeagueQueryOptions, ...options };
       const include: Prisma.LeagueInclude = {};
 
@@ -242,7 +241,6 @@ export class LeagueRepository
     tx?: Prisma.TransactionClient,
   ): Promise<League> {
     if (tx) {
-      // If transaction client provided, use it directly
       const league = await tx.league.create({
         data: leagueData,
       });
@@ -268,7 +266,6 @@ export class LeagueRepository
       return league;
     }
 
-    // Otherwise, create a new transaction
     return this.prisma.$transaction(async (transaction) => {
       const league = await transaction.league.create({
         data: leagueData,

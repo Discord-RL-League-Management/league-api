@@ -48,8 +48,6 @@ export class LeaguesService {
       // Instead, we'll check for duplicate name within the same guild if needed
       // For now, we'll allow multiple leagues with the same name in a guild
 
-      // Create league with settings in transaction (handled by repository)
-      // Ensure createdBy is included in the data
       const leagueData: CreateLeagueDto & { createdBy: string } = {
         ...createLeagueDto,
         createdBy,
@@ -197,7 +195,6 @@ export class LeaguesService {
     try {
       const league = await this.findOne(id);
 
-      // Prevent modifications to leagues in terminal states
       if (
         league.status === LeagueStatus.ARCHIVED ||
         league.status === LeagueStatus.CANCELLED
@@ -207,27 +204,21 @@ export class LeaguesService {
         );
       }
 
-      // If status is being updated, validate transition and use transaction for atomicity
       if (
         updateLeagueDto.status !== undefined &&
         updateLeagueDto.status !== league.status
       ) {
-        // Validate status transition before starting transaction
         this.validateStatusTransition(league.status, updateLeagueDto.status);
 
-        // Use transaction to ensure atomicity when updating both status and other fields
         return await this.prisma.$transaction(async (tx) => {
           const { status, ...updateData } = updateLeagueDto;
 
-          // Update status first within transaction
           await this.leagueRepository.update(id, { status }, tx);
 
-          // If there are other fields, update them in the same transaction
           if (Object.keys(updateData).length > 0) {
             await this.leagueRepository.update(id, updateData, tx);
           }
 
-          // Always return the complete entity after all updates
           return await this.leagueRepository.findOne(id, undefined, tx);
         });
       }
