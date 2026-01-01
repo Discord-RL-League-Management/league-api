@@ -1,7 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { DiscordApiService } from '../../discord/discord-api.service';
 import { UserGuildsService } from '../../user-guilds/user-guilds.service';
-import { GuildsService } from '../../guilds/guilds.service';
+import type { IGuildService } from '../../guilds/interfaces/guild-service.interface';
 
 /**
  * AuthOrchestrationService - OAuth flow orchestration
@@ -21,7 +21,7 @@ export class AuthOrchestrationService {
   constructor(
     private readonly discordApiService: DiscordApiService,
     private readonly userGuildsService: UserGuildsService,
-    private readonly guildsService: GuildsService,
+    @Inject('IGuildService') private readonly guildsService: IGuildService,
   ) {}
 
   /**
@@ -83,12 +83,10 @@ export class AuthOrchestrationService {
         `Synced ${mutualGuildsWithRoles.length} guild memberships with roles for user ${userId}`,
       );
     } catch (error) {
-      // Log error but don't fail OAuth callback - role sync is not critical
       this.logger.error(
         `Failed to sync guild memberships with roles for user ${userId}:`,
         error,
       );
-      // Re-throw to allow caller to handle if needed, but typically this is caught in controller
       throw error;
     }
   }

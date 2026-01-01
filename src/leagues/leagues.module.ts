@@ -72,6 +72,7 @@ import { LeagueSettingsServiceAdapter } from './adapters/league-settings-service
     LeagueSettingsDefaultsService,
     LeaguePermissionService,
     LeagueRepository,
+    LeagueSettingsService, // Export for TeamsModule (TeamValidationService)
     'ILeagueSettingsProvider',
     'ILeagueService',
     'ILeagueSettingsService',

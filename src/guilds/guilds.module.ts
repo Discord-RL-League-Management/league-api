@@ -76,6 +76,8 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
   exports: [
     SettingsDefaultsService,
     GuildAccessProviderAdapter,
+    GuildSettingsService, // Export for GuildAccessAdapterModule
+    GuildAccessValidationService, // Export for GuardsModule (GuildAdminGuard)
     'IGuildService',
     'IGuildSettingsService',
     'IGuildAccessValidationService',

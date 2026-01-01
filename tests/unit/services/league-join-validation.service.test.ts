@@ -13,9 +13,13 @@ import { LeagueMemberRepository } from '@/league-members/repositories/league-mem
 import { PlayerService } from '@/players/services/player.service';
 import { PlayerValidationService } from '@/players/services/player-validation.service';
 import { GuildMembersService } from '@/guild-members/guild-members.service';
-import { TrackerService } from '@/trackers/services/tracker.service';
+import type { ITrackerService } from '@/trackers/interfaces/tracker-service.interface';
 import { LeagueJoinValidationException } from '@/league-members/exceptions/league-member.exceptions';
-import { PlayerStatus } from '@prisma/client';
+import { createLeagueSettingsData } from '@tests/factories/league-settings.factory';
+import { createPlayerTestData } from '@tests/factories/player.factory';
+import { SkillValidationService } from '@/league-members/services/skill-validation.service';
+import { RegistrationWindowValidator } from '@/league-members/services/registration-window-validator';
+import { CapacityValidator } from '@/league-members/services/capacity-validator';
 
 describe('LeagueJoinValidationService', () => {
   let service: LeagueJoinValidationService;
@@ -25,7 +29,10 @@ describe('LeagueJoinValidationService', () => {
   let mockPlayerService: PlayerService;
   let mockPlayerValidationService: PlayerValidationService;
   let mockGuildMembersService: GuildMembersService;
-  let mockTrackerService: TrackerService;
+  let mockTrackerService: ITrackerService;
+  let mockSkillValidationService: SkillValidationService;
+  let mockRegistrationWindowValidator: RegistrationWindowValidator;
+  let mockCapacityValidator: CapacityValidator;
 
   beforeEach(() => {
     mockPrisma = {} as PrismaService;
@@ -56,7 +63,19 @@ describe('LeagueJoinValidationService', () => {
     mockTrackerService = {
       getTrackerById: vi.fn(),
       findBestTrackerForUser: vi.fn(),
-    } as unknown as TrackerService;
+    } as unknown as ITrackerService;
+
+    mockSkillValidationService = {
+      validateSkillRequirements: vi.fn(),
+    } as unknown as SkillValidationService;
+
+    mockRegistrationWindowValidator = {
+      validateRegistrationWindow: vi.fn(),
+    } as unknown as RegistrationWindowValidator;
+
+    mockCapacityValidator = {
+      validateCapacity: vi.fn(),
+    } as unknown as CapacityValidator;
 
     service = new LeagueJoinValidationService(
       mockPrisma,
@@ -66,6 +85,9 @@ describe('LeagueJoinValidationService', () => {
       mockPlayerValidationService,
       mockGuildMembersService,
       mockTrackerService,
+      mockSkillValidationService,
+      mockRegistrationWindowValidator,
+      mockCapacityValidator,
     );
   });
 
@@ -77,25 +99,12 @@ describe('LeagueJoinValidationService', () => {
     it('should_pass_when_all_validations_pass', async () => {
       const playerId = 'player123';
       const leagueId = 'league123';
-      const settings = {
-        membership: {
-          requireGuildMembership: false,
-          requirePlayerStatus: false,
-          allowMultipleLeagues: true,
-          cooldownAfterLeave: null,
-          registrationOpen: true,
-          autoCloseOnFull: false,
-        },
-        skill: {
-          requireTracker: false,
-        },
-      };
-      const player = {
+      const settings = createLeagueSettingsData();
+      const player = createPlayerTestData({
         id: playerId,
         userId: 'user123',
         guildId: 'guild123',
-        status: PlayerStatus.ACTIVE,
-      };
+      });
 
       vi.mocked(mockLeagueSettingsService.getSettings).mockResolvedValue(
         settings as any,
@@ -104,6 +113,12 @@ describe('LeagueJoinValidationService', () => {
       vi.mocked(
         mockLeagueMemberRepository.countActiveMembers,
       ).mockResolvedValue(0);
+      vi.mocked(
+        mockRegistrationWindowValidator.validateRegistrationWindow,
+      ).mockReturnValue(undefined);
+      vi.mocked(mockCapacityValidator.validateCapacity).mockResolvedValue(
+        undefined,
+      );
 
       await service.validateJoin(playerId, leagueId);
 
@@ -115,25 +130,14 @@ describe('LeagueJoinValidationService', () => {
     it('should_validate_guild_membership_when_required', async () => {
       const playerId = 'player123';
       const leagueId = 'league123';
-      const settings = {
-        membership: {
-          requireGuildMembership: true,
-          requirePlayerStatus: false,
-          allowMultipleLeagues: true,
-          cooldownAfterLeave: null,
-          registrationOpen: true,
-          autoCloseOnFull: false,
-        },
-        skill: {
-          requireTracker: false,
-        },
-      };
-      const player = {
+      const settings = createLeagueSettingsData({
+        membership: { requireGuildMembership: true },
+      });
+      const player = createPlayerTestData({
         id: playerId,
         userId: 'user123',
         guildId: 'guild123',
-        status: PlayerStatus.ACTIVE,
-      };
+      });
 
       vi.mocked(mockLeagueSettingsService.getSettings).mockResolvedValue(
         settings as any,
@@ -143,6 +147,12 @@ describe('LeagueJoinValidationService', () => {
       vi.mocked(
         mockLeagueMemberRepository.countActiveMembers,
       ).mockResolvedValue(0);
+      vi.mocked(
+        mockRegistrationWindowValidator.validateRegistrationWindow,
+      ).mockReturnValue(undefined);
+      vi.mocked(mockCapacityValidator.validateCapacity).mockResolvedValue(
+        undefined,
+      );
 
       await service.validateJoin(playerId, leagueId);
 
@@ -155,25 +165,14 @@ describe('LeagueJoinValidationService', () => {
     it('should_validate_player_status_when_required', async () => {
       const playerId = 'player123';
       const leagueId = 'league123';
-      const settings = {
-        membership: {
-          requireGuildMembership: false,
-          requirePlayerStatus: true,
-          allowMultipleLeagues: true,
-          cooldownAfterLeave: null,
-          registrationOpen: true,
-          autoCloseOnFull: false,
-        },
-        skill: {
-          requireTracker: false,
-        },
-      };
-      const player = {
+      const settings = createLeagueSettingsData({
+        membership: { requirePlayerStatus: true },
+      });
+      const player = createPlayerTestData({
         id: playerId,
         userId: 'user123',
         guildId: 'guild123',
-        status: PlayerStatus.ACTIVE,
-      };
+      });
 
       vi.mocked(mockLeagueSettingsService.getSettings).mockResolvedValue(
         settings as any,
@@ -196,25 +195,14 @@ describe('LeagueJoinValidationService', () => {
     it('should_throw_LeagueJoinValidationException_when_tracker_required_but_not_present', async () => {
       const playerId = 'player123';
       const leagueId = 'league123';
-      const settings = {
-        membership: {
-          requireGuildMembership: false,
-          requirePlayerStatus: false,
-          allowMultipleLeagues: true,
-          cooldownAfterLeave: null,
-          registrationOpen: true,
-          autoCloseOnFull: false,
-        },
-        skill: {
-          requireTracker: true,
-        },
-      };
-      const player = {
+      const settings = createLeagueSettingsData({
+        skill: { requireTracker: true },
+      });
+      const player = createPlayerTestData({
         id: playerId,
         userId: 'user123',
         guildId: 'guild123',
-        status: PlayerStatus.ACTIVE,
-      };
+      });
 
       vi.mocked(mockLeagueSettingsService.getSettings).mockResolvedValue(
         settings as any,
@@ -232,30 +220,26 @@ describe('LeagueJoinValidationService', () => {
     it('should_throw_LeagueJoinValidationException_when_registration_is_closed', async () => {
       const playerId = 'player123';
       const leagueId = 'league123';
-      const settings = {
-        membership: {
-          requireGuildMembership: false,
-          requirePlayerStatus: false,
-          allowMultipleLeagues: true,
-          cooldownAfterLeave: null,
-          registrationOpen: false,
-          autoCloseOnFull: false,
-        },
-        skill: {
-          requireTracker: false,
-        },
-      };
-      const player = {
+      const settings = createLeagueSettingsData({
+        membership: { registrationOpen: false },
+      });
+      const player = createPlayerTestData({
         id: playerId,
         userId: 'user123',
         guildId: 'guild123',
-        status: PlayerStatus.ACTIVE,
-      };
+      });
 
       vi.mocked(mockLeagueSettingsService.getSettings).mockResolvedValue(
         settings as any,
       );
       vi.mocked(mockPlayerService.findOne).mockResolvedValue(player as any);
+      vi.mocked(
+        mockRegistrationWindowValidator.validateRegistrationWindow,
+      ).mockImplementation(() => {
+        throw new LeagueJoinValidationException(
+          'League registration is currently closed',
+        );
+      });
 
       await expect(service.validateJoin(playerId, leagueId)).rejects.toThrow(
         LeagueJoinValidationException,
@@ -268,26 +252,14 @@ describe('LeagueJoinValidationService', () => {
     it('should_throw_LeagueJoinValidationException_when_league_is_full', async () => {
       const playerId = 'player123';
       const leagueId = 'league123';
-      const settings = {
-        membership: {
-          requireGuildMembership: false,
-          requirePlayerStatus: false,
-          allowMultipleLeagues: true,
-          cooldownAfterLeave: null,
-          registrationOpen: true,
-          maxPlayers: 10,
-          autoCloseOnFull: false,
-        },
-        skill: {
-          requireTracker: false,
-        },
-      };
-      const player = {
+      const settings = createLeagueSettingsData({
+        membership: { maxPlayers: 10 },
+      });
+      const player = createPlayerTestData({
         id: playerId,
         userId: 'user123',
         guildId: 'guild123',
-        status: PlayerStatus.ACTIVE,
-      };
+      });
 
       vi.mocked(mockLeagueSettingsService.getSettings).mockResolvedValue(
         settings as any,
@@ -296,6 +268,12 @@ describe('LeagueJoinValidationService', () => {
       vi.mocked(
         mockLeagueMemberRepository.countActiveMembers,
       ).mockResolvedValue(10);
+      vi.mocked(
+        mockRegistrationWindowValidator.validateRegistrationWindow,
+      ).mockReturnValue(undefined);
+      vi.mocked(mockCapacityValidator.validateCapacity).mockRejectedValue(
+        new LeagueJoinValidationException('League is full (10/10 players)'),
+      );
 
       await expect(service.validateJoin(playerId, leagueId)).rejects.toThrow(
         LeagueJoinValidationException,
@@ -308,25 +286,14 @@ describe('LeagueJoinValidationService', () => {
     it('should_throw_LeagueJoinValidationException_when_player_already_in_another_league', async () => {
       const playerId = 'player123';
       const leagueId = 'league123';
-      const settings = {
-        membership: {
-          requireGuildMembership: false,
-          requirePlayerStatus: false,
-          allowMultipleLeagues: false,
-          cooldownAfterLeave: null,
-          registrationOpen: true,
-          autoCloseOnFull: false,
-        },
-        skill: {
-          requireTracker: false,
-        },
-      };
-      const player = {
+      const settings = createLeagueSettingsData({
+        membership: { allowMultipleLeagues: false },
+      });
+      const player = createPlayerTestData({
         id: playerId,
         userId: 'user123',
         guildId: 'guild123',
-        status: PlayerStatus.ACTIVE,
-      };
+      });
 
       vi.mocked(mockLeagueSettingsService.getSettings).mockResolvedValue(
         settings as any,
@@ -339,6 +306,12 @@ describe('LeagueJoinValidationService', () => {
       vi.mocked(
         mockLeagueMemberRepository.countActiveMembers,
       ).mockResolvedValue(0);
+      vi.mocked(
+        mockRegistrationWindowValidator.validateRegistrationWindow,
+      ).mockReturnValue(undefined);
+      vi.mocked(mockCapacityValidator.validateCapacity).mockResolvedValue(
+        undefined,
+      );
 
       await expect(service.validateJoin(playerId, leagueId)).rejects.toThrow(
         LeagueJoinValidationException,
@@ -351,26 +324,15 @@ describe('LeagueJoinValidationService', () => {
     it('should_validate_cooldown_when_configured', async () => {
       const playerId = 'player123';
       const leagueId = 'league123';
-      const settings = {
-        membership: {
-          requireGuildMembership: false,
-          requirePlayerStatus: false,
-          allowMultipleLeagues: true,
-          cooldownAfterLeave: 7,
-          registrationOpen: true,
-          autoCloseOnFull: false,
-        },
-        skill: {
-          requireTracker: false,
-        },
-      };
-      const player = {
+      const settings = createLeagueSettingsData({
+        membership: { cooldownAfterLeave: 7 },
+      });
+      const player = createPlayerTestData({
         id: playerId,
         userId: 'user123',
         guildId: 'guild123',
-        status: PlayerStatus.ACTIVE,
         lastLeftLeagueAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), // 10 days ago
-      };
+      });
 
       vi.mocked(mockLeagueSettingsService.getSettings).mockResolvedValue(
         settings as any,
@@ -382,6 +344,12 @@ describe('LeagueJoinValidationService', () => {
       vi.mocked(
         mockLeagueMemberRepository.countActiveMembers,
       ).mockResolvedValue(0);
+      vi.mocked(
+        mockRegistrationWindowValidator.validateRegistrationWindow,
+      ).mockReturnValue(undefined);
+      vi.mocked(mockCapacityValidator.validateCapacity).mockResolvedValue(
+        undefined,
+      );
 
       await service.validateJoin(playerId, leagueId);
 

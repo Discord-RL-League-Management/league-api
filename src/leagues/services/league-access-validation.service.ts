@@ -1,8 +1,8 @@
 import { Injectable, Logger, NotFoundException, Inject } from '@nestjs/common';
 import { LeagueRepository } from '../repositories/league.repository';
-import { GuildsService } from '../../guilds/guilds.service';
 import { PlayerService } from '../../players/services/player.service';
 import type { ILeagueMemberAccess } from '../interfaces/league-member-access.interface';
+import type { IGuildService } from '../../guilds/interfaces/guild-service.interface';
 import {
   LeagueNotFoundException,
   LeagueAccessDeniedException,
@@ -21,7 +21,7 @@ export class LeagueAccessValidationService {
 
   constructor(
     private leagueRepository: LeagueRepository,
-    private guildsService: GuildsService,
+    @Inject('IGuildService') private guildsService: IGuildService,
     private playerService: PlayerService,
     @Inject('ILeagueMemberAccess')
     private leagueMemberAccess: ILeagueMemberAccess,

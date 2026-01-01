@@ -13,6 +13,9 @@ import { InternalLeagueMembersController } from './internal-league-members.contr
 
 import { LeagueMemberService } from './services/league-member.service';
 import { LeagueJoinValidationService } from './services/league-join-validation.service';
+import { SkillValidationService } from './services/skill-validation.service';
+import { RegistrationWindowValidator } from './services/registration-window-validator';
+import { CapacityValidator } from './services/capacity-validator';
 
 import { LeagueMemberRepository } from './repositories/league-member.repository';
 
@@ -33,6 +36,9 @@ import { LeagueMemberAccessAdapter } from './adapters/league-member-access.adapt
   providers: [
     LeagueMemberService,
     LeagueJoinValidationService,
+    SkillValidationService,
+    RegistrationWindowValidator,
+    CapacityValidator,
     LeagueMemberRepository,
     // Provide adapter with injection token for LeaguesModule
     {

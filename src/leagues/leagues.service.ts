@@ -210,7 +210,7 @@ export class LeaguesService {
       ) {
         this.validateStatusTransition(league.status, updateLeagueDto.status);
 
-        return await this.prisma.$transaction(async (tx) => {
+        const updatedLeague = await this.prisma.$transaction(async (tx) => {
           const { status, ...updateData } = updateLeagueDto;
 
           await this.leagueRepository.update(id, { status }, tx);
@@ -219,8 +219,13 @@ export class LeaguesService {
             await this.leagueRepository.update(id, updateData, tx);
           }
 
-          return await this.leagueRepository.findOne(id, undefined, tx);
+          const result = await this.leagueRepository.findOne(id, undefined, tx);
+          if (!result) {
+            throw new LeagueNotFoundException(id);
+          }
+          return result;
         });
+        return updatedLeague;
       }
 
       return await this.leagueRepository.update(id, updateLeagueDto);

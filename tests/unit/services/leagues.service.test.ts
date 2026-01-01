@@ -456,12 +456,10 @@ describe('LeaguesService', () => {
       };
 
       // Mock transaction callback
-      const mockTransaction = vi.fn(
-        async (callback: (tx: unknown) => Promise<unknown>) => {
-          const mockTx = {}; // Transaction client mock
-          return callback(mockTx);
-        },
-      );
+      const mockTransaction = vi.fn((callback: any) => {
+        const mockTx = {} as any; // Transaction client mock
+        return callback(mockTx);
+      }) as any;
 
       vi.mocked(mockLeagueRepository.findOne).mockResolvedValue(mockLeague);
       vi.mocked(mockPrisma.$transaction).mockImplementation(mockTransaction);
@@ -534,12 +532,10 @@ describe('LeaguesService', () => {
       const updateError = new Error('Database update failed');
 
       // Mock transaction callback
-      const mockTransaction = vi.fn(
-        async (callback: (tx: unknown) => Promise<unknown>) => {
-          const mockTx = {}; // Transaction client mock
-          return callback(mockTx);
-        },
-      );
+      const mockTransaction = vi.fn((callback: any) => {
+        const mockTx = {} as any; // Transaction client mock
+        return callback(mockTx);
+      }) as any;
 
       vi.mocked(mockLeagueRepository.findOne).mockResolvedValue(mockLeague);
       vi.mocked(mockPrisma.$transaction).mockImplementation(mockTransaction);
