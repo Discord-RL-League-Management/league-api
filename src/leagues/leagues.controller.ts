@@ -119,12 +119,7 @@ export class LeaguesController {
       createLeagueDto.guildId,
     );
 
-    return this.leaguesService.create(
-      { ...createLeagueDto, createdBy: user.id } as CreateLeagueDto & {
-        createdBy: string;
-      },
-      user.id,
-    );
+    return this.leaguesService.create(createLeagueDto, user.id);
   }
 
   @Patch(':id')

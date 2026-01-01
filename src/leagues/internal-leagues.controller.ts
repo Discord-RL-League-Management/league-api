@@ -57,14 +57,9 @@ export class InternalLeaguesController {
   @ApiResponse({ status: 201, description: 'League created successfully' })
   @ApiResponse({ status: 400, description: 'Invalid request data' })
   @ApiResponse({ status: 401, description: 'Invalid bot API key' })
-  async create(
-    @Body() createLeagueDto: CreateLeagueDto & { createdBy: string },
-  ) {
+  async create(@Body() createLeagueDto: CreateLeagueDto) {
     this.logger.log(`Bot creating league ${createLeagueDto.name}`);
-    return this.leaguesService.create(
-      createLeagueDto,
-      createLeagueDto.createdBy || 'bot',
-    );
+    return this.leaguesService.create(createLeagueDto, 'bot');
   }
 
   @Patch(':id')
