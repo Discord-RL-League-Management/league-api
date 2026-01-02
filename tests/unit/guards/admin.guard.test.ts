@@ -11,16 +11,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { AdminGuard } from '@/common/guards/admin.guard';
+import { AuthorizationService } from '@/auth/services/authorization.service';
 import type { AuthenticatedUser } from '@/common/interfaces/user.interface';
 import type { Request } from 'express';
 
 describe('AdminGuard', () => {
   let guard: AdminGuard;
-  let mockPermissionProvider: any;
-  let mockAuditProvider: any;
-  let mockDiscordProvider: any;
-  let mockTokenProvider: any;
-  let mockGuildAccessProvider: any;
+  let mockAuthorizationService: AuthorizationService;
   let mockContext: ExecutionContext;
   let mockRequest: Request;
 
@@ -36,26 +33,9 @@ describe('AdminGuard', () => {
   };
 
   beforeEach(() => {
-    mockTokenProvider = {
-      getValidAccessToken: vi.fn().mockResolvedValue('access-token-123'),
-    };
-
-    mockDiscordProvider = {
-      checkGuildPermissions: vi.fn(),
-    };
-
-    mockPermissionProvider = {
-      checkAdminRoles: vi.fn(),
-    };
-
-    mockAuditProvider = {
-      logAdminAction: vi.fn().mockResolvedValue(undefined),
-    };
-
-    mockGuildAccessProvider = {
-      getSettings: vi.fn(),
-      findOne: vi.fn(),
-    };
+    mockAuthorizationService = {
+      checkGuildAdmin: vi.fn(),
+    } as unknown as AuthorizationService;
 
     mockRequest = {
       user: mockUser,
@@ -71,13 +51,7 @@ describe('AdminGuard', () => {
       }),
     } as unknown as ExecutionContext;
 
-    guard = new AdminGuard(
-      mockPermissionProvider,
-      mockAuditProvider,
-      mockDiscordProvider,
-      mockTokenProvider,
-      mockGuildAccessProvider,
-    );
+    guard = new AdminGuard(mockAuthorizationService);
   });
 
   afterEach(() => {
@@ -114,84 +88,30 @@ describe('AdminGuard', () => {
       ).rejects.toThrow(ForbiddenException);
     });
 
-    it('should_allow_access_when_user_has_discord_administrator_permission', async () => {
-      vi.mocked(mockDiscordProvider.checkGuildPermissions).mockResolvedValue({
-        isMember: true,
-        hasAdministratorPermission: true,
-      });
+    it('should_delegate_to_authorization_service_when_user_and_guildId_present', async () => {
+      vi.mocked(mockAuthorizationService.checkGuildAdmin).mockResolvedValue(
+        true,
+      );
 
       const result = await guard.canActivate(mockContext);
 
       expect(result).toBe(true);
-      expect(mockAuditProvider.logAdminAction).toHaveBeenCalled();
-    });
-
-    it('should_throw_when_user_is_not_guild_member', async () => {
-      vi.mocked(mockDiscordProvider.checkGuildPermissions).mockResolvedValue({
-        isMember: false,
-        hasAdministratorPermission: false,
-      });
-
-      await expect(guard.canActivate(mockContext)).rejects.toThrow(
-        ForbiddenException,
-      );
-      await expect(guard.canActivate(mockContext)).rejects.toThrow(
-        'You are not a member of this guild',
+      expect(mockAuthorizationService.checkGuildAdmin).toHaveBeenCalledWith(
+        mockUser,
+        'guild-1',
+        mockRequest,
       );
     });
 
-    it('should_allow_access_when_no_admin_roles_configured', async () => {
-      vi.mocked(mockDiscordProvider.checkGuildPermissions).mockResolvedValue({
-        isMember: true,
-        hasAdministratorPermission: false,
-      });
-      vi.mocked(mockGuildAccessProvider.getSettings).mockResolvedValue({
-        roles: { admin: [] },
-      });
-
-      const result = await guard.canActivate(mockContext);
-
-      expect(result).toBe(true);
-      expect(mockAuditProvider.logAdminAction).toHaveBeenCalled();
-    });
-
-    it('should_allow_access_when_user_has_configured_admin_role', async () => {
-      vi.mocked(mockDiscordProvider.checkGuildPermissions).mockResolvedValue({
-        isMember: true,
-        hasAdministratorPermission: false,
-      });
-      vi.mocked(mockGuildAccessProvider.getSettings).mockResolvedValue({
-        roles: { admin: ['admin-role'] },
-      });
-      vi.mocked(mockGuildAccessProvider.findOne).mockResolvedValue({
-        roles: ['admin-role'],
-      });
-      vi.mocked(mockPermissionProvider.checkAdminRoles).mockResolvedValue(true);
-
-      const result = await guard.canActivate(mockContext);
-
-      expect(result).toBe(true);
-      expect(mockPermissionProvider.checkAdminRoles).toHaveBeenCalled();
-    });
-
-    it('should_throw_when_user_lacks_admin_access', async () => {
-      vi.mocked(mockDiscordProvider.checkGuildPermissions).mockResolvedValue({
-        isMember: true,
-        hasAdministratorPermission: false,
-      });
-      vi.mocked(mockGuildAccessProvider.getSettings).mockResolvedValue({
-        roles: { admin: ['admin-role'] },
-      });
-      vi.mocked(mockGuildAccessProvider.findOne).mockResolvedValue({
-        roles: ['member-role'],
-      });
-      vi.mocked(mockPermissionProvider.checkAdminRoles).mockResolvedValue(
-        false,
+    it('should_throw_when_authorization_service_denies_access', async () => {
+      vi.mocked(mockAuthorizationService.checkGuildAdmin).mockRejectedValue(
+        new ForbiddenException('Admin access required'),
       );
 
       await expect(guard.canActivate(mockContext)).rejects.toThrow(
         ForbiddenException,
       );
+      expect(mockAuthorizationService.checkGuildAdmin).toHaveBeenCalled();
     });
   });
 });

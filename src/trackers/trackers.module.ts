@@ -44,7 +44,7 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
     forwardRef(() => AuditModule),
     MmrCalculationModule,
     forwardRef(() => GuildsModule),
-    forwardRef(() => GuardsModule), // Use forwardRef to break circular dependency with GuardsModule <-> GuildsModule
+    GuardsModule, // No forwardRef needed - GuardsModule no longer depends on domain modules
     GuildMembersModule,
     PermissionCheckModule,
     HttpModule,
