@@ -24,6 +24,6 @@ import { AuditProviderAdapter } from './adapters/audit-provider.adapter';
   ],
   providers: [AuditLogService, RequestContextService, AuditProviderAdapter],
   controllers: [AuditLogController],
-  exports: [AuditLogService, AuditProviderAdapter], // Export for use in other modules
+  exports: [AuditLogService, AuditProviderAdapter],
 })
 export class AuditModule {}

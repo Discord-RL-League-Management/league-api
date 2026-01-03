@@ -20,16 +20,11 @@ import { TeamProviderAdapter } from './adapters/team-provider.adapter';
     TeamService,
     TeamRepository,
     TeamValidationService,
-    // Provide adapter with injection token for LeaguesModule
     {
       provide: 'ITeamProvider',
       useClass: TeamProviderAdapter,
     },
   ],
-  exports: [
-    TeamService,
-    TeamRepository,
-    'ITeamProvider', // Export token for LeaguesModule
-  ],
+  exports: [TeamService, TeamRepository, 'ITeamProvider'],
 })
 export class TeamsModule {}

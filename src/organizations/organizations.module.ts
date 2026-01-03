@@ -26,7 +26,6 @@ import { OrganizationProviderAdapter } from './adapters/organization-provider.ad
     OrganizationMemberService,
     OrganizationValidationService,
     OrganizationGmGuard,
-    // Provide adapter with injection token for LeaguesModule
     {
       provide: 'IOrganizationProvider',
       useClass: OrganizationProviderAdapter,
@@ -38,7 +37,7 @@ import { OrganizationProviderAdapter } from './adapters/organization-provider.ad
     OrganizationMemberService,
     OrganizationValidationService,
     OrganizationGmGuard,
-    'IOrganizationProvider', // Export token for LeaguesModule
+    'IOrganizationProvider',
   ],
 })
 export class OrganizationsModule {}

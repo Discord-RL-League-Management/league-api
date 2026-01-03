@@ -33,6 +33,6 @@ import { GuildMembersService } from '../../guild-members/guild-members.service';
       inject: [GuildSettingsService, GuildMembersService],
     },
   ],
-  exports: ['IGuildAccessProvider'], // Export token for GuardsModule
+  exports: ['IGuildAccessProvider'],
 })
 export class GuildAccessAdapterModule {}
