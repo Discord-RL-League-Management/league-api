@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { CacheModule } from '@nestjs/cache-manager';
 import { GuildsController } from './guilds.controller';
 import { InternalGuildsController } from './internal-guilds.controller';
@@ -32,8 +32,8 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
     GuildMembersModule,
     DiscordModule,
     PermissionCheckModule, // Required for GuildAdminGuard (PermissionCheckService) - import before GuardsModule
-    forwardRef(() => GuardsModule), // Use forwardRef to break circular dependency with GuardsModule <-> GuildsModule
-    forwardRef(() => GuildAccessAdapterModule), // Required for AdminGuard (IGuildAccessProvider)
+    GuardsModule, // No forwardRef needed - GuardsModule no longer depends on GuildsModule
+    GuildAccessAdapterModule, // Required for AdminGuard (IGuildAccessProvider) - no forwardRef needed
     PrismaModule,
     SettingsModule, // Required for GuildSettingsService (SettingsService)
     ActivityLogModule, // Required for GuildSettingsService (ActivityLogService)

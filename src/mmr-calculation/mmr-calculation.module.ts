@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { MmrCalculationController } from './controllers/mmr-calculation.controller';
 import { MMRCalculatorDemoController } from './controllers/mmr-calculator-demo.controller';
 import { MmrCalculationService } from './services/mmr-calculation.service';
@@ -24,9 +24,9 @@ import { GuildAccessAdapterModule } from '../guilds/adapters/guild-access-adapte
 @Module({
   imports: [
     PrismaModule,
-    forwardRef(() => GuildsModule),
-    forwardRef(() => GuardsModule), // Use forwardRef to break circular dependency with GuardsModule <-> GuildsModule
-    forwardRef(() => GuildAccessAdapterModule), // Required for AdminGuard (IGuildAccessProvider)
+    GuildsModule, // No forwardRef needed - GuardsModule no longer depends on GuildsModule
+    GuardsModule, // No forwardRef needed - GuardsModule no longer depends on GuildsModule
+    GuildAccessAdapterModule, // No forwardRef needed - GuardsModule no longer depends on GuildsModule
   ],
   controllers: [MmrCalculationController, MMRCalculatorDemoController],
   providers: [
