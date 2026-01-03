@@ -1,7 +1,6 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from '../../prisma/prisma.module';
-import { TrackersModule } from '../../trackers/trackers.module';
 import { OutboxService } from './services/outbox.service';
 import { OutboxProcessorService } from './services/outbox-processor.service';
 import { OutboxEventDispatcher } from './services/outbox-event-dispatcher.service';
@@ -12,9 +11,12 @@ import { OutboxRepository } from './repositories/outbox.repository';
  *
  * Provides outbox functionality for any domain that needs reliable event publishing.
  * This module is domain-agnostic and can be used by any module.
+ *
+ * Note: TrackersModule import removed - OutboxEventDispatcher doesn't use it.
+ * Infrastructure modules should not depend on domain modules.
  */
 @Module({
-  imports: [PrismaModule, ConfigModule, forwardRef(() => TrackersModule)],
+  imports: [PrismaModule, ConfigModule],
   providers: [
     OutboxService,
     OutboxProcessorService,

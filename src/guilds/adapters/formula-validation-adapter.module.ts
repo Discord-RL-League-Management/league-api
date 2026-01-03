@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { FormulaValidationAdapter } from './formula-validation.adapter';
 import { MmrCalculationModule } from '../../mmr-calculation/mmr-calculation.module';
 
@@ -7,9 +7,11 @@ import { MmrCalculationModule } from '../../mmr-calculation/mmr-calculation.modu
  *
  * Breaks circular dependency between GuildsModule and MmrCalculationModule
  * by providing an adapter that wraps FormulaValidationService.
+ *
+ * Note: Service-level forwardRef in FormulaValidationAdapter handles the circular dependency.
  */
 @Module({
-  imports: [forwardRef(() => MmrCalculationModule)],
+  imports: [MmrCalculationModule],
   providers: [
     FormulaValidationAdapter,
     {

@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { GuardsModule } from '../guards/guards.module';
 import { AuditLogService } from './services/audit-log.service';
@@ -19,7 +19,7 @@ import { AuditProviderAdapter } from './adapters/audit-provider.adapter';
 @Module({
   imports: [
     PrismaModule,
-    forwardRef(() => InfrastructureModule),
+    InfrastructureModule, // No circular dependency - InfrastructureModule doesn't import AuditModule
     GuardsModule, // No forwardRef needed - GuardsModule no longer depends on AuditModule
   ],
   providers: [AuditLogService, RequestContextService, AuditProviderAdapter],

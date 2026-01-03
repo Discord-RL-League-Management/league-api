@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { HttpModule } from '@nestjs/axios';
 import { BullModule } from '@nestjs/bullmq';
@@ -40,10 +40,10 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
 @Module({
   imports: [
     PrismaModule,
-    forwardRef(() => InfrastructureModule),
-    forwardRef(() => AuditModule),
+    InfrastructureModule, // No circular dependency - InfrastructureModule doesn't import TrackersModule
+    AuditModule, // No circular dependency - AuditModule doesn't import TrackersModule
     MmrCalculationModule,
-    forwardRef(() => GuildsModule),
+    GuildsModule, // No circular dependency - GuildsModule doesn't import TrackersModule
     GuardsModule, // No forwardRef needed - GuardsModule no longer depends on domain modules
     GuildMembersModule,
     PermissionCheckModule,

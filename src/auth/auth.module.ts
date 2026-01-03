@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { HttpModule } from '@nestjs/axios';
@@ -24,7 +24,7 @@ import { UserOrchestratorService } from '../users/services/user-orchestrator.ser
     UsersModule,
     DiscordModule,
     UserGuildsModule,
-    forwardRef(() => GuildsModule),
+    GuildsModule, // No circular dependency - GuildsModule doesn't import AuthModule
     TokenManagementModule,
     PassportModule,
     HttpModule.register(httpModuleOptions), // Required for Discord API calls

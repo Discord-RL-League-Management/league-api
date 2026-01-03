@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { CacheModule } from '@nestjs/cache-manager';
 import { HttpModule } from '@nestjs/axios';
 import { UserGuildsService } from './user-guilds.service';
@@ -11,10 +11,10 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
 @Module({
   imports: [
     GuildMembersModule,
-    forwardRef(() => GuildsModule),
+    GuildsModule, // No circular dependency - GuildsModule doesn't import UserGuildsModule
     DiscordModule,
     TokenManagementModule,
-    forwardRef(() => PermissionCheckModule),
+    PermissionCheckModule, // No circular dependency - PermissionCheckModule doesn't import UserGuildsModule
     HttpModule.register({
       timeout: 10000,
       maxRedirects: 5,

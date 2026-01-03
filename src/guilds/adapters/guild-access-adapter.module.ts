@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { GuildsModule } from '../guilds.module';
 import { GuildMembersModule } from '../../guild-members/guild-members.module';
 import { GuildAccessProviderAdapter } from './guild-access-provider.adapter';
@@ -10,10 +10,12 @@ import { GuildMembersService } from '../../guild-members/guild-members.service';
  *
  * This module breaks the circular dependency between GuardsModule and GuildsModule
  * by providing the adapter factory in a separate module that only depends on GuildsModule.
+ *
+ * Note: No forwardRef needed - GuildsModule doesn't import GuildAccessAdapterModule.
  */
 @Module({
   imports: [
-    forwardRef(() => GuildsModule), // Use forwardRef to break circular dependency
+    GuildsModule, // No circular dependency - GuildsModule doesn't import GuildAccessAdapterModule
     GuildMembersModule,
   ],
   providers: [
