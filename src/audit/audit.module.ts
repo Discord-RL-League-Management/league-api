@@ -12,16 +12,9 @@ import { AuditProviderAdapter } from './adapters/audit-provider.adapter';
  *
  * Encapsulates all audit-related services and controllers.
  * Exports AuditLogService and AuditProviderAdapter for use in other modules.
- *
- * Note: Imports GuardsModule to use AdminGuard in AuditLogController.
- * Circular dependency eliminated - GuardsModule no longer depends on AuditModule.
  */
 @Module({
-  imports: [
-    PrismaModule,
-    InfrastructureModule, // No circular dependency - InfrastructureModule doesn't import AuditModule
-    GuardsModule, // No forwardRef needed - GuardsModule no longer depends on AuditModule
-  ],
+  imports: [PrismaModule, InfrastructureModule, GuardsModule],
   providers: [AuditLogService, RequestContextService, AuditProviderAdapter],
   controllers: [AuditLogController],
   exports: [AuditLogService, AuditProviderAdapter],

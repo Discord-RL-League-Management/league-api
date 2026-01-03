@@ -24,7 +24,7 @@ import { UserOrchestratorService } from '../users/services/user-orchestrator.ser
     UsersModule,
     DiscordModule,
     UserGuildsModule,
-    GuildsModule, // No circular dependency - GuildsModule doesn't import AuthModule
+    GuildsModule,
     TokenManagementModule,
     PassportModule,
     HttpModule.register(httpModuleOptions), // Required for Discord API calls

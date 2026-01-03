@@ -13,12 +13,7 @@ import { TeamsModule } from '../teams/teams.module';
 import { OrganizationProviderAdapter } from './adapters/organization-provider.adapter';
 
 @Module({
-  imports: [
-    PrismaModule,
-    LeaguesModule, // Adapter pattern breaks circular dependency - no forwardRef needed
-    PlayersModule, // No circular dependency - PlayersModule doesn't import OrganizationsModule
-    TeamsModule, // Adapter pattern breaks circular dependency - no forwardRef needed
-  ],
+  imports: [PrismaModule, LeaguesModule, PlayersModule, TeamsModule],
   controllers: [OrganizationsController, InternalOrganizationsController],
   providers: [
     OrganizationRepository,

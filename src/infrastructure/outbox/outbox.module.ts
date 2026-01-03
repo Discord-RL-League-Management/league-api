@@ -11,9 +11,6 @@ import { OutboxRepository } from './repositories/outbox.repository';
  *
  * Provides outbox functionality for any domain that needs reliable event publishing.
  * This module is domain-agnostic and can be used by any module.
- *
- * Note: TrackersModule import removed - OutboxEventDispatcher doesn't use it.
- * Infrastructure modules should not depend on domain modules.
  */
 @Module({
   imports: [PrismaModule, ConfigModule],

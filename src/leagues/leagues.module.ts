@@ -32,12 +32,12 @@ import { LeagueSettingsProviderAdapter } from './adapters/league-settings-provid
     InfrastructureModule,
     CacheModule.register(),
     AuthModule,
-    GuildsModule, // For GuildsService dependency
-    PlayersModule, // For PlayerService dependency
-    PermissionCheckModule, // For PermissionCheckService dependency
-    LeagueMembersModule, // Adapter pattern breaks circular dependency - no forwardRef needed
-    OrganizationsModule, // Adapter pattern breaks circular dependency - no forwardRef needed
-    TeamsModule, // Adapter pattern breaks circular dependency - no forwardRef needed
+    GuildsModule,
+    PlayersModule,
+    PermissionCheckModule,
+    LeagueMembersModule,
+    OrganizationsModule,
+    TeamsModule,
   ],
   controllers: [
     LeaguesController,

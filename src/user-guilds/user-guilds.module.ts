@@ -11,10 +11,10 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
 @Module({
   imports: [
     GuildMembersModule,
-    GuildsModule, // No circular dependency - GuildsModule doesn't import UserGuildsModule
+    GuildsModule,
     DiscordModule,
     TokenManagementModule,
-    PermissionCheckModule, // No circular dependency - PermissionCheckModule doesn't import UserGuildsModule
+    PermissionCheckModule,
     HttpModule.register({
       timeout: 10000,
       maxRedirects: 5,

@@ -10,11 +10,7 @@ import { OrganizationsModule } from '../organizations/organizations.module';
 import { TeamProviderAdapter } from './adapters/team-provider.adapter';
 
 @Module({
-  imports: [
-    PrismaModule,
-    LeaguesModule, // Adapter pattern breaks circular dependency - no forwardRef needed
-    OrganizationsModule, // Adapter pattern breaks circular dependency - no forwardRef needed
-  ],
+  imports: [PrismaModule, LeaguesModule, OrganizationsModule],
   controllers: [TeamsController, InternalTeamsController],
   providers: [
     TeamService,

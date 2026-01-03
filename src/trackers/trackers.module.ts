@@ -40,11 +40,11 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
 @Module({
   imports: [
     PrismaModule,
-    InfrastructureModule, // No circular dependency - InfrastructureModule doesn't import TrackersModule
-    AuditModule, // No circular dependency - AuditModule doesn't import TrackersModule
+    InfrastructureModule,
+    AuditModule,
     MmrCalculationModule,
-    GuildsModule, // No circular dependency - GuildsModule doesn't import TrackersModule
-    GuardsModule, // No forwardRef needed - GuardsModule no longer depends on domain modules
+    GuildsModule,
+    GuardsModule,
     GuildMembersModule,
     PermissionCheckModule,
     HttpModule,

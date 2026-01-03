@@ -10,14 +10,9 @@ import { GuildMembersService } from '../../guild-members/guild-members.service';
  *
  * This module breaks the circular dependency between GuardsModule and GuildsModule
  * by providing the adapter factory in a separate module that only depends on GuildsModule.
- *
- * Note: No forwardRef needed - GuildsModule doesn't import GuildAccessAdapterModule.
  */
 @Module({
-  imports: [
-    GuildsModule, // No circular dependency - GuildsModule doesn't import GuildAccessAdapterModule
-    GuildMembersModule,
-  ],
+  imports: [GuildsModule, GuildMembersModule],
   providers: [
     {
       provide: 'IGuildAccessProvider',

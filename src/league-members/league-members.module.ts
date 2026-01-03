@@ -27,7 +27,7 @@ import { LeagueMemberAccessAdapter } from './adapters/league-member-access.adapt
     GuildMembersModule,
     InfrastructureModule,
     PlayerRatingsModule,
-    LeaguesModule, // Adapter pattern breaks circular dependency - no forwardRef needed
+    LeaguesModule,
   ],
   controllers: [LeagueMembersController, InternalLeagueMembersController],
   providers: [

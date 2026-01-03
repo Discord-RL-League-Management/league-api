@@ -15,7 +15,7 @@ import type { IOrganizationProvider } from './interfaces/organization-provider.i
 import type { ITeamProvider } from './interfaces/team-provider.interface';
 
 /**
- * LeagueSettingsService - Single Responsibility: League configuration management
+ * LeagueSettingsService - League configuration management
  *
  * Handles league settings retrieval, updates, caching, and migration.
  * Provides lazy initialization of settings if they don't exist.
@@ -43,7 +43,6 @@ export class LeagueSettingsService {
 
   /**
    * Get league settings with caching and defaults
-   * Single Responsibility: Settings retrieval with caching and lazy initialization
    *
    * Automatically persists default settings if they don't exist (lazy initialization).
    * Settings creation is independent of user validation - they exist regardless of who accesses them.
@@ -72,8 +71,8 @@ export class LeagueSettingsService {
           'league',
           leagueId,
           defaultSettings as unknown as Prisma.InputJsonValue,
-          1, // schemaVersion
-          undefined, // configVersion
+          1,
+          undefined,
         );
         this.logger.warn(
           `Auto-created missing settings for league ${leagueId}. This should not happen if settings were created with league.`,
@@ -128,7 +127,6 @@ export class LeagueSettingsService {
 
   /**
    * Update league settings with validation and caching
-   * Single Responsibility: Settings update with validation
    *
    * Validates new settings, merges with existing, and persists.
    * Invalidates cache after update.
@@ -170,7 +168,6 @@ export class LeagueSettingsService {
           mergedSettings as unknown as Prisma.InputJsonValue,
         );
 
-        // Invalidate cache after successful update
         const cacheKey = `league:${leagueId}:settings`;
         await this.cacheManager.del(cacheKey);
 
@@ -205,7 +202,6 @@ export class LeagueSettingsService {
 
   /**
    * Handle requireOrganization change: auto-assign teams to organizations
-   * Single Responsibility: Automatic team assignment when league requires organizations
    */
   private async handleRequireOrganizationChange(
     leagueId: string,
@@ -238,8 +234,8 @@ export class LeagueSettingsService {
           tag: 'UNASSIGNED',
           description: 'Default organization for teams without an organization',
         },
-        'system', // System user ID for auto-creation
-        mergedSettings, // Pass merged settings for validation
+        'system',
+        mergedSettings,
       );
       defaultOrgId = defaultOrg.id;
       createdDefaultOrg = true;
@@ -247,7 +243,6 @@ export class LeagueSettingsService {
         `Created default organization ${defaultOrgId} for league ${leagueId}`,
       );
     } else {
-      // Use first organization as default
       defaultOrgId = organizations[0].id;
     }
 
@@ -284,14 +279,13 @@ export class LeagueSettingsService {
             `Failed to rollback default organization ${defaultOrgId} after assignment failure:`,
             deleteError,
           );
-          // Continue to throw original error
         }
       }
       this.logger.warn(
         `Cannot assign all ${teamIds.length} teams to organization ${defaultOrgId} due to capacity limits. ` +
           `Some teams may remain unassigned. Consider creating additional organizations or increasing capacity limits.`,
       );
-      throw error; // Re-throw to prevent silent failures
+      throw error;
     }
   }
 }
