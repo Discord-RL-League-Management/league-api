@@ -30,7 +30,10 @@ export default defineConfig({
     
     // Test file patterns
     // Default: only unit tests (API tests run separately via test:api script)
-    include: ['tests/unit/**/*.test.ts'],
+    include: [
+      'tests/unit/**/*.test.ts',
+      'src/**/*.spec.ts', // NestJS convention - co-located spec files
+    ],
     exclude: ['node_modules', 'dist', 'tests/e2e', 'tests/api'],
     
     // Setup files

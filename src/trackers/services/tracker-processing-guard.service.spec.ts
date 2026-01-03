@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TrackerProcessingGuardService } from './tracker-processing-guard.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -6,21 +7,21 @@ import { GuildSettings } from '../../guilds/interfaces/settings.interface';
 
 describe('TrackerProcessingGuardService', () => {
   let service: TrackerProcessingGuardService;
-  let prismaService: jest.Mocked<PrismaService>;
-  let guildSettingsService: jest.Mocked<GuildSettingsService>;
+  let prismaService: PrismaService;
+  let guildSettingsService: GuildSettingsService;
 
   const mockPrismaService = {
     tracker: {
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
     },
     guildMember: {
-      findMany: jest.fn(),
+      findMany: vi.fn(),
     },
   };
 
   const mockGuildSettingsService = {
-    getSettings: jest.fn(),
+    getSettings: vi.fn(),
   };
 
   beforeEach(async () => {
@@ -41,14 +42,13 @@ describe('TrackerProcessingGuardService', () => {
     service = module.get<TrackerProcessingGuardService>(
       TrackerProcessingGuardService,
     );
-    prismaService =
-      module.get<jest.Mocked<PrismaService>>(PrismaService);
+    prismaService = module.get<PrismaService>(PrismaService);
     guildSettingsService =
-      module.get<jest.Mocked<GuildSettingsService>>(GuildSettingsService);
+      module.get<GuildSettingsService>(GuildSettingsService);
   });
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('canProcessTracker', () => {
@@ -384,4 +384,3 @@ describe('TrackerProcessingGuardService', () => {
     });
   });
 });
-
