@@ -266,11 +266,7 @@ describe('AuthorizationService', () => {
       } as never);
       permissionCheckService.checkAdminRoles.mockResolvedValue(true);
 
-      const result = await service.checkGuildAdminAccess(
-        mockUser,
-        guildId,
-        mockRequest,
-      );
+      const result = await service.checkGuildAdminAccess(mockUser, guildId);
 
       expect(result).toBe(true);
       expect(
@@ -292,7 +288,7 @@ describe('AuthorizationService', () => {
       permissionCheckService.checkAdminRoles.mockResolvedValue(false);
 
       await expect(
-        service.checkGuildAdminAccess(mockUser, guildId, mockRequest),
+        service.checkGuildAdminAccess(mockUser, guildId),
       ).rejects.toThrow(ForbiddenException);
     });
   });

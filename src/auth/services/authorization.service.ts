@@ -93,7 +93,7 @@ export class AuthorizationService {
             userId: user.id,
             guildId,
             action: AuditAction.ADMIN_CHECK,
-            resource: request.url || request.path,
+            resource: request.url || request.path || 'unknown',
             result: 'allowed',
             metadata: {
               method: request.method,
@@ -109,8 +109,7 @@ export class AuthorizationService {
       // Ensure settings exist before checking configured roles (auto-creates if missing)
       const settings = await this.guildSettingsService.getSettings(guildId);
 
-      const settingsTyped = settings;
-      const adminRoles = settingsTyped?.roles?.admin || [];
+      const adminRoles = settings?.roles?.admin || [];
       const hasNoAdminRolesConfigured = !adminRoles || adminRoles.length === 0;
 
       // If no admin roles are configured, allow access for initial setup
@@ -124,7 +123,7 @@ export class AuthorizationService {
             userId: user.id,
             guildId,
             action: AuditAction.ADMIN_CHECK,
-            resource: request.url || request.path,
+            resource: request.url || request.path || 'unknown',
             result: 'allowed',
             metadata: {
               method: request.method,
@@ -161,7 +160,7 @@ export class AuthorizationService {
           userId: user.id,
           guildId,
           action: AuditAction.ADMIN_CHECK,
-          resource: request.url || request.path,
+          resource: request.url || request.path || 'unknown',
           result: isAdmin ? 'allowed' : 'denied',
           metadata: {
             method: request.method,
@@ -219,6 +218,10 @@ export class AuthorizationService {
         user.id,
         guildId,
       );
+
+      if (!membership) {
+        throw new ForbiddenException('You are not a member of this guild');
+      }
 
       // Ensure settings exist before permission check (auto-creates if missing)
       const settings = await this.guildSettingsService.getSettings(guildId);
@@ -282,7 +285,7 @@ export class AuthorizationService {
         {
           userId: user.id,
           action: AuditAction.ADMIN_CHECK,
-          resource: request.url || request.path,
+          resource: request.url || request.path || 'unknown',
           result: isSystemAdmin ? 'allowed' : 'denied',
           metadata: {
             method: request.method,
