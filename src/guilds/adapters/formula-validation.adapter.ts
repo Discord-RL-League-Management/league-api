@@ -1,4 +1,4 @@
-import { Injectable, Inject, forwardRef } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { IFormulaValidationService } from '../interfaces/formula-validation.interface';
 import { FormulaValidationService } from '../../mmr-calculation/services/formula-validation.service';
 
@@ -11,7 +11,6 @@ import { FormulaValidationService } from '../../mmr-calculation/services/formula
 @Injectable()
 export class FormulaValidationAdapter implements IFormulaValidationService {
   constructor(
-    @Inject(forwardRef(() => FormulaValidationService))
     private readonly formulaValidationService: FormulaValidationService,
   ) {}
 

@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { InfrastructureModule } from '../infrastructure/infrastructure.module';
 import { CacheModule } from '@nestjs/cache-manager';
@@ -32,12 +32,12 @@ import { LeagueSettingsProviderAdapter } from './adapters/league-settings-provid
     InfrastructureModule,
     CacheModule.register(),
     AuthModule,
-    GuildsModule, // For GuildsService dependency
-    PlayersModule, // For PlayerService dependency
-    PermissionCheckModule, // For PermissionCheckService dependency
-    forwardRef(() => LeagueMembersModule), // Circular dependency: LeagueMembersModule also imports LeaguesModule for ILeagueSettingsProvider
-    forwardRef(() => OrganizationsModule), // For OrganizationService dependency (circular dependency resolved)
-    forwardRef(() => TeamsModule), // For TeamRepository dependency (circular dependency resolved)
+    GuildsModule,
+    PlayersModule,
+    PermissionCheckModule,
+    LeagueMembersModule,
+    OrganizationsModule,
+    TeamsModule,
   ],
   controllers: [
     LeaguesController,
@@ -53,7 +53,6 @@ import { LeagueSettingsProviderAdapter } from './adapters/league-settings-provid
     LeagueAccessValidationService,
     LeaguePermissionService,
     LeagueRepository,
-    // Provide adapter with injection token for LeagueMembersModule
     {
       provide: 'ILeagueSettingsProvider',
       useClass: LeagueSettingsProviderAdapter,
@@ -65,7 +64,7 @@ import { LeagueSettingsProviderAdapter } from './adapters/league-settings-provid
     LeagueSettingsDefaultsService,
     LeaguePermissionService,
     LeagueRepository,
-    'ILeagueSettingsProvider', // Export token for LeagueMembersModule
+    'ILeagueSettingsProvider',
   ],
 })
 export class LeaguesModule {}

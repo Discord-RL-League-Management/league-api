@@ -3,8 +3,9 @@ import {
   Logger,
   BadRequestException,
   NotFoundException,
+  Inject,
 } from '@nestjs/common';
-import { LeagueSettingsService } from '../../leagues/league-settings.service';
+import type { ILeagueSettingsProvider } from '../../league-members/interfaces/league-settings-provider.interface';
 import { OrganizationRepository } from '../../organizations/repositories/organization.repository';
 import { OrganizationValidationService } from '../../organizations/services/organization-validation.service';
 
@@ -16,7 +17,8 @@ export class TeamValidationService {
   private readonly logger = new Logger(TeamValidationService.name);
 
   constructor(
-    private leagueSettingsService: LeagueSettingsService,
+    @Inject('ILeagueSettingsProvider')
+    private leagueSettingsProvider: ILeagueSettingsProvider,
     private organizationRepository: OrganizationRepository,
     private organizationValidationService: OrganizationValidationService,
   ) {}
@@ -28,7 +30,7 @@ export class TeamValidationService {
     leagueId: string,
     organizationId?: string,
   ): Promise<void> {
-    const settings = await this.leagueSettingsService.getSettings(leagueId);
+    const settings = await this.leagueSettingsProvider.getSettings(leagueId);
 
     if (settings.membership.requireOrganization) {
       if (!organizationId) {

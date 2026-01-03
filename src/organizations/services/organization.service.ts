@@ -5,14 +5,13 @@ import {
   BadRequestException,
   ForbiddenException,
   Inject,
-  forwardRef,
 } from '@nestjs/common';
 import { OrganizationRepository } from '../repositories/organization.repository';
 import { OrganizationMemberService } from './organization-member.service';
 import { OrganizationValidationService } from './organization-validation.service';
 import { PlayerService } from '../../players/services/player.service';
 import { LeagueRepository } from '../../leagues/repositories/league.repository';
-import { LeagueSettingsService } from '../../leagues/league-settings.service';
+import type { ILeagueSettingsProvider } from '../../league-members/interfaces/league-settings-provider.interface';
 import { TeamRepository } from '../../teams/repositories/team.repository';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateOrganizationDto } from '../dto/create-organization.dto';
@@ -38,8 +37,8 @@ export class OrganizationService {
     private validationService: OrganizationValidationService,
     private playerService: PlayerService,
     private leagueRepository: LeagueRepository,
-    @Inject(forwardRef(() => LeagueSettingsService))
-    private leagueSettingsService: LeagueSettingsService,
+    @Inject('ILeagueSettingsProvider')
+    private leagueSettingsProvider: ILeagueSettingsProvider,
     private teamRepository: TeamRepository,
     private prisma: PrismaService,
   ) {}
@@ -68,13 +67,13 @@ export class OrganizationService {
   async create(
     createDto: CreateOrganizationDto,
     userId: string,
-    settings?: any,
+    settings?: LeagueConfiguration,
   ) {
     await this.validationService.validateCreate(createDto);
 
     await this.validationService.validateLeagueOrganizationCapacity(
       createDto.leagueId,
-      settings as LeagueConfiguration | undefined,
+      settings,
     );
 
     const league = await this.leagueRepository.findById(createDto.leagueId);
@@ -261,7 +260,7 @@ export class OrganizationService {
     // Use provided settings if available (for validation during settings updates before persistence),
     // otherwise fall back to getSettings() which may return cached data
     const leagueSettings =
-      settings || (await this.leagueSettingsService.getSettings(leagueId));
+      settings || (await this.leagueSettingsProvider.getSettings(leagueId));
     const maxTeamsPerOrg = leagueSettings.membership.maxTeamsPerOrganization;
 
     // Capacity validation occurs inside the transaction to prevent race conditions where

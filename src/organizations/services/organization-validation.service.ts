@@ -1,8 +1,8 @@
-import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { OrganizationRepository } from '../repositories/organization.repository';
 import { LeagueRepository } from '../../leagues/repositories/league.repository';
 import { PlayerService } from '../../players/services/player.service';
-import { LeagueSettingsService } from '../../leagues/league-settings.service';
+import type { ILeagueSettingsProvider } from '../../league-members/interfaces/league-settings-provider.interface';
 import { CreateOrganizationDto } from '../dto/create-organization.dto';
 import {
   OrganizationNotFoundException,
@@ -28,8 +28,8 @@ export class OrganizationValidationService {
     private organizationRepository: OrganizationRepository,
     private leagueRepository: LeagueRepository,
     private playerService: PlayerService,
-    @Inject(forwardRef(() => LeagueSettingsService))
-    private leagueSettingsService: LeagueSettingsService,
+    @Inject('ILeagueSettingsProvider')
+    private leagueSettingsProvider: ILeagueSettingsProvider,
   ) {}
 
   /**
@@ -121,7 +121,7 @@ export class OrganizationValidationService {
 
     // Use provided settings or fetch from service (for cache-aware validation)
     const leagueSettings =
-      settings || (await this.leagueSettingsService.getSettings(leagueId));
+      settings || (await this.leagueSettingsProvider.getSettings(leagueId));
     const maxTeamsPerOrg = leagueSettings.membership.maxTeamsPerOrganization;
 
     if (maxTeamsPerOrg !== null && maxTeamsPerOrg !== undefined) {
@@ -149,7 +149,7 @@ export class OrganizationValidationService {
   ): Promise<void> {
     // Use provided settings or fetch from service (for cache-aware validation)
     const leagueSettings =
-      settings || (await this.leagueSettingsService.getSettings(leagueId));
+      settings || (await this.leagueSettingsProvider.getSettings(leagueId));
     const maxOrganizations = leagueSettings.membership.maxOrganizations;
 
     if (maxOrganizations !== null && maxOrganizations !== undefined) {

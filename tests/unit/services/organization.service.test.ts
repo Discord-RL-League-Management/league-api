@@ -20,7 +20,7 @@ import { OrganizationMemberService } from '@/organizations/services/organization
 import { OrganizationValidationService } from '@/organizations/services/organization-validation.service';
 import { PlayerService } from '@/players/services/player.service';
 import { LeagueRepository } from '@/leagues/repositories/league.repository';
-import { LeagueSettingsService } from '@/leagues/league-settings.service';
+import type { ILeagueSettingsProvider } from '@/league-members/interfaces/league-settings-provider.interface';
 import { TeamRepository } from '@/teams/repositories/team.repository';
 import { PrismaService } from '@/prisma/prisma.service';
 import { CreateOrganizationDto } from '@/organizations/dto/create-organization.dto';
@@ -39,7 +39,7 @@ describe('OrganizationService', () => {
   let mockValidationService: OrganizationValidationService;
   let mockPlayerService: PlayerService;
   let mockLeagueRepository: LeagueRepository;
-  let mockLeagueSettingsService: LeagueSettingsService;
+  let mockLeagueSettingsProvider: ILeagueSettingsProvider;
   let mockTeamRepository: TeamRepository;
   let mockPrisma: PrismaService;
 
@@ -115,9 +115,9 @@ describe('OrganizationService', () => {
       findById: vi.fn(),
     } as unknown as LeagueRepository;
 
-    mockLeagueSettingsService = {
+    mockLeagueSettingsProvider = {
       getSettings: vi.fn(),
-    } as unknown as LeagueSettingsService;
+    } as unknown as ILeagueSettingsProvider;
 
     mockTeamRepository = {
       findById: vi.fn(),
@@ -142,7 +142,7 @@ describe('OrganizationService', () => {
       mockValidationService,
       mockPlayerService,
       mockLeagueRepository,
-      mockLeagueSettingsService,
+      mockLeagueSettingsProvider,
       mockTeamRepository,
       mockPrisma,
     );
@@ -600,7 +600,7 @@ describe('OrganizationService', () => {
       vi.mocked(mockOrganizationRepository.findByIdAndLeague).mockResolvedValue(
         mockOrganization,
       );
-      vi.mocked(mockLeagueSettingsService.getSettings).mockResolvedValue(
+      vi.mocked(mockLeagueSettingsProvider.getSettings).mockResolvedValue(
         leagueSettings as any,
       );
       vi.mocked(mockPrisma.$transaction).mockImplementation(
@@ -640,7 +640,7 @@ describe('OrganizationService', () => {
       vi.mocked(mockOrganizationRepository.findByIdAndLeague).mockResolvedValue(
         mockOrganization,
       );
-      vi.mocked(mockLeagueSettingsService.getSettings).mockResolvedValue(
+      vi.mocked(mockLeagueSettingsProvider.getSettings).mockResolvedValue(
         leagueSettings as any,
       );
       vi.mocked(mockPrisma.$transaction).mockImplementation(
@@ -683,7 +683,7 @@ describe('OrganizationService', () => {
       vi.mocked(mockOrganizationRepository.findByIdAndLeague).mockResolvedValue(
         mockOrganization,
       );
-      vi.mocked(mockLeagueSettingsService.getSettings).mockResolvedValue(
+      vi.mocked(mockLeagueSettingsProvider.getSettings).mockResolvedValue(
         leagueSettings as any,
       );
       vi.mocked(mockPrisma.$transaction).mockImplementation(
