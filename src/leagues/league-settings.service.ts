@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import { SettingsService } from '../infrastructure/settings/services/settings.service';
@@ -122,7 +122,7 @@ export class LeagueSettingsService {
         `Failed to get settings for league ${leagueId}:`,
         error,
       );
-      throw new NotFoundException('League', leagueId);
+      throw new LeagueNotFoundException(leagueId);
     }
   }
 

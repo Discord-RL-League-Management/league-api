@@ -67,13 +67,13 @@ export class OrganizationService {
   async create(
     createDto: CreateOrganizationDto,
     userId: string,
-    settings?: any,
+    settings?: LeagueConfiguration,
   ) {
     await this.validationService.validateCreate(createDto);
 
     await this.validationService.validateLeagueOrganizationCapacity(
       createDto.leagueId,
-      settings as LeagueConfiguration | undefined,
+      settings,
     );
 
     const league = await this.leagueRepository.findById(createDto.leagueId);
