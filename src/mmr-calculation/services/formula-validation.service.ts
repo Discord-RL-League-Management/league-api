@@ -52,13 +52,10 @@ export class FormulaValidationService {
     }
 
     try {
-      // Parse the formula to check syntax
       const expr = this.math.parse(formula);
 
-      // Extract variables used in the formula
       const usedVariables = this.extractVariables(expr);
 
-      // Check for disallowed variables
       const disallowedVars = usedVariables.filter(
         (v) => !this.allowedVariables.includes(v),
       );
@@ -69,11 +66,9 @@ export class FormulaValidationService {
         };
       }
 
-      // Test evaluation with sample data to ensure it works
       const testData = this.getTestData();
       const result = expr.evaluate(testData) as number;
 
-      // Check if result is a valid number
       if (typeof result !== 'number' || !isFinite(result)) {
         return {
           valid: false,

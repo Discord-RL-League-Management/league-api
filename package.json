@@ -43,10 +43,6 @@
       "eslint --fix --max-warnings 0",
       "prettier --write"
     ],
-    "tests/unit/**/*.{ts,js}": [
-      "eslint --fix --max-warnings 0",
-      "prettier --write"
-    ],
     "tests/api/**/*.{ts,js}": [
       "eslint --fix --max-warnings 0",
       "prettier --write"
