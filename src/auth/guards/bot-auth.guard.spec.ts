@@ -1,15 +1,5 @@
-/**
- * BotAuthGuard Unit Tests
- *
- * Demonstrates TDD methodology with Vitest.
- * Focus: Functional core, state verification, fast execution.
- *
- * Aligned with ISO/IEC/IEEE 29119 standards and Black Box Axiom.
- * Tests verify inputs, outputs, and observable side effects only.
- */
-
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { BotAuthGuard } from '@/auth/guards/bot-auth.guard';
+import { BotAuthGuard } from './bot-auth.guard';
 
 describe('BotAuthGuard', () => {
   let guard: BotAuthGuard;
