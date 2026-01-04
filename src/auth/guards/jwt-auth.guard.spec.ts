@@ -1,20 +1,10 @@
-/**
- * JwtAuthGuard Unit Tests
- *
- * Demonstrates TDD methodology with Vitest.
- * Focus: Functional core, state verification, fast execution.
- *
- * Aligned with ISO/IEC/IEEE 29119 standards and Black Box Axiom.
- * Tests verify inputs, outputs, and observable side effects only.
- */
-
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { TokenExpiredError, JsonWebTokenError } from 'jsonwebtoken';
-import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
-import { IS_PUBLIC_KEY } from '@/common/decorators/public.decorator';
-import type { AuthenticatedUser } from '@/common/interfaces/user.interface';
+import { JwtAuthGuard } from './jwt-auth.guard';
+import { IS_PUBLIC_KEY } from '../../common/decorators/public.decorator';
+import type { AuthenticatedUser } from '../../common/interfaces/user.interface';
 
 describe('JwtAuthGuard', () => {
   let guard: JwtAuthGuard;

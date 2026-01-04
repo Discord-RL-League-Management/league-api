@@ -23,9 +23,6 @@ interface RequestWithUser extends Request {
 export class GuildAdminGuard implements CanActivate {
   constructor(private readonly authorizationService: AuthorizationService) {}
 
-  /**
-   * Check if user has guild admin access
-   */
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<RequestWithUser>();
     const user = request.user;

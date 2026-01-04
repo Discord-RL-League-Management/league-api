@@ -18,9 +18,6 @@ import type { AuthenticatedUser } from '../../common/interfaces/user.interface';
 export class SystemAdminGuard implements CanActivate {
   constructor(private readonly authorizationService: AuthorizationService) {}
 
-  /**
-   * Check if user has system admin permissions
-   */
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context
       .switchToHttp()
