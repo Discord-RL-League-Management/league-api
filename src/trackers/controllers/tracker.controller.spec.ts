@@ -15,8 +15,9 @@ import { TrackerController } from './tracker.controller';
 import { TrackerService } from '../services/tracker.service';
 import { TrackerProcessingService } from '../services/tracker-processing.service';
 import { TrackerSnapshotService } from '../services/tracker-snapshot.service';
-import { TrackerAuthorizationService } from '../../auth/services/tracker-authorization.service';
+import { TrackerAuthorizationService } from '../services/tracker-authorization.service';
 import { TrackerResponseMapperService } from '../services/tracker-response-mapper.service';
+import { TrackerAccessGuard } from '../guards/tracker-access.guard';
 import { RegisterTrackersDto, UpdateTrackerDto } from '../dto/tracker.dto';
 import type { AuthenticatedUser } from '@/common/interfaces/user.interface';
 
@@ -101,7 +102,12 @@ describe('TrackerController', () => {
           useValue: mockResponseMapper,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(TrackerAccessGuard)
+      .useValue({
+        canActivate: vi.fn().mockResolvedValue(true),
+      } as unknown as TrackerAccessGuard)
+      .compile();
 
     controller = module.get<TrackerController>(TrackerController);
   });
@@ -198,9 +204,6 @@ describe('TrackerController', () => {
           pages: 1,
         },
       };
-      vi.mocked(
-        mockTrackerAuthorizationService.validateTrackerAccess,
-      ).mockResolvedValue(undefined);
       vi.mocked(mockTrackerService.getTrackersByUserId).mockResolvedValue(
         paginatedResult as never,
       );
@@ -212,61 +215,10 @@ describe('TrackerController', () => {
       );
 
       expect(result).toEqual(paginatedResult);
-      expect(
-        mockTrackerAuthorizationService.validateTrackerAccess,
-      ).toHaveBeenCalledWith(mockUser.id, targetUserId);
       expect(mockTrackerService.getTrackersByUserId).toHaveBeenCalledWith(
         targetUserId,
         {},
       );
-    });
-
-    it('should_call_authorization_service_when_accessing_other_user_trackers', async () => {
-      const targetUserId = 'user-456';
-      const paginatedResult = {
-        data: [],
-        pagination: {
-          page: 1,
-          limit: 50,
-          total: 0,
-          pages: 0,
-        },
-      };
-      vi.mocked(
-        mockTrackerAuthorizationService.validateTrackerAccess,
-      ).mockResolvedValue(undefined);
-      vi.mocked(mockTrackerService.getTrackersByUserId).mockResolvedValue(
-        paginatedResult as never,
-      );
-
-      await controller.getTrackersByUser(targetUserId, mockUser, {});
-
-      expect(
-        mockTrackerAuthorizationService.validateTrackerAccess,
-      ).toHaveBeenCalledWith(mockUser.id, targetUserId);
-      expect(
-        mockTrackerAuthorizationService.validateTrackerAccess,
-      ).toHaveBeenCalledTimes(1);
-    });
-
-    it('should_throw_ForbiddenException_when_access_denied', async () => {
-      const targetUserId = 'user-456';
-      vi.mocked(
-        mockTrackerAuthorizationService.validateTrackerAccess,
-      ).mockRejectedValue(
-        new ForbiddenException(
-          'You can only view trackers for yourself or members of guilds where you are an admin',
-        ),
-      );
-
-      await expect(
-        controller.getTrackersByUser(targetUserId, mockUser, {}),
-      ).rejects.toThrow(ForbiddenException);
-
-      expect(
-        mockTrackerAuthorizationService.validateTrackerAccess,
-      ).toHaveBeenCalledWith(mockUser.id, targetUserId);
-      expect(mockTrackerService.getTrackersByUserId).not.toHaveBeenCalled();
     });
   });
 

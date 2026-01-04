@@ -23,6 +23,11 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { UsersModule } from '../users/users.module';
 import { FormulaValidationModule } from '../formula-validation/formula-validation.module';
 import { PermissionCheckModule } from '../permissions/modules/permission-check/permission-check.module';
+import { AuditModule } from '../audit/audit.module';
+import { GuildAccessValidationService } from './services/guild-access-validation.service';
+import { GuildAuthorizationService } from './services/guild-authorization.service';
+import { GuildAdminGuard } from './guards/guild-admin.guard';
+import { GuildAdminSimpleGuard } from './guards/guild-admin-simple.guard';
 
 @Module({
   imports: [
@@ -30,6 +35,7 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
     GuildMembersModule,
     DiscordModule,
     PermissionCheckModule, // Required for GuildAdminGuard (PermissionCheckService)
+    AuditModule, // Required for GuildAuthorizationService (AuditLogService)
     PrismaModule,
     SettingsModule, // Required for GuildSettingsService (SettingsService)
     ActivityLogModule, // Required for GuildSettingsService (ActivityLogService)
@@ -52,6 +58,10 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
     GuildErrorHandlerService,
     GuildRepository,
     GuildAccessProviderAdapter,
+    GuildAccessValidationService,
+    GuildAuthorizationService,
+    GuildAdminGuard,
+    GuildAdminSimpleGuard,
     {
       provide: 'IGuildAccessProvider',
       useFactory: (
@@ -73,6 +83,9 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
     GuildRepository,
     GuildAccessProviderAdapter,
     'IGuildAccessProvider',
+    GuildAccessValidationService,
+    GuildAdminGuard,
+    GuildAdminSimpleGuard,
   ],
 })
 export class GuildsModule {}

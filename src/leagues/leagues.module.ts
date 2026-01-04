@@ -23,6 +23,11 @@ import { ConfigMigrationService } from './services/config-migration.service';
 import { LeagueRepository } from './repositories/league.repository';
 
 import { LeagueSettingsProviderAdapter } from './adapters/league-settings-provider.adapter';
+import { LeagueAccessValidationService } from './services/league-access-validation.service';
+import { LeaguePermissionService } from './services/league-permission.service';
+import { LeagueAccessGuard } from './guards/league-access.guard';
+import { LeagueAdminGuard } from './guards/league-admin.guard';
+import { LeagueAdminOrModeratorGuard } from './guards/league-admin-or-moderator.guard';
 
 @Module({
   imports: [
@@ -49,6 +54,11 @@ import { LeagueSettingsProviderAdapter } from './adapters/league-settings-provid
     SettingsValidationService,
     ConfigMigrationService,
     LeagueRepository,
+    LeagueAccessValidationService,
+    LeaguePermissionService,
+    LeagueAccessGuard,
+    LeagueAdminGuard,
+    LeagueAdminOrModeratorGuard,
     {
       provide: 'ILeagueSettingsProvider',
       useClass: LeagueSettingsProviderAdapter,
@@ -60,6 +70,11 @@ import { LeagueSettingsProviderAdapter } from './adapters/league-settings-provid
     LeagueSettingsDefaultsService,
     LeagueRepository,
     'ILeagueSettingsProvider',
+    LeagueAccessValidationService,
+    LeaguePermissionService,
+    LeagueAccessGuard,
+    LeagueAdminGuard,
+    LeagueAdminOrModeratorGuard,
   ],
 })
 export class LeaguesModule {}

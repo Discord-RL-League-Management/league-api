@@ -4,10 +4,9 @@ import {
   ExecutionContext,
   ForbiddenException,
 } from '@nestjs/common';
-import { AuthorizationService } from '../services/authorization.service';
-import type { Request } from 'express';
-
+import { GuildAuthorizationService } from '../services/guild-authorization.service';
 import type { AuthenticatedUser } from '../../common/interfaces/user.interface';
+import type { Request } from 'express';
 
 interface RequestWithUser extends Request {
   user: AuthenticatedUser | { type: 'bot'; id: string };
@@ -15,14 +14,16 @@ interface RequestWithUser extends Request {
 }
 
 /**
- * AdminGuard - Single Responsibility: Thin wrapper for guild admin authorization
+ * GuildAdminGuard - Single Responsibility: Guild admin authorization guard
  *
- * This guard delegates all authorization logic to AuthorizationService,
- * keeping the guard focused on extracting request context and delegating.
+ * Checks if user has admin permissions in the specified guild.
+ * Handles Discord validation and configured roles.
  */
 @Injectable()
-export class AdminGuard implements CanActivate {
-  constructor(private readonly authorizationService: AuthorizationService) {}
+export class GuildAdminGuard implements CanActivate {
+  constructor(
+    private readonly guildAuthorizationService: GuildAuthorizationService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<RequestWithUser>();
@@ -33,7 +34,7 @@ export class AdminGuard implements CanActivate {
       throw new ForbiddenException('Authentication and guild ID required');
     }
 
-    return await this.authorizationService.checkGuildAdmin(
+    return await this.guildAuthorizationService.checkGuildAdmin(
       user,
       guildId,
       request,

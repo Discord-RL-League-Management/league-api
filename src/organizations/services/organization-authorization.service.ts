@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { OrganizationRepository } from '../../organizations/repositories/organization.repository';
+import { OrganizationRepository } from '../repositories/organization.repository';
 
 /**
  * OrganizationAuthorizationService

@@ -12,8 +12,8 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { LeagueSettingsService } from './league-settings.service';
-import { LeagueAccessValidationService } from '../auth/services/league-access-validation.service';
-import { LeaguePermissionService } from '../auth/services/league-permission.service';
+import { LeagueAdminGuard } from './guards/league-admin.guard';
+import { LeagueAdminOrModeratorGuard } from './guards/league-admin-or-moderator.guard';
 import { LeagueSettingsDto } from './dto/league-settings.dto';
 import {
   ApiTags,
@@ -31,13 +31,10 @@ import type { AuthenticatedUser } from '../common/interfaces/user.interface';
 export class LeagueSettingsController {
   private readonly logger = new Logger(LeagueSettingsController.name);
 
-  constructor(
-    private leagueSettingsService: LeagueSettingsService,
-    private leagueAccessValidationService: LeagueAccessValidationService,
-    private leaguePermissionService: LeaguePermissionService,
-  ) {}
+  constructor(private leagueSettingsService: LeagueSettingsService) {}
 
   @Get()
+  @UseGuards(LeagueAdminOrModeratorGuard)
   @ApiOperation({ summary: 'Get league settings (requires admin)' })
   @ApiResponse({
     status: 200,
@@ -46,22 +43,10 @@ export class LeagueSettingsController {
   @ApiResponse({ status: 403, description: 'Admin access required' })
   @ApiResponse({ status: 404, description: 'League not found' })
   @ApiParam({ name: 'leagueId', description: 'League ID' })
-  async getSettings(
-    @Param('leagueId') leagueId: string,
-    @CurrentUser() user: AuthenticatedUser,
-  ) {
+  async getSettings(@Param('leagueId') leagueId: string) {
     try {
       this.logger.log(`Getting settings for league ${leagueId}`);
-      await this.leagueAccessValidationService.validateLeagueAccess(
-        user.id,
-        leagueId,
-      );
-
-      await this.leaguePermissionService.checkLeagueAdminOrModeratorAccess(
-        user.id,
-        leagueId,
-      );
-
+      // LeagueAdminOrModeratorGuard handles all permission checks
       return await this.leagueSettingsService.getSettings(leagueId);
     } catch (error) {
       this.logger.error(
@@ -73,6 +58,7 @@ export class LeagueSettingsController {
   }
 
   @Patch()
+  @UseGuards(LeagueAdminGuard)
   @ApiOperation({ summary: 'Update league settings (requires admin)' })
   @ApiResponse({ status: 200, description: 'Settings updated successfully' })
   @ApiResponse({ status: 400, description: 'Invalid settings data' })
@@ -88,16 +74,7 @@ export class LeagueSettingsController {
       this.logger.log(
         `Updating settings for league ${leagueId} by user ${user.id}`,
       );
-      await this.leagueAccessValidationService.validateLeagueAccess(
-        user.id,
-        leagueId,
-      );
-
-      await this.leaguePermissionService.checkLeagueAdminAccess(
-        user.id,
-        leagueId,
-      );
-
+      // LeagueAdminGuard handles all permission checks
       return await this.leagueSettingsService.updateSettings(
         leagueId,
         settingsDto,

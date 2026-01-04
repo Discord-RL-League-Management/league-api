@@ -10,6 +10,8 @@ import { LeaguesModule } from '../leagues/leagues.module';
 import { PlayersModule } from '../players/players.module';
 import { TeamsModule } from '../teams/teams.module';
 import { OrganizationProviderAdapter } from './adapters/organization-provider.adapter';
+import { OrganizationAuthorizationService } from './services/organization-authorization.service';
+import { OrganizationGmGuard } from './guards/organization-gm.guard';
 
 @Module({
   imports: [
@@ -24,6 +26,8 @@ import { OrganizationProviderAdapter } from './adapters/organization-provider.ad
     OrganizationService,
     OrganizationMemberService,
     OrganizationValidationService,
+    OrganizationAuthorizationService,
+    OrganizationGmGuard,
     {
       provide: 'IOrganizationProvider',
       useClass: OrganizationProviderAdapter,
@@ -34,6 +38,8 @@ import { OrganizationProviderAdapter } from './adapters/organization-provider.ad
     OrganizationService,
     OrganizationMemberService,
     OrganizationValidationService,
+    OrganizationAuthorizationService,
+    OrganizationGmGuard,
     'IOrganizationProvider',
   ],
 })

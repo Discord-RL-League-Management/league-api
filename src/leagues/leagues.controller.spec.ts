@@ -13,8 +13,11 @@ import { Test } from '@nestjs/testing';
 import { ForbiddenException } from '@nestjs/common';
 import { LeaguesController } from './leagues.controller';
 import { LeaguesService } from './leagues.service';
-import { LeagueAccessValidationService } from '../auth/services/league-access-validation.service';
-import { LeaguePermissionService } from '../auth/services/league-permission.service';
+import { LeagueAccessValidationService } from './services/league-access-validation.service';
+import { LeaguePermissionService } from './services/league-permission.service';
+import { LeagueAccessGuard } from './guards/league-access.guard';
+import { LeagueAdminGuard } from './guards/league-admin.guard';
+import { LeagueAdminOrModeratorGuard } from './guards/league-admin-or-moderator.guard';
 import { CreateLeagueDto } from './dto/create-league.dto';
 import { UpdateLeagueDto } from './dto/update-league.dto';
 import { LeagueStatus, Game } from '@prisma/client';
@@ -79,7 +82,20 @@ describe('LeaguesController', () => {
           useValue: mockLeaguePermissionService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(LeagueAccessGuard)
+      .useValue({
+        canActivate: vi.fn().mockResolvedValue(true),
+      } as unknown as LeagueAccessGuard)
+      .overrideGuard(LeagueAdminGuard)
+      .useValue({
+        canActivate: vi.fn().mockResolvedValue(true),
+      } as unknown as LeagueAdminGuard)
+      .overrideGuard(LeagueAdminOrModeratorGuard)
+      .useValue({
+        canActivate: vi.fn().mockResolvedValue(true),
+      } as unknown as LeagueAdminOrModeratorGuard)
+      .compile();
 
     controller = module.get<LeaguesController>(LeaguesController);
   });
@@ -109,9 +125,6 @@ describe('LeaguesController', () => {
 
   describe('getLeague', () => {
     it('should_return_league_when_user_has_access', async () => {
-      vi.mocked(
-        mockLeagueAccessValidationService.validateLeagueAccess,
-      ).mockResolvedValue(undefined);
       vi.mocked(mockLeaguesService.findOne).mockResolvedValue(
         mockLeague as never,
       );
@@ -119,19 +132,7 @@ describe('LeaguesController', () => {
       const result = await controller.getLeague('league-123', mockUser);
 
       expect(result).toEqual(mockLeague);
-      expect(
-        mockLeagueAccessValidationService.validateLeagueAccess,
-      ).toHaveBeenCalledWith(mockUser.id, 'league-123');
-    });
-
-    it('should_throw_when_user_lacks_access', async () => {
-      vi.mocked(
-        mockLeagueAccessValidationService.validateLeagueAccess,
-      ).mockRejectedValue(new ForbiddenException('Access denied'));
-
-      await expect(
-        controller.getLeague('league-123', mockUser),
-      ).rejects.toThrow(ForbiddenException);
+      expect(mockLeaguesService.findOne).toHaveBeenCalledWith('league-123');
     });
   });
 

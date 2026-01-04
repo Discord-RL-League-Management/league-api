@@ -33,8 +33,9 @@ import type { AuthenticatedUser } from '../../common/interfaces/user.interface';
 import { ParseCUIDPipe } from '../../common/pipes';
 import type { TrackerQueryOptions } from '../interfaces/tracker-query.options';
 import { TrackerQueryDto } from '../dto/tracker-query.dto';
-import { TrackerAuthorizationService } from '../../auth/services/tracker-authorization.service';
+import { TrackerAuthorizationService } from '../services/tracker-authorization.service';
 import { TrackerResponseMapperService } from '../services/tracker-response-mapper.service';
+import { TrackerAccessGuard } from '../guards/tracker-access.guard';
 
 @ApiTags('Trackers')
 @Controller('api/trackers')
@@ -87,6 +88,7 @@ export class TrackerController {
   }
 
   @Get('user/:userId')
+  @UseGuards(TrackerAccessGuard)
   @ApiOperation({ summary: 'Get trackers for a user' })
   @ApiParam({ name: 'userId', description: 'Discord user ID' })
   @ApiResponse({
@@ -100,10 +102,7 @@ export class TrackerController {
     @CurrentUser() user: AuthenticatedUser,
     @Query() query: TrackerQueryDto,
   ) {
-    await this.trackerAuthorizationService.validateTrackerAccess(
-      user.id,
-      userId,
-    );
+    // TrackerAccessGuard handles all permission checks
     const options: TrackerQueryOptions = { ...query };
     return this.trackerService.getTrackersByUserId(userId, options);
   }

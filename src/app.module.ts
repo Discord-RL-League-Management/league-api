@@ -34,7 +34,6 @@ import { PlayerRatingsModule } from './player-ratings/player-ratings.module';
 import { TournamentsModule } from './tournaments/tournaments.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { MmrCalculationModule } from './mmr-calculation/mmr-calculation.module';
-import { AuthorizationModule } from './auth/authorization.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthLoggerMiddleware } from './common/middleware/auth-logger.middleware';
 import { RequestContextInterceptor } from './common/interceptors/request-context.interceptor';
@@ -82,7 +81,6 @@ export const VALIDATION_FAILED_MESSAGE = 'Validation failed';
     OrganizationsModule,
     MmrCalculationModule,
     FormulaValidationModule,
-    AuthorizationModule, // Global module - must be imported once to initialize
   ],
   providers: [
     {

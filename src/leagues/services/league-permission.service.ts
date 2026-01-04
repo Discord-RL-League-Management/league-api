@@ -1,12 +1,12 @@
 import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
 import { LeagueMemberRole } from '@prisma/client';
-import { LeagueRepository } from '../../leagues/repositories/league.repository';
+import { LeagueRepository } from '../repositories/league.repository';
 import { LeagueAccessValidationService } from './league-access-validation.service';
 import { PlayerService } from '../../players/services/player.service';
 import { LeagueMemberRepository } from '../../league-members/repositories/league-member.repository';
 import { PermissionCheckService } from '../../permissions/modules/permission-check/permission-check.service';
 import { SettingsService } from '../../infrastructure/settings/services/settings.service';
-import { LeagueNotFoundException } from '../../leagues/exceptions/league.exceptions';
+import { LeagueNotFoundException } from '../exceptions/league.exceptions';
 
 /**
  * LeaguePermissionService - Single Responsibility: League-level permission checking

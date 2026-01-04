@@ -15,7 +15,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { AdminGuard } from '../auth/guards/admin.guard';
+import { GuildAdminGuard } from '../guilds/guards/guild-admin.guard';
 import { AuditLogService } from './services/audit-log.service';
 import type { AuthenticatedUser } from '../common/interfaces/user.interface';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -27,7 +27,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
  */
 @ApiTags('Audit Logs')
 @Controller('api/guilds/:guildId/audit-logs')
-@UseGuards(JwtAuthGuard, AdminGuard)
+@UseGuards(JwtAuthGuard, GuildAdminGuard)
 @ApiBearerAuth('JWT-auth')
 export class AuditLogController {
   private readonly logger = new Logger(AuditLogController.name);

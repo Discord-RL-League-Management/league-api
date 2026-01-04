@@ -9,9 +9,9 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createTestAccessToken } from '@tests/factories/token.factory';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
 import { GuildAccessValidationService } from './guild-access-validation.service';
-import { GuildRepository } from '../../guilds/repositories/guild.repository';
+import { GuildRepository } from '../repositories/guild.repository';
 import { GuildMemberRepository } from '../../guild-members/repositories/guild-member.repository';
-import { TokenManagementService } from './token-management.service';
+import { TokenManagementService } from '../../auth/services/token-management.service';
 import { DiscordApiService } from '../../discord/discord-api.service';
 
 describe('GuildAccessValidationService', () => {

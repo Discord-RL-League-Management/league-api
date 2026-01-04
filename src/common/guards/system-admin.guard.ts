@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { AuthorizationService } from '../services/authorization.service';
-import type { AuthenticatedUser } from '../../common/interfaces/user.interface';
+import type { AuthenticatedUser } from '../interfaces/user.interface';
 
 /**
  * SystemAdminGuard - Single Responsibility: Thin wrapper for system admin authorization

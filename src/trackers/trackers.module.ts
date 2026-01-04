@@ -32,6 +32,8 @@ import { TrackerUserOrchestratorService } from './services/tracker-user-orchestr
 import { TrackerQueueOrchestratorService } from './services/tracker-queue-orchestrator.service';
 import { TrackerBatchProcessorService } from './services/tracker-batch-processor.service';
 import { TrackerResponseMapperService } from './services/tracker-response-mapper.service';
+import { TrackerAuthorizationService } from './services/tracker-authorization.service';
+import { TrackerAccessGuard } from './guards/tracker-access.guard';
 import { GuildMembersModule } from '../guild-members/guild-members.module';
 import { PermissionCheckModule } from '../permissions/modules/permission-check/permission-check.module';
 
@@ -113,6 +115,8 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
     DiscordMessageService,
     NotificationBuilderService,
     TrackerResponseMapperService,
+    TrackerAuthorizationService,
+    TrackerAccessGuard,
   ],
   exports: [
     TrackerService,
@@ -121,6 +125,8 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
     TrackerScrapingQueueService,
     TrackerSeasonService,
     ScheduledTrackerProcessingService,
+    TrackerAuthorizationService,
+    TrackerAccessGuard,
   ],
 })
 export class TrackersModule {}

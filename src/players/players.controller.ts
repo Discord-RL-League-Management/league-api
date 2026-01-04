@@ -20,7 +20,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { PlayerService } from './services/player.service';
 import { Player } from '@prisma/client';
-import { GuildAccessValidationService } from '../auth/services/guild-access-validation.service';
+import { GuildAccessValidationService } from '../guilds/services/guild-access-validation.service';
 import { UpdatePlayerDto } from './dto/update-player.dto';
 import type { AuthenticatedUser } from '../common/interfaces/user.interface';
 import type { PlayerQueryOptions } from './interfaces/player.interface';

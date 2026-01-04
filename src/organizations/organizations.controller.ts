@@ -25,7 +25,7 @@ import { UpdateOrganizationDto } from './dto/update-organization.dto';
 import { AddOrganizationMemberDto } from './dto/add-organization-member.dto';
 import { UpdateOrganizationMemberDto } from './dto/update-organization-member.dto';
 import { TransferTeamDto } from './dto/transfer-team.dto';
-import { OrganizationGmGuard } from '../auth/guards/organization-gm.guard';
+import { OrganizationGmGuard } from './guards/organization-gm.guard';
 import { OrganizationMemberRole } from '@prisma/client';
 import { ParseCUIDPipe } from '../common/pipes';
 

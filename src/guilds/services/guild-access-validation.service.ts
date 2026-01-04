@@ -4,9 +4,9 @@ import {
   ForbiddenException,
   Logger,
 } from '@nestjs/common';
-import { GuildRepository } from '../../guilds/repositories/guild.repository';
+import { GuildRepository } from '../repositories/guild.repository';
 import { GuildMemberRepository } from '../../guild-members/repositories/guild-member.repository';
-import { TokenManagementService } from './token-management.service';
+import { TokenManagementService } from '../../auth/services/token-management.service';
 import { DiscordApiService } from '../../discord/discord-api.service';
 
 /**
