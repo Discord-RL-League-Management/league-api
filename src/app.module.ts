@@ -6,7 +6,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { APP_GUARD, APP_PIPE, APP_FILTER } from '@nestjs/core';
+import { APP_GUARD, APP_PIPE, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { ConfigService } from '@nestjs/config';
 import { ConfigModule as AppConfigModule } from './config/config.module';
@@ -21,7 +21,7 @@ import { GuildsModule } from './guilds/guilds.module';
 import { GuildMembersModule } from './guild-members/guild-members.module';
 import { LeaguesModule } from './leagues/leagues.module';
 import { PermissionsModule } from './permissions/permissions.module';
-import { AuditModule } from './audit/audit.module';
+import { CommonModule } from './common/common.module';
 import { TrackersModule } from './trackers/trackers.module';
 import { InfrastructureModule } from './infrastructure/infrastructure.module';
 import { PlayersModule } from './players/players.module';
@@ -34,9 +34,10 @@ import { PlayerRatingsModule } from './player-ratings/player-ratings.module';
 import { TournamentsModule } from './tournaments/tournaments.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { MmrCalculationModule } from './mmr-calculation/mmr-calculation.module';
-import { APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthLoggerMiddleware } from './common/middleware/auth-logger.middleware';
 import { RequestContextInterceptor } from './common/interceptors/request-context.interceptor';
+import { AuthorizationAuditInterceptor } from './common/interceptors/authorization-audit.interceptor';
+import { AuthorizationAuditExceptionFilter } from './common/filters/authorization-audit.filter';
 import { throttlerConfig } from './config/throttler.config';
 // Required for SchedulerRegistry dependency injection used by TrackerRefreshSchedulerService
 import { ScheduleModule } from '@nestjs/schedule';
@@ -67,7 +68,7 @@ export const VALIDATION_FAILED_MESSAGE = 'Validation failed';
     GuildMembersModule,
     LeaguesModule,
     PermissionsModule,
-    AuditModule,
+    CommonModule,
     TrackersModule,
     InfrastructureModule,
     PlayersModule,
@@ -90,6 +91,10 @@ export const VALIDATION_FAILED_MESSAGE = 'Validation failed';
     {
       provide: APP_INTERCEPTOR,
       useClass: RequestContextInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AuthorizationAuditInterceptor,
     },
     {
       provide: APP_PIPE,
@@ -136,6 +141,12 @@ export const VALIDATION_FAILED_MESSAGE = 'Validation failed';
     {
       provide: APP_FILTER,
       useClass: PrismaExceptionFilter,
+    },
+    // AuthorizationAuditExceptionFilter runs after PrismaExceptionFilter but before GlobalExceptionFilter
+    // to log authorization denials while still allowing GlobalExceptionFilter to handle the response
+    {
+      provide: APP_FILTER,
+      useClass: AuthorizationAuditExceptionFilter,
     },
     {
       provide: APP_FILTER,

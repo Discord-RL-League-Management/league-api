@@ -1,15 +1,14 @@
 import { Injectable, ForbiddenException, Logger } from '@nestjs/common';
-import { AuditLogService } from '../../audit/services/audit-log.service';
 import { PermissionCheckService } from '../../permissions/modules/permission-check/permission-check.service';
 import { GuildAccessValidationService } from './guild-access-validation.service';
 import { GuildMembersService } from '../../guild-members/guild-members.service';
 import { GuildSettingsService } from '../guild-settings.service';
 import { TokenManagementService } from '../../auth/services/token-management.service';
 import { DiscordApiService } from '../../discord/discord-api.service';
-import { AuditAction } from '../../audit/interfaces/audit-event.interface';
 import { GuildSettings } from '../interfaces/settings.interface';
 import type { AuthenticatedUser } from '../../common/interfaces/user.interface';
 import type { Request } from 'express';
+import type { AuditMetadata } from '../../common/interfaces/audit-metadata.interface';
 
 /**
  * GuildAuthorizationService - Single Responsibility: Guild authorization logic
@@ -26,7 +25,6 @@ export class GuildAuthorizationService {
   private readonly logger = new Logger(GuildAuthorizationService.name);
 
   constructor(
-    private readonly auditLogService: AuditLogService,
     private readonly permissionCheckService: PermissionCheckService,
     private readonly guildAccessValidationService: GuildAccessValidationService,
     private readonly guildMembersService: GuildMembersService,
@@ -41,14 +39,17 @@ export class GuildAuthorizationService {
    *
    * @param user - Authenticated user
    * @param guildId - Guild ID to check permissions for
-   * @param request - Express request object for audit logging
+   * @param request - Express request object (audit metadata set by guard)
    * @returns true if user has admin access
    * @throws ForbiddenException if user doesn't have admin access
+   *
+   * Audit logging is handled automatically via AuthorizationAuditInterceptor
+   * and AuthorizationAuditExceptionFilter based on request metadata set by guard.
    */
   async checkGuildAdmin(
     user: AuthenticatedUser | { type: 'bot'; id: string },
     guildId: string,
-    request: Request,
+    request: Request & { _auditMetadata?: AuditMetadata },
   ): Promise<boolean> {
     if (!user || !guildId) {
       this.logger.warn('GuildAuthorizationService: Missing user or guildId');
@@ -82,20 +83,13 @@ export class GuildAuthorizationService {
           `GuildAuthorizationService: User ${user.id} has Discord Administrator permission in guild ${guildId}`,
         );
 
-        await this.auditLogService.logAdminAction(
-          {
-            userId: user.id,
-            guildId,
-            action: AuditAction.ADMIN_CHECK,
-            resource: request.url || request.path || 'unknown',
-            result: 'allowed',
-            metadata: {
-              method: request.method,
-              reason: 'discord_administrator_permission',
-            },
-          },
-          request,
-        );
+        // Update audit metadata with reason
+        if (request._auditMetadata) {
+          request._auditMetadata.metadata = {
+            ...request._auditMetadata.metadata,
+            reason: 'discord_administrator_permission',
+          };
+        }
 
         return true;
       }
@@ -112,20 +106,13 @@ export class GuildAuthorizationService {
           `No admin roles configured for guild ${guildId}. Allowing access for initial setup.`,
         );
 
-        await this.auditLogService.logAdminAction(
-          {
-            userId: user.id,
-            guildId,
-            action: AuditAction.ADMIN_CHECK,
-            resource: request.url || request.path || 'unknown',
-            result: 'allowed',
-            metadata: {
-              method: request.method,
-              reason: 'no_admin_roles_configured',
-            },
-          },
-          request,
-        );
+        // Update audit metadata with reason
+        if (request._auditMetadata) {
+          request._auditMetadata.metadata = {
+            ...request._auditMetadata.metadata,
+            reason: 'no_admin_roles_configured',
+          };
+        }
 
         return true;
       }
@@ -149,20 +136,13 @@ export class GuildAuthorizationService {
         true,
       );
 
-      await this.auditLogService.logAdminAction(
-        {
-          userId: user.id,
-          guildId,
-          action: AuditAction.ADMIN_CHECK,
-          resource: request.url || request.path || 'unknown',
-          result: isAdmin ? 'allowed' : 'denied',
-          metadata: {
-            method: request.method,
-            reason: isAdmin ? 'configured_admin_role' : 'no_admin_access',
-          },
-        },
-        request,
-      );
+      // Update audit metadata with reason
+      if (request._auditMetadata) {
+        request._auditMetadata.metadata = {
+          ...request._auditMetadata.metadata,
+          reason: isAdmin ? 'configured_admin_role' : 'no_admin_access',
+        };
+      }
 
       if (!isAdmin) {
         throw new ForbiddenException(

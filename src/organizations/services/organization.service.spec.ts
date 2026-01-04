@@ -20,8 +20,8 @@ import { OrganizationMemberService } from '../services/organization-member.servi
 import { OrganizationValidationService } from '../services/organization-validation.service';
 import { PlayerService } from '@/players/services/player.service';
 import { LeagueRepository } from '@/leagues/repositories/league.repository';
-import type { ILeagueSettingsProvider } from '@/league-members/interfaces/league-settings-provider.interface';
-import { TeamRepository } from '@/teams/repositories/team.repository';
+import type { ILeagueSettingsProvider } from '@/common/interfaces/league-domain/league-settings-provider.interface';
+import type { IOrganizationTeamProvider } from '@/common/interfaces/league-domain/organization-team-provider.interface';
 import { PrismaService } from '@/prisma/prisma.service';
 import { CreateOrganizationDto } from '../dto/create-organization.dto';
 import { UpdateOrganizationDto } from '../dto/update-organization.dto';
@@ -40,7 +40,7 @@ describe('OrganizationService', () => {
   let mockPlayerService: PlayerService;
   let mockLeagueRepository: LeagueRepository;
   let mockLeagueSettingsProvider: ILeagueSettingsProvider;
-  let mockTeamRepository: TeamRepository;
+  let mockOrganizationTeamProvider: IOrganizationTeamProvider;
   let mockPrisma: PrismaService;
 
   const organizationId = 'org-123';
@@ -119,10 +119,10 @@ describe('OrganizationService', () => {
       getSettings: vi.fn(),
     } as unknown as ILeagueSettingsProvider;
 
-    mockTeamRepository = {
+    mockOrganizationTeamProvider = {
       findById: vi.fn(),
       update: vi.fn(),
-    } as unknown as TeamRepository;
+    } as unknown as IOrganizationTeamProvider;
 
     mockPrisma = {
       $transaction: vi.fn().mockImplementation((callback) => {
@@ -143,7 +143,7 @@ describe('OrganizationService', () => {
       mockPlayerService,
       mockLeagueRepository,
       mockLeagueSettingsProvider,
-      mockTeamRepository,
+      mockOrganizationTeamProvider,
       mockPrisma,
     );
   });
@@ -466,11 +466,13 @@ describe('OrganizationService', () => {
         organizationId: targetOrgId,
       };
 
-      vi.mocked(mockTeamRepository.findById).mockResolvedValue(team as any);
+      vi.mocked(mockOrganizationTeamProvider.findById).mockResolvedValue(
+        team as any,
+      );
       vi.mocked(mockOrganizationMemberService.isGeneralManager)
         .mockResolvedValueOnce(true) // Source GM check
         .mockResolvedValueOnce(false); // Target GM check
-      vi.mocked(mockTeamRepository.update).mockResolvedValue(
+      vi.mocked(mockOrganizationTeamProvider.update).mockResolvedValue(
         updatedTeam as any,
       );
 
@@ -493,11 +495,13 @@ describe('OrganizationService', () => {
         organizationId: targetOrgId,
       };
 
-      vi.mocked(mockTeamRepository.findById).mockResolvedValue(team as any);
+      vi.mocked(mockOrganizationTeamProvider.findById).mockResolvedValue(
+        team as any,
+      );
       vi.mocked(mockOrganizationMemberService.isGeneralManager)
         .mockResolvedValueOnce(false) // Source GM check
         .mockResolvedValueOnce(true); // Target GM check
-      vi.mocked(mockTeamRepository.update).mockResolvedValue(
+      vi.mocked(mockOrganizationTeamProvider.update).mockResolvedValue(
         updatedTeam as any,
       );
 
@@ -515,7 +519,9 @@ describe('OrganizationService', () => {
         leagueId,
       };
 
-      vi.mocked(mockTeamRepository.findById).mockResolvedValue(team as any);
+      vi.mocked(mockOrganizationTeamProvider.findById).mockResolvedValue(
+        team as any,
+      );
       vi.mocked(mockOrganizationMemberService.isGeneralManager)
         .mockResolvedValueOnce(false) // Source GM check
         .mockResolvedValueOnce(false); // Target GM check
@@ -529,7 +535,7 @@ describe('OrganizationService', () => {
       const teamId = 'non-existent';
       const targetOrgId = 'org-456';
 
-      vi.mocked(mockTeamRepository.findById).mockResolvedValue(null);
+      vi.mocked(mockOrganizationTeamProvider.findById).mockResolvedValue(null);
 
       await expect(
         service.transferTeam(teamId, targetOrgId, userId),
@@ -545,7 +551,9 @@ describe('OrganizationService', () => {
         leagueId,
       };
 
-      vi.mocked(mockTeamRepository.findById).mockResolvedValue(team as any);
+      vi.mocked(mockOrganizationTeamProvider.findById).mockResolvedValue(
+        team as any,
+      );
 
       await expect(
         service.transferTeam(teamId, targetOrgId, userId),

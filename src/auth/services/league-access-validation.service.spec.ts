@@ -8,14 +8,14 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { NotFoundException } from '@nestjs/common';
 import { LeagueAccessValidationService } from './league-access-validation.service';
-import { LeagueRepository } from '../repositories/league.repository';
+import { LeagueRepository } from '../../leagues/repositories/league.repository';
 import { GuildRepository } from '../../guilds/repositories/guild.repository';
 import { PlayerService } from '../../players/services/player.service';
 import type { ILeagueMemberAccess } from '../../common/interfaces/league-domain/league-member-access.interface';
 import {
   LeagueNotFoundException,
   LeagueAccessDeniedException,
-} from '../exceptions/league.exceptions';
+} from '../../leagues/exceptions/league.exceptions';
 
 describe('LeagueAccessValidationService', () => {
   let service: LeagueAccessValidationService;

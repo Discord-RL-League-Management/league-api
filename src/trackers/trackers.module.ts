@@ -24,7 +24,6 @@ import { TrackerSeasonService } from './services/tracker-season.service';
 import { TrackerRefreshSchedulerService } from './services/tracker-refresh-scheduler.service';
 import { TrackerBatchRefreshService } from './services/tracker-batch-refresh.service';
 import { ScheduledTrackerProcessingService } from './services/scheduled-tracker-processing.service';
-import { AuditModule } from '../audit/audit.module';
 import { MmrCalculationModule } from '../mmr-calculation/mmr-calculation.module';
 import { GuildsModule } from '../guilds/guilds.module';
 import { TrackerProcessingGuardService } from './services/tracker-processing-guard.service';
@@ -36,16 +35,17 @@ import { TrackerAuthorizationService } from './services/tracker-authorization.se
 import { TrackerAccessGuard } from './guards/tracker-access.guard';
 import { GuildMembersModule } from '../guild-members/guild-members.module';
 import { PermissionCheckModule } from '../permissions/modules/permission-check/permission-check.module';
+import { CommonModule } from '../common/common.module';
 
 @Module({
   imports: [
     PrismaModule,
     InfrastructureModule,
-    AuditModule,
     MmrCalculationModule,
     GuildsModule,
     GuildMembersModule,
     PermissionCheckModule,
+    CommonModule, // Required for SystemAdminGuard (AuthorizationService)
     HttpModule,
     BullModule.forRootAsync({
       imports: [ConfigModule],

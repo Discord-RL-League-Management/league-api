@@ -8,33 +8,27 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { TeamValidationService } from './team-validation.service';
-import { LeagueSettingsService } from '@/leagues/league-settings.service';
-import { OrganizationRepository } from '@/organizations/repositories/organization.repository';
-import { OrganizationValidationService } from '@/organizations/services/organization-validation.service';
+import type { ILeagueSettingsProvider } from '@/common/interfaces/league-domain/league-settings-provider.interface';
+import type { IOrganizationValidationProvider } from '@/common/interfaces/league-domain/organization-validation-provider.interface';
 
 describe('TeamValidationService', () => {
   let service: TeamValidationService;
-  let mockLeagueSettingsService: LeagueSettingsService;
-  let mockOrganizationRepository: OrganizationRepository;
-  let mockOrganizationValidationService: OrganizationValidationService;
+  let mockLeagueSettingsProvider: ILeagueSettingsProvider;
+  let mockOrganizationValidationProvider: IOrganizationValidationProvider;
 
   beforeEach(() => {
-    mockLeagueSettingsService = {
+    mockLeagueSettingsProvider = {
       getSettings: vi.fn(),
-    } as unknown as LeagueSettingsService;
+    } as unknown as ILeagueSettingsProvider;
 
-    mockOrganizationRepository = {
+    mockOrganizationValidationProvider = {
       findByIdAndLeague: vi.fn(),
-    } as unknown as OrganizationRepository;
-
-    mockOrganizationValidationService = {
       validateOrganizationCapacity: vi.fn(),
-    } as unknown as OrganizationValidationService;
+    } as unknown as IOrganizationValidationProvider;
 
     service = new TeamValidationService(
-      mockLeagueSettingsService,
-      mockOrganizationRepository,
-      mockOrganizationValidationService,
+      mockLeagueSettingsProvider,
+      mockOrganizationValidationProvider,
     );
   });
 
@@ -51,13 +45,13 @@ describe('TeamValidationService', () => {
         },
       };
 
-      vi.mocked(mockLeagueSettingsService.getSettings).mockResolvedValue(
+      vi.mocked(mockLeagueSettingsProvider.getSettings).mockResolvedValue(
         settings as any,
       );
 
       await service.validateOrganizationRequirement(leagueId);
 
-      expect(mockLeagueSettingsService.getSettings).toHaveBeenCalledWith(
+      expect(mockLeagueSettingsProvider.getSettings).toHaveBeenCalledWith(
         leagueId,
       );
     });
@@ -71,13 +65,13 @@ describe('TeamValidationService', () => {
         },
       };
 
-      vi.mocked(mockLeagueSettingsService.getSettings).mockResolvedValue(
+      vi.mocked(mockLeagueSettingsProvider.getSettings).mockResolvedValue(
         settings as any,
       );
 
       await service.validateOrganizationRequirement(leagueId, organizationId);
 
-      expect(mockLeagueSettingsService.getSettings).toHaveBeenCalledWith(
+      expect(mockLeagueSettingsProvider.getSettings).toHaveBeenCalledWith(
         leagueId,
       );
     });
@@ -90,7 +84,7 @@ describe('TeamValidationService', () => {
         },
       };
 
-      vi.mocked(mockLeagueSettingsService.getSettings).mockResolvedValue(
+      vi.mocked(mockLeagueSettingsProvider.getSettings).mockResolvedValue(
         settings as any,
       );
 
@@ -109,25 +103,24 @@ describe('TeamValidationService', () => {
       const leagueId = 'league123';
       const organization = { id: organizationId, leagueId };
 
-      vi.mocked(mockOrganizationRepository.findByIdAndLeague).mockResolvedValue(
-        organization as any,
-      );
+      vi.mocked(
+        mockOrganizationValidationProvider.findByIdAndLeague,
+      ).mockResolvedValue(organization as any);
 
       await service.validateOrganizationExists(organizationId, leagueId);
 
-      expect(mockOrganizationRepository.findByIdAndLeague).toHaveBeenCalledWith(
-        organizationId,
-        leagueId,
-      );
+      expect(
+        mockOrganizationValidationProvider.findByIdAndLeague,
+      ).toHaveBeenCalledWith(organizationId, leagueId);
     });
 
     it('should_throw_NotFoundException_when_organization_not_found', async () => {
       const organizationId = 'org123';
       const leagueId = 'league123';
 
-      vi.mocked(mockOrganizationRepository.findByIdAndLeague).mockResolvedValue(
-        null,
-      );
+      vi.mocked(
+        mockOrganizationValidationProvider.findByIdAndLeague,
+      ).mockResolvedValue(null);
 
       await expect(
         service.validateOrganizationExists(organizationId, leagueId),
@@ -146,13 +139,13 @@ describe('TeamValidationService', () => {
       const leagueId = 'league123';
 
       vi.mocked(
-        mockOrganizationValidationService.validateOrganizationCapacity,
+        mockOrganizationValidationProvider.validateOrganizationCapacity,
       ).mockResolvedValue(undefined);
 
       await service.validateOrganizationCapacity(organizationId, leagueId);
 
       expect(
-        mockOrganizationValidationService.validateOrganizationCapacity,
+        mockOrganizationValidationProvider.validateOrganizationCapacity,
       ).toHaveBeenCalledWith(leagueId, organizationId);
     });
   });

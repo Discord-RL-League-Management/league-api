@@ -21,8 +21,8 @@ import { LeagueSettingsDefaultsService } from './services/league-settings-defaul
 import { SettingsValidationService } from './services/settings-validation.service';
 import { ConfigMigrationService } from './services/config-migration.service';
 import { PrismaService } from '../prisma/prisma.service';
-import type { IOrganizationProvider } from './interfaces/organization-provider.interface';
-import type { ITeamProvider } from './interfaces/team-provider.interface';
+import type { IOrganizationProvider } from '../common/interfaces/league-domain/organization-provider.interface';
+import type { ITeamProvider } from '../common/interfaces/league-domain/team-provider.interface';
 import type { Cache } from 'cache-manager';
 import { LeagueConfiguration } from './interfaces/league-settings.interface';
 import { LeagueSettingsDto } from './dto/league-settings.dto';

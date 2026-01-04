@@ -5,9 +5,8 @@ import {
   NotFoundException,
   Inject,
 } from '@nestjs/common';
-import type { ILeagueSettingsProvider } from '../../league-members/interfaces/league-settings-provider.interface';
-import { OrganizationRepository } from '../../organizations/repositories/organization.repository';
-import { OrganizationValidationService } from '../../organizations/services/organization-validation.service';
+import type { ILeagueSettingsProvider } from '../../common/interfaces/league-domain/league-settings-provider.interface';
+import type { IOrganizationValidationProvider } from '../../common/interfaces/league-domain/organization-validation-provider.interface';
 
 /**
  * TeamValidationService - Single Responsibility: Team organization requirement validation
@@ -19,8 +18,8 @@ export class TeamValidationService {
   constructor(
     @Inject('ILeagueSettingsProvider')
     private leagueSettingsProvider: ILeagueSettingsProvider,
-    private organizationRepository: OrganizationRepository,
-    private organizationValidationService: OrganizationValidationService,
+    @Inject('IOrganizationValidationProvider')
+    private organizationValidationProvider: IOrganizationValidationProvider,
   ) {}
 
   /**
@@ -48,10 +47,11 @@ export class TeamValidationService {
     organizationId: string,
     leagueId: string,
   ): Promise<void> {
-    const organization = await this.organizationRepository.findByIdAndLeague(
-      organizationId,
-      leagueId,
-    );
+    const organization =
+      await this.organizationValidationProvider.findByIdAndLeague(
+        organizationId,
+        leagueId,
+      );
     if (!organization) {
       throw new NotFoundException(
         `Organization ${organizationId} not found in league ${leagueId}`,
@@ -66,7 +66,7 @@ export class TeamValidationService {
     organizationId: string,
     leagueId: string,
   ): Promise<void> {
-    await this.organizationValidationService.validateOrganizationCapacity(
+    await this.organizationValidationProvider.validateOrganizationCapacity(
       leagueId,
       organizationId,
     );

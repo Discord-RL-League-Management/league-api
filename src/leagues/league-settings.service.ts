@@ -11,8 +11,8 @@ import { LeagueNotFoundException } from './exceptions/league.exceptions';
 import { LeagueSettingsDto } from './dto/league-settings.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
-import type { IOrganizationProvider } from './interfaces/organization-provider.interface';
-import type { ITeamProvider } from './interfaces/team-provider.interface';
+import type { IOrganizationProvider } from '../common/interfaces/league-domain/organization-provider.interface';
+import type { ITeamProvider } from '../common/interfaces/league-domain/team-provider.interface';
 
 /**
  * LeagueSettingsService - League configuration management

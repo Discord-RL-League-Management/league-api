@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ILeagueSettingsProvider } from '../../league-members/interfaces/league-settings-provider.interface';
+import { ILeagueSettingsProvider } from '../../common/interfaces/league-domain/league-settings-provider.interface';
 import { LeagueSettingsService } from '../league-settings.service';
 import { LeagueConfiguration } from '../interfaces/league-settings.interface';
 

@@ -6,9 +6,10 @@ import { OrganizationMemberService } from './services/organization-member.servic
 import { OrganizationValidationService } from './services/organization-validation.service';
 import { OrganizationsController } from './organizations.controller';
 import { InternalOrganizationsController } from './internal-organizations.controller';
-import { LeaguesModule } from '../leagues/leagues.module';
 import { PlayersModule } from '../players/players.module';
+import { LeaguesModule } from '../leagues/leagues.module';
 import { TeamsModule } from '../teams/teams.module';
+import { OrganizationValidationProviderAdapter } from './adapters/organization-validation-provider.adapter';
 import { OrganizationProviderAdapter } from './adapters/organization-provider.adapter';
 import { OrganizationAuthorizationService } from './services/organization-authorization.service';
 import { OrganizationGmGuard } from './guards/organization-gm.guard';
@@ -16,8 +17,8 @@ import { OrganizationGmGuard } from './guards/organization-gm.guard';
 @Module({
   imports: [
     PrismaModule,
-    forwardRef(() => LeaguesModule),
     PlayersModule,
+    forwardRef(() => LeaguesModule),
     forwardRef(() => TeamsModule),
   ],
   controllers: [OrganizationsController, InternalOrganizationsController],
@@ -32,6 +33,10 @@ import { OrganizationGmGuard } from './guards/organization-gm.guard';
       provide: 'IOrganizationProvider',
       useClass: OrganizationProviderAdapter,
     },
+    {
+      provide: 'IOrganizationValidationProvider',
+      useClass: OrganizationValidationProviderAdapter,
+    },
   ],
   exports: [
     OrganizationRepository,
@@ -41,6 +46,7 @@ import { OrganizationGmGuard } from './guards/organization-gm.guard';
     OrganizationAuthorizationService,
     OrganizationGmGuard,
     'IOrganizationProvider',
+    'IOrganizationValidationProvider',
   ],
 })
 export class OrganizationsModule {}

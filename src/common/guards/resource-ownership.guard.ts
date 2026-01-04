@@ -4,21 +4,26 @@ import {
   ExecutionContext,
   ForbiddenException,
 } from '@nestjs/common';
-import { AuditLogService } from '../../audit/services/audit-log.service';
-import { AuditAction } from '../../audit/interfaces/audit-event.interface';
 import type { AuthenticatedUser } from '../interfaces/user.interface';
 import type { Request } from 'express';
+import type { AuditMetadata } from '../interfaces/audit-metadata.interface';
 
 interface RequestWithUser extends Request {
   user: AuthenticatedUser | { type: 'bot'; id: string };
   params: Record<string, string>;
+  _auditMetadata?: AuditMetadata;
 }
 
+/**
+ * ResourceOwnershipGuard - Checks if user owns the requested resource
+ *
+ * Sets audit metadata on request for automatic audit logging via interceptor.
+ * Audit logging is handled automatically - denied access logged by exception filter,
+ * allowed access logged by interceptor.
+ */
 @Injectable()
 export class ResourceOwnershipGuard implements CanActivate {
-  constructor(private auditLogService: AuditLogService) {}
-
-  async canActivate(context: ExecutionContext): Promise<boolean> {
+  canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<RequestWithUser>();
     const user = request.user;
     const resourceUserId = request.params.userId || request.params.id;
@@ -30,20 +35,16 @@ export class ResourceOwnershipGuard implements CanActivate {
 
     const hasAccess = user.id === resourceUserId;
 
-    // Log audit event
-    await this.auditLogService.logPermissionCheck(
-      {
-        userId: user.id,
-        action: AuditAction.RESOURCE_OWNERSHIP_CHECK,
-        resource: request.url || request.path,
-        result: hasAccess ? 'allowed' : 'denied',
-        metadata: {
-          method: request.method,
-          resourceUserId,
-        },
+    // Set audit metadata for interceptor/filter
+    request._auditMetadata = {
+      action: 'resource.ownership.check',
+      guardType: 'ResourceOwnershipGuard',
+      entityType: 'permission',
+      metadata: {
+        method: request.method,
+        resourceUserId,
       },
-      request,
-    );
+    };
 
     // If authenticated via JWT, check ownership
     if (!hasAccess) {

@@ -48,25 +48,25 @@ describe('SystemAdminGuard', () => {
   });
 
   describe('canActivate', () => {
-    it('should_throw_when_user_is_missing', async () => {
+    it('should_throw_when_user_is_missing', () => {
       const requestWithoutUser = { ...mockRequest, user: null };
 
-      await expect(
+      expect(() => {
         guard.canActivate({
           ...mockContext,
           switchToHttp: vi.fn().mockReturnValue({
             getRequest: vi.fn().mockReturnValue(requestWithoutUser),
           }),
-        } as ExecutionContext),
-      ).rejects.toThrow(ForbiddenException);
+        } as ExecutionContext);
+      }).toThrow(ForbiddenException);
     });
 
-    it('should_delegate_to_authorization_service_when_user_present', async () => {
-      vi.mocked(mockAuthorizationService.checkSystemAdmin).mockResolvedValue(
+    it('should_delegate_to_authorization_service_when_user_present', () => {
+      vi.mocked(mockAuthorizationService.checkSystemAdmin).mockReturnValue(
         true,
       );
 
-      const result = await guard.canActivate(mockContext);
+      const result = guard.canActivate(mockContext);
 
       expect(result).toBe(true);
       expect(mockAuthorizationService.checkSystemAdmin).toHaveBeenCalledWith(
@@ -75,14 +75,14 @@ describe('SystemAdminGuard', () => {
       );
     });
 
-    it('should_throw_when_authorization_service_denies_access', async () => {
-      vi.mocked(mockAuthorizationService.checkSystemAdmin).mockRejectedValue(
-        new ForbiddenException('System admin access required'),
+    it('should_throw_when_authorization_service_denies_access', () => {
+      vi.mocked(mockAuthorizationService.checkSystemAdmin).mockImplementation(
+        () => {
+          throw new ForbiddenException('System admin access required');
+        },
       );
 
-      await expect(guard.canActivate(mockContext)).rejects.toThrow(
-        ForbiddenException,
-      );
+      expect(() => guard.canActivate(mockContext)).toThrow(ForbiddenException);
       expect(mockAuthorizationService.checkSystemAdmin).toHaveBeenCalled();
     });
   });

@@ -3,14 +3,11 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { ForbiddenException } from '@nestjs/common';
 import { AuthorizationService } from './authorization.service';
-import { AuditLogService } from '../../audit/services/audit-log.service';
-import { AuditAction } from '../../audit/interfaces/audit-event.interface';
 import type { Request } from 'express';
 import type { AuthenticatedUser } from '../../common/interfaces/user.interface';
 
 describe('AuthorizationService', () => {
   let service: AuthorizationService;
-  let auditLogService: AuditLogService;
   let configService: ConfigService;
 
   const mockUser: AuthenticatedUser = {
@@ -25,13 +22,14 @@ describe('AuthorizationService', () => {
     url: '/test',
     path: '/test',
     method: 'GET',
-  } as Request;
+    _auditMetadata: {
+      action: 'admin.check',
+      guardType: 'SystemAdminGuard',
+      entityType: 'admin',
+    },
+  } as Request & { _auditMetadata?: unknown };
 
   beforeEach(async () => {
-    const mockAuditLogService = {
-      logAdminAction: vi.fn().mockResolvedValue(undefined),
-    };
-
     const mockConfigService = {
       get: vi.fn(),
     };
@@ -40,10 +38,6 @@ describe('AuthorizationService', () => {
       providers: [
         AuthorizationService,
         {
-          provide: AuditLogService,
-          useValue: mockAuditLogService,
-        },
-        {
           provide: ConfigService,
           useValue: mockConfigService,
         },
@@ -51,46 +45,27 @@ describe('AuthorizationService', () => {
     }).compile();
 
     service = module.get<AuthorizationService>(AuthorizationService);
-    auditLogService = module.get<AuditLogService>(AuditLogService);
     configService = module.get<ConfigService>(ConfigService);
   });
 
   describe('checkSystemAdmin', () => {
-    it('should_allow_access_when_user_is_system_admin', async () => {
+    it('should_allow_access_when_user_is_system_admin', () => {
       vi.mocked(configService.get).mockReturnValue(['user123', 'user456']);
 
-      const result = await service.checkSystemAdmin(mockUser, mockRequest);
+      const result = service.checkSystemAdmin(mockUser, mockRequest);
 
       expect(result).toBe(true);
-      expect(auditLogService.logAdminAction).toHaveBeenCalledWith(
-        expect.objectContaining({
-          userId: mockUser.id,
-          action: AuditAction.ADMIN_CHECK,
-          result: 'allowed',
-          metadata: expect.objectContaining({
-            reason: 'system_admin_user_id',
-          }),
-        }),
-        mockRequest,
-      );
+      // Audit logging is handled automatically by interceptor, not tested here
     });
 
-    it('should_deny_access_when_user_is_not_system_admin', async () => {
+    it('should_deny_access_when_user_is_not_system_admin', () => {
       vi.mocked(configService.get).mockReturnValue(['user456', 'user789']);
 
-      await expect(
-        service.checkSystemAdmin(mockUser, mockRequest),
-      ).rejects.toThrow(ForbiddenException);
+      expect(() => {
+        service.checkSystemAdmin(mockUser, mockRequest);
+      }).toThrow(ForbiddenException);
 
-      expect(auditLogService.logAdminAction).toHaveBeenCalledWith(
-        expect.objectContaining({
-          result: 'denied',
-          metadata: expect.objectContaining({
-            reason: 'not_system_admin',
-          }),
-        }),
-        mockRequest,
-      );
+      // Audit logging is handled automatically by exception filter, not tested here
     });
   });
 });

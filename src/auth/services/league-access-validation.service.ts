@@ -1,12 +1,12 @@
 import { Injectable, Logger, NotFoundException, Inject } from '@nestjs/common';
-import { LeagueRepository } from '../repositories/league.repository';
+import { LeagueRepository } from '../../leagues/repositories/league.repository';
 import { GuildRepository } from '../../guilds/repositories/guild.repository';
 import { PlayerService } from '../../players/services/player.service';
 import type { ILeagueMemberAccess } from '../../common/interfaces/league-domain/league-member-access.interface';
 import {
   LeagueNotFoundException,
   LeagueAccessDeniedException,
-} from '../exceptions/league.exceptions';
+} from '../../leagues/exceptions/league.exceptions';
 import { PlayerNotFoundException } from '../../players/exceptions/player.exceptions';
 
 /**

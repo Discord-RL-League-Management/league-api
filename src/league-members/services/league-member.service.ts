@@ -12,7 +12,7 @@ import { JoinLeagueDto } from '../dto/join-league.dto';
 import { LeagueMemberRepository } from '../repositories/league-member.repository';
 import { LeagueJoinValidationService } from './league-join-validation.service';
 import { PlayerService } from '../../players/services/player.service';
-import type { ILeagueSettingsProvider } from '../interfaces/league-settings-provider.interface';
+import type { ILeagueSettingsProvider } from '../../common/interfaces/league-domain/league-settings-provider.interface';
 import { ActivityLogService } from '../../infrastructure/activity-log/services/activity-log.service';
 import { PlayerLeagueRatingService } from '../../player-ratings/services/player-league-rating.service';
 import {

@@ -61,7 +61,10 @@ import { LeagueAdminOrModeratorGuard } from './guards/league-admin-or-moderator.
     LeagueAdminOrModeratorGuard,
     {
       provide: 'ILeagueSettingsProvider',
-      useClass: LeagueSettingsProviderAdapter,
+      useFactory: (settingsService: LeagueSettingsService) => {
+        return new LeagueSettingsProviderAdapter(settingsService);
+      },
+      inject: [LeagueSettingsService],
     },
   ],
   exports: [

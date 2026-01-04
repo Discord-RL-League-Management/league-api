@@ -7,10 +7,12 @@ import {
 import { GuildAuthorizationService } from '../services/guild-authorization.service';
 import type { AuthenticatedUser } from '../../common/interfaces/user.interface';
 import type { Request } from 'express';
+import type { AuditMetadata } from '../../common/interfaces/audit-metadata.interface';
 
 interface RequestWithUser extends Request {
   user: AuthenticatedUser | { type: 'bot'; id: string };
   params: Record<string, string>;
+  _auditMetadata?: AuditMetadata;
 }
 
 /**
@@ -33,6 +35,14 @@ export class GuildAdminGuard implements CanActivate {
     if (!user || !guildId) {
       throw new ForbiddenException('Authentication and guild ID required');
     }
+
+    // Set audit metadata for interceptor
+    request._auditMetadata = {
+      action: 'admin.check',
+      guardType: 'GuildAdminGuard',
+      entityType: 'admin',
+      guildId,
+    };
 
     return await this.guildAuthorizationService.checkGuildAdmin(
       user,

@@ -14,25 +14,26 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { GuildAdminGuard } from '../guilds/guards/guild-admin.guard';
-import { AuditLogService } from './services/audit-log.service';
-import type { AuthenticatedUser } from '../common/interfaces/user.interface';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { GuildAdminGuard } from '../../guilds/guards/guild-admin.guard';
+import { ActivityLogService } from './services/activity-log.service';
+import type { AuthenticatedUser } from '../../common/interfaces/user.interface';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 
 /**
- * Audit Log Controller - Single Responsibility: Handle HTTP requests for audit logs
+ * ActivityLogController - Single Responsibility: Handle HTTP requests for activity/audit logs
  *
- * Controller only handles HTTP concerns, delegates to services.
+ * Controller only handles HTTP concerns, delegates to ActivityLogService.
+ * Provides query API for audit logs (authorization events).
  */
 @ApiTags('Audit Logs')
 @Controller('api/guilds/:guildId/audit-logs')
 @UseGuards(JwtAuthGuard, GuildAdminGuard)
 @ApiBearerAuth('JWT-auth')
-export class AuditLogController {
-  private readonly logger = new Logger(AuditLogController.name);
+export class ActivityLogController {
+  private readonly logger = new Logger(ActivityLogController.name);
 
-  constructor(private auditLogService: AuditLogService) {}
+  constructor(private readonly activityLogService: ActivityLogService) {}
 
   @Get()
   @ApiOperation({ summary: 'Get audit logs for a guild (admin only)' })
@@ -48,7 +49,7 @@ export class AuditLogController {
   @ApiQuery({
     name: 'action',
     required: false,
-    description: 'Filter by action type',
+    description: 'Filter by action type (eventType in ActivityLog)',
   })
   @ApiQuery({
     name: 'startDate',
@@ -84,22 +85,22 @@ export class AuditLogController {
       `User ${user.id} requested audit logs for guild ${guildId}`,
     );
 
-    const filters: {
-      userId?: string;
-      action?: string;
-      limit?: number;
-      offset?: number;
-      startDate?: Date;
-      endDate?: Date;
-    } = {};
+    // Map query params to ActivityLogService filters
+    // Note: 'action' query param maps to 'eventType' in ActivityLogService
+    const result = await this.activityLogService.findWithFilters({
+      guildId,
+      userId,
+      eventType: action, // 'action' query param maps to eventType
+      limit: limit ? Math.min(parseInt(limit, 10), 100) : undefined,
+      offset: offset ? parseInt(offset, 10) : undefined,
+    });
 
-    if (userId) filters.userId = userId;
-    if (action) filters.action = action;
-    if (limit) filters.limit = Math.min(parseInt(limit), 100);
-    if (offset) filters.offset = parseInt(offset);
-    if (startDate) filters.startDate = new Date(startDate);
-    if (endDate) filters.endDate = new Date(endDate);
-
-    return this.auditLogService.queryLogs(guildId, filters);
+    // Format response to match previous AuditLogController structure
+    return {
+      logs: result.logs,
+      total: result.total,
+      limit: limit ? Math.min(parseInt(limit, 10), 100) : 50,
+      offset: offset ? parseInt(offset, 10) : 0,
+    };
   }
 }

@@ -1,9 +1,8 @@
 import { Injectable, ForbiddenException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AuditLogService } from '../../audit/services/audit-log.service';
-import { AuditAction } from '../../audit/interfaces/audit-event.interface';
 import type { AuthenticatedUser } from '../interfaces/user.interface';
 import type { Request } from 'express';
+import type { AuditMetadata } from '../interfaces/audit-metadata.interface';
 
 /**
  * AuthorizationService - Single Responsibility: System-level authorization logic
@@ -13,29 +12,29 @@ import type { Request } from 'express';
  *
  * Responsibilities:
  * - Check system admin permissions
+ *
+ * Audit logging is handled automatically via AuthorizationAuditInterceptor
+ * and AuthorizationAuditExceptionFilter based on request metadata set by guards.
  */
 @Injectable()
 export class AuthorizationService {
   private readonly logger = new Logger(AuthorizationService.name);
 
-  constructor(
-    private readonly auditLogService: AuditLogService,
-    private readonly configService: ConfigService,
-  ) {}
+  constructor(private readonly configService: ConfigService) {}
 
   /**
    * Check if user has system admin permissions
    * Extracted from SystemAdminGuard - checks against configured system admin user IDs
    *
    * @param user - Authenticated user
-   * @param request - Express request object for audit logging
+   * @param request - Express request object (audit metadata set by guard)
    * @returns true if user has system admin access
    * @throws ForbiddenException if user doesn't have system admin access
    */
-  async checkSystemAdmin(
+  checkSystemAdmin(
     user: AuthenticatedUser,
-    request: Request,
-  ): Promise<boolean> {
+    request: Request & { _auditMetadata?: AuditMetadata },
+  ): boolean {
     if (!user) {
       this.logger.warn('AuthorizationService: Missing user');
       throw new ForbiddenException('Authentication required');
@@ -47,20 +46,13 @@ export class AuthorizationService {
 
       const isSystemAdmin = systemAdminUserIds.includes(user.id);
 
-      await this.auditLogService.logAdminAction(
-        {
-          userId: user.id,
-          action: AuditAction.ADMIN_CHECK,
-          resource: request.url || request.path || 'unknown',
-          result: isSystemAdmin ? 'allowed' : 'denied',
-          metadata: {
-            method: request.method,
-            reason: isSystemAdmin ? 'system_admin_user_id' : 'not_system_admin',
-            guardType: 'SystemAdminGuard',
-          },
-        },
-        request,
-      );
+      // Update audit metadata with additional context
+      if (request._auditMetadata) {
+        request._auditMetadata.metadata = {
+          ...request._auditMetadata.metadata,
+          reason: isSystemAdmin ? 'system_admin_user_id' : 'not_system_admin',
+        };
+      }
 
       if (!isSystemAdmin) {
         this.logger.warn(

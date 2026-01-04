@@ -23,7 +23,6 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { UsersModule } from '../users/users.module';
 import { FormulaValidationModule } from '../formula-validation/formula-validation.module';
 import { PermissionCheckModule } from '../permissions/modules/permission-check/permission-check.module';
-import { AuditModule } from '../audit/audit.module';
 import { GuildAccessValidationService } from './services/guild-access-validation.service';
 import { GuildAuthorizationService } from './services/guild-authorization.service';
 import { GuildAdminGuard } from './guards/guild-admin.guard';
@@ -35,7 +34,6 @@ import { GuildAdminSimpleGuard } from './guards/guild-admin-simple.guard';
     GuildMembersModule,
     DiscordModule,
     PermissionCheckModule, // Required for GuildAdminGuard (PermissionCheckService)
-    AuditModule, // Required for GuildAuthorizationService (AuditLogService)
     PrismaModule,
     SettingsModule, // Required for GuildSettingsService (SettingsService)
     ActivityLogModule, // Required for GuildSettingsService (ActivityLogService)
@@ -84,6 +82,7 @@ import { GuildAdminSimpleGuard } from './guards/guild-admin-simple.guard';
     GuildAccessProviderAdapter,
     'IGuildAccessProvider',
     GuildAccessValidationService,
+    GuildAuthorizationService, // Required for GuildAdminGuard when used in other modules
     GuildAdminGuard,
     GuildAdminSimpleGuard,
   ],
