@@ -1,12 +1,12 @@
 import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
 import { LeagueMemberRole } from '@prisma/client';
-import { LeagueRepository } from '../repositories/league.repository';
+import { LeagueRepository } from '../../leagues/repositories/league.repository';
 import { LeagueAccessValidationService } from './league-access-validation.service';
 import { PlayerService } from '../../players/services/player.service';
 import { LeagueMemberRepository } from '../../league-members/repositories/league-member.repository';
 import { PermissionCheckService } from '../../permissions/modules/permission-check/permission-check.service';
-import { GuildSettingsService } from '../../guilds/guild-settings.service';
-import { LeagueNotFoundException } from '../exceptions/league.exceptions';
+import { SettingsService } from '../../infrastructure/settings/services/settings.service';
+import { LeagueNotFoundException } from '../../leagues/exceptions/league.exceptions';
 
 /**
  * LeaguePermissionService - Single Responsibility: League-level permission checking
@@ -24,7 +24,7 @@ export class LeaguePermissionService {
     private playerService: PlayerService,
     private leagueMemberRepository: LeagueMemberRepository,
     private permissionCheckService: PermissionCheckService,
-    private guildSettingsService: GuildSettingsService,
+    private settingsService: SettingsService,
   ) {}
 
   /**
@@ -196,7 +196,13 @@ export class LeaguePermissionService {
     guildId: string,
   ): Promise<boolean> {
     try {
-      const settings = await this.guildSettingsService.getSettings(guildId);
+      const settingsRecord = await this.settingsService.getSettings(
+        'guild',
+        guildId,
+      );
+      const settings = settingsRecord?.settings as
+        | Record<string, unknown>
+        | undefined;
       // Validates admin role through Discord API to ensure permissions are current
       return await this.permissionCheckService.hasAdminRole(
         userId,

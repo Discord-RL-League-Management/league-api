@@ -9,28 +9,28 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createTestAccessToken } from '@tests/factories/token.factory';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
 import { GuildAccessValidationService } from './guild-access-validation.service';
-import { GuildMembersService } from '@/guild-members/guild-members.service';
-import { GuildsService } from '../guilds.service';
-import { TokenManagementService } from '@/auth/services/token-management.service';
-import { DiscordApiService } from '@/discord/discord-api.service';
+import { GuildRepository } from '../../guilds/repositories/guild.repository';
+import { GuildMemberRepository } from '../../guild-members/repositories/guild-member.repository';
+import { TokenManagementService } from './token-management.service';
+import { DiscordApiService } from '../../discord/discord-api.service';
 
 describe('GuildAccessValidationService', () => {
   let service: GuildAccessValidationService;
-  let mockGuildMembersService: GuildMembersService;
-  let mockGuildsService: GuildsService;
+  let mockGuildRepository: GuildRepository;
+  let mockGuildMemberRepository: GuildMemberRepository;
   let mockTokenManagementService: TokenManagementService;
   let mockDiscordApiService: DiscordApiService;
 
   beforeEach(() => {
-    mockGuildMembersService = {
-      findOne: vi.fn(),
-      create: vi.fn(),
-    } as unknown as GuildMembersService;
-
-    mockGuildsService = {
+    mockGuildRepository = {
       exists: vi.fn(),
       findOne: vi.fn(),
-    } as unknown as GuildsService;
+    } as unknown as GuildRepository;
+
+    mockGuildMemberRepository = {
+      findByCompositeKey: vi.fn(),
+      create: vi.fn(),
+    } as unknown as GuildMemberRepository;
 
     mockTokenManagementService = {
       getValidAccessToken: vi.fn(),
@@ -41,8 +41,8 @@ describe('GuildAccessValidationService', () => {
     } as unknown as DiscordApiService;
 
     service = new GuildAccessValidationService(
-      mockGuildMembersService,
-      mockGuildsService,
+      mockGuildRepository,
+      mockGuildMemberRepository,
       mockTokenManagementService,
       mockDiscordApiService,
     );
@@ -58,15 +58,15 @@ describe('GuildAccessValidationService', () => {
       const guildId = 'guild123';
       const membership = { userId, guildId };
 
-      vi.mocked(mockGuildsService.exists).mockResolvedValue(true);
-      vi.mocked(mockGuildMembersService.findOne).mockResolvedValue(
+      vi.mocked(mockGuildRepository.exists).mockResolvedValue(true);
+      vi.mocked(mockGuildMemberRepository.findByCompositeKey).mockResolvedValue(
         membership as any,
       );
 
       await service.validateUserGuildAccess(userId, guildId);
 
-      expect(mockGuildsService.exists).toHaveBeenCalledWith(guildId);
-      expect(mockGuildMembersService.findOne).toHaveBeenCalledWith(
+      expect(mockGuildRepository.exists).toHaveBeenCalledWith(guildId);
+      expect(mockGuildMemberRepository.findByCompositeKey).toHaveBeenCalledWith(
         userId,
         guildId,
       );
@@ -76,7 +76,7 @@ describe('GuildAccessValidationService', () => {
       const userId = 'user123';
       const guildId = 'guild123';
 
-      vi.mocked(mockGuildsService.exists).mockResolvedValue(false);
+      vi.mocked(mockGuildRepository.exists).mockResolvedValue(false);
 
       await expect(
         service.validateUserGuildAccess(userId, guildId),
@@ -96,9 +96,9 @@ describe('GuildAccessValidationService', () => {
         roles: ['role123'],
       };
 
-      vi.mocked(mockGuildsService.exists).mockResolvedValue(true);
-      vi.mocked(mockGuildMembersService.findOne).mockRejectedValue(
-        new NotFoundException('Not found'),
+      vi.mocked(mockGuildRepository.exists).mockResolvedValue(true);
+      vi.mocked(mockGuildMemberRepository.findByCompositeKey).mockResolvedValue(
+        null,
       );
       vi.mocked(
         mockTokenManagementService.getValidAccessToken,
@@ -106,8 +106,8 @@ describe('GuildAccessValidationService', () => {
       vi.mocked(mockDiscordApiService.checkGuildPermissions).mockResolvedValue(
         guildPermissions as any,
       );
-      vi.mocked(mockGuildsService.findOne).mockResolvedValue(guild as any);
-      vi.mocked(mockGuildMembersService.create).mockResolvedValue({} as any);
+      vi.mocked(mockGuildRepository.findOne).mockResolvedValue(guild as any);
+      vi.mocked(mockGuildMemberRepository.create).mockResolvedValue({} as any);
 
       await service.validateUserGuildAccess(userId, guildId);
 
@@ -115,7 +115,7 @@ describe('GuildAccessValidationService', () => {
         accessToken,
         guildId,
       );
-      expect(mockGuildMembersService.create).toHaveBeenCalled();
+      expect(mockGuildMemberRepository.create).toHaveBeenCalled();
     });
 
     it('should_throw_ForbiddenException_when_user_not_member_in_discord', async () => {
@@ -127,9 +127,9 @@ describe('GuildAccessValidationService', () => {
         roles: [],
       };
 
-      vi.mocked(mockGuildsService.exists).mockResolvedValue(true);
-      vi.mocked(mockGuildMembersService.findOne).mockRejectedValue(
-        new NotFoundException('Not found'),
+      vi.mocked(mockGuildRepository.exists).mockResolvedValue(true);
+      vi.mocked(mockGuildMemberRepository.findByCompositeKey).mockResolvedValue(
+        null,
       );
       vi.mocked(
         mockTokenManagementService.getValidAccessToken,
@@ -150,9 +150,9 @@ describe('GuildAccessValidationService', () => {
       const userId = 'user123';
       const guildId = 'guild123';
 
-      vi.mocked(mockGuildsService.exists).mockResolvedValue(true);
-      vi.mocked(mockGuildMembersService.findOne).mockRejectedValue(
-        new NotFoundException('Not found'),
+      vi.mocked(mockGuildRepository.exists).mockResolvedValue(true);
+      vi.mocked(mockGuildMemberRepository.findByCompositeKey).mockResolvedValue(
+        null,
       );
       vi.mocked(
         mockTokenManagementService.getValidAccessToken,

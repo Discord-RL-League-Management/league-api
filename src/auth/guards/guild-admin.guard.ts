@@ -4,8 +4,8 @@ import {
   ExecutionContext,
   ForbiddenException,
 } from '@nestjs/common';
-import { AuthorizationService } from '../../auth/services/authorization.service';
-import type { AuthenticatedUser } from '../interfaces/user.interface';
+import { AuthorizationService } from '../services/authorization.service';
+import type { AuthenticatedUser } from '../../common/interfaces/user.interface';
 import type { Request } from 'express';
 
 interface RequestWithUser extends Request {

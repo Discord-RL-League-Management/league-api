@@ -8,13 +8,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ForbiddenException } from '@nestjs/common';
 import { LeaguePermissionService } from './league-permission.service';
-import { LeagueRepository } from '../repositories/league.repository';
-import { LeagueAccessValidationService } from '../services/league-access-validation.service';
-import { PlayerService } from '@/players/services/player.service';
-import { LeagueMemberRepository } from '@/league-members/repositories/league-member.repository';
-import { PermissionCheckService } from '@/permissions/modules/permission-check/permission-check.service';
-import { GuildSettingsService } from '@/guilds/guild-settings.service';
-import { LeagueNotFoundException } from '../exceptions/league.exceptions';
+import { LeagueRepository } from '../../leagues/repositories/league.repository';
+import { LeagueAccessValidationService } from './league-access-validation.service';
+import { PlayerService } from '../../players/services/player.service';
+import { LeagueMemberRepository } from '../../league-members/repositories/league-member.repository';
+import { PermissionCheckService } from '../../permissions/modules/permission-check/permission-check.service';
+import { SettingsService } from '../../infrastructure/settings/services/settings.service';
+import { LeagueNotFoundException } from '../../leagues/exceptions/league.exceptions';
 import { LeagueMemberRole } from '@prisma/client';
 
 describe('LeaguePermissionService', () => {
@@ -24,7 +24,7 @@ describe('LeaguePermissionService', () => {
   let mockPlayerService: PlayerService;
   let mockLeagueMemberRepository: LeagueMemberRepository;
   let mockPermissionCheckService: PermissionCheckService;
-  let mockGuildSettingsService: GuildSettingsService;
+  let mockSettingsService: SettingsService;
 
   beforeEach(() => {
     mockLeagueRepository = {
@@ -45,9 +45,9 @@ describe('LeaguePermissionService', () => {
       hasAdminRole: vi.fn(),
     } as unknown as PermissionCheckService;
 
-    mockGuildSettingsService = {
+    mockSettingsService = {
       getSettings: vi.fn(),
-    } as unknown as GuildSettingsService;
+    } as unknown as SettingsService;
 
     service = new LeaguePermissionService(
       mockLeagueRepository,
@@ -55,7 +55,7 @@ describe('LeaguePermissionService', () => {
       mockPlayerService,
       mockLeagueMemberRepository,
       mockPermissionCheckService,
-      mockGuildSettingsService,
+      mockSettingsService,
     );
   });
 
@@ -72,9 +72,15 @@ describe('LeaguePermissionService', () => {
       const settings = { roles: { admin: [] } };
 
       vi.mocked(mockLeagueRepository.findOne).mockResolvedValue(league as any);
-      vi.mocked(mockGuildSettingsService.getSettings).mockResolvedValue(
-        settings as any,
-      );
+      vi.mocked(mockSettingsService.getSettings).mockResolvedValue({
+        id: 'settings-1',
+        ownerType: 'guild',
+        ownerId: guildId,
+        settings,
+        schemaVersion: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as any);
       vi.mocked(mockPermissionCheckService.hasAdminRole).mockResolvedValue(
         true,
       );
@@ -104,9 +110,15 @@ describe('LeaguePermissionService', () => {
       const settings = { roles: { admin: [] } };
 
       vi.mocked(mockLeagueRepository.findOne).mockResolvedValue(league as any);
-      vi.mocked(mockGuildSettingsService.getSettings).mockResolvedValue(
-        settings as any,
-      );
+      vi.mocked(mockSettingsService.getSettings).mockResolvedValue({
+        id: 'settings-1',
+        ownerType: 'guild',
+        ownerId: guildId,
+        settings,
+        schemaVersion: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as any);
       vi.mocked(mockPermissionCheckService.hasAdminRole).mockResolvedValue(
         false,
       );
@@ -153,9 +165,15 @@ describe('LeaguePermissionService', () => {
       const settings = { roles: { admin: [] } };
 
       vi.mocked(mockLeagueRepository.findOne).mockResolvedValue(league as any);
-      vi.mocked(mockGuildSettingsService.getSettings).mockResolvedValue(
-        settings as any,
-      );
+      vi.mocked(mockSettingsService.getSettings).mockResolvedValue({
+        id: 'settings-1',
+        ownerType: 'guild',
+        ownerId: guildId,
+        settings,
+        schemaVersion: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as any);
       vi.mocked(mockPermissionCheckService.hasAdminRole).mockResolvedValue(
         false,
       );
@@ -184,9 +202,15 @@ describe('LeaguePermissionService', () => {
       const settings = { roles: { admin: [] } };
 
       vi.mocked(mockLeagueRepository.findOne).mockResolvedValue(league as any);
-      vi.mocked(mockGuildSettingsService.getSettings).mockResolvedValue(
-        settings as any,
-      );
+      vi.mocked(mockSettingsService.getSettings).mockResolvedValue({
+        id: 'settings-1',
+        ownerType: 'guild',
+        ownerId: guildId,
+        settings,
+        schemaVersion: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as any);
       vi.mocked(mockPermissionCheckService.hasAdminRole).mockResolvedValue(
         true,
       );
@@ -210,9 +234,15 @@ describe('LeaguePermissionService', () => {
       const settings = { roles: { admin: [] } };
 
       vi.mocked(mockLeagueRepository.findOne).mockResolvedValue(league as any);
-      vi.mocked(mockGuildSettingsService.getSettings).mockResolvedValue(
-        settings as any,
-      );
+      vi.mocked(mockSettingsService.getSettings).mockResolvedValue({
+        id: 'settings-1',
+        ownerType: 'guild',
+        ownerId: guildId,
+        settings,
+        schemaVersion: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as any);
       vi.mocked(mockPermissionCheckService.hasAdminRole).mockResolvedValue(
         false,
       );
@@ -244,9 +274,15 @@ describe('LeaguePermissionService', () => {
       const settings = { roles: { admin: [] } };
 
       vi.mocked(mockLeagueRepository.findOne).mockResolvedValue(league as any);
-      vi.mocked(mockGuildSettingsService.getSettings).mockResolvedValue(
-        settings as any,
-      );
+      vi.mocked(mockSettingsService.getSettings).mockResolvedValue({
+        id: 'settings-1',
+        ownerType: 'guild',
+        ownerId: guildId,
+        settings,
+        schemaVersion: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as any);
       vi.mocked(mockPermissionCheckService.hasAdminRole).mockResolvedValue(
         false,
       );
@@ -278,9 +314,15 @@ describe('LeaguePermissionService', () => {
       const settings = { roles: { admin: [] } };
 
       vi.mocked(mockLeagueRepository.findOne).mockResolvedValue(league as any);
-      vi.mocked(mockGuildSettingsService.getSettings).mockResolvedValue(
-        settings as any,
-      );
+      vi.mocked(mockSettingsService.getSettings).mockResolvedValue({
+        id: 'settings-1',
+        ownerType: 'guild',
+        ownerId: guildId,
+        settings,
+        schemaVersion: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as any);
       vi.mocked(mockPermissionCheckService.hasAdminRole).mockResolvedValue(
         false,
       );
@@ -306,9 +348,15 @@ describe('LeaguePermissionService', () => {
       const guildId = 'guild123';
       const settings = { roles: { admin: [] } };
 
-      vi.mocked(mockGuildSettingsService.getSettings).mockResolvedValue(
-        settings as any,
-      );
+      vi.mocked(mockSettingsService.getSettings).mockResolvedValue({
+        id: 'settings-1',
+        ownerType: 'guild',
+        ownerId: guildId,
+        settings,
+        schemaVersion: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as any);
       vi.mocked(mockPermissionCheckService.hasAdminRole).mockResolvedValue(
         true,
       );
@@ -328,9 +376,15 @@ describe('LeaguePermissionService', () => {
       const guildId = 'guild123';
       const settings = { roles: { admin: [] } };
 
-      vi.mocked(mockGuildSettingsService.getSettings).mockResolvedValue(
-        settings as any,
-      );
+      vi.mocked(mockSettingsService.getSettings).mockResolvedValue({
+        id: 'settings-1',
+        ownerType: 'guild',
+        ownerId: guildId,
+        settings,
+        schemaVersion: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as any);
       vi.mocked(mockPermissionCheckService.hasAdminRole).mockResolvedValue(
         false,
       );

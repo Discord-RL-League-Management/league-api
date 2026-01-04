@@ -23,7 +23,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { LeagueMemberService } from './services/league-member.service';
 import { PlayerOwnershipService } from '../players/services/player-ownership.service';
-import { LeaguePermissionService } from '../leagues/services/league-permission.service';
+import { LeaguePermissionService } from '../auth/services/league-permission.service';
 import { JoinLeagueDto } from './dto/join-league.dto';
 import { UpdateLeagueMemberDto } from './dto/update-league-member.dto';
 import type { AuthenticatedUser } from '../common/interfaces/user.interface';

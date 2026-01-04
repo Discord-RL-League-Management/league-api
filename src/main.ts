@@ -10,9 +10,54 @@ import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/7b59d5a7-b3ea-4ea5-a718-921dbf2d179f', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      location: 'main.ts:13',
+      message: 'bootstrap entry',
+      data: { nodeVersion: process.version },
+      timestamp: Date.now(),
+      sessionId: 'debug-session',
+      runId: 'run1',
+      hypothesisId: 'D',
+    }),
+  }).catch(() => {});
+  // #endregion
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/7b59d5a7-b3ea-4ea5-a718-921dbf2d179f', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      location: 'main.ts:14',
+      message: 'before NestFactory.create',
+      data: {},
+      timestamp: Date.now(),
+      sessionId: 'debug-session',
+      runId: 'run1',
+      hypothesisId: 'D',
+    }),
+  }).catch(() => {});
+  // #endregion
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
   });
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/7b59d5a7-b3ea-4ea5-a718-921dbf2d179f', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      location: 'main.ts:20',
+      message: 'after NestFactory.create',
+      data: {},
+      timestamp: Date.now(),
+      sessionId: 'debug-session',
+      runId: 'run1',
+      hypothesisId: 'D',
+    }),
+  }).catch(() => {});
+  // #endregion
 
   // Use New Relic logger for centralized error tracking and monitoring
   const logger = app.get(NewRelicLoggerService);

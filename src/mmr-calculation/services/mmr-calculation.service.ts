@@ -1,6 +1,6 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { create, all, MathJsInstance } from 'mathjs';
-import { FormulaValidationService } from './formula-validation.service';
+import { FormulaValidationService } from '../../formula-validation/services/formula-validation/formula-validation.service';
 import { MmrCalculationConfig } from '../../guilds/interfaces/settings.interface';
 
 /**

@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { GuildAdminGuard } from './guild-admin.guard';
-import { AuthorizationService } from '../../auth/services/authorization.service';
-import type { AuthenticatedUser } from '../interfaces/user.interface';
+import { AuthorizationService } from '../services/authorization.service';
+import type { AuthenticatedUser } from '../../common/interfaces/user.interface';
 import type { Request } from 'express';
 
 describe('GuildAdminGuard', () => {

@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { AuthorizationService } from '../../auth/services/authorization.service';
+import { AuthorizationService } from '../services/authorization.service';
 import type { AuthenticatedUser } from '../../common/interfaces/user.interface';
 
 /**

@@ -8,21 +8,21 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { NotFoundException } from '@nestjs/common';
 import { LeagueAccessValidationService } from './league-access-validation.service';
-import { LeagueRepository } from '../repositories/league.repository';
-import { GuildsService } from '@/guilds/guilds.service';
-import { PlayerService } from '@/players/services/player.service';
-import { LeagueMemberRepository } from '@/league-members/repositories/league-member.repository';
+import { LeagueRepository } from '../../leagues/repositories/league.repository';
+import { GuildRepository } from '../../guilds/repositories/guild.repository';
+import { PlayerService } from '../../players/services/player.service';
+import type { ILeagueMemberAccess } from '../../leagues/interfaces/league-member-access.interface';
 import {
   LeagueNotFoundException,
   LeagueAccessDeniedException,
-} from '../exceptions/league.exceptions';
+} from '../../leagues/exceptions/league.exceptions';
 
 describe('LeagueAccessValidationService', () => {
   let service: LeagueAccessValidationService;
   let mockLeagueRepository: LeagueRepository;
-  let mockGuildsService: GuildsService;
+  let mockGuildRepository: GuildRepository;
   let mockPlayerService: PlayerService;
-  let mockLeagueMemberRepository: LeagueMemberRepository;
+  let mockLeagueMemberAccess: ILeagueMemberAccess;
 
   beforeEach(() => {
     mockLeagueRepository = {
@@ -30,23 +30,23 @@ describe('LeagueAccessValidationService', () => {
       exists: vi.fn(),
     } as unknown as LeagueRepository;
 
-    mockGuildsService = {
+    mockGuildRepository = {
       findOne: vi.fn(),
-    } as unknown as GuildsService;
+    } as unknown as GuildRepository;
 
     mockPlayerService = {
       findByUserIdAndGuildId: vi.fn(),
     } as unknown as PlayerService;
 
-    mockLeagueMemberRepository = {
+    mockLeagueMemberAccess = {
       findByPlayerAndLeague: vi.fn(),
-    } as unknown as LeagueMemberRepository;
+    } as unknown as ILeagueMemberAccess;
 
     service = new LeagueAccessValidationService(
       mockLeagueRepository,
-      mockGuildsService,
+      mockGuildRepository,
       mockPlayerService,
-      mockLeagueMemberRepository,
+      mockLeagueMemberAccess,
     );
   });
 
@@ -60,18 +60,18 @@ describe('LeagueAccessValidationService', () => {
       const guildId = 'guild123';
       const guild = { id: guildId };
 
-      vi.mocked(mockGuildsService.findOne).mockResolvedValue(guild as any);
+      vi.mocked(mockGuildRepository.findOne).mockResolvedValue(guild as any);
 
       await service.validateGuildAccess(userId, guildId);
 
-      expect(mockGuildsService.findOne).toHaveBeenCalledWith(guildId);
+      expect(mockGuildRepository.findOne).toHaveBeenCalledWith(guildId);
     });
 
     it('should_throw_NotFoundException_when_guild_not_found', async () => {
       const userId = 'user123';
       const guildId = 'guild123';
 
-      vi.mocked(mockGuildsService.findOne).mockResolvedValue(null as any);
+      vi.mocked(mockGuildRepository.findOne).mockResolvedValue(null);
 
       await expect(
         service.validateGuildAccess(userId, guildId),
@@ -89,18 +89,18 @@ describe('LeagueAccessValidationService', () => {
       const player = { id: 'player123' };
 
       vi.mocked(mockLeagueRepository.findOne).mockResolvedValue(league as any);
-      vi.mocked(mockGuildsService.findOne).mockResolvedValue(guild as any);
+      vi.mocked(mockGuildRepository.findOne).mockResolvedValue(guild as any);
       vi.mocked(mockPlayerService.findByUserIdAndGuildId).mockResolvedValue(
         player as any,
       );
-      vi.mocked(
-        mockLeagueMemberRepository.findByPlayerAndLeague,
-      ).mockResolvedValue(null);
+      vi.mocked(mockLeagueMemberAccess.findByPlayerAndLeague).mockResolvedValue(
+        null,
+      );
 
       await service.validateLeagueAccess(userId, leagueId);
 
       expect(mockLeagueRepository.findOne).toHaveBeenCalledWith(leagueId);
-      expect(mockGuildsService.findOne).toHaveBeenCalledWith(guildId);
+      expect(mockGuildRepository.findOne).toHaveBeenCalledWith(guildId);
     });
 
     it('should_throw_LeagueNotFoundException_when_league_not_found', async () => {
@@ -124,13 +124,13 @@ describe('LeagueAccessValidationService', () => {
       const member = { id: 'member123', status: 'BANNED' };
 
       vi.mocked(mockLeagueRepository.findOne).mockResolvedValue(league as any);
-      vi.mocked(mockGuildsService.findOne).mockResolvedValue(guild as any);
+      vi.mocked(mockGuildRepository.findOne).mockResolvedValue(guild as any);
       vi.mocked(mockPlayerService.findByUserIdAndGuildId).mockResolvedValue(
         player as any,
       );
-      vi.mocked(
-        mockLeagueMemberRepository.findByPlayerAndLeague,
-      ).mockResolvedValue(member as any);
+      vi.mocked(mockLeagueMemberAccess.findByPlayerAndLeague).mockResolvedValue(
+        member as any,
+      );
 
       await expect(
         service.validateLeagueAccess(userId, leagueId),
@@ -145,7 +145,7 @@ describe('LeagueAccessValidationService', () => {
       const guild = { id: guildId };
 
       vi.mocked(mockLeagueRepository.findOne).mockResolvedValue(league as any);
-      vi.mocked(mockGuildsService.findOne).mockResolvedValue(guild as any);
+      vi.mocked(mockGuildRepository.findOne).mockResolvedValue(guild as any);
       vi.mocked(mockPlayerService.findByUserIdAndGuildId).mockResolvedValue(
         null,
       );

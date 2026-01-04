@@ -12,8 +12,8 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { LeagueSettingsService } from './league-settings.service';
-import { LeagueAccessValidationService } from './services/league-access-validation.service';
-import { LeaguePermissionService } from './services/league-permission.service';
+import { LeagueAccessValidationService } from '../auth/services/league-access-validation.service';
+import { LeaguePermissionService } from '../auth/services/league-permission.service';
 import { LeagueSettingsDto } from './dto/league-settings.dto';
 import {
   ApiTags,

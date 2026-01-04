@@ -10,7 +10,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { BadRequestException } from '@nestjs/common';
 import { MmrCalculationService } from './mmr-calculation.service';
-import { FormulaValidationService } from '../services/formula-validation.service';
+import { FormulaValidationService } from '../../formula-validation/services/formula-validation/formula-validation.service';
 import type { TrackerData } from './mmr-calculation.service';
 import type { MmrCalculationConfig } from '@/guilds/interfaces/settings.interface';
 

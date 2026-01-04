@@ -5,7 +5,7 @@ import {
   ForbiddenException,
   Logger,
 } from '@nestjs/common';
-import { OrganizationMemberService } from '../services/organization-member.service';
+import { OrganizationAuthorizationService } from '../services/organization-authorization.service';
 import type { AuthenticatedUser } from '../../common/interfaces/user.interface';
 import type { Request } from 'express';
 
@@ -17,12 +17,17 @@ interface RequestWithUser extends Request {
 /**
  * OrganizationGmGuard - Checks if user is General Manager of organization
  * Single Responsibility: Organization General Manager permission checking
+ *
+ * This guard delegates all authorization logic to OrganizationAuthorizationService,
+ * keeping the guard focused on extracting request context and delegating.
  */
 @Injectable()
 export class OrganizationGmGuard implements CanActivate {
   private readonly logger = new Logger(OrganizationGmGuard.name);
 
-  constructor(private organizationMemberService: OrganizationMemberService) {}
+  constructor(
+    private organizationAuthorizationService: OrganizationAuthorizationService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<RequestWithUser>();
@@ -43,7 +48,7 @@ export class OrganizationGmGuard implements CanActivate {
 
     try {
       // Check if user is General Manager
-      const isGM = await this.organizationMemberService.isGeneralManager(
+      const isGM = await this.organizationAuthorizationService.isGeneralManager(
         user.id,
         organizationId,
       );
@@ -55,7 +60,7 @@ export class OrganizationGmGuard implements CanActivate {
         // System-created organizations (created with userId='system') are managed via
         // bot endpoints which use BotAuthGuard and have user.type === 'bot'
         const hasGMs =
-          await this.organizationMemberService.hasGeneralManagers(
+          await this.organizationAuthorizationService.hasGeneralManagers(
             organizationId,
           );
         if (!hasGMs && 'type' in user && user.type === 'bot') {

@@ -12,9 +12,9 @@ import {
   Query,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { AdminGuard } from '../common/guards/admin.guard';
+import { AdminGuard } from '../auth/guards/admin.guard';
 import { GuildSettingsService } from './guild-settings.service';
-import { GuildAccessValidationService } from './services/guild-access-validation.service';
+import { GuildAccessValidationService } from '../auth/services/guild-access-validation.service';
 import { GuildSettingsDto } from './dto/guild-settings.dto';
 import {
   ApiTags,

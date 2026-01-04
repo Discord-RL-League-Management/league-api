@@ -33,7 +33,7 @@ import type { AuthenticatedUser } from '../../common/interfaces/user.interface';
 import { ParseCUIDPipe } from '../../common/pipes';
 import type { TrackerQueryOptions } from '../interfaces/tracker-query.options';
 import { TrackerQueryDto } from '../dto/tracker-query.dto';
-import { TrackerAuthorizationService } from '../services/tracker-authorization.service';
+import { TrackerAuthorizationService } from '../../auth/services/tracker-authorization.service';
 import { TrackerResponseMapperService } from '../services/tracker-response-mapper.service';
 
 @ApiTags('Trackers')

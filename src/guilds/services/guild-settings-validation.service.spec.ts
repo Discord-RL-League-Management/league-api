@@ -9,7 +9,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { BadRequestException } from '@nestjs/common';
 import { SettingsValidationService } from '../services/settings-validation.service';
 import { DiscordBotService } from '@/discord/discord-bot.service';
-import { FormulaValidationService } from '@/mmr-calculation/services/formula-validation.service';
+import { FormulaValidationService } from '@/formula-validation/services/formula-validation/formula-validation.service';
 
 describe('SettingsValidationService (Guilds)', () => {
   let service: SettingsValidationService;

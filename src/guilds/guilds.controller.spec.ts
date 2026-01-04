@@ -13,10 +13,10 @@ import { Test } from '@nestjs/testing';
 import { ForbiddenException } from '@nestjs/common';
 import { GuildsController } from './guilds.controller';
 import { GuildsService } from './guilds.service';
-import { GuildAccessValidationService } from './services/guild-access-validation.service';
+import { GuildAccessValidationService } from '../auth/services/guild-access-validation.service';
 import { GuildSettingsService } from './guild-settings.service';
 import { DiscordBotService } from '@/discord/discord-bot.service';
-import { GuildAdminGuard } from '@/common/guards/guild-admin.guard';
+import { GuildAdminGuard } from '@/auth/guards/guild-admin.guard';
 import type { AuthenticatedUser } from '@/common/interfaces/user.interface';
 
 describe('GuildsController', () => {

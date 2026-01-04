@@ -1,7 +1,7 @@
 import { Injectable, ForbiddenException, Logger } from '@nestjs/common';
-import { GuildMembersService } from '../../guild-members/guild-members.service';
+import { GuildMemberRepository } from '../../guild-members/repositories/guild-member.repository';
 import { PermissionCheckService } from '../../permissions/modules/permission-check/permission-check.service';
-import { GuildSettingsService } from '../../guilds/guild-settings.service';
+import { SettingsService } from '../../infrastructure/settings/services/settings.service';
 
 /**
  * Interface for guild membership objects returned by findMembersByUser
@@ -26,9 +26,9 @@ export class TrackerAuthorizationService {
   private readonly logger = new Logger(TrackerAuthorizationService.name);
 
   constructor(
-    private guildMembersService: GuildMembersService,
+    private guildMemberRepository: GuildMemberRepository,
     private permissionCheckService: PermissionCheckService,
-    private guildSettingsService: GuildSettingsService,
+    private settingsService: SettingsService,
   ) {}
 
   /**
@@ -52,13 +52,13 @@ export class TrackerAuthorizationService {
     }
 
     const currentUserMemberships =
-      (await this.guildMembersService.findMembersByUser(
-        currentUserId,
-      )) as GuildMembershipWithGuild[];
+      (await this.guildMemberRepository.findByUserId(currentUserId, {
+        guild: true,
+      })) as GuildMembershipWithGuild[];
     const targetUserMemberships =
-      (await this.guildMembersService.findMembersByUser(
-        targetUserId,
-      )) as GuildMembershipWithGuild[];
+      (await this.guildMemberRepository.findByUserId(targetUserId, {
+        guild: true,
+      })) as GuildMembershipWithGuild[];
 
     const currentUserGuildIds = new Set(
       currentUserMemberships.map((m) => m.guildId),
@@ -82,7 +82,13 @@ export class TrackerAuthorizationService {
 
     for (const guildId of commonGuildIds) {
       try {
-        const settings = await this.guildSettingsService.getSettings(guildId);
+        const settingsRecord = await this.settingsService.getSettings(
+          'guild',
+          guildId,
+        );
+        const settings = settingsRecord?.settings as
+          | Record<string, unknown>
+          | undefined;
         const currentUserMembership = currentUserMemberships.find(
           (m) => m.guildId === guildId,
         );
@@ -94,7 +100,7 @@ export class TrackerAuthorizationService {
         const isAdmin = await this.permissionCheckService.checkAdminRoles(
           currentUserMembership.roles,
           guildId,
-          settings,
+          settings || {},
           true, // Validate with Discord for authorization
         );
 

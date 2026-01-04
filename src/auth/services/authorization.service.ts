@@ -2,7 +2,7 @@ import { Injectable, ForbiddenException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AuditLogService } from '../../audit/services/audit-log.service';
 import { PermissionCheckService } from '../../permissions/modules/permission-check/permission-check.service';
-import { GuildAccessValidationService } from '../../guilds/services/guild-access-validation.service';
+import { GuildAccessValidationService } from './guild-access-validation.service';
 import { GuildMembersService } from '../../guild-members/guild-members.service';
 import { GuildSettingsService } from '../../guilds/guild-settings.service';
 import { TokenManagementService } from './token-management.service';

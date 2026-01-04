@@ -14,9 +14,9 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { AdminGuard } from '../../common/guards/admin.guard';
+import { AdminGuard } from '../../auth/guards/admin.guard';
 import { MmrCalculationService } from '../services/mmr-calculation.service';
-import { FormulaValidationService } from '../services/formula-validation.service';
+import { FormulaValidationService } from '../../formula-validation/services/formula-validation/formula-validation.service';
 import { TestFormulaDto } from '../dto/test-formula.dto';
 import { ValidateFormulaDto } from '../dto/validate-formula.dto';
 import { CalculateMmrDto } from '../dto/calculate-mmr.dto';

@@ -20,7 +20,37 @@ export class PrismaService
   private readonly logger = new Logger(PrismaService.name);
 
   async onModuleInit() {
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/7b59d5a7-b3ea-4ea5-a718-921dbf2d179f', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'prisma.service.ts:23',
+        message: 'before $connect',
+        data: {},
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'B',
+      }),
+    }).catch(() => {});
+    // #endregion
     await this.$connect();
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/7b59d5a7-b3ea-4ea5-a718-921dbf2d179f', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'prisma.service.ts:26',
+        message: 'after $connect',
+        data: {},
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'B',
+      }),
+    }).catch(() => {});
+    // #endregion
     this.logger.log('✅ Database connected');
   }
 

@@ -5,7 +5,6 @@ import { InternalGuildsController } from './internal-guilds.controller';
 import { GuildSettingsController } from './guild-settings.controller';
 import { GuildSettingsService } from './guild-settings.service';
 import { GuildsService } from './guilds.service';
-import { GuildAccessValidationService } from './services/guild-access-validation.service';
 import { SettingsDefaultsService } from './services/settings-defaults.service';
 import { SettingsValidationService } from './services/settings-validation.service';
 import { ConfigMigrationService } from './services/config-migration.service';
@@ -17,13 +16,12 @@ import { GuildAccessProviderAdapter } from './adapters/guild-access-provider.ada
 import { SettingsModule } from '../infrastructure/settings/settings.module';
 import { ActivityLogModule } from '../infrastructure/activity-log/activity-log.module';
 import { DiscordModule } from '../discord/discord.module';
-import { GuardsModule } from '../guards/guards.module';
-import { GuildAccessAdapterModule } from './adapters/guild-access-adapter.module';
 import { TokenManagementModule } from '../auth/services/token-management.module';
+import { GuildMembersService } from '../guild-members/guild-members.service';
 import { cacheModuleOptions } from '../common/config/cache.config';
 import { PrismaModule } from '../prisma/prisma.module';
 import { UsersModule } from '../users/users.module';
-import { FormulaValidationAdapterModule } from './adapters/formula-validation-adapter.module';
+import { FormulaValidationModule } from '../formula-validation/formula-validation.module';
 import { PermissionCheckModule } from '../permissions/modules/permission-check/permission-check.module';
 
 @Module({
@@ -31,13 +29,11 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
     TokenManagementModule,
     GuildMembersModule,
     DiscordModule,
-    PermissionCheckModule, // Required for GuildAdminGuard (PermissionCheckService) - import before GuardsModule
-    GuardsModule, // No forwardRef needed - GuardsModule no longer depends on GuildsModule
-    GuildAccessAdapterModule, // Required for AdminGuard (IGuildAccessProvider) - no forwardRef needed
+    PermissionCheckModule, // Required for GuildAdminGuard (PermissionCheckService)
     PrismaModule,
     SettingsModule, // Required for GuildSettingsService (SettingsService)
     ActivityLogModule, // Required for GuildSettingsService (ActivityLogService)
-    FormulaValidationAdapterModule, // Required for SettingsValidationService (IFormulaValidationService)
+    FormulaValidationModule, // Required for SettingsValidationService (FormulaValidationService)
     UsersModule,
     CacheModule.register(cacheModuleOptions),
   ],
@@ -48,7 +44,6 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
   ],
   providers: [
     GuildsService,
-    GuildAccessValidationService,
     GuildSettingsService,
     SettingsDefaultsService,
     SettingsValidationService,
@@ -57,13 +52,27 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
     GuildErrorHandlerService,
     GuildRepository,
     GuildAccessProviderAdapter,
+    {
+      provide: 'IGuildAccessProvider',
+      useFactory: (
+        guildSettingsService: GuildSettingsService,
+        guildMembersService: GuildMembersService,
+      ) => {
+        return new GuildAccessProviderAdapter(
+          guildSettingsService,
+          guildMembersService,
+        );
+      },
+      inject: [GuildSettingsService, GuildMembersService],
+    },
   ],
   exports: [
     GuildsService,
-    GuildAccessValidationService,
     GuildSettingsService,
     SettingsDefaultsService,
+    GuildRepository,
     GuildAccessProviderAdapter,
+    'IGuildAccessProvider',
   ],
 })
 export class GuildsModule {}

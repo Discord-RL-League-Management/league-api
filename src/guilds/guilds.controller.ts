@@ -1,10 +1,10 @@
 import { Controller, Get, Param, UseGuards, Logger } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { GuildAdminGuard } from '../common/guards/guild-admin.guard';
+import { GuildAdminGuard } from '../auth/guards/guild-admin.guard';
 import { GuildsService } from './guilds.service';
 import { GuildSettingsService } from './guild-settings.service';
-import { GuildAccessValidationService } from './services/guild-access-validation.service';
+import { GuildAccessValidationService } from '../auth/services/guild-access-validation.service';
 import { DiscordBotService } from '../discord/discord-bot.service';
 import {
   ApiTags,

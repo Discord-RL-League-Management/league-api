@@ -27,12 +27,10 @@ import { ScheduledTrackerProcessingService } from './services/scheduled-tracker-
 import { AuditModule } from '../audit/audit.module';
 import { MmrCalculationModule } from '../mmr-calculation/mmr-calculation.module';
 import { GuildsModule } from '../guilds/guilds.module';
-import { GuardsModule } from '../guards/guards.module';
 import { TrackerProcessingGuardService } from './services/tracker-processing-guard.service';
 import { TrackerUserOrchestratorService } from './services/tracker-user-orchestrator.service';
 import { TrackerQueueOrchestratorService } from './services/tracker-queue-orchestrator.service';
 import { TrackerBatchProcessorService } from './services/tracker-batch-processor.service';
-import { TrackerAuthorizationService } from './services/tracker-authorization.service';
 import { TrackerResponseMapperService } from './services/tracker-response-mapper.service';
 import { GuildMembersModule } from '../guild-members/guild-members.module';
 import { PermissionCheckModule } from '../permissions/modules/permission-check/permission-check.module';
@@ -44,7 +42,6 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
     AuditModule,
     MmrCalculationModule,
     GuildsModule,
-    GuardsModule,
     GuildMembersModule,
     PermissionCheckModule,
     HttpModule,
@@ -115,7 +112,6 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
     TrackerSnapshotRepository,
     DiscordMessageService,
     NotificationBuilderService,
-    TrackerAuthorizationService,
     TrackerResponseMapperService,
   ],
   exports: [

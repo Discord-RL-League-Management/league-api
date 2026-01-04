@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { InfrastructureModule } from '../infrastructure/infrastructure.module';
 import { CacheModule } from '@nestjs/cache-manager';
@@ -19,8 +19,6 @@ import { LeagueSettingsService } from './league-settings.service';
 import { LeagueSettingsDefaultsService } from './services/league-settings-defaults.service';
 import { SettingsValidationService } from './services/settings-validation.service';
 import { ConfigMigrationService } from './services/config-migration.service';
-import { LeagueAccessValidationService } from './services/league-access-validation.service';
-import { LeaguePermissionService } from './services/league-permission.service';
 
 import { LeagueRepository } from './repositories/league.repository';
 
@@ -35,9 +33,9 @@ import { LeagueSettingsProviderAdapter } from './adapters/league-settings-provid
     GuildsModule,
     PlayersModule,
     PermissionCheckModule,
-    LeagueMembersModule,
-    OrganizationsModule,
-    TeamsModule,
+    forwardRef(() => LeagueMembersModule),
+    forwardRef(() => OrganizationsModule),
+    forwardRef(() => TeamsModule),
   ],
   controllers: [
     LeaguesController,
@@ -50,8 +48,6 @@ import { LeagueSettingsProviderAdapter } from './adapters/league-settings-provid
     LeagueSettingsDefaultsService,
     SettingsValidationService,
     ConfigMigrationService,
-    LeagueAccessValidationService,
-    LeaguePermissionService,
     LeagueRepository,
     {
       provide: 'ILeagueSettingsProvider',
@@ -62,7 +58,6 @@ import { LeagueSettingsProviderAdapter } from './adapters/league-settings-provid
     LeaguesService,
     LeagueSettingsService,
     LeagueSettingsDefaultsService,
-    LeaguePermissionService,
     LeagueRepository,
     'ILeagueSettingsProvider',
   ],

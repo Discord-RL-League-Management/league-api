@@ -17,7 +17,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { SystemAdminGuard } from '../../common/guards/system-admin.guard';
+import { SystemAdminGuard } from '../../auth/guards/system-admin.guard';
 import { TrackerService } from '../services/tracker.service';
 import { TrackerProcessingService } from '../services/tracker-processing.service';
 import { TrackerRefreshSchedulerService } from '../services/tracker-refresh-scheduler.service';

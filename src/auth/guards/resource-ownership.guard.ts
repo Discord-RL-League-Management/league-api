@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { AuditLogService } from '../../audit/services/audit-log.service';
 import { AuditAction } from '../../audit/interfaces/audit-event.interface';
-import type { AuthenticatedUser } from '../interfaces/user.interface';
+import type { AuthenticatedUser } from '../../common/interfaces/user.interface';
 import type { Request } from 'express';
 
 interface RequestWithUser extends Request {

@@ -15,7 +15,7 @@ import { TrackerController } from './tracker.controller';
 import { TrackerService } from '../services/tracker.service';
 import { TrackerProcessingService } from '../services/tracker-processing.service';
 import { TrackerSnapshotService } from '../services/tracker-snapshot.service';
-import { TrackerAuthorizationService } from '../services/tracker-authorization.service';
+import { TrackerAuthorizationService } from '../../auth/services/tracker-authorization.service';
 import { TrackerResponseMapperService } from '../services/tracker-response-mapper.service';
 import { RegisterTrackersDto, UpdateTrackerDto } from '../dto/tracker.dto';
 import type { AuthenticatedUser } from '@/common/interfaces/user.interface';

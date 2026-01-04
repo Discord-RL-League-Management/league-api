@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { TeamService } from './services/team.service';
 import { TeamRepository } from './repositories/team.repository';
@@ -10,7 +10,11 @@ import { OrganizationsModule } from '../organizations/organizations.module';
 import { TeamProviderAdapter } from './adapters/team-provider.adapter';
 
 @Module({
-  imports: [PrismaModule, LeaguesModule, OrganizationsModule],
+  imports: [
+    PrismaModule,
+    forwardRef(() => LeaguesModule),
+    forwardRef(() => OrganizationsModule),
+  ],
   controllers: [TeamsController, InternalTeamsController],
   providers: [
     TeamService,

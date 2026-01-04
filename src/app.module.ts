@@ -34,6 +34,7 @@ import { PlayerRatingsModule } from './player-ratings/player-ratings.module';
 import { TournamentsModule } from './tournaments/tournaments.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { MmrCalculationModule } from './mmr-calculation/mmr-calculation.module';
+import { AuthorizationModule } from './auth/authorization.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthLoggerMiddleware } from './common/middleware/auth-logger.middleware';
 import { RequestContextInterceptor } from './common/interceptors/request-context.interceptor';
@@ -42,6 +43,7 @@ import { throttlerConfig } from './config/throttler.config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
+import { FormulaValidationModule } from './formula-validation/formula-validation.module';
 
 // Standard validation error message exported for consistent API responses across the application
 export const VALIDATION_FAILED_MESSAGE = 'Validation failed';
@@ -79,6 +81,8 @@ export const VALIDATION_FAILED_MESSAGE = 'Validation failed';
     TournamentsModule,
     OrganizationsModule,
     MmrCalculationModule,
+    FormulaValidationModule,
+    AuthorizationModule, // Global module - must be imported once to initialize
   ],
   providers: [
     {

@@ -4,10 +4,10 @@ import {
   ExecutionContext,
   ForbiddenException,
 } from '@nestjs/common';
-import { AuthorizationService } from '../../auth/services/authorization.service';
+import { AuthorizationService } from '../services/authorization.service';
 import type { Request } from 'express';
 
-import type { AuthenticatedUser } from '../interfaces/user.interface';
+import type { AuthenticatedUser } from '../../common/interfaces/user.interface';
 
 interface RequestWithUser extends Request {
   user: AuthenticatedUser | { type: 'bot'; id: string };
