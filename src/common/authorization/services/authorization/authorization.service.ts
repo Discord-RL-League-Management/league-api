@@ -54,7 +54,6 @@ export class AuthorizationService {
           `AuthorizationService: User ${user.id} is not a system admin`,
         );
 
-        // Log denied authorization (fire-and-forget)
         this.logAuthorizationDenied(user, request, reason).catch((error) => {
           this.logger.error('Failed to log authorization audit:', error);
         });
@@ -68,7 +67,6 @@ export class AuthorizationService {
         `AuthorizationService: User ${user.id} granted system admin access`,
       );
 
-      // Log allowed authorization (fire-and-forget)
       this.logAuthorizationAllowed(user, request, reason).catch((error) => {
         this.logger.error('Failed to log authorization audit:', error);
       });
@@ -117,7 +115,6 @@ export class AuthorizationService {
       );
     } catch (error) {
       this.logger.error('Failed to log authorization audit:', error);
-      // Don't throw - audit logging failure shouldn't break the request
     }
   }
 
@@ -152,7 +149,6 @@ export class AuthorizationService {
       );
     } catch (error) {
       this.logger.error('Failed to log authorization audit:', error);
-      // Don't throw - audit logging failure shouldn't break the request
     }
   }
 }

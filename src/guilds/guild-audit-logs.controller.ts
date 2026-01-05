@@ -86,12 +86,10 @@ export class GuildAuditLogsController {
       `User ${user.id} requested audit logs for guild ${guildId}`,
     );
 
-    // Map query params to ActivityLogService filters
-    // Note: 'action' query param maps to 'eventType' in ActivityLogService
     const result = await this.activityLogService.findWithFilters({
       guildId,
       userId,
-      eventType: action, // 'action' query param maps to eventType
+      eventType: action,
       limit: limit ? Math.min(parseInt(limit, 10), 100) : undefined,
       offset: offset ? parseInt(offset, 10) : undefined,
     });

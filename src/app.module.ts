@@ -36,13 +36,11 @@ import { MmrCalculationModule } from './mmr-calculation/mmr-calculation.module';
 import { AuthLoggerMiddleware } from './common/middleware/auth-logger.middleware';
 import { RequestContextInterceptor } from './common/interceptors/request-context.interceptor';
 import { throttlerConfig } from './config/throttler.config';
-// Required for SchedulerRegistry dependency injection used by TrackerRefreshSchedulerService
 import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { FormulaValidationModule } from './formula-validation/formula-validation.module';
 
-// Standard validation error message exported for consistent API responses across the application
 export const VALIDATION_FAILED_MESSAGE = 'Validation failed';
 
 @Module({
@@ -129,7 +127,6 @@ export const VALIDATION_FAILED_MESSAGE = 'Validation failed';
       },
       inject: [ConfigService],
     },
-    // PrismaExceptionFilter must run first to catch database errors before the catch-all GlobalExceptionFilter
     {
       provide: APP_FILTER,
       useClass: PrismaExceptionFilter,

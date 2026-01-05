@@ -86,7 +86,6 @@ export class GuildAuthorizationService {
           `GuildAuthorizationService: User ${user.id} has Discord Administrator permission in guild ${guildId}`,
         );
 
-        // Log allowed authorization (fire-and-forget, skip for bots)
         if (!('type' in user)) {
           this.logAuthorizationAllowed(
             user,
@@ -113,7 +112,6 @@ export class GuildAuthorizationService {
           `No admin roles configured for guild ${guildId}. Allowing access for initial setup.`,
         );
 
-        // Log allowed authorization (fire-and-forget, skip for bots)
         if (!('type' in user)) {
           this.logAuthorizationAllowed(
             user,
@@ -150,7 +148,6 @@ export class GuildAuthorizationService {
       const reason = isAdmin ? 'configured_admin_role' : 'no_admin_access';
 
       if (!isAdmin) {
-        // Log denied authorization (fire-and-forget, skip for bots)
         if (!('type' in user)) {
           this.logAuthorizationDenied(
             user,
@@ -168,7 +165,6 @@ export class GuildAuthorizationService {
         );
       }
 
-      // Log allowed authorization (fire-and-forget, skip for bots)
       if (!('type' in user)) {
         this.logAuthorizationAllowed(user, guildId, request, reason).catch(
           (error) => {
@@ -245,9 +241,6 @@ export class GuildAuthorizationService {
         `GuildAuthorizationService: User ${user.id} granted admin access to guild ${guildId}`,
       );
 
-      // Note: checkGuildAdminAccess doesn't have request parameter, so we can't log with full context
-      // This is a simplified version, so audit logging is optional here
-
       return true;
     } catch (error) {
       if (error instanceof ForbiddenException) {
@@ -296,7 +289,6 @@ export class GuildAuthorizationService {
       });
     } catch (error) {
       this.logger.error('Failed to log authorization audit:', error);
-      // Don't throw - audit logging failure shouldn't break the request
     }
   }
 
@@ -336,7 +328,6 @@ export class GuildAuthorizationService {
       });
     } catch (error) {
       this.logger.error('Failed to log authorization audit:', error);
-      // Don't throw - audit logging failure shouldn't break the request
     }
   }
 }

@@ -36,13 +36,11 @@ export class LeagueAdminGuard implements CanActivate {
       throw new ForbiddenException('Authentication and league ID required');
     }
 
-    // First validate basic access
     await this.leagueAccessValidationService.validateLeagueAccess(
       user.id,
       leagueId,
     );
 
-    // Then check admin permissions (throws ForbiddenException if not admin)
     await this.leaguePermissionService.checkLeagueAdminAccess(
       user.id,
       leagueId,

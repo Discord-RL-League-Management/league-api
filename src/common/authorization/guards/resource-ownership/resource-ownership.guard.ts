@@ -34,16 +34,13 @@ export class ResourceOwnershipGuard implements CanActivate {
     const user = request.user;
     const resourceUserId = request.params.userId || request.params.id;
 
-    // If authenticated via bot, allow everything
     if ('type' in user && user.type === 'bot') {
       return true;
     }
 
     const hasAccess = user.id === resourceUserId;
 
-    // If authenticated via JWT, check ownership
     if (!hasAccess) {
-      // Log denied authorization (fire-and-forget, skip for bots)
       if (!('type' in user)) {
         this.logAuthorizationDenied(user, request, resourceUserId).catch(
           (error) => {
@@ -55,7 +52,6 @@ export class ResourceOwnershipGuard implements CanActivate {
       throw new ForbiddenException('You can only access your own resources');
     }
 
-    // Log allowed authorization (fire-and-forget, skip for bots)
     if (!('type' in user)) {
       this.logAuthorizationAllowed(user, request, resourceUserId).catch(
         (error) => {
@@ -98,7 +94,6 @@ export class ResourceOwnershipGuard implements CanActivate {
       );
     } catch (error) {
       this.logger.error('Failed to log authorization audit:', error);
-      // Don't throw - audit logging failure shouldn't break the request
     }
   }
 
@@ -136,7 +131,6 @@ export class ResourceOwnershipGuard implements CanActivate {
       );
     } catch (error) {
       this.logger.error('Failed to log authorization audit:', error);
-      // Don't throw - audit logging failure shouldn't break the request
     }
   }
 }

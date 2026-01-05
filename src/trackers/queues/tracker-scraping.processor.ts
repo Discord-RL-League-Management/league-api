@@ -179,7 +179,7 @@ export class TrackerScrapingProcessor extends WorkerHost {
         scrapingStatus: TrackerScrapingStatus.COMPLETED,
         lastScrapedAt: new Date(),
         scrapingError: null,
-        scrapingAttempts: 0, // Reset attempts on success
+        scrapingAttempts: 0,
       });
 
       await this.scrapingLogRepository.update(scrapingLogId, {
@@ -260,7 +260,6 @@ export class TrackerScrapingProcessor extends WorkerHost {
         error,
       );
 
-      // Get current attempts count first
       const currentTracker = await this.trackerRepository.findById(trackerId);
       const currentAttempts = currentTracker?.scrapingAttempts || 0;
 
@@ -278,7 +277,6 @@ export class TrackerScrapingProcessor extends WorkerHost {
         });
       }
 
-      // Log failure to audit log
       if (tracker) {
         const trackerUserId = tracker.userId;
         const trackerUrl = tracker.url;

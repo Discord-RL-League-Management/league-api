@@ -84,7 +84,6 @@ export class TrackerProcessingGuardService {
         }
       }
 
-      // All guilds have processing disabled
       return false;
     } catch (error) {
       const errorMessage =

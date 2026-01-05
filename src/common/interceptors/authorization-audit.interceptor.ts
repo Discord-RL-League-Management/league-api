@@ -32,10 +32,8 @@ export class AuthorizationAuditInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     return next.handle().pipe(
       tap(() => {
-        // Log asynchronously without blocking request
         this.logAuthorizationAllowed(context).catch((error) => {
           this.logger.error('Failed to log authorization audit:', error);
-          // Don't throw - audit logging failure shouldn't break the request
         });
       }),
     );
@@ -51,7 +49,6 @@ export class AuthorizationAuditInterceptor implements NestInterceptor {
       }
     >();
 
-    // Skip if no audit metadata (no authorization check happened)
     if (!request._auditMetadata) {
       return;
     }
@@ -59,18 +56,12 @@ export class AuthorizationAuditInterceptor implements NestInterceptor {
     const metadata = request._auditMetadata;
     const user = request.user;
 
-    // Skip if no user (shouldn't happen if guard ran, but be defensive)
     if (!user || 'type' in user) {
-      return; // Bot requests don't need audit logging
+      return;
     }
 
-    // Map action to entity/event types for ActivityLogService
     const { entityType, eventType } = this.mapActionToTypes(metadata.action);
-
-    // Extract resource from request
     const resource = request.url || request.path || 'unknown';
-
-    // Log the authorization decision
     try {
       await this.activityLogService.logActivityStandalone(
         entityType,
@@ -92,7 +83,6 @@ export class AuthorizationAuditInterceptor implements NestInterceptor {
       );
     } catch (error) {
       this.logger.error('Failed to log authorization audit:', error);
-      // Don't throw - audit logging failure shouldn't break the request
     }
   }
 
@@ -103,7 +93,6 @@ export class AuthorizationAuditInterceptor implements NestInterceptor {
     entityType: string;
     eventType: string;
   } {
-    // Map audit actions to activity log structure
     if (action.includes('admin.check') || action === 'admin.check') {
       return { entityType: 'admin', eventType: 'ADMIN_ACTION' };
     }
@@ -123,7 +112,6 @@ export class AuthorizationAuditInterceptor implements NestInterceptor {
       return { entityType: 'permission', eventType: 'PERMISSION_CHECK' };
     }
 
-    // Default for unknown actions
     return { entityType: 'authorization', eventType: 'AUTHORIZATION_CHECK' };
   }
 }

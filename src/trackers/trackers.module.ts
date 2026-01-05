@@ -47,10 +47,10 @@ import { UsersModule } from '../users/users.module';
     InfrastructureModule,
     MmrCalculationModule,
     GuildsModule,
-    GuildMembersModule, // Required for TrackerProcessingGuardService (GuildMemberRepository)
+    GuildMembersModule,
     PermissionCheckModule,
-    AuthorizationModule, // Required for SystemAdminGuard (AuthorizationService)
-    UsersModule, // Required for TrackerUserOrchestratorService and TrackerNotificationService (UserRepository)
+    AuthorizationModule,
+    UsersModule,
     HttpModule,
     BullModule.forRootAsync({
       imports: [ConfigModule],

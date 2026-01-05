@@ -14,7 +14,6 @@ export interface AuditMetadata {
   metadata?: Record<string, unknown>; // Optional: Additional metadata for audit logging
 }
 
-// Extend Express Request type to include audit metadata (DEPRECATED)
 /**
  * @deprecated This module augmentation is no longer used. Audit logging happens directly in services.
  */

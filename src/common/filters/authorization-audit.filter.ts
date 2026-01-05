@@ -41,13 +41,9 @@ export class AuthorizationAuditExceptionFilter implements ExceptionFilter {
     >();
     const response = ctx.getResponse<Response>();
 
-    // Log denied authorization asynchronously without blocking response
     this.logAuthorizationDenied(request, exception.message).catch((error) => {
       this.logger.error('Failed to log authorization audit:', error);
-      // Don't throw - audit logging failure shouldn't break the response
     });
-
-    // Re-throw the exception so other filters can handle it
     const status = exception.getStatus();
     const message = exception.message;
     response.status(status).json({
@@ -65,7 +61,6 @@ export class AuthorizationAuditExceptionFilter implements ExceptionFilter {
     },
     reason: string,
   ): Promise<void> {
-    // Skip if no audit metadata (not an authorization denial)
     if (!request._auditMetadata) {
       return;
     }
@@ -73,18 +68,12 @@ export class AuthorizationAuditExceptionFilter implements ExceptionFilter {
     const metadata = request._auditMetadata;
     const user = request.user;
 
-    // Skip if no user (shouldn't happen if guard ran, but be defensive)
     if (!user || 'type' in user) {
-      return; // Bot requests don't need audit logging
+      return;
     }
 
-    // Map action to entity/event types for ActivityLogService
     const { entityType, eventType } = this.mapActionToTypes(metadata.action);
-
-    // Extract resource from request
     const resource = request.url || request.path || 'unknown';
-
-    // Log the denied authorization decision
     try {
       await this.activityLogService.logActivityStandalone(
         entityType,
@@ -106,7 +95,6 @@ export class AuthorizationAuditExceptionFilter implements ExceptionFilter {
       );
     } catch (error) {
       this.logger.error('Failed to log authorization audit:', error);
-      // Don't throw - audit logging failure shouldn't break the response
     }
   }
 
@@ -117,7 +105,6 @@ export class AuthorizationAuditExceptionFilter implements ExceptionFilter {
     entityType: string;
     eventType: string;
   } {
-    // Map audit actions to activity log structure
     if (action.includes('admin.check') || action === 'admin.check') {
       return { entityType: 'admin', eventType: 'ADMIN_ACTION' };
     }
@@ -137,7 +124,6 @@ export class AuthorizationAuditExceptionFilter implements ExceptionFilter {
       return { entityType: 'permission', eventType: 'PERMISSION_CHECK' };
     }
 
-    // Default for unknown actions
     return { entityType: 'authorization', eventType: 'AUTHORIZATION_CHECK' };
   }
 }

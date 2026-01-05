@@ -35,12 +35,12 @@ import { GuildAdminSimpleGuard } from './guards/guild-admin-simple.guard';
     TokenManagementModule,
     GuildMembersModule,
     DiscordModule,
-    PermissionCheckModule, // Required for GuildAdminGuard (PermissionCheckService)
+    PermissionCheckModule,
     PrismaModule,
-    SettingsModule, // Required for GuildSettingsService (SettingsService)
-    ActivityLogModule, // Required for GuildSettingsService (ActivityLogService)
-    FormulaValidationModule, // Required for SettingsValidationService (FormulaValidationService)
-    RequestContextModule, // Required for GuildAuthorizationService (RequestContextService)
+    SettingsModule,
+    ActivityLogModule,
+    FormulaValidationModule,
+    RequestContextModule,
     UsersModule,
     CacheModule.register(cacheModuleOptions),
   ],
@@ -84,7 +84,7 @@ import { GuildAdminSimpleGuard } from './guards/guild-admin-simple.guard';
     GuildRepository,
     'IGuildAccessProvider',
     GuildAccessValidationService,
-    GuildAuthorizationService, // Required for GuildAdminGuard when used in other modules
+    GuildAuthorizationService,
     GuildAdminGuard,
     GuildAdminSimpleGuard,
   ],
