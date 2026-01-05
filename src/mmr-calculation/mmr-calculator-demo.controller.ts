@@ -13,25 +13,26 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { MmrCalculationService } from '../services/mmr-calculation.service';
-import { CalculateMmrDto } from '../dto/calculate-mmr.dto';
-import { GuildSettingsService } from '../../guilds/guild-settings.service';
-import { SettingsDefaultsService } from '../../guilds/services/settings-defaults.service';
-import { MmrCalculationConfig } from '../../guilds/interfaces/settings.interface';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { MmrCalculationService } from './services/mmr-calculation.service';
+import { CalculateMmrDto } from './dto/calculate-mmr.dto';
+import { GuildSettingsService } from '../guilds/guild-settings.service';
+import { SettingsDefaultsService } from '../guilds/services/settings-defaults.service';
+import { MmrCalculationConfig } from '../guilds/interfaces/settings.interface';
 
 /**
- * CalculatorController - Single Responsibility: Public calculator endpoint
+ * MMRCalculatorDemoController - Single Responsibility: Public calculator demo endpoint
  *
  * Provides a public endpoint for calculating MMR using guild configuration.
  * Available to all authenticated users (not admin-only).
+ * This is separate from the admin MMR calculation configuration endpoints.
  */
-@ApiTags('Calculator')
+@ApiTags('MMR Calculator Demo')
 @Controller('api/calculator')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
-export class CalculatorController {
-  private readonly logger = new Logger(CalculatorController.name);
+export class MMRCalculatorDemoController {
+  private readonly logger = new Logger(MMRCalculatorDemoController.name);
 
   constructor(
     private readonly mmrService: MmrCalculationService,

@@ -18,24 +18,24 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { CurrentUser } from '../../auth/decorators/current-user.decorator';
-import { TrackerService } from '../tracker.service';
-import { TrackerProcessingService } from '../services/tracker-processing.service';
-import { TrackerSnapshotService } from '../services/tracker-snapshot.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { TrackerService } from './tracker.service';
+import { TrackerProcessingService } from './services/tracker-processing.service';
+import { TrackerSnapshotService } from './services/tracker-snapshot.service';
 import {
   UpdateTrackerDto,
   RegisterTrackersDto,
   AddTrackerDto,
-} from '../dto/tracker.dto';
-import { CreateTrackerSnapshotDto } from '../dto/tracker-snapshot.dto';
-import type { AuthenticatedUser } from '../../common/interfaces/user.interface';
-import { ParseCUIDPipe } from '../../common/pipes';
-import type { TrackerQueryOptions } from '../interfaces/tracker-query.options';
-import { TrackerQueryDto } from '../dto/tracker-query.dto';
-import { TrackerAuthorizationService } from '../services/tracker-authorization.service';
-import { TrackerResponseMapperService } from '../services/tracker-response-mapper.service';
-import { TrackerAccessGuard } from '../guards/tracker-access.guard';
+} from './dto/tracker.dto';
+import { CreateTrackerSnapshotDto } from './dto/tracker-snapshot.dto';
+import type { AuthenticatedUser } from '../common/interfaces/user.interface';
+import { ParseCUIDPipe } from '../common/pipes';
+import type { TrackerQueryOptions } from './interfaces/tracker-query.options';
+import { TrackerQueryDto } from './dto/tracker-query.dto';
+import { TrackerAuthorizationService } from './services/tracker-authorization.service';
+import { TrackerResponseMapperService } from './services/tracker-response-mapper.service';
+import { TrackerAccessGuard } from './guards/tracker-access.guard';
 
 @ApiTags('Trackers')
 @Controller('api/trackers')

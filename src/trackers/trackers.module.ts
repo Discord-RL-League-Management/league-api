@@ -15,8 +15,8 @@ import { TrackerSnapshotRepository } from './repositories/tracker-snapshot.repos
 import { TrackerSeasonRepository } from './repositories/tracker-season.repository';
 import { TrackerScrapingLogRepository } from './repositories/tracker-scraping-log.repository';
 import { ScheduledTrackerProcessingRepository } from './repositories/scheduled-tracker-processing.repository';
-import { TrackerController } from './controllers/tracker.controller';
-import { TrackerAdminController } from './controllers/tracker-admin.controller';
+import { TrackerController } from './tracker.controller';
+import { TrackerAdminController } from './tracker-admin.controller';
 import { DiscordMessageService } from './services/discord-message.service';
 import { InfrastructureModule } from '../infrastructure/infrastructure.module';
 import { NotificationBuilderService } from './services/notification-builder.service';
