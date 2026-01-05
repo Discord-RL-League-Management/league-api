@@ -6,7 +6,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { TRACKER_SCRAPING_QUEUE } from './queues/tracker-scraping.queue';
 import { TrackerScrapingQueueService } from './queues/tracker-scraping.queue';
 import { TrackerScrapingProcessor } from './queues/tracker-scraping.processor';
-import { TrackerService } from './services/tracker.service';
+import { TrackerService } from './tracker.service';
 import { TrackerProcessingService } from './services/tracker-processing.service';
 import { TrackerSnapshotService } from './services/tracker-snapshot.service';
 import { TrackerNotificationService } from './services/tracker-notification.service';
@@ -75,11 +75,7 @@ import { UsersModule } from '../users/users.module';
     }),
     BullModule.registerQueueAsync({
       name: TRACKER_SCRAPING_QUEUE,
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const _queueConfig =
-          configService.get<Record<string, unknown>>('queue');
+      useFactory: () => {
         return {
           defaultJobOptions: {
             removeOnComplete: 100,
@@ -93,7 +89,6 @@ import { UsersModule } from '../users/users.module';
           },
         };
       },
-      inject: [ConfigService],
     }),
   ],
   controllers: [TrackerController, TrackerAdminController],

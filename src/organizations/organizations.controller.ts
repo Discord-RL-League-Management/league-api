@@ -18,7 +18,7 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../common/interfaces/user.interface';
-import { OrganizationService } from './services/organization.service';
+import { OrganizationService } from './organization.service';
 import { OrganizationMemberService } from './services/organization-member.service';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';

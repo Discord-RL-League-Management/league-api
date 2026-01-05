@@ -20,7 +20,7 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
-import { TrackerService } from '../services/tracker.service';
+import { TrackerService } from '../tracker.service';
 import { TrackerProcessingService } from '../services/tracker-processing.service';
 import { TrackerSnapshotService } from '../services/tracker-snapshot.service';
 import {
@@ -102,7 +102,6 @@ export class TrackerController {
     @CurrentUser() user: AuthenticatedUser,
     @Query() query: TrackerQueryDto,
   ) {
-    // TrackerAccessGuard handles all permission checks
     const options: TrackerQueryOptions = { ...query };
     return this.trackerService.getTrackersByUserId(userId, options);
   }
@@ -171,7 +170,6 @@ export class TrackerController {
       user.id,
       tracker.userId,
     );
-    // Pass pre-fetched tracker to avoid redundant database query
     return this.trackerService.getScrapingStatus(id, {
       scrapingStatus: tracker.scrapingStatus,
       scrapingError: tracker.scrapingError,
@@ -219,7 +217,6 @@ export class TrackerController {
       user.id,
       tracker.userId,
     );
-    // Skip validation since tracker already validated above
     if (season) {
       return this.snapshotService.getSnapshotsByTrackerAndSeason(
         id,

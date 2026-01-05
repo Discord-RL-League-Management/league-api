@@ -10,10 +10,10 @@ import { LeagueJoinValidationService } from './league-join-validation.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import { LeagueSettingsService } from '@/leagues/league-settings.service';
 import { LeagueMemberRepository } from '../repositories/league-member.repository';
-import { PlayerService } from '@/players/services/player.service';
+import { PlayerService } from '@/players/player.service';
 import { PlayerValidationService } from '@/players/services/player-validation.service';
 import { GuildMembersService } from '@/guild-members/guild-members.service';
-import { TrackerService } from '@/trackers/services/tracker.service';
+import { TrackerService } from '@/trackers/tracker.service';
 import { LeagueJoinValidationException } from '../exceptions/league-member.exceptions';
 import { PlayerStatus } from '@prisma/client';
 

@@ -6,24 +6,24 @@ import {
   ForbiddenException,
   Inject,
 } from '@nestjs/common';
-import { OrganizationRepository } from '../repositories/organization.repository';
-import { OrganizationMemberService } from './organization-member.service';
-import { OrganizationValidationService } from './organization-validation.service';
-import { PlayerService } from '../../players/services/player.service';
-import type { ILeagueRepositoryAccess } from '../../common/interfaces/league-domain/league-repository-access.interface';
-import type { ILeagueSettingsProvider } from '../../common/interfaces/league-domain/league-settings-provider.interface';
-import type { IOrganizationTeamProvider } from '../../common/interfaces/league-domain/organization-team-provider.interface';
-import { TeamRepository } from '../../teams/repositories/team.repository';
-import { PrismaService } from '../../prisma/prisma.service';
-import { CreateOrganizationDto } from '../dto/create-organization.dto';
-import { UpdateOrganizationDto } from '../dto/update-organization.dto';
+import { OrganizationRepository } from './repositories/organization.repository';
+import { OrganizationMemberService } from './services/organization-member.service';
+import { OrganizationValidationService } from './services/organization-validation.service';
+import { PlayerService } from '@/players/player.service';
+import type { ILeagueRepositoryAccess } from '../common/interfaces/league-domain/league-repository-access.interface';
+import type { ILeagueSettingsProvider } from '../common/interfaces/league-domain/league-settings-provider.interface';
+import type { IOrganizationTeamProvider } from '../common/interfaces/league-domain/organization-team-provider.interface';
+import { TeamRepository } from '../teams/repositories/team.repository';
+import { PrismaService } from '../prisma/prisma.service';
+import { CreateOrganizationDto } from './dto/create-organization.dto';
+import { UpdateOrganizationDto } from './dto/update-organization.dto';
 import { OrganizationMemberRole } from '@prisma/client';
-import { LeagueConfiguration } from '../../leagues/interfaces/league-settings.interface';
+import { LeagueConfiguration } from '../leagues/interfaces/league-settings.interface';
 import {
   OrganizationNotFoundException,
   NotGeneralManagerException,
   OrganizationCapacityExceededException,
-} from '../exceptions/organization.exceptions';
+} from './exceptions/organization.exceptions';
 
 /**
  * OrganizationService - Business logic layer for Organization operations

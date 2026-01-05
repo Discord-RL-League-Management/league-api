@@ -18,7 +18,7 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { SystemAdminGuard } from '../../common/authorization/guards/system-admin/system-admin.guard';
-import { TrackerService } from '../services/tracker.service';
+import { TrackerService } from '../tracker.service';
 import { TrackerProcessingService } from '../services/tracker-processing.service';
 import { TrackerRefreshSchedulerService } from '../services/tracker-refresh-scheduler.service';
 import { BatchRefreshDto } from '../dto/batch-refresh.dto';

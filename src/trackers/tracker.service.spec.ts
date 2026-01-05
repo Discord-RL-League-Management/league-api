@@ -10,8 +10,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { NotFoundException } from '@nestjs/common';
 import { TrackerService } from './tracker.service';
-import { TrackerRepository } from '../repositories/tracker.repository';
-import { TrackerSeasonService } from '../services/tracker-season.service';
+import { TrackerRepository } from './repositories/tracker.repository';
+import { TrackerSeasonService } from './services/tracker-season.service';
 import { Game, GamePlatform, TrackerScrapingStatus } from '@prisma/client';
 
 describe('TrackerService', () => {

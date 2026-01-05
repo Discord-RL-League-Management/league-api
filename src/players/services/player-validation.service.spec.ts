@@ -10,7 +10,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { PlayerValidationService } from './player-validation.service';
 import { PrismaService } from '@/prisma/prisma.service';
-import { TrackerService } from '@/trackers/services/tracker.service';
+import { TrackerService } from '@/trackers/tracker.service';
 import { GuildMembersService } from '@/guild-members/guild-members.service';
 import { PlayerStatus } from '@prisma/client';
 import {

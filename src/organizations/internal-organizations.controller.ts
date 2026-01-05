@@ -11,7 +11,7 @@ import {
 import { SkipThrottle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { BotAuthGuard } from '../auth/guards/bot-auth.guard';
-import { OrganizationService } from './services/organization.service';
+import { OrganizationService } from './organization.service';
 import { OrganizationMemberService } from './services/organization-member.service';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';

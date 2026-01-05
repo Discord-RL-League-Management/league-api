@@ -1,7 +1,7 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { OrganizationRepository } from './repositories/organization.repository';
-import { OrganizationService } from './services/organization.service';
+import { OrganizationService } from './organization.service';
 import { OrganizationMemberService } from './services/organization-member.service';
 import { OrganizationValidationService } from './services/organization-validation.service';
 import { OrganizationsController } from './organizations.controller';

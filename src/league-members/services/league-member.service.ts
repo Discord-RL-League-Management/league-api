@@ -11,8 +11,9 @@ import { UpdateLeagueMemberDto } from '../dto/update-league-member.dto';
 import { JoinLeagueDto } from '../dto/join-league.dto';
 import { LeagueMemberRepository } from '../repositories/league-member.repository';
 import { LeagueJoinValidationService } from './league-join-validation.service';
-import { PlayerService } from '../../players/services/player.service';
+import { PlayerService } from '../../players/player.service';
 import { PlayerRepository } from '../../players/repositories/player.repository';
+import { PlayerNotFoundException } from '../../players/exceptions/player.exceptions';
 import type { ILeagueSettingsProvider } from '../../common/interfaces/league-domain/league-settings-provider.interface';
 import { ActivityLogService } from '../../infrastructure/activity-log/services/activity-log.service';
 import { PlayerLeagueRatingService } from '../../player-ratings/services/player-league-rating.service';
@@ -108,12 +109,17 @@ export class LeagueMemberService {
         throw new NotFoundException('League', leagueId);
       }
 
-      let player;
+      let player = null;
       try {
         player = await this.playerService.findOne(joinLeagueDto.playerId);
-      } catch {
-        // If player doesn't exist, we'll create it below
-        player = null;
+      } catch (error) {
+        // Only catch PlayerNotFoundException - re-throw unexpected errors
+        if (!(error instanceof PlayerNotFoundException)) {
+          // Preserve error context for debugging unexpected failures
+          throw error;
+        }
+        // PlayerNotFoundException means player doesn't exist, which is expected
+        // player remains null
       }
 
       let guildPlayer: { id: string };
@@ -123,8 +129,6 @@ export class LeagueMemberService {
           league.guildId,
         )) as { id: string };
       } else {
-        // Player doesn't exist - this shouldn't happen if playerId is provided
-        // For now, throw error - we'll need to update the DTO to include userId
         throw new NotFoundException('Player', joinLeagueDto.playerId);
       }
 
@@ -215,7 +219,7 @@ export class LeagueMemberService {
               leagueId,
               {
                 ratingSystem: 'DEFAULT',
-                currentRating: 1000, // Default starting rating
+                currentRating: 1000,
                 initialRating: 1000,
                 ratingData: {},
                 matchesPlayed: 0,
@@ -290,7 +294,11 @@ export class LeagueMemberService {
         undefined,
         tx,
       );
-      const player = await this.playerService.findOne(playerId);
+      const player = await this.playerRepository.findById(
+        playerId,
+        undefined,
+        tx,
+      );
 
       if (!league || !player) {
         throw new LeagueMemberNotFoundException(`${playerId}-${leagueId}`);

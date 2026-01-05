@@ -5,7 +5,7 @@ import {
   PlayerValidationException,
   InvalidPlayerStatusException,
 } from '../exceptions/player.exceptions';
-import { TrackerService } from '../../trackers/services/tracker.service';
+import { TrackerService } from '../../trackers/tracker.service';
 import { GuildMembersService } from '../../guild-members/guild-members.service';
 
 /**

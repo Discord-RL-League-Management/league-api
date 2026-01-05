@@ -9,7 +9,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { OrganizationValidationService } from './organization-validation.service';
 import { OrganizationRepository } from '../repositories/organization.repository';
 import { LeagueRepository } from '@/leagues/repositories/league.repository';
-import { PlayerService } from '@/players/services/player.service';
+import { PlayerService } from '@/players/player.service';
 import { LeagueSettingsService } from '@/leagues/league-settings.service';
 import {
   OrganizationNotFoundException,

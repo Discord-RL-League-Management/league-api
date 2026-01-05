@@ -5,18 +5,18 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { Prisma, PlayerStatus, Player } from '@prisma/client';
-import { PrismaService } from '../../prisma/prisma.service';
-import { CreatePlayerDto } from '../dto/create-player.dto';
-import { UpdatePlayerDto } from '../dto/update-player.dto';
-import { PlayerRepository } from '../repositories/player.repository';
-import { PlayerValidationService } from './player-validation.service';
-import { ActivityLogService } from '../../infrastructure/activity-log/services/activity-log.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { CreatePlayerDto } from './dto/create-player.dto';
+import { UpdatePlayerDto } from './dto/update-player.dto';
+import { PlayerRepository } from './repositories/player.repository';
+import { PlayerValidationService } from './services/player-validation.service';
+import { ActivityLogService } from '../infrastructure/activity-log/services/activity-log.service';
 import {
   PlayerNotFoundException,
   PlayerAlreadyExistsException,
   InvalidPlayerStatusException,
-} from '../exceptions/player.exceptions';
-import { PlayerQueryOptions } from '../interfaces/player.interface';
+} from './exceptions/player.exceptions';
+import { PlayerQueryOptions } from './interfaces/player.interface';
 
 /**
  * PlayerService - Business logic layer for Player operations
