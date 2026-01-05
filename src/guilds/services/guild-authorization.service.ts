@@ -5,10 +5,12 @@ import { GuildMembersService } from '../../guild-members/guild-members.service';
 import { GuildSettingsService } from '../guild-settings.service';
 import { TokenManagementService } from '../../auth/services/token-management.service';
 import { DiscordApiService } from '../../discord/discord-api.service';
+import { ActivityLogService } from '../../infrastructure/activity-log/services/activity-log.service';
+import { PrismaService } from '../../prisma/prisma.service';
+import { RequestContextService } from '../../common/request-context/services/request-context/request-context.service';
 import { GuildSettings } from '../interfaces/settings.interface';
 import type { AuthenticatedUser } from '../../common/interfaces/user.interface';
 import type { Request } from 'express';
-import type { AuditMetadata } from '../../common/interfaces/audit-metadata.interface';
 
 /**
  * GuildAuthorizationService - Single Responsibility: Guild authorization logic
@@ -19,6 +21,7 @@ import type { AuditMetadata } from '../../common/interfaces/audit-metadata.inter
  * Responsibilities:
  * - Check guild admin permissions (with Discord validation)
  * - Check guild admin access (simplified version)
+ * - Log authorization decisions for audit purposes
  */
 @Injectable()
 export class GuildAuthorizationService {
@@ -31,6 +34,9 @@ export class GuildAuthorizationService {
     private readonly guildSettingsService: GuildSettingsService,
     private readonly tokenManagementService: TokenManagementService,
     private readonly discordApiService: DiscordApiService,
+    private readonly activityLogService: ActivityLogService,
+    private readonly prisma: PrismaService,
+    private readonly contextService: RequestContextService,
   ) {}
 
   /**
@@ -39,17 +45,14 @@ export class GuildAuthorizationService {
    *
    * @param user - Authenticated user
    * @param guildId - Guild ID to check permissions for
-   * @param request - Express request object (audit metadata set by guard)
+   * @param request - Express request object
    * @returns true if user has admin access
    * @throws ForbiddenException if user doesn't have admin access
-   *
-   * Audit logging is handled automatically via AuthorizationAuditInterceptor
-   * and AuthorizationAuditExceptionFilter based on request metadata set by guard.
    */
   async checkGuildAdmin(
     user: AuthenticatedUser | { type: 'bot'; id: string },
     guildId: string,
-    request: Request & { _auditMetadata?: AuditMetadata },
+    request: Request,
   ): Promise<boolean> {
     if (!user || !guildId) {
       this.logger.warn('GuildAuthorizationService: Missing user or guildId');
@@ -83,12 +86,16 @@ export class GuildAuthorizationService {
           `GuildAuthorizationService: User ${user.id} has Discord Administrator permission in guild ${guildId}`,
         );
 
-        // Update audit metadata with reason
-        if (request._auditMetadata) {
-          request._auditMetadata.metadata = {
-            ...request._auditMetadata.metadata,
-            reason: 'discord_administrator_permission',
-          };
+        // Log allowed authorization (fire-and-forget, skip for bots)
+        if (!('type' in user)) {
+          this.logAuthorizationAllowed(
+            user,
+            guildId,
+            request,
+            'discord_administrator_permission',
+          ).catch((error) => {
+            this.logger.error('Failed to log authorization audit:', error);
+          });
         }
 
         return true;
@@ -106,12 +113,16 @@ export class GuildAuthorizationService {
           `No admin roles configured for guild ${guildId}. Allowing access for initial setup.`,
         );
 
-        // Update audit metadata with reason
-        if (request._auditMetadata) {
-          request._auditMetadata.metadata = {
-            ...request._auditMetadata.metadata,
-            reason: 'no_admin_roles_configured',
-          };
+        // Log allowed authorization (fire-and-forget, skip for bots)
+        if (!('type' in user)) {
+          this.logAuthorizationAllowed(
+            user,
+            guildId,
+            request,
+            'no_admin_roles_configured',
+          ).catch((error) => {
+            this.logger.error('Failed to log authorization audit:', error);
+          });
         }
 
         return true;
@@ -136,17 +147,33 @@ export class GuildAuthorizationService {
         true,
       );
 
-      // Update audit metadata with reason
-      if (request._auditMetadata) {
-        request._auditMetadata.metadata = {
-          ...request._auditMetadata.metadata,
-          reason: isAdmin ? 'configured_admin_role' : 'no_admin_access',
-        };
-      }
+      const reason = isAdmin ? 'configured_admin_role' : 'no_admin_access';
 
       if (!isAdmin) {
+        // Log denied authorization (fire-and-forget, skip for bots)
+        if (!('type' in user)) {
+          this.logAuthorizationDenied(
+            user,
+            guildId,
+            request,
+            'Admin access required - Discord Administrator permission or configured admin role needed',
+            reason,
+          ).catch((error) => {
+            this.logger.error('Failed to log authorization audit:', error);
+          });
+        }
+
         throw new ForbiddenException(
           'Admin access required - Discord Administrator permission or configured admin role needed',
+        );
+      }
+
+      // Log allowed authorization (fire-and-forget, skip for bots)
+      if (!('type' in user)) {
+        this.logAuthorizationAllowed(user, guildId, request, reason).catch(
+          (error) => {
+            this.logger.error('Failed to log authorization audit:', error);
+          },
         );
       }
 
@@ -218,6 +245,9 @@ export class GuildAuthorizationService {
         `GuildAuthorizationService: User ${user.id} granted admin access to guild ${guildId}`,
       );
 
+      // Note: checkGuildAdminAccess doesn't have request parameter, so we can't log with full context
+      // This is a simplified version, so audit logging is optional here
+
       return true;
     } catch (error) {
       if (error instanceof ForbiddenException) {
@@ -228,6 +258,85 @@ export class GuildAuthorizationService {
         error,
       );
       throw new ForbiddenException('Error checking admin permissions');
+    }
+  }
+
+  /**
+   * Log allowed authorization decision
+   */
+  private async logAuthorizationAllowed(
+    user: AuthenticatedUser,
+    guildId: string,
+    request: Request,
+    reason: string,
+  ): Promise<void> {
+    const resource = request.url || request.path || 'unknown';
+
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        await this.activityLogService.logActivity(
+          tx,
+          'guild',
+          resource,
+          'GUILD_ACCESS',
+          'admin.check',
+          user.id,
+          guildId,
+          { result: 'allowed' },
+          {
+            guardType: 'GuildAdminGuard',
+            method: request.method,
+            resource,
+            ipAddress: this.contextService.getIpAddress(request),
+            userAgent: this.contextService.getUserAgent(request),
+            requestId: this.contextService.getRequestId(request),
+            reason,
+          },
+        );
+      });
+    } catch (error) {
+      this.logger.error('Failed to log authorization audit:', error);
+      // Don't throw - audit logging failure shouldn't break the request
+    }
+  }
+
+  /**
+   * Log denied authorization decision
+   */
+  private async logAuthorizationDenied(
+    user: AuthenticatedUser,
+    guildId: string,
+    request: Request,
+    reason: string,
+    reasonCode: string,
+  ): Promise<void> {
+    const resource = request.url || request.path || 'unknown';
+
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        await this.activityLogService.logActivity(
+          tx,
+          'guild',
+          resource,
+          'GUILD_ACCESS',
+          'admin.check',
+          user.id,
+          guildId,
+          { result: 'denied', reason },
+          {
+            guardType: 'GuildAdminGuard',
+            method: request.method,
+            resource,
+            ipAddress: this.contextService.getIpAddress(request),
+            userAgent: this.contextService.getUserAgent(request),
+            requestId: this.contextService.getRequestId(request),
+            reason: reasonCode,
+          },
+        );
+      });
+    } catch (error) {
+      this.logger.error('Failed to log authorization audit:', error);
+      // Don't throw - audit logging failure shouldn't break the request
     }
   }
 }

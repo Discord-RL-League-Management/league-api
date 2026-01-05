@@ -23,6 +23,7 @@ import { ConfigMigrationService } from './services/config-migration.service';
 import { LeagueRepository } from './repositories/league.repository';
 
 import { LeagueSettingsProviderAdapter } from './adapters/league-settings-provider.adapter';
+import { LeagueRepositoryAccessAdapter } from './adapters/league-repository-access.adapter';
 import { LeagueAccessValidationService } from './services/league-access-validation.service';
 import { LeaguePermissionService } from './services/league-permission.service';
 import { LeagueAccessGuard } from './guards/league-access.guard';
@@ -66,6 +67,13 @@ import { LeagueAdminOrModeratorGuard } from './guards/league-admin-or-moderator.
       },
       inject: [LeagueSettingsService],
     },
+    {
+      provide: 'ILeagueRepositoryAccess',
+      useFactory: (leagueRepository: LeagueRepository) => {
+        return new LeagueRepositoryAccessAdapter(leagueRepository);
+      },
+      inject: [LeagueRepository],
+    },
   ],
   exports: [
     LeaguesService,
@@ -73,6 +81,7 @@ import { LeagueAdminOrModeratorGuard } from './guards/league-admin-or-moderator.
     LeagueSettingsDefaultsService,
     LeagueRepository,
     'ILeagueSettingsProvider',
+    'ILeagueRepositoryAccess',
     LeagueAccessValidationService,
     LeaguePermissionService,
     LeagueAccessGuard,

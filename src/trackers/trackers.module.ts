@@ -35,7 +35,7 @@ import { TrackerAuthorizationService } from './services/tracker-authorization.se
 import { TrackerAccessGuard } from './guards/tracker-access.guard';
 import { GuildMembersModule } from '../guild-members/guild-members.module';
 import { PermissionCheckModule } from '../permissions/modules/permission-check/permission-check.module';
-import { CommonModule } from '../common/common.module';
+import { AuthorizationModule } from '../common/authorization/authorization.module';
 
 @Module({
   imports: [
@@ -45,7 +45,7 @@ import { CommonModule } from '../common/common.module';
     GuildsModule,
     GuildMembersModule,
     PermissionCheckModule,
-    CommonModule, // Required for SystemAdminGuard (AuthorizationService)
+    AuthorizationModule, // Required for SystemAdminGuard (AuthorizationService)
     HttpModule,
     BullModule.forRootAsync({
       imports: [ConfigModule],

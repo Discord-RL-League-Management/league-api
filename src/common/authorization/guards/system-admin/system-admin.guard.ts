@@ -5,16 +5,15 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { AuthorizationService } from '../services/authorization.service';
-import type { AuthenticatedUser } from '../interfaces/user.interface';
-import type { AuditMetadata } from '../interfaces/audit-metadata.interface';
+import { AuthorizationService } from '../../services/authorization/authorization.service';
+import type { AuthenticatedUser } from '../../../interfaces/user.interface';
 
 /**
  * SystemAdminGuard - Single Responsibility: Thin wrapper for system admin authorization
  *
  * This guard delegates all authorization logic to AuthorizationService,
  * keeping the guard focused on extracting request context and delegating.
- * Sets audit metadata on request for automatic audit logging via interceptor.
+ * Audit logging is handled directly by AuthorizationService.
  */
 @Injectable()
 export class SystemAdminGuard implements CanActivate {
@@ -23,21 +22,12 @@ export class SystemAdminGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const request = context
       .switchToHttp()
-      .getRequest<
-        Request & { user: AuthenticatedUser; _auditMetadata?: AuditMetadata }
-      >();
+      .getRequest<Request & { user: AuthenticatedUser }>();
     const user = request.user;
 
     if (!user) {
       throw new ForbiddenException('Authentication required');
     }
-
-    // Set audit metadata for interceptor
-    request._auditMetadata = {
-      action: 'admin.check',
-      guardType: 'SystemAdminGuard',
-      entityType: 'admin',
-    };
 
     return this.authorizationService.checkSystemAdmin(user, request);
   }

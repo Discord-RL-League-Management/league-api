@@ -10,7 +10,7 @@ import { OrganizationRepository } from '../repositories/organization.repository'
 import { OrganizationMemberService } from './organization-member.service';
 import { OrganizationValidationService } from './organization-validation.service';
 import { PlayerService } from '../../players/services/player.service';
-import { LeagueRepository } from '../../leagues/repositories/league.repository';
+import type { ILeagueRepositoryAccess } from '../../common/interfaces/league-domain/league-repository-access.interface';
 import type { ILeagueSettingsProvider } from '../../common/interfaces/league-domain/league-settings-provider.interface';
 import type { IOrganizationTeamProvider } from '../../common/interfaces/league-domain/organization-team-provider.interface';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -36,7 +36,8 @@ export class OrganizationService {
     private organizationMemberService: OrganizationMemberService,
     private validationService: OrganizationValidationService,
     private playerService: PlayerService,
-    private leagueRepository: LeagueRepository,
+    @Inject('ILeagueRepositoryAccess')
+    private leagueRepositoryAccess: ILeagueRepositoryAccess,
     @Inject('ILeagueSettingsProvider')
     private leagueSettingsProvider: ILeagueSettingsProvider,
     @Inject('IOrganizationTeamProvider')
@@ -77,7 +78,9 @@ export class OrganizationService {
       settings,
     );
 
-    const league = await this.leagueRepository.findById(createDto.leagueId);
+    const league = await this.leagueRepositoryAccess.findById(
+      createDto.leagueId,
+    );
     if (!league) {
       throw new NotFoundException(`League ${createDto.leagueId} not found`);
     }

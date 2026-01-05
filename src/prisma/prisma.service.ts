@@ -20,6 +20,7 @@ export class PrismaService
   private readonly logger = new Logger(PrismaService.name);
 
   async onModuleInit() {
+    console.log('[PRISMA] Attempting to connect to database...');
     // #region agent log
     fetch('http://127.0.0.1:7243/ingest/7b59d5a7-b3ea-4ea5-a718-921dbf2d179f', {
       method: 'POST',
@@ -35,7 +36,13 @@ export class PrismaService
       }),
     }).catch(() => {});
     // #endregion
-    await this.$connect();
+    try {
+      await this.$connect();
+      console.log('[PRISMA] Database connection successful');
+    } catch (error) {
+      console.error('[PRISMA] Database connection failed:', error);
+      throw error;
+    }
     // #region agent log
     fetch('http://127.0.0.1:7243/ingest/7b59d5a7-b3ea-4ea5-a718-921dbf2d179f', {
       method: 'POST',

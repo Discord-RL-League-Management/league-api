@@ -10,6 +10,7 @@ import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
+  console.log('[BOOTSTRAP] Starting bootstrap...');
   // #region agent log
   fetch('http://127.0.0.1:7243/ingest/7b59d5a7-b3ea-4ea5-a718-921dbf2d179f', {
     method: 'POST',
@@ -40,9 +41,11 @@ async function bootstrap() {
     }),
   }).catch(() => {});
   // #endregion
+  console.log('[BOOTSTRAP] Creating NestFactory...');
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
   });
+  console.log('[BOOTSTRAP] NestFactory created successfully');
   // #region agent log
   fetch('http://127.0.0.1:7243/ingest/7b59d5a7-b3ea-4ea5-a718-921dbf2d179f', {
     method: 'POST',
@@ -182,7 +185,9 @@ async function bootstrap() {
   app.enableShutdownHooks();
 
   const port = configService.get<number>('app.port') || 3000;
+  console.log(`[BOOTSTRAP] Starting server on port ${port}...`);
   await app.listen(port);
+  console.log(`[BOOTSTRAP] Server started successfully`);
 
   logger.log(`Application is running on: http://localhost:${port}`);
   logger.log(`Environment: ${configService.get<string>('app.nodeEnv')}`);
@@ -193,6 +198,10 @@ async function bootstrap() {
     );
   }
 }
-void bootstrap().catch(() => {
+void bootstrap().catch((error) => {
+  console.error('Failed to start application:', error);
+  if (error instanceof Error) {
+    console.error(error.stack);
+  }
   process.exit(1);
 });

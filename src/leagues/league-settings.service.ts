@@ -1,4 +1,5 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import { SettingsService } from '../infrastructure/settings/services/settings.service';
@@ -24,6 +25,8 @@ import type { ITeamProvider } from '../common/interfaces/league-domain/team-prov
 export class LeagueSettingsService {
   private readonly logger = new Logger(LeagueSettingsService.name);
   private readonly cacheTtl: number;
+  private organizationProvider?: IOrganizationProvider;
+  private teamProvider?: ITeamProvider;
 
   constructor(
     private settingsService: SettingsService,
@@ -33,12 +36,28 @@ export class LeagueSettingsService {
     private configMigration: ConfigMigrationService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private prisma: PrismaService,
-    @Inject('IOrganizationProvider')
-    private organizationProvider: IOrganizationProvider,
-    @Inject('ITeamProvider')
-    private teamProvider: ITeamProvider,
+    private moduleRef: ModuleRef,
   ) {
     this.cacheTtl = 300; // 5 minutes cache TTL
+  }
+
+  private getOrganizationProvider(): IOrganizationProvider {
+    if (!this.organizationProvider) {
+      this.organizationProvider = this.moduleRef.get<IOrganizationProvider>(
+        'IOrganizationProvider',
+        { strict: false },
+      );
+    }
+    return this.organizationProvider;
+  }
+
+  private getTeamProvider(): ITeamProvider {
+    if (!this.teamProvider) {
+      this.teamProvider = this.moduleRef.get<ITeamProvider>('ITeamProvider', {
+        strict: false,
+      });
+    }
+    return this.teamProvider;
   }
 
   /**
@@ -212,7 +231,7 @@ export class LeagueSettingsService {
     );
 
     const teamsWithoutOrg =
-      await this.teamProvider.findTeamsWithoutOrganization(leagueId);
+      await this.getTeamProvider().findTeamsWithoutOrganization(leagueId);
 
     if (teamsWithoutOrg.length === 0) {
       this.logger.log(`No teams need assignment in league ${leagueId}`);
@@ -220,14 +239,14 @@ export class LeagueSettingsService {
     }
 
     const organizations =
-      await this.organizationProvider.findByLeagueId(leagueId);
+      await this.getOrganizationProvider().findByLeagueId(leagueId);
 
     // If no organizations exist, create a default one
     // Pass merged settings to validate against updated capacity limits
     let defaultOrgId: string;
     let createdDefaultOrg = false;
     if (organizations.length === 0) {
-      const defaultOrg = await this.organizationProvider.create(
+      const defaultOrg = await this.getOrganizationProvider().create(
         {
           leagueId,
           name: 'Unassigned Teams',
@@ -255,7 +274,7 @@ export class LeagueSettingsService {
     // Pass merged settings to ensure validation uses updated limits before persistence
     // This ensures we don't violate maxTeamsPerOrganization limits with new settings
     try {
-      await this.organizationProvider.assignTeamsToOrganization(
+      await this.getOrganizationProvider().assignTeamsToOrganization(
         leagueId,
         defaultOrgId,
         teamIds,
@@ -272,7 +291,7 @@ export class LeagueSettingsService {
           `Team assignment failed for default organization ${defaultOrgId}. Rolling back organization creation.`,
         );
         try {
-          await this.organizationProvider.delete(defaultOrgId, 'system');
+          await this.getOrganizationProvider().delete(defaultOrgId, 'system');
           this.logger.log(`Rolled back default organization ${defaultOrgId}`);
         } catch (deleteError) {
           this.logger.error(

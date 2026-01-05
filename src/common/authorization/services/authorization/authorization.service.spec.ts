@@ -3,12 +3,18 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { ForbiddenException } from '@nestjs/common';
 import { AuthorizationService } from './authorization.service';
+import { ActivityLogService } from '../../../../infrastructure/activity-log/services/activity-log.service';
+import { PrismaService } from '../../../../prisma/prisma.service';
+import { RequestContextService } from '../../../request-context/services/request-context/request-context.service';
 import type { Request } from 'express';
-import type { AuthenticatedUser } from '../../common/interfaces/user.interface';
+import type { AuthenticatedUser } from '../../../interfaces/user.interface';
 
 describe('AuthorizationService', () => {
   let service: AuthorizationService;
   let configService: ConfigService;
+  let activityLogService: ActivityLogService;
+  let prismaService: PrismaService;
+  let requestContextService: RequestContextService;
 
   const mockUser: AuthenticatedUser = {
     id: 'user123',
@@ -22,16 +28,31 @@ describe('AuthorizationService', () => {
     url: '/test',
     path: '/test',
     method: 'GET',
-    _auditMetadata: {
-      action: 'admin.check',
-      guardType: 'SystemAdminGuard',
-      entityType: 'admin',
-    },
-  } as Request & { _auditMetadata?: unknown };
+    headers: {},
+    ip: '127.0.0.1',
+    socket: { remoteAddress: '127.0.0.1' },
+  } as Request;
 
   beforeEach(async () => {
     const mockConfigService = {
       get: vi.fn(),
+    };
+
+    const mockActivityLogService = {
+      logActivity: vi.fn().mockResolvedValue(undefined),
+    };
+
+    const mockPrismaService = {
+      $transaction: vi.fn().mockImplementation(async (callback) => {
+        const mockTx = {} as any;
+        return await callback(mockTx);
+      }),
+    };
+
+    const mockRequestContextService = {
+      getIpAddress: vi.fn().mockReturnValue('127.0.0.1'),
+      getUserAgent: vi.fn().mockReturnValue('test-agent'),
+      getRequestId: vi.fn().mockReturnValue('test-request-id'),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -41,11 +62,28 @@ describe('AuthorizationService', () => {
           provide: ConfigService,
           useValue: mockConfigService,
         },
+        {
+          provide: ActivityLogService,
+          useValue: mockActivityLogService,
+        },
+        {
+          provide: PrismaService,
+          useValue: mockPrismaService,
+        },
+        {
+          provide: RequestContextService,
+          useValue: mockRequestContextService,
+        },
       ],
     }).compile();
 
     service = module.get<AuthorizationService>(AuthorizationService);
     configService = module.get<ConfigService>(ConfigService);
+    activityLogService = module.get<ActivityLogService>(ActivityLogService);
+    prismaService = module.get<PrismaService>(PrismaService);
+    requestContextService = module.get<RequestContextService>(
+      RequestContextService,
+    );
   });
 
   describe('checkSystemAdmin', () => {
@@ -55,7 +93,6 @@ describe('AuthorizationService', () => {
       const result = service.checkSystemAdmin(mockUser, mockRequest);
 
       expect(result).toBe(true);
-      // Audit logging is handled automatically by interceptor, not tested here
     });
 
     it('should_deny_access_when_user_is_not_system_admin', () => {
@@ -64,8 +101,6 @@ describe('AuthorizationService', () => {
       expect(() => {
         service.checkSystemAdmin(mockUser, mockRequest);
       }).toThrow(ForbiddenException);
-
-      // Audit logging is handled automatically by exception filter, not tested here
     });
   });
 });

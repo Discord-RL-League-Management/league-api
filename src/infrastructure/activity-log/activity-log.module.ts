@@ -2,9 +2,6 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { ActivityLogService } from './services/activity-log.service';
 import { ActivityLogRepository } from './repositories/activity-log.repository';
-import { ActivityLogController } from './activity-log.controller';
-import { GuildsModule } from '../../guilds/guilds.module';
-import { AuthModule } from '../../auth/auth.module';
 
 /**
  * ActivityLogModule - Infrastructure module for activity logging
@@ -12,12 +9,13 @@ import { AuthModule } from '../../auth/auth.module';
  * Provides unified activity logging for any domain.
  * Replaces both AuditLog and SettingsHistory patterns.
  *
- * Includes ActivityLogController for querying audit logs (moved from AuditModule).
+ * Pure infrastructure module: provides ActivityLogService and ActivityLogRepository.
+ * Controllers using this service should be in their respective domain modules.
  */
 @Module({
-  imports: [PrismaModule, GuildsModule, AuthModule],
+  imports: [PrismaModule],
   providers: [ActivityLogService, ActivityLogRepository],
-  controllers: [ActivityLogController],
+  controllers: [],
   exports: [ActivityLogService],
 })
 export class ActivityLogModule {}

@@ -8,7 +8,7 @@ import {
 import { Observable, tap } from 'rxjs';
 import { Request } from 'express';
 import { ActivityLogService } from '../../infrastructure/activity-log/services/activity-log.service';
-import { RequestContextService } from '../services/request-context.service';
+import { RequestContextService } from '../request-context/services/request-context/request-context.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { AuthenticatedUser } from '../interfaces/user.interface';
 import type { AuditMetadata } from '../interfaces/audit-metadata.interface';

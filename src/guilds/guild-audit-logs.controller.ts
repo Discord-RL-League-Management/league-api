@@ -14,24 +14,25 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { GuildAdminGuard } from '../../guilds/guards/guild-admin.guard';
-import { ActivityLogService } from './services/activity-log.service';
-import type { AuthenticatedUser } from '../../common/interfaces/user.interface';
-import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { GuildAdminGuard } from './guards/guild-admin.guard';
+import { ActivityLogService } from '../infrastructure/activity-log/services/activity-log.service';
+import type { AuthenticatedUser } from '../common/interfaces/user.interface';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 /**
- * ActivityLogController - Single Responsibility: Handle HTTP requests for activity/audit logs
+ * GuildAuditLogsController - Single Responsibility: Handle HTTP requests for guild audit logs
  *
  * Controller only handles HTTP concerns, delegates to ActivityLogService.
- * Provides query API for audit logs (authorization events).
+ * Provides query API for audit logs (authorization events) for a specific guild.
+ * Located in GuildsModule as it's guild-specific functionality.
  */
 @ApiTags('Audit Logs')
 @Controller('api/guilds/:guildId/audit-logs')
 @UseGuards(JwtAuthGuard, GuildAdminGuard)
 @ApiBearerAuth('JWT-auth')
-export class ActivityLogController {
-  private readonly logger = new Logger(ActivityLogController.name);
+export class GuildAuditLogsController {
+  private readonly logger = new Logger(GuildAuditLogsController.name);
 
   constructor(private readonly activityLogService: ActivityLogService) {}
 

@@ -1,9 +1,9 @@
-import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
+import { Injectable, Logger, ForbiddenException, Inject } from '@nestjs/common';
 import { LeagueMemberRole } from '@prisma/client';
 import { LeagueRepository } from '../repositories/league.repository';
 import { LeagueAccessValidationService } from './league-access-validation.service';
 import { PlayerService } from '../../players/services/player.service';
-import { LeagueMemberRepository } from '../../league-members/repositories/league-member.repository';
+import type { ILeagueMemberAccess } from '../../common/interfaces/league-domain/league-member-access.interface';
 import { PermissionCheckService } from '../../permissions/modules/permission-check/permission-check.service';
 import { SettingsService } from '../../infrastructure/settings/services/settings.service';
 import { LeagueNotFoundException } from '../exceptions/league.exceptions';
@@ -22,7 +22,8 @@ export class LeaguePermissionService {
     private leagueRepository: LeagueRepository,
     private leagueAccessValidationService: LeagueAccessValidationService,
     private playerService: PlayerService,
-    private leagueMemberRepository: LeagueMemberRepository,
+    @Inject('ILeagueMemberAccess')
+    private leagueMemberAccess: ILeagueMemberAccess,
     private permissionCheckService: PermissionCheckService,
     private settingsService: SettingsService,
   ) {}
@@ -251,11 +252,10 @@ export class LeaguePermissionService {
         return false;
       }
 
-      const leagueMember =
-        await this.leagueMemberRepository.findByPlayerAndLeague(
-          player.id,
-          leagueId,
-        );
+      const leagueMember = await this.leagueMemberAccess.findByPlayerAndLeague(
+        player.id,
+        leagueId,
+      );
 
       if (!leagueMember) {
         this.logger.debug(

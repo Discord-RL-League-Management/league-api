@@ -3,6 +3,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { GuildsController } from './guilds.controller';
 import { InternalGuildsController } from './internal-guilds.controller';
 import { GuildSettingsController } from './guild-settings.controller';
+import { GuildAuditLogsController } from './guild-audit-logs.controller';
 import { GuildSettingsService } from './guild-settings.service';
 import { GuildsService } from './guilds.service';
 import { SettingsDefaultsService } from './services/settings-defaults.service';
@@ -23,6 +24,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { UsersModule } from '../users/users.module';
 import { FormulaValidationModule } from '../formula-validation/formula-validation.module';
 import { PermissionCheckModule } from '../permissions/modules/permission-check/permission-check.module';
+import { RequestContextModule } from '../common/request-context/request-context.module';
 import { GuildAccessValidationService } from './services/guild-access-validation.service';
 import { GuildAuthorizationService } from './services/guild-authorization.service';
 import { GuildAdminGuard } from './guards/guild-admin.guard';
@@ -38,6 +40,7 @@ import { GuildAdminSimpleGuard } from './guards/guild-admin-simple.guard';
     SettingsModule, // Required for GuildSettingsService (SettingsService)
     ActivityLogModule, // Required for GuildSettingsService (ActivityLogService)
     FormulaValidationModule, // Required for SettingsValidationService (FormulaValidationService)
+    RequestContextModule, // Required for GuildAuthorizationService (RequestContextService)
     UsersModule,
     CacheModule.register(cacheModuleOptions),
   ],
@@ -45,6 +48,7 @@ import { GuildAdminSimpleGuard } from './guards/guild-admin-simple.guard';
     GuildsController,
     InternalGuildsController,
     GuildSettingsController,
+    GuildAuditLogsController,
   ],
   providers: [
     GuildsService,
@@ -55,7 +59,6 @@ import { GuildAdminSimpleGuard } from './guards/guild-admin-simple.guard';
     GuildSyncService,
     GuildErrorHandlerService,
     GuildRepository,
-    GuildAccessProviderAdapter,
     GuildAccessValidationService,
     GuildAuthorizationService,
     GuildAdminGuard,
@@ -79,7 +82,6 @@ import { GuildAdminSimpleGuard } from './guards/guild-admin-simple.guard';
     GuildSettingsService,
     SettingsDefaultsService,
     GuildRepository,
-    GuildAccessProviderAdapter,
     'IGuildAccessProvider',
     GuildAccessValidationService,
     GuildAuthorizationService, // Required for GuildAdminGuard when used in other modules
