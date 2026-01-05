@@ -13,8 +13,8 @@ import { Test } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { InternalScheduledProcessingController } from './internal-scheduled-processing.controller';
 import { ScheduledTrackerProcessingService } from '@/trackers/services/scheduled-tracker-processing.service';
-import { ScheduleTrackerProcessingDto } from '../dto/schedule-tracker-processing.dto';
-import { GetSchedulesQueryDto } from '../dto/get-schedules-query.dto';
+import { ScheduleTrackerProcessingDto } from './dto/schedule-tracker-processing.dto';
+import { GetSchedulesQueryDto } from './dto/get-schedules-query.dto';
 import { ScheduledProcessingStatus } from '@prisma/client';
 
 describe('InternalScheduledProcessingController', () => {

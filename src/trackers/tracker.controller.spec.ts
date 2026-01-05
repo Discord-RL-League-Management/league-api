@@ -12,13 +12,13 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Test } from '@nestjs/testing';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { TrackerController } from './tracker.controller';
-import { TrackerService } from '../tracker.service';
-import { TrackerProcessingService } from '../services/tracker-processing.service';
-import { TrackerSnapshotService } from '../services/tracker-snapshot.service';
-import { TrackerAuthorizationService } from '../services/tracker-authorization.service';
-import { TrackerResponseMapperService } from '../services/tracker-response-mapper.service';
-import { TrackerAccessGuard } from '../guards/tracker-access.guard';
-import { RegisterTrackersDto, UpdateTrackerDto } from '../dto/tracker.dto';
+import { TrackerService } from './tracker.service';
+import { TrackerProcessingService } from './services/tracker-processing.service';
+import { TrackerSnapshotService } from './services/tracker-snapshot.service';
+import { TrackerAuthorizationService } from './services/tracker-authorization.service';
+import { TrackerResponseMapperService } from './services/tracker-response-mapper.service';
+import { TrackerAccessGuard } from './guards/tracker-access.guard';
+import { RegisterTrackersDto, UpdateTrackerDto } from './dto/tracker.dto';
 import type { AuthenticatedUser } from '@/common/interfaces/user.interface';
 
 describe('TrackerController', () => {

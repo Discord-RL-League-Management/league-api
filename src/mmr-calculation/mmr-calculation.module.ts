@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { MmrCalculationController } from './controllers/mmr-calculation.controller';
-import { MMRCalculatorDemoController } from './controllers/mmr-calculator-demo.controller';
+import { MmrCalculationController } from './mmr-calculation.controller';
+import { MMRCalculatorDemoController } from './mmr-calculator-demo.controller';
 import { MmrCalculationService } from './services/mmr-calculation.service';
 import { TrackerDataExtractionService } from './services/tracker-data-extraction.service';
 import { MmrCalculationIntegrationService } from './services/mmr-calculation-integration.service';
@@ -24,7 +24,7 @@ import { FormulaValidationModule } from '../formula-validation/formula-validatio
   imports: [
     PrismaModule,
     GuildsModule, // GuardsModule is now global, breaking the cycle
-    FormulaValidationModule, // Provides FormulaValidationService
+    FormulaValidationModule,
   ],
   controllers: [MmrCalculationController, MMRCalculatorDemoController],
   providers: [

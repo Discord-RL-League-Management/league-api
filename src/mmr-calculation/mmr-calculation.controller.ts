@@ -13,16 +13,16 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { GuildAdminGuard } from '../../guilds/guards/guild-admin.guard';
-import { MmrCalculationService } from '../services/mmr-calculation.service';
-import { FormulaValidationService } from '../../formula-validation/services/formula-validation/formula-validation.service';
-import { TestFormulaDto } from '../dto/test-formula.dto';
-import { ValidateFormulaDto } from '../dto/validate-formula.dto';
-import { CalculateMmrDto } from '../dto/calculate-mmr.dto';
-import { GuildSettingsService } from '../../guilds/guild-settings.service';
-import { SettingsDefaultsService } from '../../guilds/services/settings-defaults.service';
-import { MmrCalculationConfig } from '../../guilds/interfaces/settings.interface';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { GuildAdminGuard } from '../guilds/guards/guild-admin.guard';
+import { MmrCalculationService } from './services/mmr-calculation.service';
+import { FormulaValidationService } from '../formula-validation/services/formula-validation/formula-validation.service';
+import { TestFormulaDto } from './dto/test-formula.dto';
+import { ValidateFormulaDto } from './dto/validate-formula.dto';
+import { CalculateMmrDto } from './dto/calculate-mmr.dto';
+import { GuildSettingsService } from '../guilds/guild-settings.service';
+import { SettingsDefaultsService } from '../guilds/services/settings-defaults.service';
+import { MmrCalculationConfig } from '../guilds/interfaces/settings.interface';
 
 /**
  * MmrCalculationController - Single Responsibility: MMR calculation API endpoints

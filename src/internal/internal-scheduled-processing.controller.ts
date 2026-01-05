@@ -16,10 +16,10 @@ import {
   ApiParam,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { BotAuthGuard } from '../../auth/guards/bot-auth.guard';
-import { ScheduledTrackerProcessingService } from '../../trackers/services/scheduled-tracker-processing.service';
-import { ScheduleTrackerProcessingDto } from '../dto/schedule-tracker-processing.dto';
-import { GetSchedulesQueryDto } from '../dto/get-schedules-query.dto';
+import { BotAuthGuard } from '../auth/guards/bot-auth.guard';
+import { ScheduledTrackerProcessingService } from '../trackers/services/scheduled-tracker-processing.service';
+import { ScheduleTrackerProcessingDto } from './dto/schedule-tracker-processing.dto';
+import { GetSchedulesQueryDto } from './dto/get-schedules-query.dto';
 
 /**
  * InternalScheduledProcessingController - Bot-only endpoints for scheduled tracker processing
