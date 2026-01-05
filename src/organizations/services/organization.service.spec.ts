@@ -20,9 +20,11 @@ import { OrganizationMemberService } from '../services/organization-member.servi
 import { OrganizationValidationService } from '../services/organization-validation.service';
 import { PlayerService } from '@/players/services/player.service';
 import { LeagueRepository } from '@/leagues/repositories/league.repository';
+import { TeamRepository } from '@/teams/repositories/team.repository';
 import type { ILeagueSettingsProvider } from '@/common/interfaces/league-domain/league-settings-provider.interface';
 import type { IOrganizationTeamProvider } from '@/common/interfaces/league-domain/organization-team-provider.interface';
 import { PrismaService } from '@/prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import { CreateOrganizationDto } from '../dto/create-organization.dto';
 import { UpdateOrganizationDto } from '../dto/update-organization.dto';
 import {
@@ -39,6 +41,7 @@ describe('OrganizationService', () => {
   let mockValidationService: OrganizationValidationService;
   let mockPlayerService: PlayerService;
   let mockLeagueRepository: LeagueRepository;
+  let mockTeamRepository: TeamRepository;
   let mockLeagueSettingsProvider: ILeagueSettingsProvider;
   let mockOrganizationTeamProvider: IOrganizationTeamProvider;
   let mockPrisma: PrismaService;
@@ -115,6 +118,11 @@ describe('OrganizationService', () => {
       findById: vi.fn(),
     } as unknown as LeagueRepository;
 
+    mockTeamRepository = {
+      countByOrganizationId: vi.fn(),
+      update: vi.fn(),
+    } as unknown as TeamRepository;
+
     mockLeagueSettingsProvider = {
       getSettings: vi.fn(),
     } as unknown as ILeagueSettingsProvider;
@@ -125,14 +133,9 @@ describe('OrganizationService', () => {
     } as unknown as IOrganizationTeamProvider;
 
     mockPrisma = {
-      $transaction: vi.fn().mockImplementation((callback) => {
-        const mockTx = {
-          team: {
-            count: vi.fn().mockResolvedValue(0),
-            update: vi.fn(),
-          },
-        } as any;
-        return callback(mockTx);
+      $transaction: vi.fn().mockImplementation(async (callback) => {
+        const mockTx = {} as Prisma.TransactionClient;
+        return await callback(mockTx);
       }),
     } as unknown as PrismaService;
 
@@ -144,6 +147,7 @@ describe('OrganizationService', () => {
       mockLeagueRepository,
       mockLeagueSettingsProvider,
       mockOrganizationTeamProvider,
+      mockTeamRepository,
       mockPrisma,
     );
   });
@@ -613,19 +617,20 @@ describe('OrganizationService', () => {
       );
       vi.mocked(mockPrisma.$transaction).mockImplementation(
         async (callback) => {
-          const mockTx = {
-            team: {
-              count: vi.fn().mockResolvedValue(3), // Current count
-              update: vi.fn().mockImplementation((args: any) => ({
-                id: args.where.id,
-                organizationId,
-                ...args.data,
-              })),
-            },
-          } as any;
-          return callback(mockTx);
+          const mockTx = {} as Prisma.TransactionClient;
+          return await callback(mockTx);
         },
       );
+      vi.mocked(mockTeamRepository.countByOrganizationId).mockResolvedValue(3); // Current count
+      vi.mocked(mockTeamRepository.update)
+        .mockResolvedValueOnce({
+          id: teamIds[0],
+          organizationId,
+        } as any)
+        .mockResolvedValueOnce({
+          id: teamIds[1],
+          organizationId,
+        } as any);
 
       const result = await service.assignTeamsToOrganization(
         leagueId,
@@ -635,6 +640,11 @@ describe('OrganizationService', () => {
 
       expect(result).toHaveLength(2);
       expect(result[0].organizationId).toBe(organizationId);
+      expect(mockTeamRepository.countByOrganizationId).toHaveBeenCalledWith(
+        organizationId,
+        expect.anything(),
+      );
+      expect(mockTeamRepository.update).toHaveBeenCalledTimes(2);
     });
 
     it('should_throw_OrganizationCapacityExceededException_when_capacity_exceeded', async () => {
@@ -653,19 +663,19 @@ describe('OrganizationService', () => {
       );
       vi.mocked(mockPrisma.$transaction).mockImplementation(
         async (callback) => {
-          const mockTx = {
-            team: {
-              count: vi.fn().mockResolvedValue(4), // Current count (4 + 2 = 6 > 5)
-              update: vi.fn(),
-            },
-          } as any;
-          return callback(mockTx);
+          const mockTx = {} as Prisma.TransactionClient;
+          return await callback(mockTx);
         },
       );
+      vi.mocked(mockTeamRepository.countByOrganizationId).mockResolvedValue(4); // Current count (4 + 2 = 6 > 5)
 
       await expect(
         service.assignTeamsToOrganization(leagueId, organizationId, teamIds),
       ).rejects.toThrow(OrganizationCapacityExceededException);
+      expect(mockTeamRepository.countByOrganizationId).toHaveBeenCalledWith(
+        organizationId,
+        expect.anything(),
+      );
     });
 
     it('should_throw_OrganizationNotFoundException_when_organization_not_in_league', async () => {

@@ -12,14 +12,12 @@ import { NotFoundException } from '@nestjs/common';
 import { TrackerService } from './tracker.service';
 import { TrackerRepository } from '../repositories/tracker.repository';
 import { TrackerSeasonService } from '../services/tracker-season.service';
-import { PrismaService } from '@/prisma/prisma.service';
 import { Game, GamePlatform, TrackerScrapingStatus } from '@prisma/client';
 
 describe('TrackerService', () => {
   let service: TrackerService;
   let mockRepository: TrackerRepository;
   let mockSeasonService: TrackerSeasonService;
-  let mockPrisma: PrismaService;
 
   const mockTracker = {
     id: 'tracker_123',
@@ -58,17 +56,7 @@ describe('TrackerService', () => {
       getSeasonsByTracker: vi.fn().mockResolvedValue([]),
     } as unknown as TrackerSeasonService;
 
-    mockPrisma = {
-      user: {
-        upsert: vi.fn().mockResolvedValue({ id: 'user_123' }),
-      },
-      tracker: {
-        findMany: vi.fn().mockResolvedValue([]),
-        findUnique: vi.fn(),
-      },
-    } as unknown as PrismaService;
-
-    service = new TrackerService(mockPrisma, mockRepository, mockSeasonService);
+    service = new TrackerService(mockRepository, mockSeasonService);
   });
 
   afterEach(() => {
@@ -109,23 +97,27 @@ describe('TrackerService', () => {
         seasons: [],
       };
 
-      vi.mocked(mockPrisma.tracker.findUnique).mockResolvedValue(
-        trackerWithSeasons as any,
-      );
+      vi.mocked(mockRepository.findById).mockResolvedValue(mockTracker);
+      vi.mocked(mockSeasonService.getSeasonsByTracker).mockResolvedValue([]);
 
       const result = await service.getTrackerById(trackerId);
 
       expect(result).toEqual(trackerWithSeasons);
       expect(result.id).toBe(trackerId);
+      expect(mockRepository.findById).toHaveBeenCalledWith(trackerId);
+      expect(mockSeasonService.getSeasonsByTracker).toHaveBeenCalledWith(
+        trackerId,
+      );
     });
 
     it('should_throw_NotFoundException_when_tracker_does_not_exist', async () => {
       const trackerId = 'nonexistent';
-      vi.mocked(mockPrisma.tracker.findUnique).mockResolvedValue(null);
+      vi.mocked(mockRepository.findById).mockResolvedValue(null);
 
       await expect(service.getTrackerById(trackerId)).rejects.toThrow(
         NotFoundException,
       );
+      expect(mockRepository.findById).toHaveBeenCalledWith(trackerId);
     });
   });
 
@@ -391,15 +383,15 @@ describe('TrackerService', () => {
       const displayName = 'Updated Display Name';
       const updatedTracker = { ...mockTracker, displayName };
 
-      vi.mocked(mockPrisma.tracker.findUnique).mockResolvedValue(
-        mockTracker as any,
-      );
+      vi.mocked(mockRepository.findById).mockResolvedValue(mockTracker);
+      vi.mocked(mockSeasonService.getSeasonsByTracker).mockResolvedValue([]);
       vi.mocked(mockRepository.update).mockResolvedValue(updatedTracker);
 
       const result = await service.updateTracker(trackerId, displayName);
 
       expect(result).toEqual(updatedTracker);
       expect(result.displayName).toBe(displayName);
+      expect(mockRepository.findById).toHaveBeenCalledWith(trackerId);
     });
 
     it('should_update_is_active_status_when_provided', async () => {
@@ -407,9 +399,8 @@ describe('TrackerService', () => {
       const isActive = false;
       const updatedTracker = { ...mockTracker, isActive };
 
-      vi.mocked(mockPrisma.tracker.findUnique).mockResolvedValue(
-        mockTracker as any,
-      );
+      vi.mocked(mockRepository.findById).mockResolvedValue(mockTracker);
+      vi.mocked(mockSeasonService.getSeasonsByTracker).mockResolvedValue([]);
       vi.mocked(mockRepository.update).mockResolvedValue(updatedTracker);
 
       const result = await service.updateTracker(
@@ -420,15 +411,17 @@ describe('TrackerService', () => {
 
       expect(result).toEqual(updatedTracker);
       expect(result.isActive).toBe(isActive);
+      expect(mockRepository.findById).toHaveBeenCalledWith(trackerId);
     });
 
     it('should_throw_NotFoundException_when_tracker_does_not_exist', async () => {
       const trackerId = 'nonexistent';
-      vi.mocked(mockPrisma.tracker.findUnique).mockResolvedValue(null);
+      vi.mocked(mockRepository.findById).mockResolvedValue(null);
 
       await expect(
         service.updateTracker(trackerId, 'New Name'),
       ).rejects.toThrow(NotFoundException);
+      expect(mockRepository.findById).toHaveBeenCalledWith(trackerId);
     });
   });
 
@@ -437,24 +430,25 @@ describe('TrackerService', () => {
       const trackerId = 'tracker_123';
       const deletedTracker = { ...mockTracker, isDeleted: true };
 
-      vi.mocked(mockPrisma.tracker.findUnique).mockResolvedValue(
-        mockTracker as any,
-      );
+      vi.mocked(mockRepository.findById).mockResolvedValue(mockTracker);
+      vi.mocked(mockSeasonService.getSeasonsByTracker).mockResolvedValue([]);
       vi.mocked(mockRepository.softDelete).mockResolvedValue(deletedTracker);
 
       const result = await service.deleteTracker(trackerId);
 
       expect(result).toEqual(deletedTracker);
       expect(result.isDeleted).toBe(true);
+      expect(mockRepository.findById).toHaveBeenCalledWith(trackerId);
     });
 
     it('should_throw_NotFoundException_when_tracker_does_not_exist', async () => {
       const trackerId = 'nonexistent';
-      vi.mocked(mockPrisma.tracker.findUnique).mockResolvedValue(null);
+      vi.mocked(mockRepository.findById).mockResolvedValue(null);
 
       await expect(service.deleteTracker(trackerId)).rejects.toThrow(
         NotFoundException,
       );
+      expect(mockRepository.findById).toHaveBeenCalledWith(trackerId);
     });
   });
 

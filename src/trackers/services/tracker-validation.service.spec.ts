@@ -8,28 +8,29 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { BadRequestException } from '@nestjs/common';
 import { TrackerValidationService } from './tracker-validation.service';
-import { PrismaService } from '@/prisma/prisma.service';
+import { TrackerRepository } from '../repositories/tracker.repository';
 import { TrackerUrlConverterService } from '../services/tracker-url-converter.service';
 import { GamePlatform, Game } from '@prisma/client';
 
 describe('TrackerValidationService', () => {
   let service: TrackerValidationService;
-  let mockPrisma: PrismaService;
+  let mockTrackerRepository: TrackerRepository;
   let mockUrlConverter: TrackerUrlConverterService;
 
   beforeEach(() => {
-    mockPrisma = {
-      tracker: {
-        findUnique: vi.fn(),
-        findMany: vi.fn(),
-      },
-    } as unknown as PrismaService;
+    mockTrackerRepository = {
+      findByUrl: vi.fn(),
+      findByUrls: vi.fn(),
+    } as unknown as TrackerRepository;
 
     mockUrlConverter = {
       isValidTrnUrl: vi.fn(),
     } as unknown as TrackerUrlConverterService;
 
-    service = new TrackerValidationService(mockPrisma, mockUrlConverter);
+    service = new TrackerValidationService(
+      mockTrackerRepository,
+      mockUrlConverter,
+    );
   });
 
   afterEach(() => {
@@ -43,7 +44,7 @@ describe('TrackerValidationService', () => {
       const userId = 'user123';
 
       vi.mocked(mockUrlConverter.isValidTrnUrl).mockReturnValue(true);
-      vi.mocked(mockPrisma.tracker.findUnique).mockResolvedValue(null);
+      vi.mocked(mockTrackerRepository.findByUrl).mockResolvedValue(null);
 
       const result = await service.validateTrackerUrl(url, userId);
 
@@ -51,6 +52,7 @@ describe('TrackerValidationService', () => {
       expect(result.username).toBe('testuser');
       expect(result.game).toBe(Game.ROCKET_LEAGUE);
       expect(result.isValid).toBe(true);
+      expect(mockTrackerRepository.findByUrl).toHaveBeenCalledWith(url);
     });
 
     it('should_throw_BadRequestException_when_url_format_is_invalid', async () => {
@@ -115,7 +117,7 @@ describe('TrackerValidationService', () => {
       };
 
       vi.mocked(mockUrlConverter.isValidTrnUrl).mockReturnValue(true);
-      vi.mocked(mockPrisma.tracker.findUnique).mockResolvedValue(
+      vi.mocked(mockTrackerRepository.findByUrl).mockResolvedValue(
         existingTracker as any,
       );
 
@@ -125,6 +127,7 @@ describe('TrackerValidationService', () => {
       await expect(service.validateTrackerUrl(url, userId)).rejects.toThrow(
         'This tracker URL has already been registered',
       );
+      expect(mockTrackerRepository.findByUrl).toHaveBeenCalledWith(url);
     });
 
     it('should_pass_when_url_belongs_to_excluded_tracker', async () => {
@@ -139,7 +142,7 @@ describe('TrackerValidationService', () => {
       };
 
       vi.mocked(mockUrlConverter.isValidTrnUrl).mockReturnValue(true);
-      vi.mocked(mockPrisma.tracker.findUnique).mockResolvedValue(
+      vi.mocked(mockTrackerRepository.findByUrl).mockResolvedValue(
         existingTracker as any,
       );
 
@@ -150,6 +153,7 @@ describe('TrackerValidationService', () => {
       );
 
       expect(result.isValid).toBe(true);
+      expect(mockTrackerRepository.findByUrl).toHaveBeenCalledWith(url);
     });
 
     it('should_skip_uniqueness_check_when_skipUniquenessCheck_is_true', async () => {
@@ -167,7 +171,7 @@ describe('TrackerValidationService', () => {
       );
 
       expect(result.isValid).toBe(true);
-      expect(mockPrisma.tracker.findUnique).not.toHaveBeenCalled();
+      expect(mockTrackerRepository.findByUrl).not.toHaveBeenCalled();
     });
 
     it('should_handle_url_with_trailing_slash', async () => {
@@ -176,11 +180,14 @@ describe('TrackerValidationService', () => {
       const userId = 'user123';
 
       vi.mocked(mockUrlConverter.isValidTrnUrl).mockReturnValue(true);
-      vi.mocked(mockPrisma.tracker.findUnique).mockResolvedValue(null);
+      vi.mocked(mockTrackerRepository.findByUrl).mockResolvedValue(null);
 
       const result = await service.validateTrackerUrl(url, userId);
 
       expect(result.isValid).toBe(true);
+      expect(mockTrackerRepository.findByUrl).toHaveBeenCalledWith(
+        url.replace(/\/+$/, '/'),
+      );
     });
 
     it('should_support_all_valid_platforms', async () => {
@@ -190,11 +197,12 @@ describe('TrackerValidationService', () => {
       for (const platform of platforms) {
         const url = `https://rocketleague.tracker.network/rocket-league/profile/${platform}/testuser/overview`;
         vi.mocked(mockUrlConverter.isValidTrnUrl).mockReturnValue(true);
-        vi.mocked(mockPrisma.tracker.findUnique).mockResolvedValue(null);
+        vi.mocked(mockTrackerRepository.findByUrl).mockResolvedValue(null);
 
         const result = await service.validateTrackerUrl(url, userId);
 
         expect(result.isValid).toBe(true);
+        expect(mockTrackerRepository.findByUrl).toHaveBeenCalledWith(url);
       }
     });
   });
@@ -206,7 +214,7 @@ describe('TrackerValidationService', () => {
       const result = await service.batchCheckUrlUniqueness(urls);
 
       expect(result.size).toBe(0);
-      expect(mockPrisma.tracker.findMany).not.toHaveBeenCalled();
+      expect(mockTrackerRepository.findByUrls).not.toHaveBeenCalled();
     });
 
     it('should_return_all_unique_when_no_existing_trackers', async () => {
@@ -215,12 +223,13 @@ describe('TrackerValidationService', () => {
         'https://rocketleague.tracker.network/rocket-league/profile/epic/user2/overview',
       ];
 
-      vi.mocked(mockPrisma.tracker.findMany).mockResolvedValue([]);
+      vi.mocked(mockTrackerRepository.findByUrls).mockResolvedValue([]);
 
       const result = await service.batchCheckUrlUniqueness(urls);
 
       expect(result.get(urls[0])).toBe(true);
       expect(result.get(urls[1])).toBe(true);
+      expect(mockTrackerRepository.findByUrls).toHaveBeenCalledWith(urls);
     });
 
     it('should_identify_duplicate_urls', async () => {
@@ -230,7 +239,7 @@ describe('TrackerValidationService', () => {
       ];
       const existingTrackers = [{ url: urls[0], id: 'tracker123' }];
 
-      vi.mocked(mockPrisma.tracker.findMany).mockResolvedValue(
+      vi.mocked(mockTrackerRepository.findByUrls).mockResolvedValue(
         existingTrackers as any,
       );
 
@@ -238,6 +247,7 @@ describe('TrackerValidationService', () => {
 
       expect(result.get(urls[0])).toBe(false);
       expect(result.get(urls[1])).toBe(true);
+      expect(mockTrackerRepository.findByUrls).toHaveBeenCalledWith(urls);
     });
 
     it('should_exclude_trackers_from_uniqueness_check', async () => {
@@ -247,7 +257,7 @@ describe('TrackerValidationService', () => {
       const excludeTrackerIds = ['tracker123'];
       const existingTrackers = [{ url: urls[0], id: 'tracker123' }];
 
-      vi.mocked(mockPrisma.tracker.findMany).mockResolvedValue(
+      vi.mocked(mockTrackerRepository.findByUrls).mockResolvedValue(
         existingTrackers as any,
       );
 
@@ -257,6 +267,7 @@ describe('TrackerValidationService', () => {
       );
 
       expect(result.get(urls[0])).toBe(true);
+      expect(mockTrackerRepository.findByUrls).toHaveBeenCalledWith(urls);
     });
   });
 

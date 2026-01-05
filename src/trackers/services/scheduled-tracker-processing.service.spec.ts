@@ -12,7 +12,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { ScheduledTrackerProcessingService } from './scheduled-tracker-processing.service';
-import { PrismaService } from '@/prisma/prisma.service';
+import { ScheduledTrackerProcessingRepository } from '../repositories/scheduled-tracker-processing.repository';
+import { GuildRepository } from '../../guilds/repositories/guild.repository';
 import { TrackerProcessingService } from '../services/tracker-processing.service';
 import { ScheduledProcessingStatus } from '@prisma/client';
 import { CronJob } from 'cron';
@@ -30,7 +31,8 @@ vi.mock('cron', () => {
 
 describe('ScheduledTrackerProcessingService', () => {
   let service: ScheduledTrackerProcessingService;
-  let mockPrisma: PrismaService;
+  let mockScheduleRepository: ScheduledTrackerProcessingRepository;
+  let mockGuildRepository: GuildRepository;
   let mockTrackerProcessingService: TrackerProcessingService;
   let mockSchedulerRegistry: SchedulerRegistry;
   let mockCronJobInstance: {
@@ -66,17 +68,18 @@ describe('ScheduledTrackerProcessingService', () => {
 
     vi.mocked(CronJob).mockImplementation(() => mockCronJobInstance as any);
 
-    mockPrisma = {
-      guild: {
-        findUnique: vi.fn(),
-      },
-      scheduledTrackerProcessing: {
-        create: vi.fn(),
-        findMany: vi.fn(),
-        findUnique: vi.fn(),
-        update: vi.fn(),
-      },
-    } as unknown as PrismaService;
+    mockScheduleRepository = {
+      create: vi.fn(),
+      findById: vi.fn(),
+      findMany: vi.fn(),
+      findPending: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    } as unknown as ScheduledTrackerProcessingRepository;
+
+    mockGuildRepository = {
+      findById: vi.fn(),
+    } as unknown as GuildRepository;
 
     mockTrackerProcessingService = {
       processPendingTrackersForGuild: vi.fn(),
@@ -89,7 +92,8 @@ describe('ScheduledTrackerProcessingService', () => {
     } as unknown as SchedulerRegistry;
 
     service = new ScheduledTrackerProcessingService(
-      mockPrisma,
+      mockScheduleRepository,
+      mockGuildRepository,
       mockTrackerProcessingService,
       mockSchedulerRegistry,
     );
@@ -105,10 +109,10 @@ describe('ScheduledTrackerProcessingService', () => {
       const scheduledAt = new Date(Date.now() + 86400000);
       const createdBy = '123456789012345678';
 
-      vi.mocked(mockPrisma.guild.findUnique).mockResolvedValue(
+      vi.mocked(mockGuildRepository.findById).mockResolvedValue(
         mockGuild as any,
       );
-      vi.mocked(mockPrisma.scheduledTrackerProcessing.create).mockResolvedValue(
+      vi.mocked(mockScheduleRepository.create).mockResolvedValue(
         mockSchedule as any,
       );
 
@@ -119,10 +123,8 @@ describe('ScheduledTrackerProcessingService', () => {
       );
 
       expect(result).toEqual(mockSchedule);
-      expect(mockPrisma.guild.findUnique).toHaveBeenCalledWith({
-        where: { id: guildId },
-      });
-      expect(mockPrisma.scheduledTrackerProcessing.create).toHaveBeenCalled();
+      expect(mockGuildRepository.findById).toHaveBeenCalledWith(guildId);
+      expect(mockScheduleRepository.create).toHaveBeenCalled();
     });
 
     it('should_create_schedule_when_date_is_iso_string', async () => {
@@ -130,10 +132,10 @@ describe('ScheduledTrackerProcessingService', () => {
       const scheduledAt = new Date(Date.now() + 86400000).toISOString();
       const createdBy = '123456789012345678';
 
-      vi.mocked(mockPrisma.guild.findUnique).mockResolvedValue(
+      vi.mocked(mockGuildRepository.findById).mockResolvedValue(
         mockGuild as any,
       );
-      vi.mocked(mockPrisma.scheduledTrackerProcessing.create).mockResolvedValue(
+      vi.mocked(mockScheduleRepository.create).mockResolvedValue(
         mockSchedule as any,
       );
 
@@ -144,9 +146,7 @@ describe('ScheduledTrackerProcessingService', () => {
       );
 
       expect(result).toEqual(mockSchedule);
-      expect(mockPrisma.guild.findUnique).toHaveBeenCalledWith({
-        where: { id: guildId },
-      });
+      expect(mockGuildRepository.findById).toHaveBeenCalledWith(guildId);
     });
 
     it('should_create_schedule_when_metadata_is_provided', async () => {
@@ -155,10 +155,10 @@ describe('ScheduledTrackerProcessingService', () => {
       const createdBy = '123456789012345678';
       const metadata = { reason: 'Season 15 start' };
 
-      vi.mocked(mockPrisma.guild.findUnique).mockResolvedValue(
+      vi.mocked(mockGuildRepository.findById).mockResolvedValue(
         mockGuild as any,
       );
-      vi.mocked(mockPrisma.scheduledTrackerProcessing.create).mockResolvedValue(
+      vi.mocked(mockScheduleRepository.create).mockResolvedValue(
         mockSchedule as any,
       );
 
@@ -170,7 +170,7 @@ describe('ScheduledTrackerProcessingService', () => {
       );
 
       expect(result).toEqual(mockSchedule);
-      expect(mockPrisma.scheduledTrackerProcessing.create).toHaveBeenCalled();
+      expect(mockScheduleRepository.create).toHaveBeenCalled();
     });
 
     it('should_throw_BadRequestException_when_date_is_in_past', async () => {
@@ -181,7 +181,7 @@ describe('ScheduledTrackerProcessingService', () => {
       await expect(
         service.createSchedule(guildId, scheduledAt, createdBy),
       ).rejects.toThrow(BadRequestException);
-      expect(mockPrisma.guild.findUnique).not.toHaveBeenCalled();
+      expect(mockGuildRepository.findById).not.toHaveBeenCalled();
     });
 
     it('should_throw_BadRequestException_when_date_equals_current_time', async () => {
@@ -199,14 +199,12 @@ describe('ScheduledTrackerProcessingService', () => {
       const scheduledAt = new Date(Date.now() + 86400000);
       const createdBy = '123456789012345678';
 
-      vi.mocked(mockPrisma.guild.findUnique).mockResolvedValue(null);
+      vi.mocked(mockGuildRepository.findById).mockResolvedValue(null);
 
       await expect(
         service.createSchedule(guildId, scheduledAt, createdBy),
       ).rejects.toThrow(NotFoundException);
-      expect(
-        mockPrisma.scheduledTrackerProcessing.create,
-      ).not.toHaveBeenCalled();
+      expect(mockScheduleRepository.create).not.toHaveBeenCalled();
     });
 
     it('should_schedule_job_when_schedule_is_created', async () => {
@@ -214,10 +212,10 @@ describe('ScheduledTrackerProcessingService', () => {
       const scheduledAt = new Date(Date.now() + 86400000);
       const createdBy = '123456789012345678';
 
-      vi.mocked(mockPrisma.guild.findUnique).mockResolvedValue(
+      vi.mocked(mockGuildRepository.findById).mockResolvedValue(
         mockGuild as any,
       );
-      vi.mocked(mockPrisma.scheduledTrackerProcessing.create).mockResolvedValue(
+      vi.mocked(mockScheduleRepository.create).mockResolvedValue(
         mockSchedule as any,
       );
 
@@ -234,18 +232,15 @@ describe('ScheduledTrackerProcessingService', () => {
       const guildId = '987654321098765432';
       const schedules = [mockSchedule];
 
-      vi.mocked(
-        mockPrisma.scheduledTrackerProcessing.findMany,
-      ).mockResolvedValue(schedules as any);
+      vi.mocked(mockScheduleRepository.findMany).mockResolvedValue(
+        schedules as any,
+      );
 
       const result = await service.getSchedulesForGuild(guildId);
 
       expect(result).toEqual(schedules);
-      expect(
-        mockPrisma.scheduledTrackerProcessing.findMany,
-      ).toHaveBeenCalledWith({
-        where: { guildId },
-        orderBy: { scheduledAt: 'asc' },
+      expect(mockScheduleRepository.findMany).toHaveBeenCalledWith({
+        guildId,
       });
     });
 
@@ -253,22 +248,17 @@ describe('ScheduledTrackerProcessingService', () => {
       const guildId = '987654321098765432';
       const schedules = [mockSchedule];
 
-      vi.mocked(
-        mockPrisma.scheduledTrackerProcessing.findMany,
-      ).mockResolvedValue(schedules as any);
+      vi.mocked(mockScheduleRepository.findMany).mockResolvedValue(
+        schedules as any,
+      );
 
       await service.getSchedulesForGuild(guildId, {
         status: ScheduledProcessingStatus.PENDING,
       });
 
-      expect(
-        mockPrisma.scheduledTrackerProcessing.findMany,
-      ).toHaveBeenCalledWith({
-        where: {
-          guildId,
-          status: ScheduledProcessingStatus.PENDING,
-        },
-        orderBy: { scheduledAt: 'asc' },
+      expect(mockScheduleRepository.findMany).toHaveBeenCalledWith({
+        guildId,
+        status: ScheduledProcessingStatus.PENDING,
       });
     });
 
@@ -276,22 +266,17 @@ describe('ScheduledTrackerProcessingService', () => {
       const guildId = '987654321098765432';
       const schedules = [mockSchedule];
 
-      vi.mocked(
-        mockPrisma.scheduledTrackerProcessing.findMany,
-      ).mockResolvedValue(schedules as any);
+      vi.mocked(mockScheduleRepository.findMany).mockResolvedValue(
+        schedules as any,
+      );
 
       await service.getSchedulesForGuild(guildId, {
         includeCompleted: false,
       });
 
-      expect(
-        mockPrisma.scheduledTrackerProcessing.findMany,
-      ).toHaveBeenCalledWith({
-        where: {
-          guildId,
-          status: { not: ScheduledProcessingStatus.COMPLETED },
-        },
-        orderBy: { scheduledAt: 'asc' },
+      expect(mockScheduleRepository.findMany).toHaveBeenCalledWith({
+        guildId,
+        status: { not: ScheduledProcessingStatus.COMPLETED },
       });
     });
 
@@ -299,23 +284,18 @@ describe('ScheduledTrackerProcessingService', () => {
       const guildId = '987654321098765432';
       const schedules = [mockSchedule];
 
-      vi.mocked(
-        mockPrisma.scheduledTrackerProcessing.findMany,
-      ).mockResolvedValue(schedules as any);
+      vi.mocked(mockScheduleRepository.findMany).mockResolvedValue(
+        schedules as any,
+      );
 
       await service.getSchedulesForGuild(guildId, {
         status: ScheduledProcessingStatus.PENDING,
         includeCompleted: false,
       });
 
-      expect(
-        mockPrisma.scheduledTrackerProcessing.findMany,
-      ).toHaveBeenCalledWith({
-        where: {
-          guildId,
-          status: ScheduledProcessingStatus.PENDING,
-        },
-        orderBy: { scheduledAt: 'asc' },
+      expect(mockScheduleRepository.findMany).toHaveBeenCalledWith({
+        guildId,
+        status: ScheduledProcessingStatus.PENDING,
       });
     });
 
@@ -323,15 +303,15 @@ describe('ScheduledTrackerProcessingService', () => {
       const guildId = '987654321098765432';
       const schedules = [mockSchedule];
 
-      vi.mocked(
-        mockPrisma.scheduledTrackerProcessing.findMany,
-      ).mockResolvedValue(schedules as any);
+      vi.mocked(mockScheduleRepository.findMany).mockResolvedValue(
+        schedules as any,
+      );
 
       await service.getSchedulesForGuild(guildId);
 
-      const callArgs = vi.mocked(mockPrisma.scheduledTrackerProcessing.findMany)
-        .mock.calls[0]?.[0];
-      expect(callArgs?.orderBy).toEqual({ scheduledAt: 'asc' });
+      expect(mockScheduleRepository.findMany).toHaveBeenCalledWith({
+        guildId,
+      });
     });
   });
 
@@ -339,26 +319,20 @@ describe('ScheduledTrackerProcessingService', () => {
     it('should_return_schedule_when_schedule_exists', async () => {
       const scheduleId = 'schedule-123';
 
-      vi.mocked(
-        mockPrisma.scheduledTrackerProcessing.findUnique,
-      ).mockResolvedValue(mockSchedule as any);
+      vi.mocked(mockScheduleRepository.findById).mockResolvedValue(
+        mockSchedule as any,
+      );
 
       const result = await service.getSchedule(scheduleId);
 
       expect(result).toEqual(mockSchedule);
-      expect(
-        mockPrisma.scheduledTrackerProcessing.findUnique,
-      ).toHaveBeenCalledWith({
-        where: { id: scheduleId },
-      });
+      expect(mockScheduleRepository.findById).toHaveBeenCalledWith(scheduleId);
     });
 
     it('should_throw_NotFoundException_when_schedule_does_not_exist', async () => {
       const scheduleId = 'nonexistent';
 
-      vi.mocked(
-        mockPrisma.scheduledTrackerProcessing.findUnique,
-      ).mockResolvedValue(null);
+      vi.mocked(mockScheduleRepository.findById).mockResolvedValue(null);
 
       await expect(service.getSchedule(scheduleId)).rejects.toThrow(
         NotFoundException,
@@ -379,10 +353,10 @@ describe('ScheduledTrackerProcessingService', () => {
       };
       const jobId = `scheduled-processing-${scheduleId}`;
 
-      vi.mocked(
-        mockPrisma.scheduledTrackerProcessing.findUnique,
-      ).mockResolvedValue(pendingSchedule as any);
-      vi.mocked(mockPrisma.scheduledTrackerProcessing.update).mockResolvedValue(
+      vi.mocked(mockScheduleRepository.findById).mockResolvedValue(
+        pendingSchedule as any,
+      );
+      vi.mocked(mockScheduleRepository.update).mockResolvedValue(
         cancelledSchedule as any,
       );
       vi.mocked(mockSchedulerRegistry.doesExist).mockReturnValue(true);
@@ -406,9 +380,9 @@ describe('ScheduledTrackerProcessingService', () => {
         status: ScheduledProcessingStatus.COMPLETED,
       };
 
-      vi.mocked(
-        mockPrisma.scheduledTrackerProcessing.findUnique,
-      ).mockResolvedValue(completedSchedule as any);
+      vi.mocked(mockScheduleRepository.findById).mockResolvedValue(
+        completedSchedule as any,
+      );
 
       await expect(service.cancelSchedule(scheduleId)).rejects.toThrow(
         BadRequestException,
@@ -422,9 +396,9 @@ describe('ScheduledTrackerProcessingService', () => {
         status: ScheduledProcessingStatus.CANCELLED,
       };
 
-      vi.mocked(
-        mockPrisma.scheduledTrackerProcessing.findUnique,
-      ).mockResolvedValue(cancelledSchedule as any);
+      vi.mocked(mockScheduleRepository.findById).mockResolvedValue(
+        cancelledSchedule as any,
+      );
 
       await expect(service.cancelSchedule(scheduleId)).rejects.toThrow(
         BadRequestException,
@@ -438,9 +412,9 @@ describe('ScheduledTrackerProcessingService', () => {
         status: ScheduledProcessingStatus.FAILED,
       };
 
-      vi.mocked(
-        mockPrisma.scheduledTrackerProcessing.findUnique,
-      ).mockResolvedValue(failedSchedule as any);
+      vi.mocked(mockScheduleRepository.findById).mockResolvedValue(
+        failedSchedule as any,
+      );
 
       await expect(service.cancelSchedule(scheduleId)).rejects.toThrow(
         BadRequestException,
@@ -458,10 +432,10 @@ describe('ScheduledTrackerProcessingService', () => {
         status: ScheduledProcessingStatus.CANCELLED,
       };
 
-      vi.mocked(
-        mockPrisma.scheduledTrackerProcessing.findUnique,
-      ).mockResolvedValue(pendingSchedule as any);
-      vi.mocked(mockPrisma.scheduledTrackerProcessing.update).mockResolvedValue(
+      vi.mocked(mockScheduleRepository.findById).mockResolvedValue(
+        pendingSchedule as any,
+      );
+      vi.mocked(mockScheduleRepository.update).mockResolvedValue(
         cancelledSchedule as any,
       );
       vi.mocked(mockSchedulerRegistry.doesExist).mockReturnValue(false);
@@ -469,7 +443,7 @@ describe('ScheduledTrackerProcessingService', () => {
       const result = await service.cancelSchedule(scheduleId);
 
       expect(result.status).toBe(ScheduledProcessingStatus.CANCELLED);
-      expect(mockPrisma.scheduledTrackerProcessing.update).toHaveBeenCalled();
+      expect(mockScheduleRepository.update).toHaveBeenCalled();
     });
 
     it('should_handle_scheduler_registry_error_gracefully', async () => {
@@ -484,10 +458,10 @@ describe('ScheduledTrackerProcessingService', () => {
       };
       const jobId = `scheduled-processing-${scheduleId}`;
 
-      vi.mocked(
-        mockPrisma.scheduledTrackerProcessing.findUnique,
-      ).mockResolvedValue(pendingSchedule as any);
-      vi.mocked(mockPrisma.scheduledTrackerProcessing.update).mockResolvedValue(
+      vi.mocked(mockScheduleRepository.findById).mockResolvedValue(
+        pendingSchedule as any,
+      );
+      vi.mocked(mockScheduleRepository.update).mockResolvedValue(
         cancelledSchedule as any,
       );
       vi.mocked(mockSchedulerRegistry.doesExist).mockReturnValue(true);
@@ -513,33 +487,24 @@ describe('ScheduledTrackerProcessingService', () => {
       };
       const schedules = [futureSchedule];
 
-      vi.mocked(
-        mockPrisma.scheduledTrackerProcessing.findMany,
-      ).mockResolvedValue(schedules as any);
+      vi.mocked(mockScheduleRepository.findPending).mockResolvedValue(
+        schedules as any,
+      );
 
       await service.onModuleInit();
 
-      expect(
-        mockPrisma.scheduledTrackerProcessing.findMany,
-      ).toHaveBeenCalledWith({
-        where: {
-          status: ScheduledProcessingStatus.PENDING,
-          scheduledAt: { gt: expect.any(Date) },
-        },
-      });
+      expect(mockScheduleRepository.findPending).toHaveBeenCalled();
       expect(CronJob).toHaveBeenCalled();
     });
 
     it('should_not_load_past_schedules_when_module_initializes', async () => {
-      vi.mocked(
-        mockPrisma.scheduledTrackerProcessing.findMany,
-      ).mockResolvedValue([] as any);
+      vi.mocked(mockScheduleRepository.findPending).mockResolvedValue(
+        [] as any,
+      );
 
       await service.onModuleInit();
 
-      const callArgs = vi.mocked(mockPrisma.scheduledTrackerProcessing.findMany)
-        .mock.calls[0]?.[0];
-      expect((callArgs?.where?.scheduledAt as any)?.gt).toBeInstanceOf(Date);
+      expect(mockScheduleRepository.findPending).toHaveBeenCalled();
     });
 
     it('should_schedule_all_loaded_pending_schedules', async () => {
@@ -555,9 +520,9 @@ describe('ScheduledTrackerProcessingService', () => {
       };
       const schedules = [schedule1, schedule2];
 
-      vi.mocked(
-        mockPrisma.scheduledTrackerProcessing.findMany,
-      ).mockResolvedValue(schedules as any);
+      vi.mocked(mockScheduleRepository.findPending).mockResolvedValue(
+        schedules as any,
+      );
 
       await service.onModuleInit();
 
@@ -651,10 +616,10 @@ describe('ScheduledTrackerProcessingService', () => {
       );
       const createdBy = '123456789012345678';
 
-      vi.mocked(mockPrisma.guild.findUnique).mockResolvedValue(
+      vi.mocked(mockGuildRepository.findById).mockResolvedValue(
         mockGuild as any,
       );
-      vi.mocked(mockPrisma.scheduledTrackerProcessing.create).mockResolvedValue(
+      vi.mocked(mockScheduleRepository.create).mockResolvedValue(
         mockSchedule as any,
       );
 
@@ -675,10 +640,10 @@ describe('ScheduledTrackerProcessingService', () => {
       const testDate = new Date(futureYear, 0, 15, 10, 0, 0); // January (month 0 in JS, should be 1 in cron)
       const createdBy = '123456789012345678';
 
-      vi.mocked(mockPrisma.guild.findUnique).mockResolvedValue(
+      vi.mocked(mockGuildRepository.findById).mockResolvedValue(
         mockGuild as any,
       );
-      vi.mocked(mockPrisma.scheduledTrackerProcessing.create).mockResolvedValue(
+      vi.mocked(mockScheduleRepository.create).mockResolvedValue(
         mockSchedule as any,
       );
 
@@ -695,10 +660,10 @@ describe('ScheduledTrackerProcessingService', () => {
       const testDate = new Date(futureYear, 5, 30, 23, 59, 59); // June (month 5 in JS, should be 6 in cron)
       const createdBy = '123456789012345678';
 
-      vi.mocked(mockPrisma.guild.findUnique).mockResolvedValue(
+      vi.mocked(mockGuildRepository.findById).mockResolvedValue(
         mockGuild as any,
       );
-      vi.mocked(mockPrisma.scheduledTrackerProcessing.create).mockResolvedValue(
+      vi.mocked(mockScheduleRepository.create).mockResolvedValue(
         mockSchedule as any,
       );
 
@@ -717,12 +682,13 @@ describe('ScheduledTrackerProcessingService', () => {
       const createdBy = '123456789012345678';
       let executionCallback: (() => Promise<void>) | undefined;
 
-      vi.mocked(mockPrisma.guild.findUnique).mockResolvedValue(
+      vi.mocked(mockGuildRepository.findById).mockResolvedValue(
         mockGuild as any,
       );
-      vi.mocked(mockPrisma.scheduledTrackerProcessing.create).mockResolvedValue(
-        { ...mockSchedule, id: scheduleId } as any,
-      );
+      vi.mocked(mockScheduleRepository.create).mockResolvedValue({
+        ...mockSchedule,
+        id: scheduleId,
+      } as any);
       vi.mocked(
         mockTrackerProcessingService.processPendingTrackersForGuild,
       ).mockResolvedValue({ processed: 5, trackers: ['tracker1'] });
@@ -735,7 +701,7 @@ describe('ScheduledTrackerProcessingService', () => {
       await service.createSchedule(guildId, scheduledAt, createdBy);
 
       expect(executionCallback).toBeDefined();
-      vi.mocked(mockPrisma.scheduledTrackerProcessing.update)
+      vi.mocked(mockScheduleRepository.update)
         .mockResolvedValueOnce({
           ...mockSchedule,
           executedAt: new Date(),
@@ -750,7 +716,7 @@ describe('ScheduledTrackerProcessingService', () => {
       expect(
         mockTrackerProcessingService.processPendingTrackersForGuild,
       ).toHaveBeenCalledWith(guildId);
-      expect(mockPrisma.scheduledTrackerProcessing.update).toHaveBeenCalled();
+      expect(mockScheduleRepository.update).toHaveBeenCalled();
     });
 
     it('should_handle_execution_errors_gracefully', async () => {
@@ -760,12 +726,13 @@ describe('ScheduledTrackerProcessingService', () => {
       const createdBy = '123456789012345678';
       let executionCallback: (() => Promise<void>) | undefined;
 
-      vi.mocked(mockPrisma.guild.findUnique).mockResolvedValue(
+      vi.mocked(mockGuildRepository.findById).mockResolvedValue(
         mockGuild as any,
       );
-      vi.mocked(mockPrisma.scheduledTrackerProcessing.create).mockResolvedValue(
-        { ...mockSchedule, id: scheduleId } as any,
-      );
+      vi.mocked(mockScheduleRepository.create).mockResolvedValue({
+        ...mockSchedule,
+        id: scheduleId,
+      } as any);
       vi.mocked(
         mockTrackerProcessingService.processPendingTrackersForGuild,
       ).mockRejectedValue(new Error('Processing failed'));
@@ -778,15 +745,11 @@ describe('ScheduledTrackerProcessingService', () => {
       await service.createSchedule(guildId, scheduledAt, createdBy);
 
       expect(executionCallback).toBeDefined();
-      vi.mocked(
-        mockPrisma.scheduledTrackerProcessing.update,
-      ).mockResolvedValueOnce({
+      vi.mocked(mockScheduleRepository.update).mockResolvedValueOnce({
         ...mockSchedule,
         executedAt: new Date(),
       } as any);
-      vi.mocked(
-        mockPrisma.scheduledTrackerProcessing.update,
-      ).mockResolvedValueOnce({
+      vi.mocked(mockScheduleRepository.update).mockResolvedValueOnce({
         ...mockSchedule,
         status: ScheduledProcessingStatus.FAILED,
         errorMessage: 'Processing failed',
@@ -794,13 +757,10 @@ describe('ScheduledTrackerProcessingService', () => {
 
       await executionCallback!();
 
-      const updateCalls = vi.mocked(
-        mockPrisma.scheduledTrackerProcessing.update,
-      ).mock.calls;
+      const updateCalls = vi.mocked(mockScheduleRepository.update).mock.calls;
       const failedUpdate = updateCalls.find(
         (call) =>
-          (call[0]?.data?.status as string) ===
-          ScheduledProcessingStatus.FAILED,
+          (call[1]?.status as string) === ScheduledProcessingStatus.FAILED,
       );
       expect(failedUpdate).toBeDefined();
     });
@@ -812,12 +772,13 @@ describe('ScheduledTrackerProcessingService', () => {
       const createdBy = '123456789012345678';
       let executionCallback: (() => Promise<void>) | undefined;
 
-      vi.mocked(mockPrisma.guild.findUnique).mockResolvedValue(
+      vi.mocked(mockGuildRepository.findById).mockResolvedValue(
         mockGuild as any,
       );
-      vi.mocked(mockPrisma.scheduledTrackerProcessing.create).mockResolvedValue(
-        { ...mockSchedule, id: scheduleId } as any,
-      );
+      vi.mocked(mockScheduleRepository.create).mockResolvedValue({
+        ...mockSchedule,
+        id: scheduleId,
+      } as any);
       vi.mocked(
         mockTrackerProcessingService.processPendingTrackersForGuild,
       ).mockResolvedValue({ processed: 5, trackers: ['tracker1'] });
@@ -832,7 +793,7 @@ describe('ScheduledTrackerProcessingService', () => {
       await service.createSchedule(guildId, scheduledAt, createdBy);
 
       expect(executionCallback).toBeDefined();
-      vi.mocked(mockPrisma.scheduledTrackerProcessing.update)
+      vi.mocked(mockScheduleRepository.update)
         .mockResolvedValueOnce({
           ...mockSchedule,
           executedAt: new Date(),

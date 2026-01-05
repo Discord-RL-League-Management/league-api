@@ -3,7 +3,6 @@ import { ConfigService } from '@nestjs/config';
 import type { AuthenticatedUser } from '../../../interfaces/user.interface';
 import type { Request } from 'express';
 import { ActivityLogService } from '../../../../infrastructure/activity-log/services/activity-log.service';
-import { PrismaService } from '../../../../prisma/prisma.service';
 import { RequestContextService } from '../../../request-context/services/request-context/request-context.service';
 
 /**
@@ -23,7 +22,6 @@ export class AuthorizationService {
   constructor(
     private readonly configService: ConfigService,
     private readonly activityLogService: ActivityLogService,
-    private readonly prisma: PrismaService,
     private readonly contextService: RequestContextService,
   ) {}
 
@@ -99,27 +97,24 @@ export class AuthorizationService {
     const resource = request.url || request.path || 'unknown';
 
     try {
-      await this.prisma.$transaction(async (tx) => {
-        await this.activityLogService.logActivity(
-          tx,
-          'admin',
+      await this.activityLogService.logActivityStandalone(
+        'admin',
+        resource,
+        'ADMIN_ACTION',
+        'admin.check',
+        user.id,
+        undefined,
+        { result: 'allowed' },
+        {
+          guardType: 'SystemAdminGuard',
+          method: request.method,
           resource,
-          'ADMIN_ACTION',
-          'admin.check',
-          user.id,
-          undefined,
-          { result: 'allowed' },
-          {
-            guardType: 'SystemAdminGuard',
-            method: request.method,
-            resource,
-            ipAddress: this.contextService.getIpAddress(request),
-            userAgent: this.contextService.getUserAgent(request),
-            requestId: this.contextService.getRequestId(request),
-            reason,
-          },
-        );
-      });
+          ipAddress: this.contextService.getIpAddress(request),
+          userAgent: this.contextService.getUserAgent(request),
+          requestId: this.contextService.getRequestId(request),
+          reason,
+        },
+      );
     } catch (error) {
       this.logger.error('Failed to log authorization audit:', error);
       // Don't throw - audit logging failure shouldn't break the request
@@ -137,27 +132,24 @@ export class AuthorizationService {
     const resource = request.url || request.path || 'unknown';
 
     try {
-      await this.prisma.$transaction(async (tx) => {
-        await this.activityLogService.logActivity(
-          tx,
-          'admin',
+      await this.activityLogService.logActivityStandalone(
+        'admin',
+        resource,
+        'ADMIN_ACTION',
+        'admin.check',
+        user.id,
+        undefined,
+        { result: 'denied', reason },
+        {
+          guardType: 'SystemAdminGuard',
+          method: request.method,
           resource,
-          'ADMIN_ACTION',
-          'admin.check',
-          user.id,
-          undefined,
-          { result: 'denied', reason },
-          {
-            guardType: 'SystemAdminGuard',
-            method: request.method,
-            resource,
-            ipAddress: this.contextService.getIpAddress(request),
-            userAgent: this.contextService.getUserAgent(request),
-            requestId: this.contextService.getRequestId(request),
-            reason,
-          },
-        );
-      });
+          ipAddress: this.contextService.getIpAddress(request),
+          userAgent: this.contextService.getUserAgent(request),
+          requestId: this.contextService.getRequestId(request),
+          reason,
+        },
+      );
     } catch (error) {
       this.logger.error('Failed to log authorization audit:', error);
       // Don't throw - audit logging failure shouldn't break the request

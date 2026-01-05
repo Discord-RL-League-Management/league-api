@@ -13,10 +13,13 @@ import { LeagueMemberService } from './league-member.service';
 import { LeagueMemberRepository } from '../repositories/league-member.repository';
 import { LeagueJoinValidationService } from '../services/league-join-validation.service';
 import { PlayerService } from '@/players/services/player.service';
+import { PlayerRepository } from '@/players/repositories/player.repository';
+import { LeagueRepository } from '@/leagues/repositories/league.repository';
 import { LeagueSettingsService } from '@/leagues/league-settings.service';
 import { ActivityLogService } from '@/infrastructure/activity-log/services/activity-log.service';
 import { PlayerLeagueRatingService } from '@/player-ratings/services/player-league-rating.service';
 import { PrismaService } from '@/prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import {
   LeagueMemberNotFoundException,
   LeagueMemberAlreadyExistsException,
@@ -28,6 +31,8 @@ import { LeagueMemberStatus, LeagueStatus, PlayerStatus } from '@prisma/client';
 describe('LeagueMemberService', () => {
   let service: LeagueMemberService;
   let mockRepository: LeagueMemberRepository;
+  let mockPlayerRepository: PlayerRepository;
+  let mockLeagueRepository: LeagueRepository;
   let mockJoinValidation: LeagueJoinValidationService;
   let mockPlayerService: PlayerService;
   let mockLeagueSettings: LeagueSettingsService;
@@ -79,6 +84,7 @@ describe('LeagueMemberService', () => {
       findByPlayerAndLeague: vi.fn(),
       findByLeagueId: vi.fn(),
       findByPlayerId: vi.fn(),
+      create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
       exists: vi.fn(),
@@ -110,31 +116,29 @@ describe('LeagueMemberService', () => {
       updateRating: vi.fn().mockResolvedValue(undefined),
     } as unknown as PlayerLeagueRatingService;
 
+    mockPlayerRepository = {
+      findById: vi.fn(),
+      updateCooldown: vi.fn(),
+    } as unknown as PlayerRepository;
+
+    mockLeagueRepository = {
+      findById: vi.fn(),
+    } as unknown as LeagueRepository;
+
     mockPrisma = {
-      league: {
-        findUnique: vi.fn(),
-      },
-      player: {
-        findUnique: vi.fn(),
-      },
-      leagueMember: {
-        create: vi.fn(),
-        update: vi.fn(),
-      },
-      $transaction: vi.fn((callback) =>
-        callback({
-          league: { findUnique: vi.fn() },
-          player: { findUnique: vi.fn(), update: vi.fn() },
-          leagueMember: { create: vi.fn(), update: vi.fn() },
-        }),
-      ),
+      $transaction: vi.fn().mockImplementation(async (callback) => {
+        const mockTx = {} as Prisma.TransactionClient;
+        return await callback(mockTx);
+      }),
     } as unknown as PrismaService;
 
     service = new LeagueMemberService(
       mockRepository,
       mockJoinValidation,
       mockPlayerService,
+      mockPlayerRepository,
       mockLeagueSettings,
+      mockLeagueRepository,
       mockPrisma,
       mockActivityLog,
       mockRatingService,
@@ -282,29 +286,28 @@ describe('LeagueMemberService', () => {
       };
 
       vi.mocked(mockRepository.findById).mockResolvedValue(pendingMember);
-      vi.mocked(mockPrisma.player.findUnique).mockResolvedValue(mockPlayer);
-      vi.mocked(mockPrisma.league.findUnique).mockResolvedValue(mockLeague);
       vi.mocked(mockPrisma.$transaction).mockImplementation(
         async (callback) => {
-          const tx = {
-            leagueMember: {
-              update: vi.fn().mockResolvedValue(approvedMember),
-            },
-            player: {
-              findUnique: vi.fn().mockResolvedValue(mockPlayer),
-            },
-            league: {
-              findUnique: vi.fn().mockResolvedValue(mockLeague),
-            },
-          };
-          return callback(tx as any);
+          const mockTx = {} as Prisma.TransactionClient;
+          return await callback(mockTx);
         },
       );
+      vi.mocked(mockRepository.update).mockResolvedValue(approvedMember);
+      vi.mocked(mockPlayerRepository.findById).mockResolvedValue(mockPlayer);
+      vi.mocked(mockLeagueRepository.findById).mockResolvedValue(mockLeague);
 
       const result = await service.approveMember(memberId, approvedBy);
 
       expect(result.status).toBe(LeagueMemberStatus.ACTIVE);
       expect(result.approvedBy).toBe(approvedBy);
+      expect(mockRepository.update).toHaveBeenCalledWith(
+        memberId,
+        {
+          status: LeagueMemberStatus.ACTIVE,
+          approvedBy,
+        },
+        expect.anything(),
+      );
     });
 
     it('should_throw_LeagueMemberNotFoundException_when_member_does_not_exist', async () => {
@@ -413,14 +416,16 @@ describe('LeagueMemberService', () => {
         userId: 'user_123',
       };
 
-      vi.mocked(mockPrisma.league.findUnique).mockResolvedValue(mockLeague);
+      vi.mocked(mockLeagueRepository.findById).mockResolvedValue(mockLeague);
       vi.mocked(mockPlayerService.findOne).mockResolvedValue(
         playerWithUserId as any,
       );
       vi.mocked(mockPlayerService.ensurePlayerExists).mockResolvedValue(
         playerWithUserId as any,
       );
-      vi.mocked(mockRepository.findByPlayerAndLeague).mockResolvedValue(null);
+      vi.mocked(mockRepository.findByPlayerAndLeague)
+        .mockResolvedValueOnce(null) // Before transaction
+        .mockResolvedValueOnce(null); // In transaction
       vi.mocked(mockLeagueSettings.getSettings).mockResolvedValue({
         membership: {
           requiresApproval: false, // Note: requiresApproval, not requireApproval
@@ -430,16 +435,11 @@ describe('LeagueMemberService', () => {
       // Mock transaction with all required operations
       vi.mocked(mockPrisma.$transaction).mockImplementation(
         async (callback) => {
-          const tx = {
-            leagueMember: {
-              findUnique: vi.fn().mockResolvedValue(null), // No existing member
-              create: vi.fn().mockResolvedValue(newMember),
-            },
-          };
-          const result = await callback(tx as any);
-          return result;
+          const mockTx = {} as Prisma.TransactionClient;
+          return await callback(mockTx);
         },
       );
+      vi.mocked(mockRepository.create).mockResolvedValue(newMember);
 
       // Mock activity log and rating service to be called within transaction
       vi.mocked(mockActivityLog.logActivity).mockResolvedValue({
@@ -479,7 +479,7 @@ describe('LeagueMemberService', () => {
       const leagueId = 'nonexistent';
       const joinDto: JoinLeagueDto = { playerId: 'player_123' };
 
-      vi.mocked(mockPrisma.league.findUnique).mockResolvedValue(null);
+      vi.mocked(mockLeagueRepository.findById).mockResolvedValue(null);
 
       await expect(service.joinLeague(leagueId, joinDto)).rejects.toThrow(
         NotFoundException,
@@ -494,7 +494,7 @@ describe('LeagueMemberService', () => {
         status: LeagueMemberStatus.ACTIVE,
       };
 
-      vi.mocked(mockPrisma.league.findUnique).mockResolvedValue(mockLeague);
+      vi.mocked(mockLeagueRepository.findById).mockResolvedValue(mockLeague);
       vi.mocked(mockPlayerService.findOne).mockResolvedValue({
         ...mockPlayer,
         userId: 'user_123',
@@ -531,26 +531,29 @@ describe('LeagueMemberService', () => {
       );
       vi.mocked(mockPrisma.$transaction).mockImplementation(
         async (callback) => {
-          const tx = {
-            league: {
-              findUnique: vi.fn().mockResolvedValue(mockLeague),
-            },
-            player: {
-              findUnique: vi.fn().mockResolvedValue(mockPlayer),
-              update: vi.fn().mockResolvedValue(mockPlayer),
-            },
-            leagueMember: {
-              update: vi.fn().mockResolvedValue(inactiveMember),
-            },
-          };
-          return callback(tx as any);
+          const mockTx = {} as Prisma.TransactionClient;
+          return await callback(mockTx);
         },
+      );
+      vi.mocked(mockLeagueRepository.findById).mockResolvedValue(mockLeague);
+      vi.mocked(mockPlayerService.findOne).mockResolvedValue(mockPlayer as any);
+      vi.mocked(mockRepository.update).mockResolvedValue(inactiveMember);
+      vi.mocked(mockPlayerRepository.updateCooldown).mockResolvedValue(
+        mockPlayer as any,
       );
 
       const result = await service.leaveLeague(playerId, leagueId);
 
       expect(result.status).toBe(LeagueMemberStatus.INACTIVE);
       expect(result.leftAt).toBeTruthy();
+      expect(mockRepository.update).toHaveBeenCalledWith(
+        activeMember.id,
+        {
+          status: LeagueMemberStatus.INACTIVE,
+          leftAt: expect.any(String),
+        },
+        expect.anything(),
+      );
     });
 
     it('should_throw_LeagueMemberNotFoundException_when_member_does_not_exist', async () => {

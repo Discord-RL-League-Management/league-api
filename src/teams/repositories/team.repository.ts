@@ -73,7 +73,7 @@ export class TeamRepository
 
   async update(
     id: string,
-    data: UpdateTeamDto,
+    data: UpdateTeamDto & { organizationId?: string | null },
     tx?: Prisma.TransactionClient,
   ): Promise<Team> {
     const client = tx || this.prisma;
@@ -86,6 +86,7 @@ export class TeamRepository
           description: data.description,
         }),
         ...(data.captainId !== undefined && { captainId: data.captainId }),
+        // Handle null explicitly - null means remove from organization
         ...(data.organizationId !== undefined && {
           organizationId: data.organizationId,
         }),

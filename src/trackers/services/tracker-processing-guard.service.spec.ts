@@ -1,23 +1,24 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TrackerProcessingGuardService } from './tracker-processing-guard.service';
-import { PrismaService } from '../../prisma/prisma.service';
+import { TrackerRepository } from '../repositories/tracker.repository';
+import { GuildMemberRepository } from '../../guild-members/repositories/guild-member.repository';
 import { GuildSettingsService } from '../../guilds/guild-settings.service';
 import { GuildSettings } from '../../guilds/interfaces/settings.interface';
 
 describe('TrackerProcessingGuardService', () => {
   let service: TrackerProcessingGuardService;
-  let prismaService: PrismaService;
+  let trackerRepository: TrackerRepository;
+  let guildMemberRepository: GuildMemberRepository;
   let guildSettingsService: GuildSettingsService;
 
-  const mockPrismaService = {
-    tracker: {
-      findUnique: vi.fn(),
-      findMany: vi.fn(),
-    },
-    guildMember: {
-      findMany: vi.fn(),
-    },
+  const mockTrackerRepository = {
+    findUserIdById: vi.fn(),
+    findByIdsWithUserId: vi.fn(),
+  };
+
+  const mockGuildMemberRepository = {
+    findByUserId: vi.fn(),
   };
 
   const mockGuildSettingsService = {
@@ -29,8 +30,12 @@ describe('TrackerProcessingGuardService', () => {
       providers: [
         TrackerProcessingGuardService,
         {
-          provide: PrismaService,
-          useValue: mockPrismaService,
+          provide: TrackerRepository,
+          useValue: mockTrackerRepository,
+        },
+        {
+          provide: GuildMemberRepository,
+          useValue: mockGuildMemberRepository,
         },
         {
           provide: GuildSettingsService,
@@ -42,7 +47,10 @@ describe('TrackerProcessingGuardService', () => {
     service = module.get<TrackerProcessingGuardService>(
       TrackerProcessingGuardService,
     );
-    prismaService = module.get<PrismaService>(PrismaService);
+    trackerRepository = module.get<TrackerRepository>(TrackerRepository);
+    guildMemberRepository = module.get<GuildMemberRepository>(
+      GuildMemberRepository,
+    );
     guildSettingsService =
       module.get<GuildSettingsService>(GuildSettingsService);
   });
@@ -56,29 +64,18 @@ describe('TrackerProcessingGuardService', () => {
     const userId = 'user1';
 
     it('should return true when user has no guilds (backward compatibility)', async () => {
-      mockPrismaService.tracker.findUnique.mockResolvedValue({
-        id: trackerId,
-        userId,
-      } as any);
-      mockPrismaService.guildMember.findMany.mockResolvedValue([]);
+      vi.mocked(mockTrackerRepository.findUserIdById).mockResolvedValue(userId);
+      vi.mocked(mockGuildMemberRepository.findByUserId).mockResolvedValue([]);
 
       const result = await service.canProcessTracker(trackerId);
 
       expect(result).toBe(true);
-      expect(mockPrismaService.tracker.findUnique).toHaveBeenCalledWith({
-        where: { id: trackerId },
-        select: { userId: true },
-      });
-      expect(mockPrismaService.guildMember.findMany).toHaveBeenCalledWith({
-        where: {
-          userId,
-          isDeleted: false,
-          isBanned: false,
-        },
-        select: {
-          guildId: true,
-        },
-      });
+      expect(mockTrackerRepository.findUserIdById).toHaveBeenCalledWith(
+        trackerId,
+      );
+      expect(mockGuildMemberRepository.findByUserId).toHaveBeenCalledWith(
+        userId,
+      );
     });
 
     it('should return true when user has one guild with processing enabled', async () => {
@@ -90,14 +87,13 @@ describe('TrackerProcessingGuardService', () => {
         },
       };
 
-      mockPrismaService.tracker.findUnique.mockResolvedValue({
-        id: trackerId,
-        userId,
-      } as any);
-      mockPrismaService.guildMember.findMany.mockResolvedValue([
-        { guildId },
+      vi.mocked(mockTrackerRepository.findUserIdById).mockResolvedValue(userId);
+      vi.mocked(mockGuildMemberRepository.findByUserId).mockResolvedValue([
+        { guildId, isDeleted: false, isBanned: false },
       ] as any);
-      mockGuildSettingsService.getSettings.mockResolvedValue(settings);
+      vi.mocked(mockGuildSettingsService.getSettings).mockResolvedValue(
+        settings,
+      );
 
       const result = await service.canProcessTracker(trackerId);
 
@@ -116,14 +112,13 @@ describe('TrackerProcessingGuardService', () => {
         },
       };
 
-      mockPrismaService.tracker.findUnique.mockResolvedValue({
-        id: trackerId,
-        userId,
-      } as any);
-      mockPrismaService.guildMember.findMany.mockResolvedValue([
-        { guildId },
+      vi.mocked(mockTrackerRepository.findUserIdById).mockResolvedValue(userId);
+      vi.mocked(mockGuildMemberRepository.findByUserId).mockResolvedValue([
+        { guildId, isDeleted: false, isBanned: false },
       ] as any);
-      mockGuildSettingsService.getSettings.mockResolvedValue(settings);
+      vi.mocked(mockGuildSettingsService.getSettings).mockResolvedValue(
+        settings,
+      );
 
       const result = await service.canProcessTracker(trackerId);
 
@@ -146,15 +141,12 @@ describe('TrackerProcessingGuardService', () => {
         },
       };
 
-      mockPrismaService.tracker.findUnique.mockResolvedValue({
-        id: trackerId,
-        userId,
-      } as any);
-      mockPrismaService.guildMember.findMany.mockResolvedValue([
-        { guildId: guildId1 },
-        { guildId: guildId2 },
+      vi.mocked(mockTrackerRepository.findUserIdById).mockResolvedValue(userId);
+      vi.mocked(mockGuildMemberRepository.findByUserId).mockResolvedValue([
+        { guildId: guildId1, isDeleted: false, isBanned: false },
+        { guildId: guildId2, isDeleted: false, isBanned: false },
       ] as any);
-      mockGuildSettingsService.getSettings
+      vi.mocked(mockGuildSettingsService.getSettings)
         .mockResolvedValueOnce(settings1)
         .mockResolvedValueOnce(settings2);
 
@@ -174,15 +166,12 @@ describe('TrackerProcessingGuardService', () => {
         },
       };
 
-      mockPrismaService.tracker.findUnique.mockResolvedValue({
-        id: trackerId,
-        userId,
-      } as any);
-      mockPrismaService.guildMember.findMany.mockResolvedValue([
-        { guildId: guildId1 },
-        { guildId: guildId2 },
+      vi.mocked(mockTrackerRepository.findUserIdById).mockResolvedValue(userId);
+      vi.mocked(mockGuildMemberRepository.findByUserId).mockResolvedValue([
+        { guildId: guildId1, isDeleted: false, isBanned: false },
+        { guildId: guildId2, isDeleted: false, isBanned: false },
       ] as any);
-      mockGuildSettingsService.getSettings
+      vi.mocked(mockGuildSettingsService.getSettings)
         .mockResolvedValueOnce(settings)
         .mockResolvedValueOnce(settings);
 
@@ -198,14 +187,13 @@ describe('TrackerProcessingGuardService', () => {
         // trackerProcessing not set
       };
 
-      mockPrismaService.tracker.findUnique.mockResolvedValue({
-        id: trackerId,
-        userId,
-      } as any);
-      mockPrismaService.guildMember.findMany.mockResolvedValue([
-        { guildId },
+      vi.mocked(mockTrackerRepository.findUserIdById).mockResolvedValue(userId);
+      vi.mocked(mockGuildMemberRepository.findByUserId).mockResolvedValue([
+        { guildId, isDeleted: false, isBanned: false },
       ] as any);
-      mockGuildSettingsService.getSettings.mockResolvedValue(settings);
+      vi.mocked(mockGuildSettingsService.getSettings).mockResolvedValue(
+        settings,
+      );
 
       const result = await service.canProcessTracker(trackerId);
 
@@ -213,15 +201,18 @@ describe('TrackerProcessingGuardService', () => {
     });
 
     it('should return false when tracker not found', async () => {
-      mockPrismaService.tracker.findUnique.mockResolvedValue(null);
+      vi.mocked(mockTrackerRepository.findUserIdById).mockResolvedValue(null);
 
       const result = await service.canProcessTracker(trackerId);
 
       expect(result).toBe(false);
+      expect(mockTrackerRepository.findUserIdById).toHaveBeenCalledWith(
+        trackerId,
+      );
     });
 
     it('should return true on error (backward compatibility)', async () => {
-      mockPrismaService.tracker.findUnique.mockRejectedValue(
+      vi.mocked(mockTrackerRepository.findUserIdById).mockRejectedValue(
         new Error('Database error'),
       );
 
@@ -235,11 +226,14 @@ describe('TrackerProcessingGuardService', () => {
     const userId = 'user1';
 
     it('should return true when user has no guilds', async () => {
-      mockPrismaService.guildMember.findMany.mockResolvedValue([]);
+      vi.mocked(mockGuildMemberRepository.findByUserId).mockResolvedValue([]);
 
       const result = await service.canProcessTrackerForUser(userId);
 
       expect(result).toBe(true);
+      expect(mockGuildMemberRepository.findByUserId).toHaveBeenCalledWith(
+        userId,
+      );
     });
 
     it('should return true when user has guild with processing enabled', async () => {
@@ -251,10 +245,12 @@ describe('TrackerProcessingGuardService', () => {
         },
       };
 
-      mockPrismaService.guildMember.findMany.mockResolvedValue([
-        { guildId },
+      vi.mocked(mockGuildMemberRepository.findByUserId).mockResolvedValue([
+        { guildId, isDeleted: false, isBanned: false },
       ] as any);
-      mockGuildSettingsService.getSettings.mockResolvedValue(settings);
+      vi.mocked(mockGuildSettingsService.getSettings).mockResolvedValue(
+        settings,
+      );
 
       const result = await service.canProcessTrackerForUser(userId);
 
@@ -270,10 +266,12 @@ describe('TrackerProcessingGuardService', () => {
         },
       };
 
-      mockPrismaService.guildMember.findMany.mockResolvedValue([
-        { guildId },
+      vi.mocked(mockGuildMemberRepository.findByUserId).mockResolvedValue([
+        { guildId, isDeleted: false, isBanned: false },
       ] as any);
-      mockGuildSettingsService.getSettings.mockResolvedValue(settings);
+      vi.mocked(mockGuildSettingsService.getSettings).mockResolvedValue(
+        settings,
+      );
 
       const result = await service.canProcessTrackerForUser(userId);
 
@@ -286,7 +284,7 @@ describe('TrackerProcessingGuardService', () => {
       const result = await service.filterProcessableTrackers([]);
 
       expect(result).toEqual([]);
-      expect(mockPrismaService.tracker.findMany).not.toHaveBeenCalled();
+      expect(mockTrackerRepository.findByIdsWithUserId).not.toHaveBeenCalled();
     });
 
     it('should filter trackers based on user guild settings', async () => {
@@ -311,19 +309,23 @@ describe('TrackerProcessingGuardService', () => {
         },
       };
 
-      mockPrismaService.tracker.findMany.mockResolvedValue([
+      vi.mocked(mockTrackerRepository.findByIdsWithUserId).mockResolvedValue([
         { id: trackerId1, userId: userId1 },
         { id: trackerId2, userId: userId2 },
         { id: trackerId3, userId: userId1 },
-      ] as any);
+      ]);
 
       // User1 has processing enabled
-      mockPrismaService.guildMember.findMany
-        .mockResolvedValueOnce([{ guildId: guildId1 }] as any)
+      vi.mocked(mockGuildMemberRepository.findByUserId)
+        .mockResolvedValueOnce([
+          { guildId: guildId1, isDeleted: false, isBanned: false },
+        ] as any)
         // User2 has processing disabled
-        .mockResolvedValueOnce([{ guildId: guildId2 }] as any);
+        .mockResolvedValueOnce([
+          { guildId: guildId2, isDeleted: false, isBanned: false },
+        ] as any);
 
-      mockGuildSettingsService.getSettings
+      vi.mocked(mockGuildSettingsService.getSettings)
         .mockResolvedValueOnce(settings1) // User1's guild
         .mockResolvedValueOnce(settings2); // User2's guild
 
@@ -341,7 +343,7 @@ describe('TrackerProcessingGuardService', () => {
     it('should return all trackers on error (backward compatibility)', async () => {
       const trackerIds = ['tracker1', 'tracker2'];
 
-      mockPrismaService.tracker.findMany.mockRejectedValue(
+      vi.mocked(mockTrackerRepository.findByIdsWithUserId).mockRejectedValue(
         new Error('Database error'),
       );
 
@@ -363,15 +365,17 @@ describe('TrackerProcessingGuardService', () => {
         },
       };
 
-      mockPrismaService.tracker.findMany.mockResolvedValue([
+      vi.mocked(mockTrackerRepository.findByIdsWithUserId).mockResolvedValue([
         { id: trackerId1, userId },
         { id: trackerId2, userId },
-      ] as any);
+      ]);
 
-      mockPrismaService.guildMember.findMany.mockResolvedValue([
-        { guildId },
+      vi.mocked(mockGuildMemberRepository.findByUserId).mockResolvedValue([
+        { guildId, isDeleted: false, isBanned: false },
       ] as any);
-      mockGuildSettingsService.getSettings.mockResolvedValue(settings);
+      vi.mocked(mockGuildSettingsService.getSettings).mockResolvedValue(
+        settings,
+      );
 
       const result = await service.filterProcessableTrackers([
         trackerId1,
@@ -380,7 +384,7 @@ describe('TrackerProcessingGuardService', () => {
 
       expect(result).toEqual([trackerId1, trackerId2]);
       // Should only check user's guilds once, not per tracker
-      expect(mockPrismaService.guildMember.findMany).toHaveBeenCalledTimes(1);
+      expect(mockGuildMemberRepository.findByUserId).toHaveBeenCalledTimes(1);
     });
   });
 });

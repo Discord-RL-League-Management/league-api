@@ -10,28 +10,21 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ConfigService } from '@nestjs/config';
 import { TrackerBatchProcessorService } from './tracker-batch-processor.service';
-import { PrismaService } from '@/prisma/prisma.service';
 import { TrackerRepository } from '../repositories/tracker.repository';
 import { TrackerScrapingQueueService } from '../queues/tracker-scraping.queue';
 import { TrackerProcessingGuardService } from '../services/tracker-processing-guard.service';
 
 describe('TrackerBatchProcessorService', () => {
   let service: TrackerBatchProcessorService;
-  let mockPrisma: PrismaService;
   let mockTrackerRepository: TrackerRepository;
   let mockScrapingQueueService: TrackerScrapingQueueService;
   let mockProcessingGuard: TrackerProcessingGuardService;
   let mockConfigService: ConfigService;
 
   beforeEach(() => {
-    mockPrisma = {
-      tracker: {
-        findMany: vi.fn(),
-      },
-    } as unknown as PrismaService;
-
     mockTrackerRepository = {
       findPendingAndStaleForGuild: vi.fn(),
+      findPending: vi.fn(),
     } as unknown as TrackerRepository;
 
     mockScrapingQueueService = {
@@ -59,7 +52,6 @@ describe('TrackerBatchProcessorService', () => {
       });
 
       service = new TrackerBatchProcessorService(
-        mockPrisma,
         mockTrackerRepository,
         mockScrapingQueueService,
         mockProcessingGuard,
@@ -75,7 +67,6 @@ describe('TrackerBatchProcessorService', () => {
 
       expect(() => {
         new TrackerBatchProcessorService(
-          mockPrisma,
           mockTrackerRepository,
           mockScrapingQueueService,
           mockProcessingGuard,
@@ -90,7 +81,6 @@ describe('TrackerBatchProcessorService', () => {
       });
 
       service = new TrackerBatchProcessorService(
-        mockPrisma,
         mockTrackerRepository,
         mockScrapingQueueService,
         mockProcessingGuard,
@@ -106,7 +96,6 @@ describe('TrackerBatchProcessorService', () => {
       });
 
       service = new TrackerBatchProcessorService(
-        mockPrisma,
         mockTrackerRepository,
         mockScrapingQueueService,
         mockProcessingGuard,
@@ -124,7 +113,6 @@ describe('TrackerBatchProcessorService', () => {
         refreshIntervalHours: 24,
       });
       service = new TrackerBatchProcessorService(
-        mockPrisma,
         mockTrackerRepository,
         mockScrapingQueueService,
         mockProcessingGuard,
@@ -133,7 +121,7 @@ describe('TrackerBatchProcessorService', () => {
     });
 
     it('should_return_zero_when_no_pending_trackers_exist', async () => {
-      vi.mocked(mockPrisma.tracker.findMany).mockResolvedValue([]);
+      vi.mocked(mockTrackerRepository.findPending).mockResolvedValue([]);
 
       const result = await service.processPendingTrackers();
 
@@ -150,7 +138,7 @@ describe('TrackerBatchProcessorService', () => {
         { id: 'tracker_2' },
         { id: 'tracker_3' },
       ];
-      vi.mocked(mockPrisma.tracker.findMany).mockResolvedValue(
+      vi.mocked(mockTrackerRepository.findPending).mockResolvedValue(
         mockTrackers as unknown as any[],
       );
       vi.mocked(
@@ -172,7 +160,7 @@ describe('TrackerBatchProcessorService', () => {
         { id: 'tracker_2' },
         { id: 'tracker_3' },
       ];
-      vi.mocked(mockPrisma.tracker.findMany).mockResolvedValue(
+      vi.mocked(mockTrackerRepository.findPending).mockResolvedValue(
         mockTrackers as unknown as any[],
       );
       vi.mocked(
@@ -190,7 +178,7 @@ describe('TrackerBatchProcessorService', () => {
 
     it('should_return_zero_when_no_trackers_are_processable', async () => {
       const mockTrackers = [{ id: 'tracker_1' }, { id: 'tracker_2' }];
-      vi.mocked(mockPrisma.tracker.findMany).mockResolvedValue(
+      vi.mocked(mockTrackerRepository.findPending).mockResolvedValue(
         mockTrackers as unknown as any[],
       );
       vi.mocked(
@@ -214,7 +202,6 @@ describe('TrackerBatchProcessorService', () => {
         refreshIntervalHours: 24,
       });
       service = new TrackerBatchProcessorService(
-        mockPrisma,
         mockTrackerRepository,
         mockScrapingQueueService,
         mockProcessingGuard,
@@ -337,7 +324,6 @@ describe('TrackerBatchProcessorService', () => {
         refreshIntervalHours: 48,
       });
       service = new TrackerBatchProcessorService(
-        mockPrisma,
         mockTrackerRepository,
         mockScrapingQueueService,
         mockProcessingGuard,
