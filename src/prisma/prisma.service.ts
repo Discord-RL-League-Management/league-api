@@ -20,7 +20,14 @@ export class PrismaService
   private readonly logger = new Logger(PrismaService.name);
 
   async onModuleInit() {
-    await this.$connect();
+    this.logger.log('Attempting to connect to database...');
+    try {
+      await this.$connect();
+      this.logger.log('Database connection successful');
+    } catch (error) {
+      this.logger.error('Database connection failed', error);
+      throw error;
+    }
     this.logger.log('✅ Database connected');
   }
 

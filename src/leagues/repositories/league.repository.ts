@@ -32,8 +32,10 @@ export class LeagueRepository
   async findById(
     id: string,
     options?: LeagueQueryOptions,
+    tx?: Prisma.TransactionClient,
   ): Promise<League | null> {
     const opts = { ...defaultLeagueQueryOptions, ...options };
+    const client = tx || this.prisma;
 
     const include: Prisma.LeagueInclude = {};
 
@@ -59,7 +61,7 @@ export class LeagueRepository
       (include as Record<string, unknown>).tournaments = true;
     }
 
-    const league = await this.prisma.league.findUnique({
+    const league = await client.league.findUnique({
       where: { id },
       ...(Object.keys(include).length > 0 ? { include } : {}),
     });

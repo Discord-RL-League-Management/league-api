@@ -2,13 +2,11 @@ import { Module } from '@nestjs/common';
 import { MmrCalculationController } from './controllers/mmr-calculation.controller';
 import { MMRCalculatorDemoController } from './controllers/mmr-calculator-demo.controller';
 import { MmrCalculationService } from './services/mmr-calculation.service';
-import { FormulaValidationService } from './services/formula-validation.service';
 import { TrackerDataExtractionService } from './services/tracker-data-extraction.service';
 import { MmrCalculationIntegrationService } from './services/mmr-calculation-integration.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { GuildsModule } from '../guilds/guilds.module';
-import { GuardsModule } from '../guards/guards.module';
-import { GuildAccessAdapterModule } from '../guilds/adapters/guild-access-adapter.module';
+import { FormulaValidationModule } from '../formula-validation/formula-validation.module';
 
 /**
  * MmrCalculationModule - Single Responsibility: MMR calculation module
@@ -20,25 +18,20 @@ import { GuildAccessAdapterModule } from '../guilds/adapters/guild-access-adapte
  * - PrismaModule: Data access
  * - GuildsModule: Provides GuildSettingsService (needed for MMR calculation logic)
  * - GuardsModule: Provides AdminGuard for controller authentication
+ * - FormulaValidationModule: Provides FormulaValidationService (shared utility)
  */
 @Module({
   imports: [
     PrismaModule,
-    GuildsModule, // No forwardRef needed - GuardsModule no longer depends on GuildsModule
-    GuardsModule, // No forwardRef needed - GuardsModule no longer depends on GuildsModule
-    GuildAccessAdapterModule, // No forwardRef needed - GuardsModule no longer depends on GuildsModule
+    GuildsModule, // GuardsModule is now global, breaking the cycle
+    FormulaValidationModule, // Provides FormulaValidationService
   ],
   controllers: [MmrCalculationController, MMRCalculatorDemoController],
   providers: [
     MmrCalculationService,
-    FormulaValidationService,
     TrackerDataExtractionService,
     MmrCalculationIntegrationService,
   ],
-  exports: [
-    MmrCalculationService,
-    FormulaValidationService,
-    MmrCalculationIntegrationService,
-  ],
+  exports: [MmrCalculationService, MmrCalculationIntegrationService],
 })
 export class MmrCalculationModule {}

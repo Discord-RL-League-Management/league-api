@@ -10,8 +10,9 @@ import { OrganizationRepository } from '../repositories/organization.repository'
 import { OrganizationMemberService } from './organization-member.service';
 import { OrganizationValidationService } from './organization-validation.service';
 import { PlayerService } from '../../players/services/player.service';
-import { LeagueRepository } from '../../leagues/repositories/league.repository';
-import type { ILeagueSettingsProvider } from '../../league-members/interfaces/league-settings-provider.interface';
+import type { ILeagueRepositoryAccess } from '../../common/interfaces/league-domain/league-repository-access.interface';
+import type { ILeagueSettingsProvider } from '../../common/interfaces/league-domain/league-settings-provider.interface';
+import type { IOrganizationTeamProvider } from '../../common/interfaces/league-domain/organization-team-provider.interface';
 import { TeamRepository } from '../../teams/repositories/team.repository';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateOrganizationDto } from '../dto/create-organization.dto';
@@ -36,9 +37,12 @@ export class OrganizationService {
     private organizationMemberService: OrganizationMemberService,
     private validationService: OrganizationValidationService,
     private playerService: PlayerService,
-    private leagueRepository: LeagueRepository,
+    @Inject('ILeagueRepositoryAccess')
+    private leagueRepositoryAccess: ILeagueRepositoryAccess,
     @Inject('ILeagueSettingsProvider')
     private leagueSettingsProvider: ILeagueSettingsProvider,
+    @Inject('IOrganizationTeamProvider')
+    private organizationTeamProvider: IOrganizationTeamProvider,
     private teamRepository: TeamRepository,
     private prisma: PrismaService,
   ) {}
@@ -76,7 +80,9 @@ export class OrganizationService {
       settings,
     );
 
-    const league = await this.leagueRepository.findById(createDto.leagueId);
+    const league = await this.leagueRepositoryAccess.findById(
+      createDto.leagueId,
+    );
     if (!league) {
       throw new NotFoundException(`League ${createDto.leagueId} not found`);
     }
@@ -176,7 +182,7 @@ export class OrganizationService {
     targetOrganizationId: string,
     userId: string,
   ) {
-    const team = await this.teamRepository.findById(teamId);
+    const team = await this.organizationTeamProvider.findById(teamId);
     if (!team) {
       throw new NotFoundException(`Team ${teamId} not found`);
     }
@@ -212,7 +218,7 @@ export class OrganizationService {
       leagueId,
     );
 
-    return this.teamRepository.update(teamId, {
+    return this.organizationTeamProvider.update(teamId, {
       organizationId: targetOrganizationId,
     });
   }
@@ -268,9 +274,8 @@ export class OrganizationService {
     return this.prisma.$transaction(async (tx) => {
       // Count teams using transaction client to ensure consistent view of data
       if (maxTeamsPerOrg !== null && maxTeamsPerOrg !== undefined) {
-        const currentTeamCount = await tx.team.count({
-          where: { organizationId },
-        });
+        const currentTeamCount =
+          await this.teamRepository.countByOrganizationId(organizationId, tx);
         const totalTeamsAfterAssignment = currentTeamCount + teamIds.length;
 
         if (totalTeamsAfterAssignment > maxTeamsPerOrg) {
@@ -284,11 +289,11 @@ export class OrganizationService {
       // This ensures all-or-nothing semantics: if any update fails, all updates are rolled back
       const results = [];
       for (const teamId of teamIds) {
-        const team = await tx.team.update({
-          where: { id: teamId },
-          data: { organizationId },
-          include: { members: true, organization: true },
-        });
+        const team = await this.teamRepository.update(
+          teamId,
+          { organizationId },
+          tx,
+        );
         results.push(team);
       }
       return results;

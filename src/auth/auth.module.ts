@@ -24,7 +24,7 @@ import { UserOrchestratorService } from '../users/services/user-orchestrator.ser
     UsersModule,
     DiscordModule,
     UserGuildsModule,
-    GuildsModule,
+    GuildsModule, // GuardsModule is now global, breaking the cycle
     TokenManagementModule,
     PassportModule,
     HttpModule.register(httpModuleOptions), // Required for Discord API calls

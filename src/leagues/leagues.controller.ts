@@ -17,6 +17,9 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { LeaguesService } from './leagues.service';
 import { LeagueAccessValidationService } from './services/league-access-validation.service';
 import { LeaguePermissionService } from './services/league-permission.service';
+import { LeagueAccessGuard } from './guards/league-access.guard';
+import { LeagueAdminGuard } from './guards/league-admin.guard';
+import { LeagueAdminOrModeratorGuard } from './guards/league-admin-or-moderator.guard';
 import { CreateLeagueDto } from './dto/create-league.dto';
 import { UpdateLeagueDto } from './dto/update-league.dto';
 import { UpdateLeagueStatusDto } from './dto/update-league-status.dto';
@@ -81,6 +84,7 @@ export class LeaguesController {
   }
 
   @Get(':id')
+  @UseGuards(LeagueAccessGuard)
   @ApiOperation({ summary: 'Get league details' })
   @ApiResponse({ status: 200, description: 'League details' })
   @ApiResponse({ status: 403, description: 'Access denied' })
@@ -91,9 +95,7 @@ export class LeaguesController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     this.logger.log(`User ${user.id} requested league ${id}`);
-
-    await this.leagueAccessValidationService.validateLeagueAccess(user.id, id);
-
+    // LeagueAccessGuard handles all permission checks
     return this.leaguesService.findOne(id);
   }
 
@@ -128,6 +130,7 @@ export class LeaguesController {
   }
 
   @Patch(':id')
+  @UseGuards(LeagueAdminOrModeratorGuard)
   @ApiOperation({ summary: 'Update league (requires admin/league admin)' })
   @ApiResponse({ status: 200, description: 'League updated successfully' })
   @ApiResponse({ status: 404, description: 'League not found' })
@@ -139,18 +142,12 @@ export class LeaguesController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     this.logger.log(`User ${user.id} updating league ${id}`);
-
-    await this.leagueAccessValidationService.validateLeagueAccess(user.id, id);
-
-    await this.leaguePermissionService.checkLeagueAdminOrModeratorAccess(
-      user.id,
-      id,
-    );
-
+    // LeagueAdminOrModeratorGuard handles all permission checks
     return this.leaguesService.update(id, updateLeagueDto);
   }
 
   @Patch(':id/status')
+  @UseGuards(LeagueAdminGuard)
   @ApiOperation({ summary: 'Update league status (requires admin)' })
   @ApiResponse({
     status: 200,
@@ -167,15 +164,12 @@ export class LeaguesController {
     this.logger.log(
       `User ${user.id} updating league ${id} status to ${body.status}`,
     );
-
-    await this.leagueAccessValidationService.validateLeagueAccess(user.id, id);
-
-    await this.leaguePermissionService.checkLeagueAdminAccess(user.id, id);
-
+    // LeagueAdminGuard handles all permission checks
     return this.leaguesService.updateStatus(id, body.status);
   }
 
   @Delete(':id')
+  @UseGuards(LeagueAdminGuard)
   @ApiOperation({ summary: 'Delete league (requires admin)' })
   @ApiResponse({ status: 200, description: 'League deleted successfully' })
   @ApiResponse({ status: 404, description: 'League not found' })
@@ -185,12 +179,7 @@ export class LeaguesController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     this.logger.log(`User ${user.id} deleting league ${id}`);
-
-    await this.leagueAccessValidationService.validateLeagueAccess(user.id, id);
-
-    // Deletion is irreversible and affects all members, requiring admin privileges
-    await this.leaguePermissionService.checkLeagueAdminAccess(user.id, id);
-
+    // LeagueAdminGuard handles all permission checks (deletion requires admin)
     return this.leaguesService.remove(id);
   }
 }

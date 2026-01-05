@@ -1,8 +1,8 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { OrganizationRepository } from '../repositories/organization.repository';
-import { LeagueRepository } from '../../leagues/repositories/league.repository';
+import type { ILeagueRepositoryAccess } from '../../common/interfaces/league-domain/league-repository-access.interface';
 import { PlayerService } from '../../players/services/player.service';
-import type { ILeagueSettingsProvider } from '../../league-members/interfaces/league-settings-provider.interface';
+import type { ILeagueSettingsProvider } from '../../common/interfaces/league-domain/league-settings-provider.interface';
 import { CreateOrganizationDto } from '../dto/create-organization.dto';
 import {
   OrganizationNotFoundException,
@@ -26,7 +26,8 @@ export class OrganizationValidationService {
 
   constructor(
     private organizationRepository: OrganizationRepository,
-    private leagueRepository: LeagueRepository,
+    @Inject('ILeagueRepositoryAccess')
+    private leagueRepositoryAccess: ILeagueRepositoryAccess,
     private playerService: PlayerService,
     @Inject('ILeagueSettingsProvider')
     private leagueSettingsProvider: ILeagueSettingsProvider,
@@ -36,7 +37,9 @@ export class OrganizationValidationService {
    * Validate organization creation
    */
   async validateCreate(data: CreateOrganizationDto): Promise<void> {
-    const leagueExists = await this.leagueRepository.exists(data.leagueId);
+    const leagueExists = await this.leagueRepositoryAccess.exists(
+      data.leagueId,
+    );
     if (!leagueExists) {
       throw new LeagueNotFoundException(data.leagueId);
     }

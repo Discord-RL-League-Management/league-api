@@ -1,13 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { TrackerSeason, Prisma } from '@prisma/client';
+import { TrackerSeason } from '@prisma/client';
 import { SeasonData } from '../interfaces/scraper.interfaces';
+import { TrackerSeasonRepository } from '../repositories/tracker-season.repository';
+import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class TrackerSeasonService {
   private readonly logger = new Logger(TrackerSeasonService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly seasonRepository: TrackerSeasonRepository,
+    private readonly prisma: PrismaService,
+  ) {}
 
   /**
    * Create or update a season for a tracker
@@ -18,41 +22,7 @@ export class TrackerSeasonService {
     seasonData: SeasonData,
   ): Promise<TrackerSeason> {
     try {
-      const season = await this.prisma.trackerSeason.upsert({
-        where: {
-          trackerId_seasonNumber: {
-            trackerId,
-            seasonNumber: seasonData.seasonNumber,
-          },
-        },
-        update: {
-          seasonName: seasonData.seasonName,
-          playlist1v1:
-            seasonData.playlist1v1 as unknown as Prisma.InputJsonValue,
-          playlist2v2:
-            seasonData.playlist2v2 as unknown as Prisma.InputJsonValue,
-          playlist3v3:
-            seasonData.playlist3v3 as unknown as Prisma.InputJsonValue,
-          playlist4v4:
-            seasonData.playlist4v4 as unknown as Prisma.InputJsonValue,
-          scrapedAt: new Date(),
-          updatedAt: new Date(),
-        },
-        create: {
-          trackerId,
-          seasonNumber: seasonData.seasonNumber,
-          seasonName: seasonData.seasonName,
-          playlist1v1:
-            seasonData.playlist1v1 as unknown as Prisma.InputJsonValue,
-          playlist2v2:
-            seasonData.playlist2v2 as unknown as Prisma.InputJsonValue,
-          playlist3v3:
-            seasonData.playlist3v3 as unknown as Prisma.InputJsonValue,
-          playlist4v4:
-            seasonData.playlist4v4 as unknown as Prisma.InputJsonValue,
-          scrapedAt: new Date(),
-        },
-      });
+      const season = await this.seasonRepository.upsert(trackerId, seasonData);
 
       this.logger.debug(
         `Upserted season ${seasonData.seasonNumber} for tracker ${trackerId}`,
@@ -74,19 +44,14 @@ export class TrackerSeasonService {
    * Get all seasons for a tracker, ordered by season number descending (newest first)
    */
   async getSeasonsByTracker(trackerId: string): Promise<TrackerSeason[]> {
-    return this.prisma.trackerSeason.findMany({
-      where: { trackerId },
-      orderBy: { seasonNumber: 'desc' },
-    });
+    return this.seasonRepository.findByTrackerId(trackerId);
   }
 
   /**
    * Delete all seasons for a tracker
    */
   async deleteSeasonsByTracker(trackerId: string): Promise<void> {
-    await this.prisma.trackerSeason.deleteMany({
-      where: { trackerId },
-    });
+    await this.seasonRepository.deleteByTrackerId(trackerId);
 
     this.logger.debug(`Deleted all seasons for tracker ${trackerId}`);
   }
@@ -95,10 +60,7 @@ export class TrackerSeasonService {
    * Get the latest season for a tracker
    */
   async getLatestSeason(trackerId: string): Promise<TrackerSeason | null> {
-    return this.prisma.trackerSeason.findFirst({
-      where: { trackerId },
-      orderBy: { seasonNumber: 'desc' },
-    });
+    return this.seasonRepository.findLatestByTrackerId(trackerId);
   }
 
   /**
@@ -110,45 +72,7 @@ export class TrackerSeasonService {
   ): Promise<number> {
     try {
       const result = await this.prisma.$transaction(async (tx) => {
-        const upsertPromises = seasons.map((seasonData) =>
-          tx.trackerSeason.upsert({
-            where: {
-              trackerId_seasonNumber: {
-                trackerId,
-                seasonNumber: seasonData.seasonNumber,
-              },
-            },
-            update: {
-              seasonName: seasonData.seasonName,
-              playlist1v1:
-                seasonData.playlist1v1 as unknown as Prisma.InputJsonValue,
-              playlist2v2:
-                seasonData.playlist2v2 as unknown as Prisma.InputJsonValue,
-              playlist3v3:
-                seasonData.playlist3v3 as unknown as Prisma.InputJsonValue,
-              playlist4v4:
-                seasonData.playlist4v4 as unknown as Prisma.InputJsonValue,
-              scrapedAt: new Date(),
-              updatedAt: new Date(),
-            },
-            create: {
-              trackerId,
-              seasonNumber: seasonData.seasonNumber,
-              seasonName: seasonData.seasonName,
-              playlist1v1:
-                seasonData.playlist1v1 as unknown as Prisma.InputJsonValue,
-              playlist2v2:
-                seasonData.playlist2v2 as unknown as Prisma.InputJsonValue,
-              playlist3v3:
-                seasonData.playlist3v3 as unknown as Prisma.InputJsonValue,
-              playlist4v4:
-                seasonData.playlist4v4 as unknown as Prisma.InputJsonValue,
-              scrapedAt: new Date(),
-            },
-          }),
-        );
-
-        await Promise.all(upsertPromises);
+        await this.seasonRepository.bulkUpsert(trackerId, seasons, tx);
         return seasons.length;
       });
 

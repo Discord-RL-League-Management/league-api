@@ -1,7 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../../prisma/prisma.service';
 import { DiscordMessageService } from './discord-message.service';
+import { TrackerRepository } from '../repositories/tracker.repository';
+import { UserRepository } from '../../users/repositories/user.repository';
 import { NotificationBuilderService } from './notification-builder.service';
 
 @Injectable()
@@ -11,7 +12,8 @@ export class TrackerNotificationService {
 
   constructor(
     private readonly configService: ConfigService,
-    private readonly prisma: PrismaService,
+    private readonly trackerRepository: TrackerRepository,
+    private readonly userRepository: UserRepository,
     private readonly discordMessageService: DiscordMessageService,
     private readonly notificationBuilderService: NotificationBuilderService,
   ) {
@@ -32,24 +34,14 @@ export class TrackerNotificationService {
     seasonsFailed?: number,
   ): Promise<void> {
     try {
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-      });
+      const user = await this.userRepository.findById(userId);
 
       if (!user) {
         this.logger.warn(`User ${userId} not found, cannot send notification`);
         return;
       }
 
-      const tracker = await this.prisma.tracker.findUnique({
-        where: { id: trackerId },
-        include: {
-          seasons: {
-            orderBy: { seasonNumber: 'desc' },
-            take: 1,
-          },
-        },
-      });
+      const tracker = await this.trackerRepository.findById(trackerId);
 
       if (!tracker) {
         this.logger.warn(
@@ -96,9 +88,7 @@ export class TrackerNotificationService {
   ): Promise<void> {
     try {
       // Get tracker info including channel context
-      const tracker = await this.prisma.tracker.findUnique({
-        where: { id: trackerId },
-      });
+      const tracker = await this.trackerRepository.findById(trackerId);
 
       if (!tracker) {
         this.logger.warn(
@@ -107,9 +97,7 @@ export class TrackerNotificationService {
         return;
       }
 
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-      });
+      const user = await this.userRepository.findById(userId);
 
       if (!user) {
         this.logger.warn(`User ${userId} not found, cannot send notification`);

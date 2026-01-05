@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { InfrastructureModule } from '../infrastructure/infrastructure.module';
 import { CacheModule } from '@nestjs/cache-manager';
@@ -19,12 +19,16 @@ import { LeagueSettingsService } from './league-settings.service';
 import { LeagueSettingsDefaultsService } from './services/league-settings-defaults.service';
 import { SettingsValidationService } from './services/settings-validation.service';
 import { ConfigMigrationService } from './services/config-migration.service';
-import { LeagueAccessValidationService } from './services/league-access-validation.service';
-import { LeaguePermissionService } from './services/league-permission.service';
 
 import { LeagueRepository } from './repositories/league.repository';
 
 import { LeagueSettingsProviderAdapter } from './adapters/league-settings-provider.adapter';
+import { LeagueRepositoryAccessAdapter } from './adapters/league-repository-access.adapter';
+import { LeagueAccessValidationService } from './services/league-access-validation.service';
+import { LeaguePermissionService } from './services/league-permission.service';
+import { LeagueAccessGuard } from './guards/league-access.guard';
+import { LeagueAdminGuard } from './guards/league-admin.guard';
+import { LeagueAdminOrModeratorGuard } from './guards/league-admin-or-moderator.guard';
 
 @Module({
   imports: [
@@ -35,9 +39,9 @@ import { LeagueSettingsProviderAdapter } from './adapters/league-settings-provid
     GuildsModule,
     PlayersModule,
     PermissionCheckModule,
-    LeagueMembersModule,
-    OrganizationsModule,
-    TeamsModule,
+    forwardRef(() => LeagueMembersModule),
+    forwardRef(() => OrganizationsModule),
+    forwardRef(() => TeamsModule),
   ],
   controllers: [
     LeaguesController,
@@ -50,21 +54,39 @@ import { LeagueSettingsProviderAdapter } from './adapters/league-settings-provid
     LeagueSettingsDefaultsService,
     SettingsValidationService,
     ConfigMigrationService,
+    LeagueRepository,
     LeagueAccessValidationService,
     LeaguePermissionService,
-    LeagueRepository,
+    LeagueAccessGuard,
+    LeagueAdminGuard,
+    LeagueAdminOrModeratorGuard,
     {
       provide: 'ILeagueSettingsProvider',
-      useClass: LeagueSettingsProviderAdapter,
+      useFactory: (settingsService: LeagueSettingsService) => {
+        return new LeagueSettingsProviderAdapter(settingsService);
+      },
+      inject: [LeagueSettingsService],
+    },
+    {
+      provide: 'ILeagueRepositoryAccess',
+      useFactory: (leagueRepository: LeagueRepository) => {
+        return new LeagueRepositoryAccessAdapter(leagueRepository);
+      },
+      inject: [LeagueRepository],
     },
   ],
   exports: [
     LeaguesService,
     LeagueSettingsService,
     LeagueSettingsDefaultsService,
-    LeaguePermissionService,
     LeagueRepository,
     'ILeagueSettingsProvider',
+    'ILeagueRepositoryAccess',
+    LeagueAccessValidationService,
+    LeaguePermissionService,
+    LeagueAccessGuard,
+    LeagueAdminGuard,
+    LeagueAdminOrModeratorGuard,
   ],
 })
 export class LeaguesModule {}

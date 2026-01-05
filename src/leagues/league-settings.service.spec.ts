@@ -13,6 +13,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { TestBed, Mocked } from '@suites/unit';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { ModuleRef } from '@nestjs/core';
 import { LeagueNotFoundException } from './exceptions/league.exceptions';
 import { LeagueSettingsService } from './league-settings.service';
 import { SettingsService } from '../infrastructure/settings/services/settings.service';
@@ -21,8 +22,8 @@ import { LeagueSettingsDefaultsService } from './services/league-settings-defaul
 import { SettingsValidationService } from './services/settings-validation.service';
 import { ConfigMigrationService } from './services/config-migration.service';
 import { PrismaService } from '../prisma/prisma.service';
-import type { IOrganizationProvider } from './interfaces/organization-provider.interface';
-import type { ITeamProvider } from './interfaces/team-provider.interface';
+import type { IOrganizationProvider } from '../common/interfaces/league-domain/organization-provider.interface';
+import type { ITeamProvider } from '../common/interfaces/league-domain/team-provider.interface';
 import type { Cache } from 'cache-manager';
 import { LeagueConfiguration } from './interfaces/league-settings.interface';
 import { LeagueSettingsDto } from './dto/league-settings.dto';
@@ -37,6 +38,7 @@ describe('LeagueSettingsService', () => {
   let configMigration: Mocked<ConfigMigrationService>;
   let cacheManager: Mocked<Cache>;
   let prisma: Mocked<PrismaService>;
+  let moduleRef: Mocked<ModuleRef>;
   let organizationProvider: Mocked<IOrganizationProvider>;
   let teamProvider: Mocked<ITeamProvider>;
 
@@ -113,8 +115,30 @@ describe('LeagueSettingsService', () => {
     configMigration = unitRef.get(ConfigMigrationService);
     cacheManager = unitRef.get(CACHE_MANAGER);
     prisma = unitRef.get(PrismaService);
-    organizationProvider = unitRef.get('IOrganizationProvider' as any);
-    teamProvider = unitRef.get('ITeamProvider' as any);
+    moduleRef = unitRef.get(ModuleRef);
+
+    // Create mock providers
+    organizationProvider = {
+      findByLeagueId: vi.fn(),
+      create: vi.fn(),
+      assignTeamsToOrganization: vi.fn(),
+      delete: vi.fn(),
+    } as unknown as Mocked<IOrganizationProvider>;
+
+    teamProvider = {
+      findTeamsWithoutOrganization: vi.fn(),
+    } as unknown as Mocked<ITeamProvider>;
+
+    // Mock ModuleRef.get() to return the mocked providers
+    moduleRef.get = vi.fn().mockImplementation((token: string | symbol) => {
+      if (token === 'IOrganizationProvider') {
+        return organizationProvider;
+      }
+      if (token === 'ITeamProvider') {
+        return teamProvider;
+      }
+      return null;
+    });
 
     // Setup default mock implementations
     settingsDefaults.getDefaults = vi.fn().mockReturnValue(mockDefaultSettings);

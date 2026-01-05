@@ -12,6 +12,9 @@ import { TrackerSnapshotService } from './services/tracker-snapshot.service';
 import { TrackerNotificationService } from './services/tracker-notification.service';
 import { TrackerRepository } from './repositories/tracker.repository';
 import { TrackerSnapshotRepository } from './repositories/tracker-snapshot.repository';
+import { TrackerSeasonRepository } from './repositories/tracker-season.repository';
+import { TrackerScrapingLogRepository } from './repositories/tracker-scraping-log.repository';
+import { ScheduledTrackerProcessingRepository } from './repositories/scheduled-tracker-processing.repository';
 import { TrackerController } from './controllers/tracker.controller';
 import { TrackerAdminController } from './controllers/tracker-admin.controller';
 import { DiscordMessageService } from './services/discord-message.service';
@@ -24,29 +27,30 @@ import { TrackerSeasonService } from './services/tracker-season.service';
 import { TrackerRefreshSchedulerService } from './services/tracker-refresh-scheduler.service';
 import { TrackerBatchRefreshService } from './services/tracker-batch-refresh.service';
 import { ScheduledTrackerProcessingService } from './services/scheduled-tracker-processing.service';
-import { AuditModule } from '../audit/audit.module';
 import { MmrCalculationModule } from '../mmr-calculation/mmr-calculation.module';
 import { GuildsModule } from '../guilds/guilds.module';
-import { GuardsModule } from '../guards/guards.module';
 import { TrackerProcessingGuardService } from './services/tracker-processing-guard.service';
 import { TrackerUserOrchestratorService } from './services/tracker-user-orchestrator.service';
 import { TrackerQueueOrchestratorService } from './services/tracker-queue-orchestrator.service';
 import { TrackerBatchProcessorService } from './services/tracker-batch-processor.service';
-import { TrackerAuthorizationService } from './services/tracker-authorization.service';
 import { TrackerResponseMapperService } from './services/tracker-response-mapper.service';
+import { TrackerAuthorizationService } from './services/tracker-authorization.service';
+import { TrackerAccessGuard } from './guards/tracker-access.guard';
 import { GuildMembersModule } from '../guild-members/guild-members.module';
 import { PermissionCheckModule } from '../permissions/modules/permission-check/permission-check.module';
+import { AuthorizationModule } from '../common/authorization/authorization.module';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
     PrismaModule,
     InfrastructureModule,
-    AuditModule,
     MmrCalculationModule,
     GuildsModule,
-    GuardsModule,
     GuildMembersModule,
     PermissionCheckModule,
+    AuthorizationModule,
+    UsersModule,
     HttpModule,
     BullModule.forRootAsync({
       imports: [ConfigModule],
@@ -113,10 +117,14 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
     ScheduledTrackerProcessingService,
     TrackerRepository,
     TrackerSnapshotRepository,
+    TrackerSeasonRepository,
+    TrackerScrapingLogRepository,
+    ScheduledTrackerProcessingRepository,
     DiscordMessageService,
     NotificationBuilderService,
-    TrackerAuthorizationService,
     TrackerResponseMapperService,
+    TrackerAuthorizationService,
+    TrackerAccessGuard,
   ],
   exports: [
     TrackerService,
@@ -125,6 +133,8 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
     TrackerScrapingQueueService,
     TrackerSeasonService,
     ScheduledTrackerProcessingService,
+    TrackerAuthorizationService,
+    TrackerAccessGuard,
   ],
 })
 export class TrackersModule {}

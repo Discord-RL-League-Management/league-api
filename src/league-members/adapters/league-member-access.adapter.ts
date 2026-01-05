@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ILeagueMemberAccess } from '../../leagues/interfaces/league-member-access.interface';
+import { ILeagueMemberAccess } from '../../common/interfaces/league-domain/league-member-access.interface';
 import { LeagueMemberRepository } from '../repositories/league-member.repository';
 import { LeagueMember } from '@prisma/client';
 

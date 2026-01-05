@@ -116,13 +116,7 @@ export class PlayerService {
       }
 
       return await this.prisma.$transaction(async (tx) => {
-        const player = await tx.player.create({
-          data: {
-            userId: createPlayerDto.userId,
-            guildId: createPlayerDto.guildId,
-            status: createPlayerDto.status || 'ACTIVE',
-          },
-        });
+        const player = await this.playerRepository.create(createPlayerDto, tx);
 
         await this.activityLogService.logActivity(
           tx,
@@ -179,26 +173,25 @@ export class PlayerService {
 
     return await this.prisma.$transaction(async (tx) => {
       // Double-check in transaction
-      const existing = await tx.player.findUnique({
-        where: {
-          userId_guildId: {
-            userId,
-            guildId,
-          },
-        },
-      });
+      const existing = await this.playerRepository.findByUserIdAndGuildId(
+        userId,
+        guildId,
+        undefined,
+        tx,
+      );
 
       if (existing) {
         return existing;
       }
 
-      const player = await tx.player.create({
-        data: {
+      const player = await this.playerRepository.create(
+        {
           userId,
           guildId,
           status: PlayerStatus.ACTIVE,
         },
-      });
+        tx,
+      );
 
       await this.activityLogService.logActivity(
         tx,
@@ -233,14 +226,11 @@ export class PlayerService {
       }
 
       return await this.prisma.$transaction(async (tx) => {
-        const updated = await tx.player.update({
-          where: { id },
-          data: {
-            ...(updatePlayerDto.status !== undefined && {
-              status: updatePlayerDto.status,
-            }),
-          },
-        });
+        const updated = await this.playerRepository.update(
+          id,
+          updatePlayerDto,
+          tx,
+        );
 
         await this.activityLogService.logActivity(
           tx,

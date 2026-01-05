@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuthModule } from '../auth/auth.module';
 import { PlayersModule } from '../players/players.module';
@@ -27,7 +27,7 @@ import { LeagueMemberAccessAdapter } from './adapters/league-member-access.adapt
     GuildMembersModule,
     InfrastructureModule,
     PlayerRatingsModule,
-    LeaguesModule,
+    forwardRef(() => LeaguesModule),
   ],
   controllers: [LeagueMembersController, InternalLeagueMembersController],
   providers: [

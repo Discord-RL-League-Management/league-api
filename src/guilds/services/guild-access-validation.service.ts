@@ -4,8 +4,8 @@ import {
   ForbiddenException,
   Logger,
 } from '@nestjs/common';
-import { GuildMembersService } from '../../guild-members/guild-members.service';
-import { GuildsService } from '../guilds.service';
+import { GuildRepository } from '../repositories/guild.repository';
+import { GuildMemberRepository } from '../../guild-members/repositories/guild-member.repository';
 import { TokenManagementService } from '../../auth/services/token-management.service';
 import { DiscordApiService } from '../../discord/discord-api.service';
 
@@ -21,8 +21,8 @@ export class GuildAccessValidationService {
   private readonly logger = new Logger(GuildAccessValidationService.name);
 
   constructor(
-    private guildMembersService: GuildMembersService,
-    private guildsService: GuildsService,
+    private guildRepository: GuildRepository,
+    private guildMemberRepository: GuildMemberRepository,
     private tokenManagementService: TokenManagementService,
     private discordApiService: DiscordApiService,
   ) {}
@@ -41,7 +41,7 @@ export class GuildAccessValidationService {
     guildId: string,
   ): Promise<void> {
     // Check bot is in guild (guild exists and is active)
-    const guildExists = await this.guildsService.exists(guildId);
+    const guildExists = await this.guildRepository.exists(guildId);
     if (!guildExists) {
       this.logger.warn(
         `Guild ${guildId} not found or bot is not a member for user ${userId}`,
@@ -50,26 +50,15 @@ export class GuildAccessValidationService {
     }
 
     // Check user is member of guild
-    try {
-      const membership = await this.guildMembersService.findOne(
-        userId,
-        guildId,
-      );
-      if (membership) {
-        return; // User is member, access granted
-      }
-    } catch (error) {
-      // If the findOne throws NotFoundException, try Discord API fallback
-      if (error instanceof NotFoundException) {
-        // Fallback to Discord API verification and sync
-        await this.verifyAndSyncMembershipWithDiscord(userId, guildId);
-        return;
-      }
-      // Re-throw any other errors
-      throw error;
+    const membership = await this.guildMemberRepository.findByCompositeKey(
+      userId,
+      guildId,
+    );
+    if (membership) {
+      return; // User is member, access granted
     }
 
-    // If membership not found and no exception thrown, try Discord API fallback
+    // If membership not found, try Discord API fallback
     await this.verifyAndSyncMembershipWithDiscord(userId, guildId);
   }
 
@@ -108,14 +97,14 @@ export class GuildAccessValidationService {
         `User ${userId} verified as member of guild ${guildId} via Discord API, syncing to database`,
       );
 
-      const guild = await this.guildsService.findOne(guildId, {
-        includeSettings: false,
-        includeMembers: false,
-        includeCount: false,
-      });
+      const guild = await this.guildRepository.findOne(guildId);
+
+      if (!guild) {
+        throw new NotFoundException('Guild not found');
+      }
 
       // Create membership record with roles from Discord API
-      await this.guildMembersService.create({
+      await this.guildMemberRepository.create({
         userId,
         guildId,
         username: guild.name,
@@ -126,7 +115,10 @@ export class GuildAccessValidationService {
         `Successfully synced membership for user ${userId} in guild ${guildId}`,
       );
     } catch (error) {
-      if (error instanceof ForbiddenException) {
+      if (
+        error instanceof ForbiddenException ||
+        error instanceof NotFoundException
+      ) {
         throw error;
       }
       this.logger.error(

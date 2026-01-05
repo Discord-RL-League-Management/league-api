@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ITeamProvider } from '../../leagues/interfaces/team-provider.interface';
+import { ITeamProvider } from '../../common/interfaces/league-domain/team-provider.interface';
 import { TeamRepository } from '../repositories/team.repository';
 import { Team } from '@prisma/client';
 

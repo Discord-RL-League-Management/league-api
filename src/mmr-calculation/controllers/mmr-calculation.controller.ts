@@ -14,9 +14,9 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { AdminGuard } from '../../common/guards/admin.guard';
+import { GuildAdminGuard } from '../../guilds/guards/guild-admin.guard';
 import { MmrCalculationService } from '../services/mmr-calculation.service';
-import { FormulaValidationService } from '../services/formula-validation.service';
+import { FormulaValidationService } from '../../formula-validation/services/formula-validation/formula-validation.service';
 import { TestFormulaDto } from '../dto/test-formula.dto';
 import { ValidateFormulaDto } from '../dto/validate-formula.dto';
 import { CalculateMmrDto } from '../dto/calculate-mmr.dto';
@@ -32,7 +32,7 @@ import { MmrCalculationConfig } from '../../guilds/interfaces/settings.interface
  */
 @ApiTags('MMR Calculation')
 @Controller('api/mmr-calculation')
-@UseGuards(JwtAuthGuard, AdminGuard)
+@UseGuards(JwtAuthGuard, GuildAdminGuard)
 @ApiBearerAuth('JWT-auth')
 export class MmrCalculationController {
   private readonly logger = new Logger(MmrCalculationController.name);

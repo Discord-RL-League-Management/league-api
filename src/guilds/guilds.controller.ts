@@ -1,7 +1,7 @@
 import { Controller, Get, Param, UseGuards, Logger } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { GuildAdminGuard } from '../common/guards/guild-admin.guard';
+import { GuildAdminSimpleGuard } from './guards/guild-admin-simple.guard';
 import { GuildsService } from './guilds.service';
 import { GuildSettingsService } from './guild-settings.service';
 import { GuildAccessValidationService } from './services/guild-access-validation.service';
@@ -55,7 +55,7 @@ export class GuildsController {
   }
 
   @Get(':id/settings')
-  @UseGuards(GuildAdminGuard)
+  @UseGuards(GuildAdminSimpleGuard)
   @ApiOperation({ summary: 'Get guild settings (admin only)' })
   @ApiResponse({ status: 200, description: 'Guild settings' })
   @ApiResponse({ status: 403, description: 'Admin access required' })
@@ -72,7 +72,7 @@ export class GuildsController {
   }
 
   @Get(':id/channels')
-  @UseGuards(GuildAdminGuard)
+  @UseGuards(GuildAdminSimpleGuard)
   @ApiOperation({ summary: 'Get Discord channels for guild (admin only)' })
   @ApiResponse({ status: 200, description: 'List of Discord channels' })
   @ApiResponse({ status: 403, description: 'Admin access required' })
@@ -89,7 +89,7 @@ export class GuildsController {
   }
 
   @Get(':id/roles')
-  @UseGuards(GuildAdminGuard)
+  @UseGuards(GuildAdminSimpleGuard)
   @ApiOperation({ summary: 'Get Discord roles for guild (admin only)' })
   @ApiResponse({ status: 200, description: 'List of Discord roles' })
   @ApiResponse({ status: 403, description: 'Admin access required' })

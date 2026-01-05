@@ -6,7 +6,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { APP_GUARD, APP_PIPE, APP_FILTER } from '@nestjs/core';
+import { APP_GUARD, APP_PIPE, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { ConfigService } from '@nestjs/config';
 import { ConfigModule as AppConfigModule } from './config/config.module';
@@ -21,7 +21,6 @@ import { GuildsModule } from './guilds/guilds.module';
 import { GuildMembersModule } from './guild-members/guild-members.module';
 import { LeaguesModule } from './leagues/leagues.module';
 import { PermissionsModule } from './permissions/permissions.module';
-import { AuditModule } from './audit/audit.module';
 import { TrackersModule } from './trackers/trackers.module';
 import { InfrastructureModule } from './infrastructure/infrastructure.module';
 import { PlayersModule } from './players/players.module';
@@ -34,16 +33,14 @@ import { PlayerRatingsModule } from './player-ratings/player-ratings.module';
 import { TournamentsModule } from './tournaments/tournaments.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { MmrCalculationModule } from './mmr-calculation/mmr-calculation.module';
-import { APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthLoggerMiddleware } from './common/middleware/auth-logger.middleware';
 import { RequestContextInterceptor } from './common/interceptors/request-context.interceptor';
 import { throttlerConfig } from './config/throttler.config';
-// Required for SchedulerRegistry dependency injection used by TrackerRefreshSchedulerService
 import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
+import { FormulaValidationModule } from './formula-validation/formula-validation.module';
 
-// Standard validation error message exported for consistent API responses across the application
 export const VALIDATION_FAILED_MESSAGE = 'Validation failed';
 
 @Module({
@@ -64,21 +61,21 @@ export const VALIDATION_FAILED_MESSAGE = 'Validation failed';
     HealthModule,
     GuildsModule,
     GuildMembersModule,
+    PlayersModule,
+    PlayerRatingsModule,
+    LeagueMembersModule,
+    OrganizationsModule,
+    TeamsModule,
     LeaguesModule,
     PermissionsModule,
-    AuditModule,
     TrackersModule,
     InfrastructureModule,
-    PlayersModule,
-    LeagueMembersModule,
-    TeamsModule,
     TeamMembersModule,
     MatchesModule,
     PlayerStatsModule,
-    PlayerRatingsModule,
     TournamentsModule,
-    OrganizationsModule,
     MmrCalculationModule,
+    FormulaValidationModule,
   ],
   providers: [
     {
@@ -130,7 +127,6 @@ export const VALIDATION_FAILED_MESSAGE = 'Validation failed';
       },
       inject: [ConfigService],
     },
-    // PrismaExceptionFilter must run first to catch database errors before the catch-all GlobalExceptionFilter
     {
       provide: APP_FILTER,
       useClass: PrismaExceptionFilter,

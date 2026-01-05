@@ -92,8 +92,10 @@ export class LeagueMemberRepository
     playerId: string,
     leagueId: string,
     options?: LeagueMemberQueryOptions,
+    tx?: Prisma.TransactionClient,
   ): Promise<LeagueMember | null> {
     const opts = { ...defaultLeagueMemberQueryOptions, ...options };
+    const client = tx || this.prisma;
 
     const include: Prisma.LeagueMemberInclude = {};
     if (opts.includePlayer) {
@@ -103,7 +105,7 @@ export class LeagueMemberRepository
       include.league = true;
     }
 
-    return this.prisma.leagueMember.findUnique({
+    return client.leagueMember.findUnique({
       where: {
         playerId_leagueId: {
           playerId,
@@ -265,8 +267,12 @@ export class LeagueMemberRepository
   /**
    * Create a new league member
    */
-  async create(data: CreateLeagueMemberDto): Promise<LeagueMember> {
-    return this.prisma.leagueMember.create({
+  async create(
+    data: CreateLeagueMemberDto,
+    tx?: Prisma.TransactionClient,
+  ): Promise<LeagueMember> {
+    const client = tx || this.prisma;
+    return client.leagueMember.create({
       data: {
         playerId: data.playerId,
         leagueId: data.leagueId,
@@ -282,8 +288,13 @@ export class LeagueMemberRepository
   /**
    * Update an existing league member
    */
-  async update(id: string, data: UpdateLeagueMemberDto): Promise<LeagueMember> {
-    return this.prisma.leagueMember.update({
+  async update(
+    id: string,
+    data: UpdateLeagueMemberDto,
+    tx?: Prisma.TransactionClient,
+  ): Promise<LeagueMember> {
+    const client = tx || this.prisma;
+    return client.leagueMember.update({
       where: { id },
       data: {
         ...(data.status !== undefined && { status: data.status }),

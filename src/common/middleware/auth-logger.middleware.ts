@@ -23,7 +23,6 @@ export class AuthLoggerMiddleware implements NestMiddleware {
     const { method, path } = req;
 
     if (authHeader) {
-      // Check which type of auth is being used
       if (authHeader === `Bearer ${this.botApiKey}`) {
         this.logger.log(`Bot request: ${method} ${path}`);
       } else {

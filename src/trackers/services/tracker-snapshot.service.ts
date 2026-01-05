@@ -4,7 +4,6 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
 import { TrackerSnapshotRepository } from '../repositories/tracker-snapshot.repository';
 import { TrackerRepository } from '../repositories/tracker.repository';
 import { VisibilityService } from '../../infrastructure/visibility/services/visibility.service';
@@ -14,7 +13,6 @@ export class TrackerSnapshotService {
   private readonly logger = new Logger(TrackerSnapshotService.name);
 
   constructor(
-    private readonly prisma: PrismaService,
     private readonly snapshotRepository: TrackerSnapshotRepository,
     private readonly trackerRepository: TrackerRepository,
     private readonly visibilityService: VisibilityService,

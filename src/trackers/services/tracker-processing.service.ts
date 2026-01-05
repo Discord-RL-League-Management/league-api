@@ -5,8 +5,8 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
 import { TrackerService } from './tracker.service';
+import { TrackerRepository } from '../repositories/tracker.repository';
 import { TrackerValidationService } from './tracker-validation.service';
 import { TrackerUserOrchestratorService } from './tracker-user-orchestrator.service';
 import { TrackerQueueOrchestratorService } from './tracker-queue-orchestrator.service';
@@ -34,7 +34,7 @@ export class TrackerProcessingService {
   private readonly logger = new Logger(TrackerProcessingService.name);
 
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly trackerRepository: TrackerRepository,
     private readonly trackerService: TrackerService,
     private readonly validationService: TrackerValidationService,
     private readonly userOrchestrator: TrackerUserOrchestratorService,
@@ -209,9 +209,7 @@ export class TrackerProcessingService {
    * Refresh tracker data by enqueueing a new scraping job
    */
   async refreshTrackerData(trackerId: string): Promise<void> {
-    const tracker = await this.prisma.tracker.findUnique({
-      where: { id: trackerId },
-    });
+    const tracker = await this.trackerRepository.findById(trackerId);
 
     if (!tracker) {
       throw new NotFoundException('Tracker not found');
@@ -224,12 +222,9 @@ export class TrackerProcessingService {
       );
     }
 
-    await this.prisma.tracker.update({
-      where: { id: trackerId },
-      data: {
-        scrapingStatus: TrackerScrapingStatus.PENDING,
-        scrapingError: null,
-      },
+    await this.trackerRepository.update(trackerId, {
+      scrapingStatus: TrackerScrapingStatus.PENDING,
+      scrapingError: null,
     });
 
     await this.scrapingQueueService.addScrapingJob(trackerId);

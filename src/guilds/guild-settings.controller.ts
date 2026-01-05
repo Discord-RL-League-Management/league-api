@@ -12,7 +12,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { AdminGuard } from '../common/guards/admin.guard';
+import { GuildAdminGuard } from './guards/guild-admin.guard';
 import { GuildSettingsService } from './guild-settings.service';
 import { GuildAccessValidationService } from './services/guild-access-validation.service';
 import { GuildSettingsDto } from './dto/guild-settings.dto';
@@ -28,7 +28,7 @@ import type { AuthenticatedUser } from '../common/interfaces/user.interface';
 
 @ApiTags('Guild Settings')
 @Controller('api/guilds/:guildId/settings')
-@UseGuards(JwtAuthGuard, AdminGuard)
+@UseGuards(JwtAuthGuard, GuildAdminGuard)
 @ApiBearerAuth('JWT-auth')
 export class GuildSettingsController {
   private readonly logger = new Logger(GuildSettingsController.name);

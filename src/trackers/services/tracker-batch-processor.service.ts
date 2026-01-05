@@ -1,10 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../../prisma/prisma.service';
 import { TrackerRepository } from '../repositories/tracker.repository';
 import { TrackerScrapingQueueService } from '../queues/tracker-scraping.queue';
 import { TrackerProcessingGuardService } from './tracker-processing-guard.service';
-import { TrackerScrapingStatus } from '@prisma/client';
 
 /**
  * TrackerBatchProcessorService - Batch processing for tracker operations
@@ -18,7 +16,6 @@ export class TrackerBatchProcessorService {
   private readonly refreshIntervalHours: number;
 
   constructor(
-    private readonly prisma: PrismaService,
     private readonly trackerRepository: TrackerRepository,
     private readonly scrapingQueueService: TrackerScrapingQueueService,
     private readonly processingGuard: TrackerProcessingGuardService,
@@ -43,16 +40,7 @@ export class TrackerBatchProcessorService {
     processed: number;
     trackers: string[];
   }> {
-    const pendingTrackers = await this.prisma.tracker.findMany({
-      where: {
-        scrapingStatus: TrackerScrapingStatus.PENDING,
-        isActive: true,
-        isDeleted: false,
-      },
-      select: {
-        id: true,
-      },
-    });
+    const pendingTrackers = await this.trackerRepository.findPending();
 
     if (pendingTrackers.length === 0) {
       this.logger.log('No pending trackers to process');

@@ -17,13 +17,12 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { SystemAdminGuard } from '../../common/guards/system-admin.guard';
+import { SystemAdminGuard } from '../../common/authorization/guards/system-admin/system-admin.guard';
 import { TrackerService } from '../services/tracker.service';
 import { TrackerProcessingService } from '../services/tracker-processing.service';
 import { TrackerRefreshSchedulerService } from '../services/tracker-refresh-scheduler.service';
-import { PrismaService } from '../../prisma/prisma.service';
 import { BatchRefreshDto } from '../dto/batch-refresh.dto';
-import { TrackerScrapingStatus, Prisma, GamePlatform } from '@prisma/client';
+import { TrackerScrapingStatus, GamePlatform } from '@prisma/client';
 import { ParseCUIDPipe, ParseEnumPipe } from '../../common/pipes';
 
 @ApiTags('Admin - Trackers')
@@ -37,7 +36,6 @@ export class TrackerAdminController {
     private readonly trackerService: TrackerService,
     private readonly trackerProcessingService: TrackerProcessingService,
     private readonly refreshScheduler: TrackerRefreshSchedulerService,
-    private readonly prisma: PrismaService,
   ) {}
 
   @Get()
@@ -62,84 +60,19 @@ export class TrackerAdminController {
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
-    const skip = page && limit ? (page - 1) * limit : undefined;
-    const take = limit || 50;
-
-    const where: Prisma.TrackerWhereInput = {
-      isDeleted: false,
-      ...(status && { scrapingStatus: status }),
-      ...(platform && { platform: platform as GamePlatform }),
-    };
-
-    const [trackers, total] = await Promise.all([
-      this.prisma.tracker.findMany({
-        where,
-        skip,
-        take,
-        include: {
-          user: {
-            select: {
-              id: true,
-              username: true,
-              globalName: true,
-            },
-          },
-          seasons: {
-            orderBy: { seasonNumber: 'desc' },
-            take: 1,
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-      }),
-      this.prisma.tracker.count({ where }),
-    ]);
-
-    return {
-      data: trackers,
-      pagination: {
-        page: page || 1,
-        limit: take,
-        total,
-        totalPages: Math.ceil(total / take),
-      },
-    };
+    return this.trackerService.findAllAdmin({
+      status,
+      platform: platform as GamePlatform | undefined,
+      page,
+      limit,
+    });
   }
 
   @Get('scraping-status')
   @ApiOperation({ summary: 'Get overview of scraping status (Admin only)' })
   @ApiResponse({ status: 200, description: 'Scraping status overview' })
   async getScrapingStatusOverview() {
-    const statusCounts = await this.prisma.tracker.groupBy({
-      by: ['scrapingStatus'],
-      where: {
-        isDeleted: false,
-      },
-      _count: {
-        id: true,
-      },
-    });
-
-    const total = await this.prisma.tracker.count({
-      where: { isDeleted: false },
-    });
-
-    const statusMap = statusCounts.reduce(
-      (acc, item) => {
-        acc[item.scrapingStatus] = item._count.id;
-        return acc;
-      },
-      {} as Record<string, number>,
-    );
-
-    return {
-      total,
-      byStatus: {
-        PENDING: statusMap.PENDING || 0,
-        IN_PROGRESS: statusMap.IN_PROGRESS || 0,
-        COMPLETED: statusMap.COMPLETED || 0,
-        FAILED: statusMap.FAILED || 0,
-      },
-    };
+    return this.trackerService.getScrapingStatusOverview();
   }
 
   @Get('scraping-logs')
@@ -164,43 +97,12 @@ export class TrackerAdminController {
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
-    const skip = page && limit ? (page - 1) * limit : undefined;
-    const take = limit || 50;
-
-    const where: Prisma.TrackerScrapingLogWhereInput = {
-      ...(trackerId && { trackerId }),
-      ...(status && { status }),
-    };
-
-    const [logs, total] = await Promise.all([
-      this.prisma.trackerScrapingLog.findMany({
-        where,
-        skip,
-        take,
-        include: {
-          tracker: {
-            select: {
-              id: true,
-              url: true,
-              username: true,
-              platform: true,
-            },
-          },
-        },
-        orderBy: { startedAt: 'desc' },
-      }),
-      this.prisma.trackerScrapingLog.count({ where }),
-    ]);
-
-    return {
-      data: logs,
-      pagination: {
-        page: page || 1,
-        limit: take,
-        total,
-        totalPages: Math.ceil(total / take),
-      },
-    };
+    return this.trackerService.getScrapingLogs({
+      trackerId,
+      status,
+      page,
+      limit,
+    });
   }
 
   @Post(':id/refresh')

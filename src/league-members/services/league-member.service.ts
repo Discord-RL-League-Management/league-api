@@ -12,9 +12,11 @@ import { JoinLeagueDto } from '../dto/join-league.dto';
 import { LeagueMemberRepository } from '../repositories/league-member.repository';
 import { LeagueJoinValidationService } from './league-join-validation.service';
 import { PlayerService } from '../../players/services/player.service';
-import type { ILeagueSettingsProvider } from '../interfaces/league-settings-provider.interface';
+import { PlayerRepository } from '../../players/repositories/player.repository';
+import type { ILeagueSettingsProvider } from '../../common/interfaces/league-domain/league-settings-provider.interface';
 import { ActivityLogService } from '../../infrastructure/activity-log/services/activity-log.service';
 import { PlayerLeagueRatingService } from '../../player-ratings/services/player-league-rating.service';
+import { LeagueRepository } from '../../leagues/repositories/league.repository';
 import {
   LeagueMemberNotFoundException,
   LeagueMemberAlreadyExistsException,
@@ -36,8 +38,10 @@ export class LeagueMemberService {
     private leagueMemberRepository: LeagueMemberRepository,
     private joinValidationService: LeagueJoinValidationService,
     private playerService: PlayerService,
+    private playerRepository: PlayerRepository,
     @Inject('ILeagueSettingsProvider')
     private leagueSettingsProvider: ILeagueSettingsProvider,
+    private leagueRepository: LeagueRepository,
     private prisma: PrismaService,
     private activityLogService: ActivityLogService,
     private ratingService: PlayerLeagueRatingService,
@@ -98,9 +102,7 @@ export class LeagueMemberService {
     joinLeagueDto: JoinLeagueDto,
   ): Promise<any> {
     try {
-      const league = await this.prisma.league.findUnique({
-        where: { id: leagueId },
-      });
+      const league = await this.leagueRepository.findById(leagueId);
 
       if (!league) {
         throw new NotFoundException('League', leagueId);
@@ -156,14 +158,13 @@ export class LeagueMemberService {
 
       return await this.prisma.$transaction(async (tx) => {
         // Double-check in transaction
-        const existingInTx = await tx.leagueMember.findUnique({
-          where: {
-            playerId_leagueId: {
-              playerId: guildPlayer.id,
-              leagueId,
-            },
-          },
-        });
+        const existingInTx =
+          await this.leagueMemberRepository.findByPlayerAndLeague(
+            guildPlayer.id,
+            leagueId,
+            undefined,
+            tx,
+          );
 
         if (existingInTx) {
           if (existingInTx.status === 'ACTIVE') {
@@ -172,25 +173,27 @@ export class LeagueMemberService {
               leagueId,
             );
           }
-          return tx.leagueMember.update({
-            where: { id: existingInTx.id },
-            data: {
+          return this.leagueMemberRepository.update(
+            existingInTx.id,
+            {
               status: LeagueMemberStatus.ACTIVE,
               leftAt: null,
               notes: joinLeagueDto.notes,
             },
-          });
+            tx,
+          );
         }
 
-        const member = await tx.leagueMember.create({
-          data: {
+        const member = await this.leagueMemberRepository.create(
+          {
             playerId: guildPlayer.id,
             leagueId,
             status: initialStatus,
             role: 'MEMBER',
             notes: joinLeagueDto.notes,
           },
-        });
+          tx,
+        );
 
         await this.activityLogService.logActivity(
           tx,
@@ -282,29 +285,33 @@ export class LeagueMemberService {
 
     return await this.prisma.$transaction(async (tx) => {
       // Get league and player for activity logging (inside transaction for atomicity)
-      const league = await tx.league.findUnique({ where: { id: leagueId } });
-      const player = await tx.player.findUnique({ where: { id: playerId } });
+      const league = await this.leagueRepository.findById(
+        leagueId,
+        undefined,
+        tx,
+      );
+      const player = await this.playerService.findOne(playerId);
 
       if (!league || !player) {
         throw new LeagueMemberNotFoundException(`${playerId}-${leagueId}`);
       }
 
-      const updatedMember = await tx.leagueMember.update({
-        where: { id: member.id },
-        data: {
+      const updatedMember = await this.leagueMemberRepository.update(
+        member.id,
+        {
           status: LeagueMemberStatus.INACTIVE,
-          leftAt: new Date(),
+          leftAt: new Date().toISOString(),
         },
-      });
+        tx,
+      );
 
       if (cooldownDays && cooldownDays > 0) {
-        await tx.player.update({
-          where: { id: playerId },
-          data: {
-            lastLeftLeagueAt: new Date(),
-            lastLeftLeagueId: leagueId,
-          },
-        });
+        await this.playerRepository.updateCooldown(
+          playerId,
+          new Date(),
+          leagueId,
+          tx,
+        );
       }
 
       await this.activityLogService.logActivity(
@@ -360,22 +367,26 @@ export class LeagueMemberService {
 
     // Approve with activity logging and rating initialization in transaction
     return await this.prisma.$transaction(async (tx) => {
-      const updated = await tx.leagueMember.update({
-        where: { id },
-        data: {
+      const updated = await this.leagueMemberRepository.update(
+        id,
+        {
           status: LeagueMemberStatus.ACTIVE,
           approvedBy,
-          approvedAt: new Date(),
         },
-      });
+        tx,
+      );
 
       // Get player and league for activity logging
-      const player = await tx.player.findUnique({
-        where: { id: member.playerId },
-      });
-      const league = await tx.league.findUnique({
-        where: { id: member.leagueId },
-      });
+      const player = await this.playerRepository.findById(
+        member.playerId,
+        undefined,
+        tx,
+      );
+      const league = await this.leagueRepository.findById(
+        member.leagueId,
+        undefined,
+        tx,
+      );
 
       if (player && league) {
         await this.activityLogService.logActivity(
