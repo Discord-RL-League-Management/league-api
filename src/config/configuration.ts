@@ -1,19 +1,4 @@
 export default () => {
-  // #region agent log
-  fetch('http://127.0.0.1:7243/ingest/7b59d5a7-b3ea-4ea5-a718-921dbf2d179f', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      location: 'configuration.ts:2',
-      message: 'configuration factory called',
-      data: {},
-      timestamp: Date.now(),
-      sessionId: 'debug-session',
-      runId: 'run1',
-      hypothesisId: 'A',
-    }),
-  }).catch(() => {});
-  // #endregion
   return {
     app: {
       nodeEnv: process.env.NODE_ENV || 'development',

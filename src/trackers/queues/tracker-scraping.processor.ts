@@ -223,7 +223,8 @@ export class TrackerScrapingProcessor extends WorkerHost {
           );
         });
 
-      this.notificationService
+      // Fire-and-forget: Send notification asynchronously (errors are logged but don't block processing)
+      void this.notificationService
         .sendScrapingCompleteNotification(
           trackerId,
           tracker.userId,
@@ -238,7 +239,8 @@ export class TrackerScrapingProcessor extends WorkerHost {
         });
 
       const mmrUserId = tracker.userId;
-      this.mmrCalculationIntegration
+      // Fire-and-forget: Calculate MMR asynchronously (errors are logged but don't block processing)
+      void this.mmrCalculationIntegration
         .calculateMmrForUser(mmrUserId, trackerId)
         .catch((err) => {
           const errorMessage = err instanceof Error ? err.message : String(err);

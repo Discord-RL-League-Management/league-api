@@ -10,57 +10,9 @@ import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
-  console.log('[BOOTSTRAP] Starting bootstrap...');
-  // #region agent log
-  fetch('http://127.0.0.1:7243/ingest/7b59d5a7-b3ea-4ea5-a718-921dbf2d179f', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      location: 'main.ts:13',
-      message: 'bootstrap entry',
-      data: { nodeVersion: process.version },
-      timestamp: Date.now(),
-      sessionId: 'debug-session',
-      runId: 'run1',
-      hypothesisId: 'D',
-    }),
-  }).catch(() => {});
-  // #endregion
-  // #region agent log
-  fetch('http://127.0.0.1:7243/ingest/7b59d5a7-b3ea-4ea5-a718-921dbf2d179f', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      location: 'main.ts:14',
-      message: 'before NestFactory.create',
-      data: {},
-      timestamp: Date.now(),
-      sessionId: 'debug-session',
-      runId: 'run1',
-      hypothesisId: 'D',
-    }),
-  }).catch(() => {});
-  // #endregion
-  console.log('[BOOTSTRAP] Creating NestFactory...');
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
   });
-  console.log('[BOOTSTRAP] NestFactory created successfully');
-  // #region agent log
-  fetch('http://127.0.0.1:7243/ingest/7b59d5a7-b3ea-4ea5-a718-921dbf2d179f', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      location: 'main.ts:20',
-      message: 'after NestFactory.create',
-      data: {},
-      timestamp: Date.now(),
-      sessionId: 'debug-session',
-      runId: 'run1',
-      hypothesisId: 'D',
-    }),
-  }).catch(() => {});
-  // #endregion
 
   // Use New Relic logger for centralized error tracking and monitoring
   const logger = app.get(NewRelicLoggerService);
@@ -185,9 +137,7 @@ async function bootstrap() {
   app.enableShutdownHooks();
 
   const port = configService.get<number>('app.port') || 3000;
-  console.log(`[BOOTSTRAP] Starting server on port ${port}...`);
   await app.listen(port);
-  console.log(`[BOOTSTRAP] Server started successfully`);
 
   logger.log(`Application is running on: http://localhost:${port}`);
   logger.log(`Environment: ${configService.get<string>('app.nodeEnv')}`);
@@ -199,6 +149,8 @@ async function bootstrap() {
   }
 }
 void bootstrap().catch((error) => {
+  // Use console.error here as Logger may not be available during bootstrap failure
+
   console.error('Failed to start application:', error);
   if (error instanceof Error) {
     console.error(error.stack);

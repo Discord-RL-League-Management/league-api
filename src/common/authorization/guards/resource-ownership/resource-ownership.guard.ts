@@ -42,7 +42,8 @@ export class ResourceOwnershipGuard implements CanActivate {
 
     if (!hasAccess) {
       if (!('type' in user)) {
-        this.logAuthorizationDenied(user, request, resourceUserId).catch(
+        // Fire-and-forget: Log authorization denial asynchronously (errors are logged but don't block guard)
+        void this.logAuthorizationDenied(user, request, resourceUserId).catch(
           (error) => {
             this.logger.error('Failed to log authorization audit:', error);
           },
@@ -53,7 +54,8 @@ export class ResourceOwnershipGuard implements CanActivate {
     }
 
     if (!('type' in user)) {
-      this.logAuthorizationAllowed(user, request, resourceUserId).catch(
+      // Fire-and-forget: Log authorization decision asynchronously (errors are logged but don't block guard)
+      void this.logAuthorizationAllowed(user, request, resourceUserId).catch(
         (error) => {
           this.logger.error('Failed to log authorization audit:', error);
         },

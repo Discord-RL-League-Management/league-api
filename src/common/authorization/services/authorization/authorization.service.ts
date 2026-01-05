@@ -54,9 +54,12 @@ export class AuthorizationService {
           `AuthorizationService: User ${user.id} is not a system admin`,
         );
 
-        this.logAuthorizationDenied(user, request, reason).catch((error) => {
-          this.logger.error('Failed to log authorization audit:', error);
-        });
+        // Fire-and-forget: Log authorization denial asynchronously (errors are logged but don't block response)
+        void this.logAuthorizationDenied(user, request, reason).catch(
+          (error) => {
+            this.logger.error('Failed to log authorization audit:', error);
+          },
+        );
 
         throw new ForbiddenException(
           'System admin access required - your user ID must be configured as a system administrator',
@@ -67,9 +70,12 @@ export class AuthorizationService {
         `AuthorizationService: User ${user.id} granted system admin access`,
       );
 
-      this.logAuthorizationAllowed(user, request, reason).catch((error) => {
-        this.logger.error('Failed to log authorization audit:', error);
-      });
+      // Fire-and-forget: Log authorization decision asynchronously (errors are logged but don't block response)
+      void this.logAuthorizationAllowed(user, request, reason).catch(
+        (error) => {
+          this.logger.error('Failed to log authorization audit:', error);
+        },
+      );
 
       return true;
     } catch (error) {

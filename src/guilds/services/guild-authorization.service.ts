@@ -87,7 +87,8 @@ export class GuildAuthorizationService {
         );
 
         if (!('type' in user)) {
-          this.logAuthorizationAllowed(
+          // Fire-and-forget: Log authorization decision asynchronously (errors are logged but don't block response)
+          void this.logAuthorizationAllowed(
             user,
             guildId,
             request,
@@ -113,7 +114,8 @@ export class GuildAuthorizationService {
         );
 
         if (!('type' in user)) {
-          this.logAuthorizationAllowed(
+          // Fire-and-forget: Log authorization decision asynchronously (errors are logged but don't block response)
+          void this.logAuthorizationAllowed(
             user,
             guildId,
             request,
@@ -149,7 +151,8 @@ export class GuildAuthorizationService {
 
       if (!isAdmin) {
         if (!('type' in user)) {
-          this.logAuthorizationDenied(
+          // Fire-and-forget: Log authorization denial asynchronously (errors are logged but don't block response)
+          void this.logAuthorizationDenied(
             user,
             guildId,
             request,
@@ -166,7 +169,8 @@ export class GuildAuthorizationService {
       }
 
       if (!('type' in user)) {
-        this.logAuthorizationAllowed(user, guildId, request, reason).catch(
+        // Fire-and-forget: Log authorization decision asynchronously (errors are logged but don't block response)
+        void this.logAuthorizationAllowed(user, guildId, request, reason).catch(
           (error) => {
             this.logger.error('Failed to log authorization audit:', error);
           },
