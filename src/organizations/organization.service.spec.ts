@@ -15,23 +15,23 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { OrganizationService } from './organization.service';
-import { OrganizationRepository } from '../repositories/organization.repository';
-import { OrganizationMemberService } from '../services/organization-member.service';
-import { OrganizationValidationService } from '../services/organization-validation.service';
-import { PlayerService } from '@/players/services/player.service';
+import { OrganizationRepository } from './repositories/organization.repository';
+import { OrganizationMemberService } from './services/organization-member.service';
+import { OrganizationValidationService } from './services/organization-validation.service';
+import { PlayerService } from '@/players/player.service';
 import { LeagueRepository } from '@/leagues/repositories/league.repository';
 import { TeamRepository } from '@/teams/repositories/team.repository';
 import type { ILeagueSettingsProvider } from '@/common/interfaces/league-domain/league-settings-provider.interface';
 import type { IOrganizationTeamProvider } from '@/common/interfaces/league-domain/organization-team-provider.interface';
 import { PrismaService } from '@/prisma/prisma.service';
 import { Prisma } from '@prisma/client';
-import { CreateOrganizationDto } from '../dto/create-organization.dto';
-import { UpdateOrganizationDto } from '../dto/update-organization.dto';
+import { CreateOrganizationDto } from './dto/create-organization.dto';
+import { UpdateOrganizationDto } from './dto/update-organization.dto';
 import {
   OrganizationNotFoundException,
   NotGeneralManagerException,
   OrganizationCapacityExceededException,
-} from '../exceptions/organization.exceptions';
+} from './exceptions/organization.exceptions';
 import { Organization, LeagueStatus } from '@prisma/client';
 
 describe('OrganizationService', () => {

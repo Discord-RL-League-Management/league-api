@@ -12,7 +12,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Test } from '@nestjs/testing';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { TrackerController } from './tracker.controller';
-import { TrackerService } from '../services/tracker.service';
+import { TrackerService } from '../tracker.service';
 import { TrackerProcessingService } from '../services/tracker-processing.service';
 import { TrackerSnapshotService } from '../services/tracker-snapshot.service';
 import { TrackerAuthorizationService } from '../services/tracker-authorization.service';

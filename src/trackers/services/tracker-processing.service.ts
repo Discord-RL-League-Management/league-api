@@ -5,7 +5,7 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
-import { TrackerService } from './tracker.service';
+import { TrackerService } from '../tracker.service';
 import { TrackerRepository } from '../repositories/tracker.repository';
 import { TrackerValidationService } from './tracker-validation.service';
 import { TrackerUserOrchestratorService } from './tracker-user-orchestrator.service';

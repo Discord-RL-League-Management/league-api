@@ -1,7 +1,7 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { OrganizationRepository } from '../repositories/organization.repository';
 import type { ILeagueRepositoryAccess } from '../../common/interfaces/league-domain/league-repository-access.interface';
-import { PlayerService } from '../../players/services/player.service';
+import { PlayerService } from '../../players/player.service';
 import type { ILeagueSettingsProvider } from '../../common/interfaces/league-domain/league-settings-provider.interface';
 import { CreateOrganizationDto } from '../dto/create-organization.dto';
 import {

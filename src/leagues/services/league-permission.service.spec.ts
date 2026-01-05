@@ -10,7 +10,7 @@ import { ForbiddenException } from '@nestjs/common';
 import { LeaguePermissionService } from './league-permission.service';
 import { LeagueRepository } from '../repositories/league.repository';
 import { LeagueAccessValidationService } from './league-access-validation.service';
-import { PlayerService } from '../../players/services/player.service';
+import { PlayerService } from '../../players/player.service';
 import { LeagueMemberRepository } from '../../league-members/repositories/league-member.repository';
 import { PermissionCheckService } from '../../permissions/modules/permission-check/permission-check.service';
 import { SettingsService } from '../../infrastructure/settings/services/settings.service';

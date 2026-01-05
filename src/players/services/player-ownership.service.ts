@@ -1,5 +1,5 @@
 import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
-import { PlayerService } from './player.service';
+import { PlayerService } from '../player.service';
 import { PlayerNotFoundException } from '../exceptions/player.exceptions';
 
 /**

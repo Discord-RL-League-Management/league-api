@@ -10,7 +10,7 @@ import { NotFoundException } from '@nestjs/common';
 import { LeagueAccessValidationService } from './league-access-validation.service';
 import { LeagueRepository } from '../repositories/league.repository';
 import { GuildRepository } from '../../guilds/repositories/guild.repository';
-import { PlayerService } from '../../players/services/player.service';
+import { PlayerService } from '../../players/player.service';
 import type { ILeagueMemberAccess } from '../../common/interfaces/league-domain/league-member-access.interface';
 import {
   LeagueNotFoundException,

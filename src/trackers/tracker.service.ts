@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { TrackerRepository } from '../repositories/tracker.repository';
-import { TrackerSeasonService } from './tracker-season.service';
+import { TrackerRepository } from './repositories/tracker.repository';
+import { TrackerSeasonService } from './services/tracker-season.service';
 import {
   GamePlatform,
   Game,
@@ -9,7 +9,7 @@ import {
   Prisma,
   TrackerScrapingStatus,
 } from '@prisma/client';
-import { TrackerQueryOptions } from '../interfaces/tracker-query.options';
+import { TrackerQueryOptions } from './interfaces/tracker-query.options';
 
 @Injectable()
 export class TrackerService {

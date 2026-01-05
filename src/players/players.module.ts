@@ -11,7 +11,7 @@ import { PlayersController } from './players.controller';
 import { InternalPlayersController } from './internal-players.controller';
 
 // Services
-import { PlayerService } from './services/player.service';
+import { PlayerService } from './player.service';
 import { PlayerValidationService } from './services/player-validation.service';
 import { PlayerOwnershipService } from './services/player-ownership.service';
 

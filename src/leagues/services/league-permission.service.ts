@@ -2,7 +2,7 @@ import { Injectable, Logger, ForbiddenException, Inject } from '@nestjs/common';
 import { LeagueMemberRole } from '@prisma/client';
 import { LeagueRepository } from '../repositories/league.repository';
 import { LeagueAccessValidationService } from './league-access-validation.service';
-import { PlayerService } from '../../players/services/player.service';
+import { PlayerService } from '../../players/player.service';
 import type { ILeagueMemberAccess } from '../../common/interfaces/league-domain/league-member-access.interface';
 import { PermissionCheckService } from '../../permissions/modules/permission-check/permission-check.service';
 import { SettingsService } from '../../infrastructure/settings/services/settings.service';

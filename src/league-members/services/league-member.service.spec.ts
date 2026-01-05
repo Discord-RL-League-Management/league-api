@@ -12,7 +12,7 @@ import { NotFoundException } from '@nestjs/common';
 import { LeagueMemberService } from './league-member.service';
 import { LeagueMemberRepository } from '../repositories/league-member.repository';
 import { LeagueJoinValidationService } from '../services/league-join-validation.service';
-import { PlayerService } from '@/players/services/player.service';
+import { PlayerService } from '@/players/player.service';
 import { PlayerRepository } from '@/players/repositories/player.repository';
 import { LeagueRepository } from '@/leagues/repositories/league.repository';
 import { LeagueSettingsService } from '@/leagues/league-settings.service';

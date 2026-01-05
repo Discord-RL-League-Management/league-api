@@ -20,7 +20,7 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
-import { TrackerService } from '../services/tracker.service';
+import { TrackerService } from '../tracker.service';
 import { TrackerProcessingService } from '../services/tracker-processing.service';
 import { TrackerSnapshotService } from '../services/tracker-snapshot.service';
 import {

@@ -19,7 +19,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { BotAuthGuard } from '../auth/guards/bot-auth.guard';
-import { PlayerService } from './services/player.service';
+import { PlayerService } from './player.service';
 import { CreatePlayerDto } from './dto/create-player.dto';
 import { UpdatePlayerDto } from './dto/update-player.dto';
 import type { PlayerQueryOptions } from './interfaces/player.interface';

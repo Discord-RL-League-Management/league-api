@@ -18,7 +18,7 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { PlayerService } from './services/player.service';
+import { PlayerService } from './player.service';
 import { Player } from '@prisma/client';
 import { GuildAccessValidationService } from '../guilds/services/guild-access-validation.service';
 import { UpdatePlayerDto } from './dto/update-player.dto';

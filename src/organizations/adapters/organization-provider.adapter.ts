@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { IOrganizationProvider } from '../../common/interfaces/league-domain/organization-provider.interface';
-import { OrganizationService } from '../services/organization.service';
+import { OrganizationService } from '../organization.service';
 import { Organization } from '@prisma/client';
 import { CreateOrganizationDto } from '../dto/create-organization.dto';
 import { LeagueConfiguration } from '../../leagues/interfaces/league-settings.interface';

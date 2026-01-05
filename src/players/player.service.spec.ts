@@ -15,17 +15,17 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PlayerService } from './player.service';
-import { PlayerRepository } from '../repositories/player.repository';
-import { PlayerValidationService } from '../services/player-validation.service';
+import { PlayerRepository } from './repositories/player.repository';
+import { PlayerValidationService } from './services/player-validation.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import { ActivityLogService } from '@/infrastructure/activity-log/services/activity-log.service';
-import { CreatePlayerDto } from '../dto/create-player.dto';
-import { UpdatePlayerDto } from '../dto/update-player.dto';
+import { CreatePlayerDto } from './dto/create-player.dto';
+import { UpdatePlayerDto } from './dto/update-player.dto';
 import {
   PlayerNotFoundException,
   PlayerAlreadyExistsException,
   InvalidPlayerStatusException,
-} from '../exceptions/player.exceptions';
+} from './exceptions/player.exceptions';
 import { Player, PlayerStatus } from '@prisma/client';
 
 describe('PlayerService', () => {

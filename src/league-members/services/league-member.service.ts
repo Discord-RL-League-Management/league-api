@@ -11,7 +11,7 @@ import { UpdateLeagueMemberDto } from '../dto/update-league-member.dto';
 import { JoinLeagueDto } from '../dto/join-league.dto';
 import { LeagueMemberRepository } from '../repositories/league-member.repository';
 import { LeagueJoinValidationService } from './league-join-validation.service';
-import { PlayerService } from '../../players/services/player.service';
+import { PlayerService } from '../../players/player.service';
 import { PlayerRepository } from '../../players/repositories/player.repository';
 import type { ILeagueSettingsProvider } from '../../common/interfaces/league-domain/league-settings-provider.interface';
 import { ActivityLogService } from '../../infrastructure/activity-log/services/activity-log.service';

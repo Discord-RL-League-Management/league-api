@@ -10,7 +10,7 @@ import {
 } from './tracker-scraping.interfaces';
 import { TrackerScraperService } from '../services/tracker-scraper.service';
 import { TrackerSeasonService } from '../services/tracker-season.service';
-import { TrackerService } from '../services/tracker.service';
+import { TrackerService } from '../tracker.service';
 import { TrackerNotificationService } from '../services/tracker-notification.service';
 import { ActivityLogService } from '../../infrastructure/activity-log/services/activity-log.service';
 import { MmrCalculationIntegrationService } from '../../mmr-calculation/services/mmr-calculation-integration.service';
