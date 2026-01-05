@@ -172,7 +172,7 @@ export class PlayerService {
     await this.validationService.validateGuildMembership(userId, guildId);
 
     return await this.prisma.$transaction(async (tx) => {
-      // Double-check in transaction
+      // Double-check in transaction to prevent race condition where player is created concurrently
       const existing = await this.playerRepository.findByUserIdAndGuildId(
         userId,
         guildId,
@@ -221,7 +221,6 @@ export class PlayerService {
       }
 
       if (updatePlayerDto.status && updatePlayerDto.status !== player.status) {
-        // Validate status transition
         this.validationService.validatePlayerStatus(updatePlayerDto.status);
       }
 

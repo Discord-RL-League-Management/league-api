@@ -119,7 +119,6 @@ export class LeagueMemberService {
           throw error;
         }
         // PlayerNotFoundException means player doesn't exist, which is expected
-        // player remains null
       }
 
       let guildPlayer: { id: string };
@@ -161,7 +160,7 @@ export class LeagueMemberService {
         : LeagueMemberStatus.ACTIVE;
 
       return await this.prisma.$transaction(async (tx) => {
-        // Double-check in transaction
+        // Double-check in transaction to prevent race condition where member is created concurrently
         const existingInTx =
           await this.leagueMemberRepository.findByPlayerAndLeague(
             guildPlayer.id,
@@ -177,7 +176,7 @@ export class LeagueMemberService {
               leagueId,
             );
           }
-          return this.leagueMemberRepository.update(
+          return await this.leagueMemberRepository.update(
             existingInTx.id,
             {
               status: LeagueMemberStatus.ACTIVE,

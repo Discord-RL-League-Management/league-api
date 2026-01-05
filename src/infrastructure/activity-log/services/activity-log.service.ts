@@ -30,8 +30,8 @@ export class ActivityLogService {
     changes?: Prisma.InputJsonValue,
     metadata?: Prisma.InputJsonValue,
   ): Promise<ActivityLog> {
-    return tx.activityLog.create({
-      data: {
+    return this.repository.create(
+      {
         entityType,
         entityId,
         eventType,
@@ -41,7 +41,8 @@ export class ActivityLogService {
         changes,
         metadata,
       },
-    });
+      tx,
+    );
   }
 
   /**
