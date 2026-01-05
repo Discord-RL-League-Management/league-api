@@ -9,6 +9,10 @@ import { TeamsController } from './teams.controller';
 import { InternalTeamsController } from './internal-teams.controller';
 import { TeamProviderAdapter } from './adapters/team-provider.adapter';
 import { OrganizationTeamProviderAdapter } from './adapters/organization-team-provider.adapter';
+import {
+  ITEAM_PROVIDER,
+  IORGANIZATION_TEAM_PROVIDER,
+} from '../common/tokens/injection.tokens';
 
 @Module({
   imports: [
@@ -22,19 +26,19 @@ import { OrganizationTeamProviderAdapter } from './adapters/organization-team-pr
     TeamRepository,
     TeamValidationService,
     {
-      provide: 'ITeamProvider',
+      provide: ITEAM_PROVIDER,
       useClass: TeamProviderAdapter,
     },
     {
-      provide: 'IOrganizationTeamProvider',
+      provide: IORGANIZATION_TEAM_PROVIDER,
       useClass: OrganizationTeamProviderAdapter,
     },
   ],
   exports: [
     TeamService,
     TeamRepository,
-    'ITeamProvider',
-    'IOrganizationTeamProvider',
+    ITEAM_PROVIDER,
+    IORGANIZATION_TEAM_PROVIDER,
   ],
 })
 export class TeamsModule {}

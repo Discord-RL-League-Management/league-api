@@ -7,6 +7,10 @@ import {
 } from '@nestjs/common';
 import type { ILeagueSettingsProvider } from '../../common/interfaces/league-domain/league-settings-provider.interface';
 import type { IOrganizationValidationProvider } from '../../common/interfaces/league-domain/organization-validation-provider.interface';
+import {
+  ILEAGUE_SETTINGS_PROVIDER,
+  IORGANIZATION_VALIDATION_PROVIDER,
+} from '../../common/tokens/injection.tokens';
 
 /**
  * TeamValidationService - Single Responsibility: Team organization requirement validation
@@ -16,9 +20,9 @@ export class TeamValidationService {
   private readonly logger = new Logger(TeamValidationService.name);
 
   constructor(
-    @Inject('ILeagueSettingsProvider')
+    @Inject(ILEAGUE_SETTINGS_PROVIDER)
     private leagueSettingsProvider: ILeagueSettingsProvider,
-    @Inject('IOrganizationValidationProvider')
+    @Inject(IORGANIZATION_VALIDATION_PROVIDER)
     private organizationValidationProvider: IOrganizationValidationProvider,
   ) {}
 

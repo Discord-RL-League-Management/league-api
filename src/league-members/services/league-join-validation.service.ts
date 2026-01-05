@@ -1,6 +1,7 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { ILeagueSettingsProvider } from '../../common/interfaces/league-domain/league-settings-provider.interface';
+import { ILEAGUE_SETTINGS_PROVIDER } from '../../common/tokens/injection.tokens';
 import { LeagueMemberRepository } from '../repositories/league-member.repository';
 import { PlayerService } from '../../players/player.service';
 import { PlayerValidationService } from '../../players/services/player-validation.service';
@@ -21,7 +22,7 @@ export class LeagueJoinValidationService {
 
   constructor(
     private prisma: PrismaService,
-    @Inject('ILeagueSettingsProvider')
+    @Inject(ILEAGUE_SETTINGS_PROVIDER)
     private leagueSettingsProvider: ILeagueSettingsProvider,
     private leagueMemberRepository: LeagueMemberRepository,
     private playerService: PlayerService,

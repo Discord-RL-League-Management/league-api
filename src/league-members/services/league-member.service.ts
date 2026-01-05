@@ -15,6 +15,7 @@ import { PlayerService } from '../../players/player.service';
 import { PlayerRepository } from '../../players/repositories/player.repository';
 import { PlayerNotFoundException } from '../../players/exceptions/player.exceptions';
 import type { ILeagueSettingsProvider } from '../../common/interfaces/league-domain/league-settings-provider.interface';
+import { ILEAGUE_SETTINGS_PROVIDER } from '../../common/tokens/injection.tokens';
 import { ActivityLogService } from '../../infrastructure/activity-log/services/activity-log.service';
 import { PlayerLeagueRatingService } from '../../player-ratings/services/player-league-rating.service';
 import { LeagueRepository } from '../../leagues/repositories/league.repository';
@@ -40,7 +41,7 @@ export class LeagueMemberService {
     private joinValidationService: LeagueJoinValidationService,
     private playerService: PlayerService,
     private playerRepository: PlayerRepository,
-    @Inject('ILeagueSettingsProvider')
+    @Inject(ILEAGUE_SETTINGS_PROVIDER)
     private leagueSettingsProvider: ILeagueSettingsProvider,
     private leagueRepository: LeagueRepository,
     private prisma: PrismaService,

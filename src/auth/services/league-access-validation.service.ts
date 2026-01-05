@@ -3,6 +3,7 @@ import { LeagueRepository } from '../../leagues/repositories/league.repository';
 import { GuildRepository } from '../../guilds/repositories/guild.repository';
 import { PlayerService } from '../../players/player.service';
 import type { ILeagueMemberAccess } from '../../common/interfaces/league-domain/league-member-access.interface';
+import { ILEAGUE_MEMBER_ACCESS } from '../../common/tokens/injection.tokens';
 import {
   LeagueNotFoundException,
   LeagueAccessDeniedException,
@@ -23,7 +24,7 @@ export class LeagueAccessValidationService {
     private leagueRepository: LeagueRepository,
     private guildRepository: GuildRepository,
     private playerService: PlayerService,
-    @Inject('ILeagueMemberAccess')
+    @Inject(ILEAGUE_MEMBER_ACCESS)
     private leagueMemberAccess: ILeagueMemberAccess,
   ) {}
 

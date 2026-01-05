@@ -29,6 +29,10 @@ import { LeaguePermissionService } from './services/league-permission.service';
 import { LeagueAccessGuard } from './guards/league-access.guard';
 import { LeagueAdminGuard } from './guards/league-admin.guard';
 import { LeagueAdminOrModeratorGuard } from './guards/league-admin-or-moderator.guard';
+import {
+  ILEAGUE_SETTINGS_PROVIDER,
+  ILEAGUE_REPOSITORY_ACCESS,
+} from '../common/tokens/injection.tokens';
 
 @Module({
   imports: [
@@ -61,14 +65,14 @@ import { LeagueAdminOrModeratorGuard } from './guards/league-admin-or-moderator.
     LeagueAdminGuard,
     LeagueAdminOrModeratorGuard,
     {
-      provide: 'ILeagueSettingsProvider',
+      provide: ILEAGUE_SETTINGS_PROVIDER,
       useFactory: (settingsService: LeagueSettingsService) => {
         return new LeagueSettingsProviderAdapter(settingsService);
       },
       inject: [LeagueSettingsService],
     },
     {
-      provide: 'ILeagueRepositoryAccess',
+      provide: ILEAGUE_REPOSITORY_ACCESS,
       useFactory: (leagueRepository: LeagueRepository) => {
         return new LeagueRepositoryAccessAdapter(leagueRepository);
       },
@@ -80,8 +84,8 @@ import { LeagueAdminOrModeratorGuard } from './guards/league-admin-or-moderator.
     LeagueSettingsService,
     LeagueSettingsDefaultsService,
     LeagueRepository,
-    'ILeagueSettingsProvider',
-    'ILeagueRepositoryAccess',
+    ILEAGUE_SETTINGS_PROVIDER,
+    ILEAGUE_REPOSITORY_ACCESS,
     LeagueAccessValidationService,
     LeaguePermissionService,
     LeagueAccessGuard,

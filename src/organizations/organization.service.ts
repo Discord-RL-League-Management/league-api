@@ -13,6 +13,11 @@ import { PlayerService } from '@/players/player.service';
 import type { ILeagueRepositoryAccess } from '../common/interfaces/league-domain/league-repository-access.interface';
 import type { ILeagueSettingsProvider } from '../common/interfaces/league-domain/league-settings-provider.interface';
 import type { IOrganizationTeamProvider } from '../common/interfaces/league-domain/organization-team-provider.interface';
+import {
+  ILEAGUE_REPOSITORY_ACCESS,
+  ILEAGUE_SETTINGS_PROVIDER,
+  IORGANIZATION_TEAM_PROVIDER,
+} from '../common/tokens/injection.tokens';
 import { TeamRepository } from '../teams/repositories/team.repository';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
@@ -37,11 +42,11 @@ export class OrganizationService {
     private organizationMemberService: OrganizationMemberService,
     private validationService: OrganizationValidationService,
     private playerService: PlayerService,
-    @Inject('ILeagueRepositoryAccess')
+    @Inject(ILEAGUE_REPOSITORY_ACCESS)
     private leagueRepositoryAccess: ILeagueRepositoryAccess,
-    @Inject('ILeagueSettingsProvider')
+    @Inject(ILEAGUE_SETTINGS_PROVIDER)
     private leagueSettingsProvider: ILeagueSettingsProvider,
-    @Inject('IOrganizationTeamProvider')
+    @Inject(IORGANIZATION_TEAM_PROVIDER)
     private organizationTeamProvider: IOrganizationTeamProvider,
     private teamRepository: TeamRepository,
     private prisma: PrismaService,
