@@ -534,7 +534,9 @@ describe('LeagueMemberService', () => {
         },
       );
       vi.mocked(mockLeagueRepository.findById).mockResolvedValue(mockLeague);
-      vi.mocked(mockPlayerService.findOne).mockResolvedValue(mockPlayer as any);
+      vi.mocked(mockPlayerRepository.findById).mockResolvedValue(
+        mockPlayer as any,
+      );
       vi.mocked(mockRepository.update).mockResolvedValue(inactiveMember);
       vi.mocked(mockPlayerRepository.updateCooldown).mockResolvedValue(
         mockPlayer as any,

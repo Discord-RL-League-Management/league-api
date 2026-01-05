@@ -287,7 +287,11 @@ export class LeagueMemberService {
         undefined,
         tx,
       );
-      const player = await this.playerService.findOne(playerId);
+      const player = await this.playerRepository.findById(
+        playerId,
+        undefined,
+        tx,
+      );
 
       if (!league || !player) {
         throw new LeagueMemberNotFoundException(`${playerId}-${leagueId}`);
