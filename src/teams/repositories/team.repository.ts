@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Team } from '@prisma/client';
+import { Team, Prisma } from '@prisma/client';
 import { CreateTeamDto } from '../dto/create-team.dto';
 import { UpdateTeamDto } from '../dto/update-team.dto';
 import { BaseRepository } from '../../common/repositories/base.repository.interface';
@@ -71,8 +71,13 @@ export class TeamRepository
     });
   }
 
-  async update(id: string, data: UpdateTeamDto): Promise<Team> {
-    return this.prisma.team.update({
+  async update(
+    id: string,
+    data: UpdateTeamDto,
+    tx?: Prisma.TransactionClient,
+  ): Promise<Team> {
+    const client = tx || this.prisma;
+    return client.team.update({
       where: { id },
       data: {
         ...(data.name !== undefined && { name: data.name }),
@@ -94,6 +99,19 @@ export class TeamRepository
         }),
       },
       include: { members: true, organization: true },
+    });
+  }
+
+  /**
+   * Count teams by organization ID
+   */
+  async countByOrganizationId(
+    organizationId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<number> {
+    const client = tx || this.prisma;
+    return client.team.count({
+      where: { organizationId },
     });
   }
 

@@ -30,8 +30,10 @@ export class PlayerRepository
   async findById(
     id: string,
     options?: PlayerQueryOptions,
+    tx?: Prisma.TransactionClient,
   ): Promise<Player | null> {
     const opts = { ...defaultPlayerQueryOptions, ...options };
+    const client = tx || this.prisma;
 
     const include: Prisma.PlayerInclude = {};
     if (opts.includeUser) {
@@ -41,7 +43,7 @@ export class PlayerRepository
       include.guild = true;
     }
 
-    return this.prisma.player.findUnique({
+    return client.player.findUnique({
       where: { id },
       include: Object.keys(include).length > 0 ? include : undefined,
     });
@@ -84,8 +86,10 @@ export class PlayerRepository
     userId: string,
     guildId: string,
     options?: PlayerQueryOptions,
+    tx?: Prisma.TransactionClient,
   ): Promise<Player | null> {
     const opts = { ...defaultPlayerQueryOptions, ...options };
+    const client = tx || this.prisma;
 
     const include: Prisma.PlayerInclude = {};
     if (opts.includeUser) {
@@ -95,7 +99,7 @@ export class PlayerRepository
       include.guild = true;
     }
 
-    return this.prisma.player.findUnique({
+    return client.player.findUnique({
       where: {
         userId_guildId: {
           userId,
@@ -227,8 +231,12 @@ export class PlayerRepository
   /**
    * Create a new player
    */
-  async create(data: CreatePlayerDto): Promise<Player> {
-    return this.prisma.player.create({
+  async create(
+    data: CreatePlayerDto,
+    tx?: Prisma.TransactionClient,
+  ): Promise<Player> {
+    const client = tx || this.prisma;
+    return client.player.create({
       data: {
         userId: data.userId,
         guildId: data.guildId,
@@ -240,8 +248,13 @@ export class PlayerRepository
   /**
    * Update an existing player
    */
-  async update(id: string, data: UpdatePlayerDto): Promise<Player> {
-    return this.prisma.player.update({
+  async update(
+    id: string,
+    data: UpdatePlayerDto,
+    tx?: Prisma.TransactionClient,
+  ): Promise<Player> {
+    const client = tx || this.prisma;
+    return client.player.update({
       where: { id },
       data: {
         ...(data.status !== undefined && { status: data.status }),
@@ -275,8 +288,10 @@ export class PlayerRepository
     id: string,
     lastLeftLeagueAt: Date,
     lastLeftLeagueId: string,
+    tx?: Prisma.TransactionClient,
   ): Promise<Player> {
-    return this.prisma.player.update({
+    const client = tx || this.prisma;
+    return client.player.update({
       where: { id },
       data: {
         lastLeftLeagueAt,

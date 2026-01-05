@@ -1,5 +1,4 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
 import { TrackerRepository } from '../repositories/tracker.repository';
 import { TrackerSeasonService } from './tracker-season.service';
 import {
@@ -8,6 +7,7 @@ import {
   TrackerSeason,
   Tracker,
   Prisma,
+  TrackerScrapingStatus,
 } from '@prisma/client';
 import { TrackerQueryOptions } from '../interfaces/tracker-query.options';
 
@@ -16,7 +16,6 @@ export class TrackerService {
   private readonly logger = new Logger(TrackerService.name);
 
   constructor(
-    private readonly prisma: PrismaService,
     private readonly trackerRepository: TrackerRepository,
     private readonly seasonService: TrackerSeasonService,
   ) {}
@@ -50,18 +49,13 @@ export class TrackerService {
    * Get tracker by ID with seasons relationship
    */
   async getTrackerById(id: string) {
-    const tracker = await this.prisma.tracker.findUnique({
-      where: { id },
-      include: {
-        seasons: {
-          orderBy: { seasonNumber: 'desc' },
-        },
-      },
-    });
+    const tracker = await this.trackerRepository.findById(id);
     if (!tracker) {
       throw new NotFoundException('Tracker not found');
     }
-    return tracker;
+    // Add seasons (repository doesn't include them by default)
+    const seasons = await this.seasonService.getSeasonsByTracker(id);
+    return { ...tracker, seasons };
   }
 
   /**
@@ -168,17 +162,7 @@ export class TrackerService {
       };
     }
 
-    const tracker = await this.prisma.tracker.findUnique({
-      where: { id: trackerId },
-      select: {
-        id: true,
-        scrapingStatus: true,
-        scrapingError: true,
-        lastScrapedAt: true,
-        scrapingAttempts: true,
-      },
-    });
-
+    const tracker = await this.trackerRepository.findById(trackerId);
     if (!tracker) {
       throw new NotFoundException('Tracker not found');
     }
@@ -196,5 +180,36 @@ export class TrackerService {
    */
   async getTrackerSeasons(trackerId: string): Promise<TrackerSeason[]> {
     return this.seasonService.getSeasonsByTracker(trackerId);
+  }
+
+  /**
+   * Get all trackers with admin filters (for admin endpoints)
+   */
+  async findAllAdmin(options?: {
+    status?: TrackerScrapingStatus;
+    platform?: GamePlatform;
+    page?: number;
+    limit?: number;
+  }) {
+    return this.trackerRepository.findAllAdmin(options);
+  }
+
+  /**
+   * Get scraping status overview (grouped by status)
+   */
+  async getScrapingStatusOverview() {
+    return this.trackerRepository.getScrapingStatusOverview();
+  }
+
+  /**
+   * Get scraping logs with filters
+   */
+  async getScrapingLogs(options?: {
+    trackerId?: string;
+    status?: TrackerScrapingStatus;
+    page?: number;
+    limit?: number;
+  }) {
+    return this.trackerRepository.findScrapingLogs(options);
   }
 }
