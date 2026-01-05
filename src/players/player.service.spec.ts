@@ -17,7 +17,7 @@ import { Prisma } from '@prisma/client';
 import { PlayerService } from './player.service';
 import { PlayerRepository } from './repositories/player.repository';
 import { PlayerValidationService } from './services/player-validation.service';
-import { PrismaService } from '@/prisma/prisma.service';
+import { TransactionService } from '@/transaction/transaction.service';
 import { ActivityLogService } from '@/infrastructure/activity-log/services/activity-log.service';
 import { CreatePlayerDto } from './dto/create-player.dto';
 import { UpdatePlayerDto } from './dto/update-player.dto';
@@ -32,7 +32,7 @@ describe('PlayerService', () => {
   let service: PlayerService;
   let mockPlayerRepository: PlayerRepository;
   let mockValidationService: PlayerValidationService;
-  let mockPrisma: PrismaService;
+  let mockTransactionService: TransactionService;
   let mockActivityLogService: ActivityLogService;
 
   const playerId = 'player-123';
@@ -74,17 +74,17 @@ describe('PlayerService', () => {
       logActivity: vi.fn().mockResolvedValue(undefined),
     } as unknown as ActivityLogService;
 
-    mockPrisma = {
-      $transaction: vi.fn().mockImplementation(async (callback) => {
+    mockTransactionService = {
+      executeTransaction: vi.fn().mockImplementation(async (callback) => {
         const mockTx = {} as Prisma.TransactionClient;
         return await callback(mockTx);
       }),
-    } as unknown as PrismaService;
+    } as unknown as TransactionService;
 
     service = new PlayerService(
       mockPlayerRepository,
       mockValidationService,
-      mockPrisma,
+      mockTransactionService,
       mockActivityLogService,
     );
   });
@@ -219,7 +219,7 @@ describe('PlayerService', () => {
       vi.mocked(mockPlayerRepository.findByUserIdAndGuildId).mockResolvedValue(
         null,
       );
-      vi.mocked(mockPrisma.$transaction).mockImplementation(
+      vi.mocked(mockTransactionService.executeTransaction).mockImplementation(
         async (callback) => {
           const mockTx = {} as Prisma.TransactionClient;
           return await callback(mockTx);
@@ -289,7 +289,9 @@ describe('PlayerService', () => {
       vi.mocked(mockPlayerRepository.findByUserIdAndGuildId).mockResolvedValue(
         null,
       );
-      vi.mocked(mockPrisma.$transaction).mockRejectedValue(prismaError);
+      vi.mocked(mockTransactionService.executeTransaction).mockRejectedValue(
+        prismaError,
+      );
 
       await expect(service.create(createDto)).rejects.toThrow(
         PlayerAlreadyExistsException,
@@ -305,7 +307,7 @@ describe('PlayerService', () => {
       vi.mocked(mockPlayerRepository.findByUserIdAndGuildId).mockResolvedValue(
         null,
       );
-      vi.mocked(mockPrisma.$transaction).mockRejectedValue(
+      vi.mocked(mockTransactionService.executeTransaction).mockRejectedValue(
         new Error('Database error'),
       );
 
@@ -330,7 +332,7 @@ describe('PlayerService', () => {
       vi.mocked(mockPlayerRepository.findByUserIdAndGuildId)
         .mockResolvedValueOnce(null) // First call before transaction
         .mockResolvedValueOnce(null); // Second call in transaction
-      vi.mocked(mockPrisma.$transaction).mockImplementation(
+      vi.mocked(mockTransactionService.executeTransaction).mockImplementation(
         async (callback) => {
           const mockTx = {} as Prisma.TransactionClient;
           return await callback(mockTx);
@@ -356,7 +358,7 @@ describe('PlayerService', () => {
       vi.mocked(mockPlayerRepository.findByUserIdAndGuildId)
         .mockResolvedValueOnce(null) // First call before transaction
         .mockResolvedValueOnce(mockPlayer); // Second call in transaction finds existing
-      vi.mocked(mockPrisma.$transaction).mockImplementation(
+      vi.mocked(mockTransactionService.executeTransaction).mockImplementation(
         async (callback) => {
           const mockTx = {} as Prisma.TransactionClient;
           return await callback(mockTx);
@@ -394,7 +396,7 @@ describe('PlayerService', () => {
       const updatedPlayer = { ...mockPlayer, status: PlayerStatus.INACTIVE };
 
       vi.mocked(mockPlayerRepository.findById).mockResolvedValue(mockPlayer);
-      vi.mocked(mockPrisma.$transaction).mockImplementation(
+      vi.mocked(mockTransactionService.executeTransaction).mockImplementation(
         async (callback) => {
           const mockTx = {} as Prisma.TransactionClient;
           return await callback(mockTx);
@@ -451,7 +453,7 @@ describe('PlayerService', () => {
       };
 
       vi.mocked(mockPlayerRepository.findById).mockResolvedValue(mockPlayer);
-      vi.mocked(mockPrisma.$transaction).mockRejectedValue(
+      vi.mocked(mockTransactionService.executeTransaction).mockRejectedValue(
         new Error('Database error'),
       );
 

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ActivityLogRepository } from '../repositories/activity-log.repository';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { TransactionService } from '../../../transaction/transaction.service';
 import { Prisma, ActivityLog } from '@prisma/client';
 
 /**
@@ -13,7 +13,7 @@ import { Prisma, ActivityLog } from '@prisma/client';
 export class ActivityLogService {
   constructor(
     private readonly repository: ActivityLogRepository,
-    private readonly prisma: PrismaService,
+    private readonly transactionService: TransactionService,
   ) {}
 
   /**
@@ -30,8 +30,8 @@ export class ActivityLogService {
     changes?: Prisma.InputJsonValue,
     metadata?: Prisma.InputJsonValue,
   ): Promise<ActivityLog> {
-    return tx.activityLog.create({
-      data: {
+    return this.repository.create(
+      {
         entityType,
         entityId,
         eventType,
@@ -41,7 +41,8 @@ export class ActivityLogService {
         changes,
         metadata,
       },
-    });
+      tx,
+    );
   }
 
   /**
@@ -98,7 +99,7 @@ export class ActivityLogService {
     changes?: Prisma.InputJsonValue,
     metadata?: Prisma.InputJsonValue,
   ): Promise<ActivityLog> {
-    return this.prisma.$transaction(async (tx) => {
+    return this.transactionService.executeTransaction(async (tx) => {
       return this.logActivity(
         tx,
         entityType,

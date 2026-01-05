@@ -6,7 +6,7 @@ import {
   Inject,
 } from '@nestjs/common';
 import { Prisma, LeagueMemberStatus, Player } from '@prisma/client';
-import { PrismaService } from '../../prisma/prisma.service';
+import { TransactionService } from '../../transaction/transaction.service';
 import { UpdateLeagueMemberDto } from '../dto/update-league-member.dto';
 import { JoinLeagueDto } from '../dto/join-league.dto';
 import { LeagueMemberRepository } from '../repositories/league-member.repository';
@@ -43,7 +43,7 @@ export class LeagueMemberService {
     @Inject('ILeagueSettingsProvider')
     private leagueSettingsProvider: ILeagueSettingsProvider,
     private leagueRepository: LeagueRepository,
-    private prisma: PrismaService,
+    private transactionService: TransactionService,
     private activityLogService: ActivityLogService,
     private ratingService: PlayerLeagueRatingService,
   ) {}
@@ -160,7 +160,7 @@ export class LeagueMemberService {
         ? LeagueMemberStatus.PENDING_APPROVAL
         : LeagueMemberStatus.ACTIVE;
 
-      return await this.prisma.$transaction(async (tx) => {
+      return await this.transactionService.executeTransaction(async (tx) => {
         // Double-check in transaction
         const existingInTx =
           await this.leagueMemberRepository.findByPlayerAndLeague(
@@ -287,7 +287,7 @@ export class LeagueMemberService {
     const settings = await this.leagueSettingsProvider.getSettings(leagueId);
     const cooldownDays = settings.membership.cooldownAfterLeave;
 
-    return await this.prisma.$transaction(async (tx) => {
+    return await this.transactionService.executeTransaction(async (tx) => {
       // Get league and player for activity logging (inside transaction for atomicity)
       const league = await this.leagueRepository.findById(
         leagueId,
@@ -374,7 +374,7 @@ export class LeagueMemberService {
     }
 
     // Approve with activity logging and rating initialization in transaction
-    return await this.prisma.$transaction(async (tx) => {
+    return await this.transactionService.executeTransaction(async (tx) => {
       const updated = await this.leagueMemberRepository.update(
         id,
         {

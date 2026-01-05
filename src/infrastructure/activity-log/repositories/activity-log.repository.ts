@@ -14,9 +14,14 @@ export class ActivityLogRepository {
 
   /**
    * Create a new activity log entry
+   * Supports optional transaction client for use within transactions
    */
-  async create(data: Prisma.ActivityLogCreateInput): Promise<ActivityLog> {
-    return this.prisma.activityLog.create({ data });
+  async create(
+    data: Prisma.ActivityLogCreateInput,
+    tx?: Prisma.TransactionClient,
+  ): Promise<ActivityLog> {
+    const client = tx || this.prisma;
+    return client.activityLog.create({ data });
   }
 
   /**

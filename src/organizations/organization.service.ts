@@ -14,7 +14,7 @@ import type { ILeagueRepositoryAccess } from '../common/interfaces/league-domain
 import type { ILeagueSettingsProvider } from '../common/interfaces/league-domain/league-settings-provider.interface';
 import type { IOrganizationTeamProvider } from '../common/interfaces/league-domain/organization-team-provider.interface';
 import { TeamRepository } from '../teams/repositories/team.repository';
-import { PrismaService } from '../prisma/prisma.service';
+import { TransactionService } from '../transaction/transaction.service';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
 import { OrganizationMemberRole } from '@prisma/client';
@@ -44,7 +44,7 @@ export class OrganizationService {
     @Inject('IOrganizationTeamProvider')
     private organizationTeamProvider: IOrganizationTeamProvider,
     private teamRepository: TeamRepository,
-    private prisma: PrismaService,
+    private transactionService: TransactionService,
   ) {}
 
   /**
@@ -271,7 +271,7 @@ export class OrganizationService {
 
     // Capacity validation occurs inside the transaction to prevent race conditions where
     // concurrent requests could add teams between the validation check and the actual updates
-    return this.prisma.$transaction(async (tx) => {
+    return this.transactionService.executeTransaction(async (tx) => {
       // Count teams using transaction client to ensure consistent view of data
       if (maxTeamsPerOrg !== null && maxTeamsPerOrg !== undefined) {
         const currentTeamCount =

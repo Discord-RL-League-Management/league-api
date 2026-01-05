@@ -14,9 +14,14 @@ export class OutboxRepository {
 
   /**
    * Create a new outbox event
+   * Supports optional transaction client for use within transactions
    */
-  async create(data: Prisma.OutboxCreateInput): Promise<Outbox> {
-    return this.prisma.outbox.create({ data });
+  async create(
+    data: Prisma.OutboxCreateInput,
+    tx?: Prisma.TransactionClient,
+  ): Promise<Outbox> {
+    const client = tx || this.prisma;
+    return client.outbox.create({ data });
   }
 
   /**

@@ -5,7 +5,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { Prisma, PlayerStatus, Player } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
+import { TransactionService } from '../transaction/transaction.service';
 import { CreatePlayerDto } from './dto/create-player.dto';
 import { UpdatePlayerDto } from './dto/update-player.dto';
 import { PlayerRepository } from './repositories/player.repository';
@@ -32,7 +32,7 @@ export class PlayerService {
   constructor(
     private playerRepository: PlayerRepository,
     private validationService: PlayerValidationService,
-    private prisma: PrismaService,
+    private transactionService: TransactionService,
     private activityLogService: ActivityLogService,
   ) {}
 
@@ -115,7 +115,7 @@ export class PlayerService {
         );
       }
 
-      return await this.prisma.$transaction(async (tx) => {
+      return await this.transactionService.executeTransaction(async (tx) => {
         const player = await this.playerRepository.create(createPlayerDto, tx);
 
         await this.activityLogService.logActivity(
@@ -171,7 +171,7 @@ export class PlayerService {
 
     await this.validationService.validateGuildMembership(userId, guildId);
 
-    return await this.prisma.$transaction(async (tx) => {
+    return await this.transactionService.executeTransaction(async (tx) => {
       // Double-check in transaction
       const existing = await this.playerRepository.findByUserIdAndGuildId(
         userId,
@@ -221,11 +221,10 @@ export class PlayerService {
       }
 
       if (updatePlayerDto.status && updatePlayerDto.status !== player.status) {
-        // Validate status transition
         this.validationService.validatePlayerStatus(updatePlayerDto.status);
       }
 
-      return await this.prisma.$transaction(async (tx) => {
+      return await this.transactionService.executeTransaction(async (tx) => {
         const updated = await this.playerRepository.update(
           id,
           updatePlayerDto,

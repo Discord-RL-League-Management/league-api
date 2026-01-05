@@ -22,14 +22,15 @@ export class OutboxService {
     eventType: string,
     payload: Prisma.InputJsonValue,
   ): Promise<Outbox> {
-    return tx.outbox.create({
-      data: {
+    return this.repository.create(
+      {
         sourceType,
         sourceId,
         eventType,
         payload,
       },
-    });
+      tx,
+    );
   }
 
   /**
