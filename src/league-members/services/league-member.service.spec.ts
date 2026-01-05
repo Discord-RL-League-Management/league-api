@@ -8,12 +8,16 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { NotFoundException } from '@nestjs/common';
+import {
+  NotFoundException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { LeagueMemberService } from './league-member.service';
 import { LeagueMemberRepository } from '../repositories/league-member.repository';
 import { LeagueJoinValidationService } from '../services/league-join-validation.service';
 import { PlayerService } from '@/players/player.service';
 import { PlayerRepository } from '@/players/repositories/player.repository';
+import { PlayerNotFoundException } from '@/players/exceptions/player.exceptions';
 import { LeagueRepository } from '@/leagues/repositories/league.repository';
 import { LeagueSettingsService } from '@/leagues/league-settings.service';
 import { ActivityLogService } from '@/infrastructure/activity-log/services/activity-log.service';
@@ -507,6 +511,35 @@ describe('LeagueMemberService', () => {
       await expect(service.joinLeague(leagueId, joinDto)).rejects.toThrow(
         LeagueMemberAlreadyExistsException,
       );
+    });
+
+    it('should_throw_NotFoundException_when_player_does_not_exist', async () => {
+      const leagueId = 'league_123';
+      const joinDto: JoinLeagueDto = { playerId: 'nonexistent_player' };
+
+      vi.mocked(mockLeagueRepository.findById).mockResolvedValue(mockLeague);
+      vi.mocked(mockPlayerService.findOne).mockRejectedValue(
+        new PlayerNotFoundException('nonexistent_player'),
+      );
+
+      await expect(service.joinLeague(leagueId, joinDto)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(mockPlayerService.findOne).toHaveBeenCalledWith(joinDto.playerId);
+    });
+
+    it('should_rethrow_unexpected_errors_from_playerService_findOne', async () => {
+      const leagueId = 'league_123';
+      const joinDto: JoinLeagueDto = { playerId: 'player_123' };
+      const unexpectedError = new Error('Database connection failed');
+
+      vi.mocked(mockLeagueRepository.findById).mockResolvedValue(mockLeague);
+      vi.mocked(mockPlayerService.findOne).mockRejectedValue(unexpectedError);
+
+      await expect(service.joinLeague(leagueId, joinDto)).rejects.toThrow(
+        InternalServerErrorException,
+      );
+      expect(mockPlayerService.findOne).toHaveBeenCalledWith(joinDto.playerId);
     });
   });
 
