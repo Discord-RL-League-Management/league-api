@@ -6,7 +6,7 @@ import {
   Inject,
 } from '@nestjs/common';
 import { Prisma, LeagueMemberStatus, Player } from '@prisma/client';
-import { TransactionService } from '../../transaction/transaction.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import { UpdateLeagueMemberDto } from '../dto/update-league-member.dto';
 import { JoinLeagueDto } from '../dto/join-league.dto';
 import { LeagueMemberRepository } from '../repositories/league-member.repository';
@@ -43,7 +43,7 @@ export class LeagueMemberService {
     @Inject('ILeagueSettingsProvider')
     private leagueSettingsProvider: ILeagueSettingsProvider,
     private leagueRepository: LeagueRepository,
-    private transactionService: TransactionService,
+    private prisma: PrismaService,
     private activityLogService: ActivityLogService,
     private ratingService: PlayerLeagueRatingService,
   ) {}
@@ -119,7 +119,6 @@ export class LeagueMemberService {
           throw error;
         }
         // PlayerNotFoundException means player doesn't exist, which is expected
-        // player remains null
       }
 
       let guildPlayer: { id: string };
@@ -160,8 +159,8 @@ export class LeagueMemberService {
         ? LeagueMemberStatus.PENDING_APPROVAL
         : LeagueMemberStatus.ACTIVE;
 
-      return await this.transactionService.executeTransaction(async (tx) => {
-        // Double-check in transaction
+      return await this.prisma.$transaction(async (tx) => {
+        // Double-check in transaction to prevent race condition where member is created concurrently
         const existingInTx =
           await this.leagueMemberRepository.findByPlayerAndLeague(
             guildPlayer.id,
@@ -177,7 +176,7 @@ export class LeagueMemberService {
               leagueId,
             );
           }
-          return this.leagueMemberRepository.update(
+          return await this.leagueMemberRepository.update(
             existingInTx.id,
             {
               status: LeagueMemberStatus.ACTIVE,
@@ -287,7 +286,7 @@ export class LeagueMemberService {
     const settings = await this.leagueSettingsProvider.getSettings(leagueId);
     const cooldownDays = settings.membership.cooldownAfterLeave;
 
-    return await this.transactionService.executeTransaction(async (tx) => {
+    return await this.prisma.$transaction(async (tx) => {
       // Get league and player for activity logging (inside transaction for atomicity)
       const league = await this.leagueRepository.findById(
         leagueId,
@@ -374,7 +373,7 @@ export class LeagueMemberService {
     }
 
     // Approve with activity logging and rating initialization in transaction
-    return await this.transactionService.executeTransaction(async (tx) => {
+    return await this.prisma.$transaction(async (tx) => {
       const updated = await this.leagueMemberRepository.update(
         id,
         {

@@ -13,7 +13,6 @@ import { ConfigModule as AppConfigModule } from './config/config.module';
 import { LoggingModule } from './logging/logging.module';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
-import { TransactionModule } from './transaction/transaction.module';
 import { InternalModule } from './internal/internal.module';
 import { UsersModule } from './users/users.module';
 import { ProfileModule } from './profile/profile.module';
@@ -55,7 +54,6 @@ export const VALIDATION_FAILED_MESSAGE = 'Validation failed';
       inject: [ConfigService],
     }),
     PrismaModule,
-    TransactionModule,
     AuthModule,
     InternalModule,
     UsersModule,

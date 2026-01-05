@@ -23,7 +23,7 @@ import { LeagueRepository } from '@/leagues/repositories/league.repository';
 import { TeamRepository } from '@/teams/repositories/team.repository';
 import type { ILeagueSettingsProvider } from '@/common/interfaces/league-domain/league-settings-provider.interface';
 import type { IOrganizationTeamProvider } from '@/common/interfaces/league-domain/organization-team-provider.interface';
-import { TransactionService } from '@/transaction/transaction.service';
+import { PrismaService } from '@/prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
@@ -44,7 +44,7 @@ describe('OrganizationService', () => {
   let mockTeamRepository: TeamRepository;
   let mockLeagueSettingsProvider: ILeagueSettingsProvider;
   let mockOrganizationTeamProvider: IOrganizationTeamProvider;
-  let mockTransactionService: TransactionService;
+  let mockPrisma: PrismaService;
 
   const organizationId = 'org-123';
   const leagueId = 'league-123';
@@ -132,12 +132,12 @@ describe('OrganizationService', () => {
       update: vi.fn(),
     } as unknown as IOrganizationTeamProvider;
 
-    mockTransactionService = {
-      executeTransaction: vi.fn().mockImplementation(async (callback) => {
+    mockPrisma = {
+      $transaction: vi.fn().mockImplementation(async (callback) => {
         const mockTx = {} as Prisma.TransactionClient;
         return await callback(mockTx);
       }),
-    } as unknown as TransactionService;
+    } as unknown as PrismaService;
 
     service = new OrganizationService(
       mockOrganizationRepository,
@@ -148,7 +148,7 @@ describe('OrganizationService', () => {
       mockLeagueSettingsProvider,
       mockOrganizationTeamProvider,
       mockTeamRepository,
-      mockTransactionService,
+      mockPrisma,
     );
   });
 
@@ -615,7 +615,7 @@ describe('OrganizationService', () => {
       vi.mocked(mockLeagueSettingsProvider.getSettings).mockResolvedValue(
         leagueSettings as any,
       );
-      vi.mocked(mockTransactionService.executeTransaction).mockImplementation(
+      vi.mocked(mockPrisma.$transaction).mockImplementation(
         async (callback) => {
           const mockTx = {} as Prisma.TransactionClient;
           return await callback(mockTx);
@@ -661,7 +661,7 @@ describe('OrganizationService', () => {
       vi.mocked(mockLeagueSettingsProvider.getSettings).mockResolvedValue(
         leagueSettings as any,
       );
-      vi.mocked(mockTransactionService.executeTransaction).mockImplementation(
+      vi.mocked(mockPrisma.$transaction).mockImplementation(
         async (callback) => {
           const mockTx = {} as Prisma.TransactionClient;
           return await callback(mockTx);
@@ -704,7 +704,7 @@ describe('OrganizationService', () => {
       vi.mocked(mockLeagueSettingsProvider.getSettings).mockResolvedValue(
         leagueSettings as any,
       );
-      vi.mocked(mockTransactionService.executeTransaction).mockImplementation(
+      vi.mocked(mockPrisma.$transaction).mockImplementation(
         async (callback) => {
           const mockTx = {
             team: {

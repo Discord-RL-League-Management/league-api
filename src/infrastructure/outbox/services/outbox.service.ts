@@ -65,7 +65,6 @@ export class OutboxService {
       throw new OutboxNotFoundException(id);
     }
 
-    // Validate status transition
     this.validateStatusTransition(existing.status, status);
 
     return this.repository.updateStatus(id, status, errorMessage);
