@@ -8,7 +8,6 @@ import {
 import type { AuthenticatedUser } from '../../../interfaces/user.interface';
 import type { Request } from 'express';
 import { ActivityLogService } from '../../../../infrastructure/activity-log/services/activity-log.service';
-import { PrismaService } from '../../../../prisma/prisma.service';
 import { RequestContextService } from '../../../request-context/services/request-context/request-context.service';
 
 interface RequestWithUser extends Request {
@@ -27,7 +26,6 @@ export class ResourceOwnershipGuard implements CanActivate {
 
   constructor(
     private readonly activityLogService: ActivityLogService,
-    private readonly prisma: PrismaService,
     private readonly contextService: RequestContextService,
   ) {}
 
@@ -80,27 +78,24 @@ export class ResourceOwnershipGuard implements CanActivate {
     const resource = request.url || request.path || 'unknown';
 
     try {
-      await this.prisma.$transaction(async (tx) => {
-        await this.activityLogService.logActivity(
-          tx,
-          'permission',
+      await this.activityLogService.logActivityStandalone(
+        'permission',
+        resource,
+        'PERMISSION_CHECK',
+        'resource.ownership.check',
+        user.id,
+        undefined,
+        { result: 'allowed' },
+        {
+          guardType: 'ResourceOwnershipGuard',
+          method: request.method,
           resource,
-          'PERMISSION_CHECK',
-          'resource.ownership.check',
-          user.id,
-          undefined,
-          { result: 'allowed' },
-          {
-            guardType: 'ResourceOwnershipGuard',
-            method: request.method,
-            resource,
-            resourceUserId,
-            ipAddress: this.contextService.getIpAddress(request),
-            userAgent: this.contextService.getUserAgent(request),
-            requestId: this.contextService.getRequestId(request),
-          },
-        );
-      });
+          resourceUserId,
+          ipAddress: this.contextService.getIpAddress(request),
+          userAgent: this.contextService.getUserAgent(request),
+          requestId: this.contextService.getRequestId(request),
+        },
+      );
     } catch (error) {
       this.logger.error('Failed to log authorization audit:', error);
       // Don't throw - audit logging failure shouldn't break the request
@@ -118,30 +113,27 @@ export class ResourceOwnershipGuard implements CanActivate {
     const resource = request.url || request.path || 'unknown';
 
     try {
-      await this.prisma.$transaction(async (tx) => {
-        await this.activityLogService.logActivity(
-          tx,
-          'permission',
+      await this.activityLogService.logActivityStandalone(
+        'permission',
+        resource,
+        'PERMISSION_CHECK',
+        'resource.ownership.check',
+        user.id,
+        undefined,
+        {
+          result: 'denied',
+          reason: 'You can only access your own resources',
+        },
+        {
+          guardType: 'ResourceOwnershipGuard',
+          method: request.method,
           resource,
-          'PERMISSION_CHECK',
-          'resource.ownership.check',
-          user.id,
-          undefined,
-          {
-            result: 'denied',
-            reason: 'You can only access your own resources',
-          },
-          {
-            guardType: 'ResourceOwnershipGuard',
-            method: request.method,
-            resource,
-            resourceUserId,
-            ipAddress: this.contextService.getIpAddress(request),
-            userAgent: this.contextService.getUserAgent(request),
-            requestId: this.contextService.getRequestId(request),
-          },
-        );
-      });
+          resourceUserId,
+          ipAddress: this.contextService.getIpAddress(request),
+          userAgent: this.contextService.getUserAgent(request),
+          requestId: this.contextService.getRequestId(request),
+        },
+      );
     } catch (error) {
       this.logger.error('Failed to log authorization audit:', error);
       // Don't throw - audit logging failure shouldn't break the request

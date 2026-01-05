@@ -1,8 +1,8 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
 import { TrackerScrapingStatus } from '@prisma/client';
+import { PrismaService } from '../../prisma/prisma.service';
 import { TRACKER_SCRAPING_QUEUE } from './tracker-scraping.queue';
 import {
   ScrapingJobData,
@@ -14,6 +14,8 @@ import { TrackerService } from '../services/tracker.service';
 import { TrackerNotificationService } from '../services/tracker-notification.service';
 import { ActivityLogService } from '../../infrastructure/activity-log/services/activity-log.service';
 import { MmrCalculationIntegrationService } from '../../mmr-calculation/services/mmr-calculation-integration.service';
+import { TrackerRepository } from '../repositories/tracker.repository';
+import { TrackerScrapingLogRepository } from '../repositories/tracker-scraping-log.repository';
 
 @Processor(TRACKER_SCRAPING_QUEUE)
 @Injectable()
@@ -21,6 +23,8 @@ export class TrackerScrapingProcessor extends WorkerHost {
   private readonly logger = new Logger(TrackerScrapingProcessor.name);
 
   constructor(
+    private readonly trackerRepository: TrackerRepository,
+    private readonly scrapingLogRepository: TrackerScrapingLogRepository,
     private readonly prisma: PrismaService,
     private readonly scraperService: TrackerScraperService,
     private readonly seasonService: TrackerSeasonService,
@@ -40,57 +44,51 @@ export class TrackerScrapingProcessor extends WorkerHost {
     let tracker: { id: string; url: string; userId: string } | null = null;
 
     try {
-      tracker = await this.prisma.tracker.findUnique({
-        where: { id: trackerId },
-        select: { id: true, url: true, userId: true },
-      });
+      const trackerRecord = await this.trackerRepository.findById(trackerId);
+      if (!trackerRecord) {
+        throw new Error(`Tracker ${trackerId} not found`);
+      }
+      tracker = {
+        id: trackerRecord.id,
+        url: trackerRecord.url,
+        userId: trackerRecord.userId,
+      };
 
       if (!tracker) {
         throw new Error(`Tracker ${trackerId} not found`);
       }
 
-      const scrapingLog = await this.prisma.trackerScrapingLog.create({
-        data: {
-          trackerId,
-          status: TrackerScrapingStatus.IN_PROGRESS,
-          seasonsScraped: 0,
-          seasonsFailed: 0,
-          startedAt: new Date(),
-        },
+      const scrapingLog = await this.scrapingLogRepository.create({
+        trackerId,
+        status: TrackerScrapingStatus.IN_PROGRESS,
+        seasonsScraped: 0,
+        seasonsFailed: 0,
+        startedAt: new Date(),
       });
       scrapingLogId = scrapingLog.id;
 
-      await this.prisma.tracker.update({
-        where: { id: trackerId },
-        data: {
-          scrapingStatus: TrackerScrapingStatus.IN_PROGRESS,
-          scrapingError: null,
-        },
+      await this.trackerRepository.update(trackerId, {
+        scrapingStatus: TrackerScrapingStatus.IN_PROGRESS,
+        scrapingError: null,
       });
 
       const seasons = await this.scraperService.scrapeAllSeasons(tracker.url);
 
       if (!seasons || seasons.length === 0) {
         this.logger.warn(`No seasons found for tracker ${trackerId}`);
-        await this.prisma.tracker.update({
-          where: { id: trackerId },
-          data: {
-            scrapingStatus: TrackerScrapingStatus.COMPLETED,
-            lastScrapedAt: new Date(),
-            scrapingError: null,
-            scrapingAttempts: 0,
-          },
+        await this.trackerRepository.update(trackerId, {
+          scrapingStatus: TrackerScrapingStatus.COMPLETED,
+          lastScrapedAt: new Date(),
+          scrapingError: null,
+          scrapingAttempts: 0,
         });
 
         if (scrapingLogId) {
-          await this.prisma.trackerScrapingLog.update({
-            where: { id: scrapingLogId },
-            data: {
-              status: TrackerScrapingStatus.COMPLETED,
-              seasonsScraped: 0,
-              seasonsFailed: 0,
-              completedAt: new Date(),
-            },
+          await this.scrapingLogRepository.update(scrapingLogId, {
+            status: TrackerScrapingStatus.COMPLETED,
+            seasonsScraped: 0,
+            seasonsFailed: 0,
+            completedAt: new Date(),
           });
         }
 
@@ -177,24 +175,18 @@ export class TrackerScrapingProcessor extends WorkerHost {
         }
       }
 
-      await this.prisma.tracker.update({
-        where: { id: trackerId },
-        data: {
-          scrapingStatus: TrackerScrapingStatus.COMPLETED,
-          lastScrapedAt: new Date(),
-          scrapingError: null,
-          scrapingAttempts: 0, // Reset attempts on success
-        },
+      await this.trackerRepository.update(trackerId, {
+        scrapingStatus: TrackerScrapingStatus.COMPLETED,
+        lastScrapedAt: new Date(),
+        scrapingError: null,
+        scrapingAttempts: 0, // Reset attempts on success
       });
 
-      await this.prisma.trackerScrapingLog.update({
-        where: { id: scrapingLogId },
-        data: {
-          status: TrackerScrapingStatus.COMPLETED,
-          seasonsScraped,
-          seasonsFailed,
-          completedAt: new Date(),
-        },
+      await this.scrapingLogRepository.update(scrapingLogId, {
+        status: TrackerScrapingStatus.COMPLETED,
+        seasonsScraped,
+        seasonsFailed,
+        completedAt: new Date(),
       });
 
       this.logger.log(
@@ -268,25 +260,21 @@ export class TrackerScrapingProcessor extends WorkerHost {
         error,
       );
 
-      await this.prisma.tracker.update({
-        where: { id: trackerId },
-        data: {
-          scrapingStatus: TrackerScrapingStatus.FAILED,
-          scrapingError: errorMessage,
-          scrapingAttempts: {
-            increment: 1,
-          },
-        },
+      // Get current attempts count first
+      const currentTracker = await this.trackerRepository.findById(trackerId);
+      const currentAttempts = currentTracker?.scrapingAttempts || 0;
+
+      await this.trackerRepository.update(trackerId, {
+        scrapingStatus: TrackerScrapingStatus.FAILED,
+        scrapingError: errorMessage,
+        scrapingAttempts: currentAttempts + 1,
       });
 
       if (scrapingLogId) {
-        await this.prisma.trackerScrapingLog.update({
-          where: { id: scrapingLogId },
-          data: {
-            status: TrackerScrapingStatus.FAILED,
-            errorMessage: errorMessage.substring(0, 1000), // Limit error message length
-            completedAt: new Date(),
-          },
+        await this.scrapingLogRepository.update(scrapingLogId, {
+          status: TrackerScrapingStatus.FAILED,
+          errorMessage: errorMessage.substring(0, 1000), // Limit error message length
+          completedAt: new Date(),
         });
       }
 
@@ -297,10 +285,8 @@ export class TrackerScrapingProcessor extends WorkerHost {
 
         await this.prisma
           .$transaction(async (tx) => {
-            const trackerWithAttempts = await tx.tracker.findUnique({
-              where: { id: trackerId },
-              select: { scrapingAttempts: true },
-            });
+            const trackerWithAttempts =
+              await this.trackerRepository.findById(trackerId);
             const scrapingAttempts = trackerWithAttempts?.scrapingAttempts || 0;
 
             await this.activityLogService.logActivity(

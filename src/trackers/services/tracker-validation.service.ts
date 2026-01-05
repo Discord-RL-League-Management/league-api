@@ -1,7 +1,7 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
 import { GamePlatform, Game } from '@prisma/client';
 import { TrackerUrlConverterService } from './tracker-url-converter.service';
+import { TrackerRepository } from '../repositories/tracker.repository';
 
 export interface ParsedTrackerUrl {
   platform: GamePlatform;
@@ -18,7 +18,7 @@ export class TrackerValidationService {
     /^https:\/\/rocketleague\.tracker\.network\/rocket-league\/profile\/([^/]+)\/([^/]+)\/overview\/?$/i;
 
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly trackerRepository: TrackerRepository,
     private readonly urlConverter: TrackerUrlConverterService,
   ) {}
 
@@ -164,9 +164,7 @@ export class TrackerValidationService {
     url: string,
     excludeTrackerId?: string,
   ): Promise<boolean> {
-    const existingTracker = await this.prisma.tracker.findUnique({
-      where: { url },
-    });
+    const existingTracker = await this.trackerRepository.findByUrl(url);
 
     if (!existingTracker) {
       return true;
@@ -196,15 +194,7 @@ export class TrackerValidationService {
     }
 
     // Single database query to check all URLs at once
-    const existingTrackers = await this.prisma.tracker.findMany({
-      where: {
-        url: { in: urls },
-      },
-      select: {
-        url: true,
-        id: true,
-      },
-    });
+    const existingTrackers = await this.trackerRepository.findByUrls(urls);
 
     const existingUrlMap = new Map<string, string>();
     for (const tracker of existingTrackers) {

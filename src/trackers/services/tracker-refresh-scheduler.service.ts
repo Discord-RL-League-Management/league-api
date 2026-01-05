@@ -7,10 +7,10 @@ import {
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { CronJob } from 'cron';
 import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../../prisma/prisma.service';
 import { TrackerScrapingQueueService } from '../queues/tracker-scraping.queue';
 import { TrackerBatchRefreshService } from './tracker-batch-refresh.service';
 import { TrackerProcessingGuardService } from './tracker-processing-guard.service';
+import { TrackerRepository } from '../repositories/tracker.repository';
 
 // Manages cron jobs via SchedulerRegistry to schedule tracker refreshes and prevents orphaned tasks on shutdown
 @Injectable()
@@ -24,7 +24,7 @@ export class TrackerRefreshSchedulerService
   private cronJob: CronJob | null = null;
 
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly trackerRepository: TrackerRepository,
     private readonly scrapingQueueService: TrackerScrapingQueueService,
     private readonly batchRefreshService: TrackerBatchRefreshService,
     private readonly configService: ConfigService,
@@ -110,23 +110,9 @@ export class TrackerRefreshSchedulerService
 
   // Identifies trackers that haven't been scraped within their configured refresh interval
   private async getTrackersNeedingRefresh(): Promise<string[]> {
-    const cutoffTime = new Date();
-    cutoffTime.setHours(cutoffTime.getHours() - this.refreshIntervalHours);
-
-    const trackers = await this.prisma.tracker.findMany({
-      where: {
-        isActive: true,
-        isDeleted: false,
-        OR: [{ lastScrapedAt: null }, { lastScrapedAt: { lt: cutoffTime } }],
-        // Prevents race conditions by excluding trackers already in progress
-        scrapingStatus: {
-          not: 'IN_PROGRESS',
-        },
-      },
-      select: {
-        id: true,
-      },
-    });
+    const trackers = await this.trackerRepository.findPendingAndStale(
+      this.refreshIntervalHours,
+    );
 
     const trackerIds = trackers.map((t) => t.id);
 

@@ -12,6 +12,9 @@ import { TrackerSnapshotService } from './services/tracker-snapshot.service';
 import { TrackerNotificationService } from './services/tracker-notification.service';
 import { TrackerRepository } from './repositories/tracker.repository';
 import { TrackerSnapshotRepository } from './repositories/tracker-snapshot.repository';
+import { TrackerSeasonRepository } from './repositories/tracker-season.repository';
+import { TrackerScrapingLogRepository } from './repositories/tracker-scraping-log.repository';
+import { ScheduledTrackerProcessingRepository } from './repositories/scheduled-tracker-processing.repository';
 import { TrackerController } from './controllers/tracker.controller';
 import { TrackerAdminController } from './controllers/tracker-admin.controller';
 import { DiscordMessageService } from './services/discord-message.service';
@@ -36,6 +39,7 @@ import { TrackerAccessGuard } from './guards/tracker-access.guard';
 import { GuildMembersModule } from '../guild-members/guild-members.module';
 import { PermissionCheckModule } from '../permissions/modules/permission-check/permission-check.module';
 import { AuthorizationModule } from '../common/authorization/authorization.module';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
@@ -43,9 +47,10 @@ import { AuthorizationModule } from '../common/authorization/authorization.modul
     InfrastructureModule,
     MmrCalculationModule,
     GuildsModule,
-    GuildMembersModule,
+    GuildMembersModule, // Required for TrackerProcessingGuardService (GuildMemberRepository)
     PermissionCheckModule,
     AuthorizationModule, // Required for SystemAdminGuard (AuthorizationService)
+    UsersModule, // Required for TrackerUserOrchestratorService and TrackerNotificationService (UserRepository)
     HttpModule,
     BullModule.forRootAsync({
       imports: [ConfigModule],
@@ -112,6 +117,9 @@ import { AuthorizationModule } from '../common/authorization/authorization.modul
     ScheduledTrackerProcessingService,
     TrackerRepository,
     TrackerSnapshotRepository,
+    TrackerSeasonRepository,
+    TrackerScrapingLogRepository,
+    ScheduledTrackerProcessingRepository,
     DiscordMessageService,
     NotificationBuilderService,
     TrackerResponseMapperService,

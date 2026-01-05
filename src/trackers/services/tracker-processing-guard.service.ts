@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
 import { GuildSettingsService } from '../../guilds/guild-settings.service';
+import { TrackerRepository } from '../repositories/tracker.repository';
+import { GuildMemberRepository } from '../../guild-members/repositories/guild-member.repository';
 import { GuildSettings } from '../../guilds/interfaces/settings.interface';
 
 /**
@@ -16,7 +17,8 @@ export class TrackerProcessingGuardService {
   private readonly logger = new Logger(TrackerProcessingGuardService.name);
 
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly trackerRepository: TrackerRepository,
+    private readonly guildMemberRepository: GuildMemberRepository,
     private readonly guildSettingsService: GuildSettingsService,
   ) {}
 
@@ -29,17 +31,14 @@ export class TrackerProcessingGuardService {
    */
   async canProcessTracker(trackerId: string): Promise<boolean> {
     try {
-      const tracker = await this.prisma.tracker.findUnique({
-        where: { id: trackerId },
-        select: { userId: true },
-      });
+      const userId = await this.trackerRepository.findUserIdById(trackerId);
 
-      if (!tracker) {
+      if (!userId) {
         this.logger.warn(`Tracker ${trackerId} not found`);
         return false;
       }
 
-      return this.canProcessTrackerForUser(tracker.userId);
+      return this.canProcessTrackerForUser(userId);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
@@ -60,16 +59,13 @@ export class TrackerProcessingGuardService {
    */
   async canProcessTrackerForUser(userId: string): Promise<boolean> {
     try {
-      const guildMemberships = await this.prisma.guildMember.findMany({
-        where: {
-          userId,
-          isDeleted: false,
-          isBanned: false,
-        },
-        select: {
-          guildId: true,
-        },
-      });
+      const allMemberships =
+        await this.guildMemberRepository.findByUserId(userId);
+
+      // Filter out deleted and banned memberships
+      const guildMemberships = allMemberships.filter(
+        (m) => !m.isDeleted && !m.isBanned,
+      );
 
       // If user has no guilds, default to true (backward compatibility)
       if (guildMemberships.length === 0) {
@@ -116,15 +112,8 @@ export class TrackerProcessingGuardService {
     }
 
     try {
-      const trackers = await this.prisma.tracker.findMany({
-        where: {
-          id: { in: trackerIds },
-        },
-        select: {
-          id: true,
-          userId: true,
-        },
-      });
+      const trackers =
+        await this.trackerRepository.findByIdsWithUserId(trackerIds);
 
       const trackersByUserId = new Map<string, string[]>();
       for (const tracker of trackers) {

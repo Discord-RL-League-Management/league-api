@@ -450,4 +450,100 @@ export class TrackerRepository {
       },
     };
   }
+
+  /**
+   * Find trackers by multiple URLs (for batch uniqueness checks)
+   */
+  async findByUrls(
+    urls: string[],
+  ): Promise<Array<{ url: string; id: string }>> {
+    if (urls.length === 0) {
+      return [];
+    }
+    return this.prisma.tracker.findMany({
+      where: {
+        url: { in: urls },
+      },
+      select: {
+        url: true,
+        id: true,
+      },
+    });
+  }
+
+  /**
+   * Find all pending and stale trackers across all guilds
+   * Used for scheduled refresh operations
+   */
+  async findPendingAndStale(
+    refreshIntervalHours: number,
+  ): Promise<Array<{ id: string }>> {
+    const cutoffTime = new Date();
+    cutoffTime.setHours(cutoffTime.getHours() - refreshIntervalHours);
+
+    return this.prisma.tracker.findMany({
+      where: {
+        isActive: true,
+        isDeleted: false,
+        scrapingStatus: {
+          not: TrackerScrapingStatus.IN_PROGRESS,
+        },
+        OR: [
+          { scrapingStatus: TrackerScrapingStatus.PENDING },
+          { lastScrapedAt: null },
+          { lastScrapedAt: { lt: cutoffTime } },
+        ],
+      },
+      select: {
+        id: true,
+      },
+    });
+  }
+
+  /**
+   * Find all pending trackers (for batch processing)
+   */
+  async findPending(): Promise<Array<{ id: string }>> {
+    return this.prisma.tracker.findMany({
+      where: {
+        scrapingStatus: TrackerScrapingStatus.PENDING,
+        isActive: true,
+        isDeleted: false,
+      },
+      select: {
+        id: true,
+      },
+    });
+  }
+
+  /**
+   * Find trackers by IDs with userId selection (for batch processing checks)
+   */
+  async findByIdsWithUserId(
+    trackerIds: string[],
+  ): Promise<Array<{ id: string; userId: string }>> {
+    if (trackerIds.length === 0) {
+      return [];
+    }
+    return this.prisma.tracker.findMany({
+      where: {
+        id: { in: trackerIds },
+      },
+      select: {
+        id: true,
+        userId: true,
+      },
+    });
+  }
+
+  /**
+   * Find tracker by ID with only userId selection (for lightweight checks)
+   */
+  async findUserIdById(trackerId: string): Promise<string | null> {
+    const tracker = await this.prisma.tracker.findUnique({
+      where: { id: trackerId },
+      select: { userId: true },
+    });
+    return tracker?.userId || null;
+  }
 }

@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { UserRepository } from '../../users/repositories/user.repository';
 
 /**
  * TrackerUserOrchestratorService - User management for tracker operations
@@ -11,7 +11,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 export class TrackerUserOrchestratorService {
   private readonly logger = new Logger(TrackerUserOrchestratorService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly userRepository: UserRepository) {}
 
   /**
    * Ensure user exists in database, creating or updating as needed
@@ -28,19 +28,11 @@ export class TrackerUserOrchestratorService {
     const globalName = userData?.globalName ?? null;
     const avatar = userData?.avatar ?? null;
 
-    await this.prisma.user.upsert({
-      where: { id: userId },
-      update: {
-        username,
-        globalName,
-        avatar,
-      },
-      create: {
-        id: userId,
-        username,
-        globalName,
-        avatar,
-      },
+    await this.userRepository.upsert({
+      id: userId,
+      username,
+      globalName,
+      avatar,
     });
 
     this.logger.debug(`Ensured user exists: ${userId}`);

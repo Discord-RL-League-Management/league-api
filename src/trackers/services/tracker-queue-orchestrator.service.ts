@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
 import { TrackerScrapingQueueService } from '../queues/tracker-scraping.queue';
+import { TrackerRepository } from '../repositories/tracker.repository';
 import { TrackerProcessingGuardService } from './tracker-processing-guard.service';
 import { TrackerScrapingStatus } from '@prisma/client';
 
@@ -16,7 +16,7 @@ export class TrackerQueueOrchestratorService {
   private readonly logger = new Logger(TrackerQueueOrchestratorService.name);
 
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly trackerRepository: TrackerRepository,
     private readonly scrapingQueueService: TrackerScrapingQueueService,
     private readonly processingGuard: TrackerProcessingGuardService,
   ) {}
@@ -45,14 +45,11 @@ export class TrackerQueueOrchestratorService {
     const canProcess = await this.processingGuard.canProcessTracker(trackerId);
 
     if (!canProcess) {
-      await this.prisma.tracker
-        .update({
-          where: { id: trackerId },
-          data: {
-            scrapingStatus: TrackerScrapingStatus.FAILED,
-            scrapingError: 'Tracker processing disabled by guild settings',
-            scrapingAttempts: 1,
-          },
+      await this.trackerRepository
+        .update(trackerId, {
+          scrapingStatus: TrackerScrapingStatus.FAILED,
+          scrapingError: 'Tracker processing disabled by guild settings',
+          scrapingAttempts: 1,
         })
         .catch((updateError) => {
           this.logger.error(
@@ -72,14 +69,11 @@ export class TrackerQueueOrchestratorService {
         this.logger.error(
           `Failed to enqueue scraping job for tracker ${trackerId}: ${errorMessage}`,
         );
-        return this.prisma.tracker
-          .update({
-            where: { id: trackerId },
-            data: {
-              scrapingStatus: TrackerScrapingStatus.FAILED,
-              scrapingError: `Failed to enqueue scraping job: ${errorMessage}`,
-              scrapingAttempts: 1,
-            },
+        return this.trackerRepository
+          .update(trackerId, {
+            scrapingStatus: TrackerScrapingStatus.FAILED,
+            scrapingError: `Failed to enqueue scraping job: ${errorMessage}`,
+            scrapingAttempts: 1,
           })
           .catch((updateError) => {
             this.logger.error(
@@ -113,14 +107,11 @@ export class TrackerQueueOrchestratorService {
     if (nonProcessableIds.length > 0) {
       await Promise.all(
         nonProcessableIds.map((id) =>
-          this.prisma.tracker
-            .update({
-              where: { id },
-              data: {
-                scrapingStatus: TrackerScrapingStatus.FAILED,
-                scrapingError: 'Tracker processing disabled by guild settings',
-                scrapingAttempts: 1,
-              },
+          this.trackerRepository
+            .update(id, {
+              scrapingStatus: TrackerScrapingStatus.FAILED,
+              scrapingError: 'Tracker processing disabled by guild settings',
+              scrapingAttempts: 1,
             })
             .catch((error) => {
               this.logger.error(

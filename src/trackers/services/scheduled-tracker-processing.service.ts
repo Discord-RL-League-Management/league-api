@@ -8,9 +8,10 @@ import {
 } from '@nestjs/common';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { CronJob } from 'cron';
-import { PrismaService } from '../../prisma/prisma.service';
 import { TrackerProcessingService } from './tracker-processing.service';
 import { ScheduledProcessingStatus, Prisma } from '@prisma/client';
+import { ScheduledTrackerProcessingRepository } from '../repositories/scheduled-tracker-processing.repository';
+import { GuildRepository } from '../../guilds/repositories/guild.repository';
 
 /**
  * ScheduledTrackerProcessingService
@@ -28,7 +29,8 @@ export class ScheduledTrackerProcessingService
   private readonly scheduledJobs = new Map<string, CronJob>();
 
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly scheduleRepository: ScheduledTrackerProcessingRepository,
+    private readonly guildRepository: GuildRepository,
     private readonly trackerProcessingService: TrackerProcessingService,
     private readonly schedulerRegistry: SchedulerRegistry,
   ) {}
@@ -104,22 +106,18 @@ export class ScheduledTrackerProcessingService
       throw new BadRequestException('Scheduled date must be in the future');
     }
 
-    const guild = await this.prisma.guild.findUnique({
-      where: { id: guildId },
-    });
+    const guild = await this.guildRepository.findById(guildId);
 
     if (!guild) {
       throw new NotFoundException(`Guild ${guildId} not found`);
     }
 
-    const schedule = await this.prisma.scheduledTrackerProcessing.create({
-      data: {
-        guildId,
-        scheduledAt: scheduledDate,
-        createdBy,
-        status: ScheduledProcessingStatus.PENDING,
-        metadata: (metadata || {}) as Prisma.InputJsonValue,
-      },
+    const schedule = await this.scheduleRepository.create({
+      guildId,
+      scheduledAt: scheduledDate,
+      createdBy,
+      status: ScheduledProcessingStatus.PENDING,
+      metadata: (metadata || {}) as Prisma.InputJsonValue,
     });
 
     this.scheduleJob(schedule.id, scheduledDate, guildId);
@@ -141,7 +139,10 @@ export class ScheduledTrackerProcessingService
       includeCompleted?: boolean;
     },
   ) {
-    const where: Prisma.ScheduledTrackerProcessingWhereInput = {
+    const where: {
+      guildId: string;
+      status?: ScheduledProcessingStatus | { not: ScheduledProcessingStatus };
+    } = {
       guildId,
     };
 
@@ -155,19 +156,14 @@ export class ScheduledTrackerProcessingService
       };
     }
 
-    return this.prisma.scheduledTrackerProcessing.findMany({
-      where,
-      orderBy: { scheduledAt: 'asc' },
-    });
+    return this.scheduleRepository.findMany(where);
   }
 
   /**
    * Get a specific schedule by ID
    */
   async getSchedule(id: string) {
-    const schedule = await this.prisma.scheduledTrackerProcessing.findUnique({
-      where: { id },
-    });
+    const schedule = await this.scheduleRepository.findById(id);
 
     if (!schedule) {
       throw new NotFoundException(`Schedule ${id} not found`);
@@ -209,11 +205,8 @@ export class ScheduledTrackerProcessingService
       }
     }
 
-    const updated = await this.prisma.scheduledTrackerProcessing.update({
-      where: { id },
-      data: {
-        status: ScheduledProcessingStatus.CANCELLED,
-      },
+    const updated = await this.scheduleRepository.update(id, {
+      status: ScheduledProcessingStatus.CANCELLED,
     });
 
     this.logger.log(`Cancelled scheduled processing ${id}`);
@@ -225,15 +218,11 @@ export class ScheduledTrackerProcessingService
    * Load all pending schedules from database and schedule them
    */
   private async loadPendingSchedules() {
-    const pendingSchedules =
-      await this.prisma.scheduledTrackerProcessing.findMany({
-        where: {
-          status: ScheduledProcessingStatus.PENDING,
-          scheduledAt: {
-            gt: new Date(), // Only future schedules
-          },
-        },
-      });
+    const allPending = await this.scheduleRepository.findPending();
+    // Filter to only future schedules
+    const pendingSchedules = allPending.filter(
+      (schedule) => schedule.scheduledAt > new Date(),
+    );
 
     this.logger.log(
       `Loading ${pendingSchedules.length} pending scheduled jobs`,
@@ -262,23 +251,17 @@ export class ScheduledTrackerProcessingService
           `Executing scheduled tracker processing ${scheduleId} for guild ${guildId}`,
         );
 
-        await this.prisma.scheduledTrackerProcessing.update({
-          where: { id: scheduleId },
-          data: {
-            status: ScheduledProcessingStatus.PENDING, // Keep as pending until execution completes
-            executedAt: new Date(),
-          },
+        await this.scheduleRepository.update(scheduleId, {
+          status: ScheduledProcessingStatus.PENDING, // Keep as pending until execution completes
+          executedAt: new Date(),
         });
 
         await this.trackerProcessingService.processPendingTrackersForGuild(
           guildId,
         );
 
-        await this.prisma.scheduledTrackerProcessing.update({
-          where: { id: scheduleId },
-          data: {
-            status: ScheduledProcessingStatus.COMPLETED,
-          },
+        await this.scheduleRepository.update(scheduleId, {
+          status: ScheduledProcessingStatus.COMPLETED,
         });
 
         this.logger.log(
@@ -291,13 +274,10 @@ export class ScheduledTrackerProcessingService
           `Error executing scheduled tracker processing ${scheduleId}: ${errorMessage}`,
         );
 
-        await this.prisma.scheduledTrackerProcessing
-          .update({
-            where: { id: scheduleId },
-            data: {
-              status: ScheduledProcessingStatus.FAILED,
-              errorMessage: errorMessage,
-            },
+        await this.scheduleRepository
+          .update(scheduleId, {
+            status: ScheduledProcessingStatus.FAILED,
+            errorMessage: errorMessage,
           })
           .catch((dbError: unknown) => {
             const dbErrorMessage =

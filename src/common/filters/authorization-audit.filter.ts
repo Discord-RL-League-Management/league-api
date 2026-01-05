@@ -9,7 +9,6 @@ import {
 import { Request, Response } from 'express';
 import { ActivityLogService } from '../../infrastructure/activity-log/services/activity-log.service';
 import { RequestContextService } from '../request-context/services/request-context/request-context.service';
-import { PrismaService } from '../../prisma/prisma.service';
 import type { AuthenticatedUser } from '../interfaces/user.interface';
 import type { AuditMetadata } from '../interfaces/audit-metadata.interface';
 
@@ -30,7 +29,6 @@ export class AuthorizationAuditExceptionFilter implements ExceptionFilter {
   constructor(
     private readonly activityLogService: ActivityLogService,
     private readonly contextService: RequestContextService,
-    private readonly prisma: PrismaService,
   ) {}
 
   catch(exception: ForbiddenException, host: ArgumentsHost): void {
@@ -88,27 +86,24 @@ export class AuthorizationAuditExceptionFilter implements ExceptionFilter {
 
     // Log the denied authorization decision
     try {
-      await this.prisma.$transaction(async (tx) => {
-        await this.activityLogService.logActivity(
-          tx,
-          entityType,
+      await this.activityLogService.logActivityStandalone(
+        entityType,
+        resource,
+        eventType,
+        metadata.action,
+        user.id,
+        metadata.guildId,
+        { result: 'denied', reason },
+        {
+          guardType: metadata.guardType,
+          method: request.method,
           resource,
-          eventType,
-          metadata.action,
-          user.id,
-          metadata.guildId,
-          { result: 'denied', reason },
-          {
-            guardType: metadata.guardType,
-            method: request.method,
-            resource,
-            ipAddress: this.contextService.getIpAddress(request),
-            userAgent: this.contextService.getUserAgent(request),
-            requestId: this.contextService.getRequestId(request),
-            ...metadata.metadata,
-          },
-        );
-      });
+          ipAddress: this.contextService.getIpAddress(request),
+          userAgent: this.contextService.getUserAgent(request),
+          requestId: this.contextService.getRequestId(request),
+          ...metadata.metadata,
+        },
+      );
     } catch (error) {
       this.logger.error('Failed to log authorization audit:', error);
       // Don't throw - audit logging failure shouldn't break the response

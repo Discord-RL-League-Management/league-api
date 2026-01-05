@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ActivityLogRepository } from '../repositories/activity-log.repository';
+import { PrismaService } from '../../../prisma/prisma.service';
 import { Prisma, ActivityLog } from '@prisma/client';
 
 /**
@@ -10,7 +11,10 @@ import { Prisma, ActivityLog } from '@prisma/client';
  */
 @Injectable()
 export class ActivityLogService {
-  constructor(private readonly repository: ActivityLogRepository) {}
+  constructor(
+    private readonly repository: ActivityLogRepository,
+    private readonly prisma: PrismaService,
+  ) {}
 
   /**
    * Log an activity
@@ -77,5 +81,35 @@ export class ActivityLogService {
     offset?: number;
   }): Promise<{ logs: ActivityLog[]; total: number }> {
     return this.repository.findWithFilters(filters);
+  }
+
+  /**
+   * Log an activity with its own transaction (for standalone audit logging)
+   * Use this method when logging activities outside of an existing transaction.
+   * For logging within an existing transaction, use logActivity() with the transaction client.
+   */
+  async logActivityStandalone(
+    entityType: string,
+    entityId: string,
+    eventType: string,
+    action: string,
+    userId?: string,
+    guildId?: string,
+    changes?: Prisma.InputJsonValue,
+    metadata?: Prisma.InputJsonValue,
+  ): Promise<ActivityLog> {
+    return this.prisma.$transaction(async (tx) => {
+      return this.logActivity(
+        tx,
+        entityType,
+        entityId,
+        eventType,
+        action,
+        userId,
+        guildId,
+        changes,
+        metadata,
+      );
+    });
   }
 }
