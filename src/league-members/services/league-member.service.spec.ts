@@ -428,11 +428,10 @@ describe('LeagueMemberService', () => {
         .mockResolvedValueOnce(null); // In transaction
       vi.mocked(mockLeagueSettings.getSettings).mockResolvedValue({
         membership: {
-          requiresApproval: false, // Note: requiresApproval, not requireApproval
+          requiresApproval: false,
         },
       } as any);
 
-      // Mock transaction with all required operations
       vi.mocked(mockPrisma.$transaction).mockImplementation(
         async (callback) => {
           const mockTx = {} as Prisma.TransactionClient;
@@ -441,7 +440,6 @@ describe('LeagueMemberService', () => {
       );
       vi.mocked(mockRepository.create).mockResolvedValue(newMember);
 
-      // Mock activity log and rating service to be called within transaction
       vi.mocked(mockActivityLog.logActivity).mockResolvedValue({
         id: 'log-1',
         entityType: 'league_member',

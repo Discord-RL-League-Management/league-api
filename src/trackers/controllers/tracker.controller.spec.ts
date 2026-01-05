@@ -299,8 +299,8 @@ describe('TrackerController', () => {
           { id: 'season-1', seasonNumber: 1, trackerId: 'tracker-123' },
         ],
       };
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { seasons, ...trackerWithoutSeasons } = trackerWithSeasons;
+      const { seasons: _seasons, ...trackerWithoutSeasons } =
+        trackerWithSeasons;
       const transformedResult = {
         tracker: trackerWithoutSeasons,
         seasons: trackerWithSeasons.seasons,
@@ -826,8 +826,6 @@ describe('TrackerController', () => {
       ).mockImplementation(() => {
         throw new ForbiddenException();
       });
-      // Note: updateTracker uses validateTrackerOwnership (owner-only operation)
-      // Even if user is guild admin, they cannot update
 
       await expect(
         controller.updateTracker('tracker-123', dto, mockUser),
@@ -910,8 +908,6 @@ describe('TrackerController', () => {
       ).mockImplementation(() => {
         throw new ForbiddenException();
       });
-      // Note: deleteTracker uses validateTrackerOwnership (owner-only operation)
-      // Even if user is guild admin, they cannot delete
 
       await expect(
         controller.deleteTracker('tracker-123', mockUser),

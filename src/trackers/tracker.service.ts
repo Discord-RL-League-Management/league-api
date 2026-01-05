@@ -53,7 +53,6 @@ export class TrackerService {
     if (!tracker) {
       throw new NotFoundException('Tracker not found');
     }
-    // Add seasons (repository doesn't include them by default)
     const seasons = await this.seasonService.getSeasonsByTracker(id);
     return { ...tracker, seasons };
   }

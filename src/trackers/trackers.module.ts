@@ -75,11 +75,7 @@ import { UsersModule } from '../users/users.module';
     }),
     BullModule.registerQueueAsync({
       name: TRACKER_SCRAPING_QUEUE,
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const _queueConfig =
-          configService.get<Record<string, unknown>>('queue');
+      useFactory: () => {
         return {
           defaultJobOptions: {
             removeOnComplete: 100,
@@ -93,7 +89,6 @@ import { UsersModule } from '../users/users.module';
           },
         };
       },
-      inject: [ConfigService],
     }),
   ],
   controllers: [TrackerController, TrackerAdminController],

@@ -112,7 +112,6 @@ export class LeagueMemberService {
       try {
         player = await this.playerService.findOne(joinLeagueDto.playerId);
       } catch {
-        // If player doesn't exist, we'll create it below
         player = null;
       }
 
@@ -123,8 +122,6 @@ export class LeagueMemberService {
           league.guildId,
         )) as { id: string };
       } else {
-        // Player doesn't exist - this shouldn't happen if playerId is provided
-        // For now, throw error - we'll need to update the DTO to include userId
         throw new NotFoundException('Player', joinLeagueDto.playerId);
       }
 
@@ -215,7 +212,7 @@ export class LeagueMemberService {
               leagueId,
               {
                 ratingSystem: 'DEFAULT',
-                currentRating: 1000, // Default starting rating
+                currentRating: 1000,
                 initialRating: 1000,
                 ratingData: {},
                 matchesPlayed: 0,

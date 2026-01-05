@@ -5,17 +5,11 @@ import { TrackersModule } from '../trackers/trackers.module';
 import { GuildMembersModule } from '../guild-members/guild-members.module';
 import { GuildsModule } from '../guilds/guilds.module';
 import { InfrastructureModule } from '../infrastructure/infrastructure.module';
-
-// Controllers
 import { PlayersController } from './players.controller';
 import { InternalPlayersController } from './internal-players.controller';
-
-// Services
 import { PlayerService } from './player.service';
 import { PlayerValidationService } from './services/player-validation.service';
 import { PlayerOwnershipService } from './services/player-ownership.service';
-
-// Repositories
 import { PlayerRepository } from './repositories/player.repository';
 
 @Module({
