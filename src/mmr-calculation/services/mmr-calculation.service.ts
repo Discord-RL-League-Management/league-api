@@ -119,7 +119,7 @@ export class MmrCalculationService {
     }
 
     if (totalWeight === 0) {
-      return 0; // No valid playlists
+      return 0;
     }
 
     return Math.round(weightedSum / totalWeight);
@@ -140,44 +140,36 @@ export class MmrCalculationService {
     trackerData: TrackerData,
     config: MmrCalculationConfig,
   ): number {
-    // Step 1: Get weights (Q and R) - defaults to 0.25 and 0.75
     const weights = config.ascendancyWeights || { current: 0.25, peak: 0.75 };
     const Q = weights.current;
     const R = weights.peak;
 
     // Note: Peak data not available in tracker data structure, using current as both
-    // Step 2: Calculate 2s Score (L)
     const twosCurrent = trackerData.twos || 0;
     const twosPeak = trackerData.twos || 0;
     const twosScore =
       Q + R > 0 ? (twosCurrent * Q + twosPeak * R) / (Q + R) : 0;
 
-    // Step 3: Calculate 3s Score (M)
     const threesCurrent = trackerData.threes || 0;
     const threesPeak = trackerData.threes || 0;
     const threesScore =
       Q + R > 0 ? (threesCurrent * Q + threesPeak * R) / (Q + R) : 0;
 
-    // Step 4: Calculate total games
     const totalGames =
       (trackerData.onesGamesPlayed || 0) +
       (trackerData.twosGamesPlayed || 0) +
       (trackerData.threesGamesPlayed || 0) +
       (trackerData.foursGamesPlayed || 0);
 
-    // Step 5: Calculate 2s% (N)
     const twosPercent =
       totalGames > 0 ? (trackerData.twosGamesPlayed || 0) / totalGames : 0;
 
-    // Step 6: Calculate 3s% (O)
     const threesPercent =
       totalGames > 0 ? (trackerData.threesGamesPlayed || 0) / totalGames : 0;
 
-    // Step 7: Calculate Final Score (P)
     // Weighted average of 2s Score and 3s Score using percentages as weights
     const totalPercent = twosPercent + threesPercent;
     if (totalPercent === 0) {
-      // No games in 2s or 3s, return 0
       return 0;
     }
 
@@ -261,7 +253,6 @@ export class MmrCalculationService {
     }
 
     try {
-      // Prepare data for formula evaluation
       const formulaData = {
         ones: trackerData.ones || 0,
         twos: trackerData.twos || 0,
@@ -278,7 +269,6 @@ export class MmrCalculationService {
           (trackerData.foursGamesPlayed || 0),
       };
 
-      // Parse and evaluate formula using math.js
       const expr = this.math.parse(config.customFormula);
       const result = expr.evaluate(formulaData) as unknown;
 

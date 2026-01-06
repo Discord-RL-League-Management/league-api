@@ -54,7 +54,6 @@ export class ConfigMigrationService {
    */
   migrate(config: unknown): LeagueConfiguration {
     if (!config || typeof config !== 'object' || config === null) {
-      // No config - return defaults
       return this.settingsDefaults.getDefaults();
     }
 
@@ -64,7 +63,6 @@ export class ConfigMigrationService {
       typeof configObj._metadata !== 'object' ||
       configObj._metadata === null
     ) {
-      // Missing metadata - merge with defaults and update metadata
       const defaults = this.settingsDefaults.getDefaults();
       const merged = this.settingsDefaults.mergeSettings(
         defaults,
@@ -130,7 +128,6 @@ export class ConfigMigrationService {
     const configObj = config as Record<string, unknown>;
     switch (targetVersion) {
       case 1: {
-        // Version 1 is the initial version - merge with defaults
         const defaults = this.settingsDefaults.getDefaults();
         return this.settingsDefaults.mergeSettings(
           defaults,

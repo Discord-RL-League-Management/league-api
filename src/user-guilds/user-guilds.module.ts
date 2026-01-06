@@ -11,7 +11,7 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
 @Module({
   imports: [
     GuildMembersModule,
-    GuildsModule, // GuardsModule is now global, breaking the cycle
+    GuildsModule,
     DiscordModule,
     TokenManagementModule,
     PermissionCheckModule,

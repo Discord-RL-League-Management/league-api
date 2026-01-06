@@ -168,7 +168,6 @@ export class GuildMembersService {
    */
   async remove(userId: string, guildId: string) {
     try {
-      // Check if member exists
       const exists = await this.guildMemberRepository.existsByCompositeKey(
         userId,
         guildId,

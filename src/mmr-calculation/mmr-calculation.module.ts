@@ -17,15 +17,10 @@ import { FormulaValidationModule } from '../formula-validation/formula-validatio
  * Dependencies:
  * - PrismaModule: Data access
  * - GuildsModule: Provides GuildSettingsService (needed for MMR calculation logic)
- * - GuardsModule: Provides AdminGuard for controller authentication
  * - FormulaValidationModule: Provides FormulaValidationService (shared utility)
  */
 @Module({
-  imports: [
-    PrismaModule,
-    GuildsModule, // GuardsModule is now global, breaking the cycle
-    FormulaValidationModule,
-  ],
+  imports: [PrismaModule, GuildsModule, FormulaValidationModule],
   controllers: [MmrCalculationController, MMRCalculatorDemoController],
   providers: [
     MmrCalculationService,

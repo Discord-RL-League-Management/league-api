@@ -7,8 +7,8 @@ import { IGUILD_ACCESS_PROVIDER } from '../../common/tokens/injection.tokens';
 /**
  * GuildAccessAdapterModule - Provides IGuildAccessProvider adapter
  *
- * This module breaks the circular dependency between GuardsModule and GuildsModule
- * by providing the adapter factory in a separate module that only depends on GuildsModule.
+ * This module provides the adapter factory in a separate module that depends on GuildsModule,
+ * enabling dependency injection without circular dependencies.
  */
 @Module({
   imports: [GuildsModule, GuildMembersModule],
