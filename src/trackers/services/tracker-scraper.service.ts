@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
-import { firstValueFrom, retry, catchError } from 'rxjs';
+import { firstValueFrom, retry, catchError, Observable } from 'rxjs';
 import { AxiosError, AxiosResponse } from 'axios';
 import { TrackerUrlConverterService } from './tracker-url-converter.service';
 import {
@@ -350,122 +350,178 @@ export class TrackerScraperService {
 
   /**
    * Make HTTP request through FlareSolverr scraper API
+   * Single Responsibility: HTTP request orchestration
    */
   private async makeProxyRequest(url: string): Promise<AxiosResponse<unknown>> {
     await this.enforceRateLimit();
 
     try {
-      const requestBody = {
-        cmd: 'request.get',
-        url: url,
-        maxTimeout: this.flaresolverrTimeout,
-      };
+      const requestBody = this.createProxyRequestBody(url);
+      const errorHandler = this.createErrorHandler();
+      const httpObservable = this.createHttpObservable(requestBody);
+      const observableWithRetry = this.addRetryLogic(
+        httpObservable,
+        errorHandler,
+      );
 
-      const errorHandler = catchError((error: AxiosError) => {
-        if (error.response) {
-          if (error.response.status === 429) {
-            this.logger.warn('Rate limit hit from FlareSolverr API');
-            throw new ServiceUnavailableException(
-              'Rate limit exceeded. Please try again later.',
-            );
-          }
-          if (error.response.status >= 500) {
-            this.logger.error(
-              `FlareSolverr API server error: ${error.response.status}`,
-            );
-            throw new ServiceUnavailableException(
-              'FlareSolverr scraper service unavailable',
-            );
-          }
-        }
+      const response = await firstValueFrom(observableWithRetry);
 
-        if (error.code === 'ECONNABORTED') {
-          throw new ServiceUnavailableException(
-            'Request timeout while connecting to FlareSolverr API',
-          );
-        }
-
-        if (error.response?.status === 400) {
-          this.logger.error(
-            `FlareSolverr API 400 error: ${JSON.stringify(error.response.data)}`,
-          );
-        }
-        throw error;
-      });
-
-      const httpObservable = this.httpService.post<{
-        status?: string;
-        message?: string;
-        solution?: {
-          response?: string;
-          status?: number;
-          url?: string;
-        };
-      }>(`${this.flaresolverrUrl}/v1`, requestBody, {
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        timeout: this.flaresolverrTimeout,
-      });
-
-      const observableWithRetry =
-        this.flaresolverrRetryAttempts > 0
-          ? httpObservable.pipe(
-              retry({
-                count: this.flaresolverrRetryAttempts,
-                delay: this.flaresolverrRetryDelay,
-              }),
-              errorHandler,
-            )
-          : httpObservable.pipe(errorHandler);
-
-      const response = (await firstValueFrom(
-        observableWithRetry,
-      )) as AxiosResponse<unknown>;
-
-      // FlareSolverr returns error status in the response body with status: "error" or "failed"
-      if (
-        response.data &&
-        typeof response.data === 'object' &&
-        'status' in response.data
-      ) {
-        const flaresolverrResponse = response.data as {
-          status?: string;
-          message?: string;
-        };
-        if (flaresolverrResponse.status !== 'ok') {
-          const errorMessage =
-            flaresolverrResponse.message ||
-            `FlareSolverr scraping failed with status: ${flaresolverrResponse.status || 'unknown'}`;
-          this.logger.error(`FlareSolverr scraping failed: ${errorMessage}`);
-          throw new ServiceUnavailableException(
-            `Failed to scrape target: ${errorMessage}`,
-          );
-        }
-      }
-
+      this.validateFlareSolverrResponse(response);
       this.logger.debug(
         `FlareSolverr API response received. Status: ${response.status}, Data type: ${typeof response.data}`,
       );
+
       return response;
     } catch (error) {
-      if (
-        error instanceof ServiceUnavailableException ||
-        error instanceof BadRequestException
-      ) {
-        throw error;
-      }
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      this.logger.error(
-        `FlareSolverr API request failed: ${errorMessage}`,
-        error,
-      );
-      throw new ServiceUnavailableException(
-        `Failed to make request through FlareSolverr API: ${errorMessage}`,
-      );
+      this.handleProxyRequestError(error);
     }
+  }
+
+  /**
+   * Create proxy request body
+   * Single Responsibility: Request body creation
+   */
+  private createProxyRequestBody(url: string) {
+    return {
+      cmd: 'request.get',
+      url: url,
+      maxTimeout: this.flaresolverrTimeout,
+    };
+  }
+
+  /**
+   * Create error handler for HTTP requests
+   * Single Responsibility: Error handler creation
+   */
+  private createErrorHandler(): (
+    source: Observable<AxiosResponse<unknown>>,
+  ) => Observable<AxiosResponse<unknown>> {
+    return catchError((error: AxiosError) => {
+      if (error.response) {
+        if (error.response.status === 429) {
+          this.logger.warn('Rate limit hit from FlareSolverr API');
+          throw new ServiceUnavailableException(
+            'Rate limit exceeded. Please try again later.',
+          );
+        }
+        if (error.response.status >= 500) {
+          this.logger.error(
+            `FlareSolverr API server error: ${error.response.status}`,
+          );
+          throw new ServiceUnavailableException(
+            'FlareSolverr scraper service unavailable',
+          );
+        }
+      }
+
+      if (error.code === 'ECONNABORTED') {
+        throw new ServiceUnavailableException(
+          'Request timeout while connecting to FlareSolverr API',
+        );
+      }
+
+      if (error.response?.status === 400) {
+        this.logger.error(
+          `FlareSolverr API 400 error: ${JSON.stringify(error.response.data)}`,
+        );
+      }
+      throw error;
+    });
+  }
+
+  /**
+   * Create HTTP observable
+   * Single Responsibility: HTTP observable creation
+   */
+  private createHttpObservable(requestBody: {
+    cmd: string;
+    url: string;
+    maxTimeout: number;
+  }) {
+    return this.httpService.post<{
+      status?: string;
+      message?: string;
+      solution?: {
+        response?: string;
+        status?: number;
+        url?: string;
+      };
+    }>(`${this.flaresolverrUrl}/v1`, requestBody, {
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      timeout: this.flaresolverrTimeout,
+    });
+  }
+
+  /**
+   * Add retry logic to observable
+   * Single Responsibility: Retry logic application
+   */
+  private addRetryLogic(
+    httpObservable: Observable<AxiosResponse<unknown>>,
+    errorHandler: (
+      source: Observable<AxiosResponse<unknown>>,
+    ) => Observable<AxiosResponse<unknown>>,
+  ): Observable<AxiosResponse<unknown>> {
+    return this.flaresolverrRetryAttempts > 0
+      ? httpObservable.pipe(
+          retry({
+            count: this.flaresolverrRetryAttempts,
+            delay: this.flaresolverrRetryDelay,
+          }),
+          errorHandler,
+        )
+      : httpObservable.pipe(errorHandler);
+  }
+
+  /**
+   * Validate FlareSolverr response
+   * Single Responsibility: Response validation
+   */
+  private validateFlareSolverrResponse(response: AxiosResponse<unknown>): void {
+    // FlareSolverr returns error status in the response body with status: "error" or "failed"
+    if (
+      response.data &&
+      typeof response.data === 'object' &&
+      'status' in response.data
+    ) {
+      const flaresolverrResponse = response.data as {
+        status?: string;
+        message?: string;
+      };
+      if (flaresolverrResponse.status !== 'ok') {
+        const errorMessage =
+          flaresolverrResponse.message ||
+          `FlareSolverr scraping failed with status: ${flaresolverrResponse.status || 'unknown'}`;
+        this.logger.error(`FlareSolverr scraping failed: ${errorMessage}`);
+        throw new ServiceUnavailableException(
+          `Failed to scrape target: ${errorMessage}`,
+        );
+      }
+    }
+  }
+
+  /**
+   * Handle proxy request errors
+   * Single Responsibility: Error handling and transformation
+   */
+  private handleProxyRequestError(error: unknown): never {
+    if (
+      error instanceof ServiceUnavailableException ||
+      error instanceof BadRequestException
+    ) {
+      throw error;
+    }
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    this.logger.error(
+      `FlareSolverr API request failed: ${errorMessage}`,
+      error,
+    );
+    throw new ServiceUnavailableException(
+      `Failed to make request through FlareSolverr API: ${errorMessage}`,
+    );
   }
 
   /**
@@ -479,7 +535,6 @@ export class TrackerScraperService {
     let responseData = this.extractResponseData(response);
     this.logResponseData(responseData);
 
-    // Handle FlareSolverr response format
     if (this.isFlareSolverrResponse(responseData)) {
       responseData = this.parseFlareSolverrResponse(responseData);
     }

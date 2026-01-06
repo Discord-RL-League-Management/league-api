@@ -5,7 +5,12 @@ import {
   InternalServerErrorException,
   Inject,
 } from '@nestjs/common';
-import { Prisma, LeagueMemberStatus, Player } from '@prisma/client';
+import {
+  Prisma,
+  LeagueMemberStatus,
+  Player,
+  LeagueMember,
+} from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UpdateLeagueMemberDto } from '../dto/update-league-member.dto';
 import { JoinLeagueDto } from '../dto/join-league.dto';
@@ -22,6 +27,7 @@ import { LeagueRepository } from '../../leagues/repositories/league.repository';
 import {
   LeagueMemberNotFoundException,
   LeagueMemberAlreadyExistsException,
+  InvalidLeagueMemberStatusException,
 } from '../exceptions/league-member.exceptions';
 import { LeagueMemberQueryOptions } from '../interfaces/league-member.interface';
 
@@ -97,40 +103,18 @@ export class LeagueMemberService {
 
   /**
    * Join league with full validation
-   * Single Responsibility: League join with validation and auto-creation
+   * Single Responsibility: League join orchestration
    */
   async joinLeague(
     leagueId: string,
     joinLeagueDto: JoinLeagueDto,
   ): Promise<any> {
     try {
-      const league = await this.leagueRepository.findById(leagueId);
-
-      if (!league) {
-        throw new NotFoundException('League', leagueId);
-      }
-
-      let player = null;
-      try {
-        player = await this.playerService.findOne(joinLeagueDto.playerId);
-      } catch (error) {
-        // Only catch PlayerNotFoundException - re-throw unexpected errors
-        if (!(error instanceof PlayerNotFoundException)) {
-          // Preserve error context for debugging unexpected failures
-          throw error;
-        }
-        // PlayerNotFoundException means player doesn't exist, which is expected
-      }
-
-      let guildPlayer: { id: string };
-      if (player) {
-        guildPlayer = (await this.playerService.ensurePlayerExists(
-          (player as Player & { userId: string }).userId,
-          league.guildId,
-        )) as { id: string };
-      } else {
-        throw new NotFoundException('Player', joinLeagueDto.playerId);
-      }
+      const league = await this.validateLeagueExists(leagueId);
+      const guildPlayer = await this.resolvePlayer(
+        joinLeagueDto.playerId,
+        league.guildId,
+      );
 
       const existing = await this.leagueMemberRepository.findByPlayerAndLeague(
         guildPlayer.id,
@@ -138,129 +122,301 @@ export class LeagueMemberService {
       );
 
       if (existing) {
-        if (existing.status === 'ACTIVE') {
-          throw new LeagueMemberAlreadyExistsException(
-            guildPlayer.id,
-            leagueId,
-          );
-        }
-        // If inactive, validate join eligibility (including cooldown) before reactivating
-        await this.joinValidationService.validateJoin(guildPlayer.id, leagueId);
-        return this.leagueMemberRepository.update(existing.id, {
-          status: LeagueMemberStatus.ACTIVE,
-          leftAt: null,
-          notes: joinLeagueDto.notes,
-        });
+        return await this.handleExistingMember(
+          existing,
+          guildPlayer.id,
+          leagueId,
+          joinLeagueDto.notes,
+        );
       }
 
       await this.joinValidationService.validateJoin(guildPlayer.id, leagueId);
+      const initialStatus = await this.determineInitialStatus(leagueId);
 
-      const settings = await this.leagueSettingsProvider.getSettings(leagueId);
-      const initialStatus = settings.membership.requiresApproval
-        ? LeagueMemberStatus.PENDING_APPROVAL
-        : LeagueMemberStatus.ACTIVE;
-
-      return await this.prisma.$transaction(async (tx) => {
-        // Double-check in transaction to prevent race condition where member is created concurrently
-        const existingInTx =
-          await this.leagueMemberRepository.findByPlayerAndLeague(
-            guildPlayer.id,
-            leagueId,
-            undefined,
-            tx,
-          );
-
-        if (existingInTx) {
-          if (existingInTx.status === 'ACTIVE') {
-            throw new LeagueMemberAlreadyExistsException(
-              guildPlayer.id,
-              leagueId,
-            );
-          }
-          return await this.leagueMemberRepository.update(
-            existingInTx.id,
-            {
-              status: LeagueMemberStatus.ACTIVE,
-              leftAt: null,
-              notes: joinLeagueDto.notes,
-            },
-            tx,
-          );
-        }
-
-        const member = await this.leagueMemberRepository.create(
-          {
-            playerId: guildPlayer.id,
-            leagueId,
-            status: initialStatus,
-            role: 'MEMBER',
-            notes: joinLeagueDto.notes,
-          },
-          tx,
-        );
-
-        await this.activityLogService.logActivity(
-          tx,
-          'league_member',
-          member.id,
-          initialStatus === 'PENDING_APPROVAL'
-            ? 'LEAGUE_MEMBER_PENDING'
-            : 'LEAGUE_MEMBER_JOINED',
-          'create',
-          (guildPlayer as Player & { userId: string }).userId,
-          league.guildId,
-          { status: initialStatus, leagueId },
-        );
-
-        if (initialStatus === 'ACTIVE') {
-          try {
-            await this.ratingService.updateRating(
-              guildPlayer.id,
-              leagueId,
-              {
-                ratingSystem: 'DEFAULT',
-                currentRating: 1000,
-                initialRating: 1000,
-                ratingData: {},
-                matchesPlayed: 0,
-                wins: 0,
-                losses: 0,
-                draws: 0,
-              },
-              tx, // Pass transaction client for atomicity
-            );
-          } catch (error) {
-            // Rating initialization failure shouldn't block join
-            this.logger.warn(
-              `Failed to initialize rating for player ${guildPlayer.id} in league ${leagueId}:`,
-              error,
-            );
-          }
-        }
-
-        return member;
-      });
+      return await this.createNewMemberInTransaction(
+        guildPlayer,
+        leagueId,
+        initialStatus,
+        joinLeagueDto.notes,
+        league.guildId,
+      );
     } catch (error) {
-      if (
-        error instanceof LeagueMemberAlreadyExistsException ||
-        error instanceof NotFoundException
-      ) {
+      this.handleJoinError(error, joinLeagueDto.playerId, leagueId);
+    }
+  }
+
+  /**
+   * Validate league exists
+   * Single Responsibility: League existence validation
+   */
+  private async validateLeagueExists(leagueId: string) {
+    const league = await this.leagueRepository.findById(leagueId);
+    if (!league) {
+      throw new NotFoundException('League', leagueId);
+    }
+    return league;
+  }
+
+  /**
+   * Resolve player and ensure exists in guild
+   * Single Responsibility: Player resolution and guild membership
+   */
+  private async resolvePlayer(
+    playerId: string,
+    guildId: string,
+  ): Promise<{ id: string; userId: string }> {
+    let player = null;
+    try {
+      player = await this.playerService.findOne(playerId);
+    } catch (error) {
+      // Only catch PlayerNotFoundException - re-throw unexpected errors
+      if (!(error instanceof PlayerNotFoundException)) {
         throw error;
       }
+    }
 
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
-        throw new LeagueMemberAlreadyExistsException(
-          joinLeagueDto.playerId,
+    if (!player) {
+      throw new NotFoundException('Player', playerId);
+    }
+
+    const guildPlayer = await this.playerService.ensurePlayerExists(
+      (player as Player & { userId: string }).userId,
+      guildId,
+    );
+
+    return { id: guildPlayer.id, userId: guildPlayer.userId };
+  }
+
+  /**
+   * Handle existing member reactivation
+   * Single Responsibility: Existing member reactivation logic
+   */
+  private async handleExistingMember(
+    existing: LeagueMember,
+    playerId: string,
+    leagueId: string,
+    notes?: string | null,
+  ) {
+    if (existing.status === 'ACTIVE') {
+      throw new LeagueMemberAlreadyExistsException(playerId, leagueId);
+    }
+
+    // Prevent reactivation from terminal states
+    if (
+      existing.status === LeagueMemberStatus.SUSPENDED ||
+      existing.status === LeagueMemberStatus.BANNED
+    ) {
+      throw new InvalidLeagueMemberStatusException(
+        `Cannot reactivate member with status '${existing.status}'. Terminal states (SUSPENDED, BANNED) cannot be reactivated.`,
+      );
+    }
+
+    // If inactive, validate join eligibility (including cooldown) before reactivating
+    await this.joinValidationService.validateJoin(playerId, leagueId);
+
+    return this.leagueMemberRepository.update(existing.id, {
+      status: LeagueMemberStatus.ACTIVE,
+      leftAt: null,
+      notes: notes ?? undefined,
+    });
+  }
+
+  /**
+   * Determine initial member status based on league settings
+   * Single Responsibility: Status determination
+   */
+  private async determineInitialStatus(
+    leagueId: string,
+  ): Promise<LeagueMemberStatus> {
+    const settings = await this.leagueSettingsProvider.getSettings(leagueId);
+    return settings.membership.requiresApproval
+      ? LeagueMemberStatus.PENDING_APPROVAL
+      : LeagueMemberStatus.ACTIVE;
+  }
+
+  /**
+   * Create new member in transaction
+   * Single Responsibility: Atomic member creation with logging and rating
+   */
+  private async createNewMemberInTransaction(
+    guildPlayer: { id: string; userId: string },
+    leagueId: string,
+    initialStatus: LeagueMemberStatus,
+    notes: string | null | undefined,
+    guildId: string,
+  ) {
+    return await this.prisma.$transaction(async (tx) => {
+      // Double-check in transaction to prevent race condition
+      const existingInTx =
+        await this.leagueMemberRepository.findByPlayerAndLeague(
+          guildPlayer.id,
           leagueId,
+          undefined,
+          tx,
+        );
+
+      if (existingInTx) {
+        return await this.reactivateMemberInTransaction(
+          existingInTx,
+          guildPlayer.id,
+          leagueId,
+          notes,
+          tx,
         );
       }
 
-      this.logger.error('Failed to join league:', error);
-      throw new InternalServerErrorException('Failed to join league');
+      const member = await this.leagueMemberRepository.create(
+        {
+          playerId: guildPlayer.id,
+          leagueId,
+          status: initialStatus,
+          role: 'MEMBER',
+          notes: notes ?? undefined,
+        },
+        tx,
+      );
+
+      await this.logMemberActivity(
+        member.id,
+        initialStatus,
+        guildPlayer.userId,
+        guildId,
+        leagueId,
+        tx,
+      );
+
+      if (initialStatus === 'ACTIVE') {
+        await this.initializeRatingForMember(guildPlayer.id, leagueId, tx);
+      }
+
+      return member;
+    });
+  }
+
+  /**
+   * Reactivate existing member in transaction
+   * Single Responsibility: Member reactivation in transaction context
+   */
+  private async reactivateMemberInTransaction(
+    existingInTx: LeagueMember,
+    playerId: string,
+    leagueId: string,
+    notes: string | null | undefined,
+    tx: Prisma.TransactionClient,
+  ) {
+    if (existingInTx.status === 'ACTIVE') {
+      throw new LeagueMemberAlreadyExistsException(playerId, leagueId);
     }
+
+    // Prevent reactivation from terminal states
+    if (
+      existingInTx.status === LeagueMemberStatus.SUSPENDED ||
+      existingInTx.status === LeagueMemberStatus.BANNED
+    ) {
+      throw new InvalidLeagueMemberStatusException(
+        `Cannot reactivate member with status '${existingInTx.status}'. Terminal states (SUSPENDED, BANNED) cannot be reactivated.`,
+      );
+    }
+
+    return await this.leagueMemberRepository.update(
+      existingInTx.id,
+      {
+        status: LeagueMemberStatus.ACTIVE,
+        leftAt: null,
+        notes: notes ?? undefined,
+      },
+      tx,
+    );
+  }
+
+  /**
+   * Log member activity
+   * Single Responsibility: Activity logging
+   */
+  private async logMemberActivity(
+    memberId: string,
+    status: LeagueMemberStatus,
+    userId: string,
+    guildId: string,
+    leagueId: string,
+    tx: Prisma.TransactionClient,
+  ) {
+    const activityType =
+      status === 'PENDING_APPROVAL'
+        ? 'LEAGUE_MEMBER_PENDING'
+        : 'LEAGUE_MEMBER_JOINED';
+
+    await this.activityLogService.logActivity(
+      tx,
+      'league_member',
+      memberId,
+      activityType,
+      'create',
+      userId,
+      guildId,
+      { status, leagueId },
+    );
+  }
+
+  /**
+   * Initialize rating for new member
+   * Single Responsibility: Rating initialization
+   */
+  private async initializeRatingForMember(
+    playerId: string,
+    leagueId: string,
+    tx: Prisma.TransactionClient,
+  ) {
+    try {
+      await this.ratingService.updateRating(
+        playerId,
+        leagueId,
+        {
+          ratingSystem: 'DEFAULT',
+          currentRating: 1000,
+          initialRating: 1000,
+          ratingData: {},
+          matchesPlayed: 0,
+          wins: 0,
+          losses: 0,
+          draws: 0,
+        },
+        tx,
+      );
+    } catch (error) {
+      // Rating initialization failure shouldn't block join
+      this.logger.warn(
+        `Failed to initialize rating for player ${playerId} in league ${leagueId}:`,
+        error,
+      );
+    }
+  }
+
+  /**
+   * Handle join errors
+   * Single Responsibility: Error handling and transformation
+   */
+  private handleJoinError(
+    error: unknown,
+    playerId: string,
+    leagueId: string,
+  ): never {
+    if (
+      error instanceof LeagueMemberAlreadyExistsException ||
+      error instanceof NotFoundException
+    ) {
+      throw error;
+    }
+
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2002'
+    ) {
+      throw new LeagueMemberAlreadyExistsException(playerId, leagueId);
+    }
+
+    this.logger.error('Failed to join league:', error);
+    throw new InternalServerErrorException('Failed to join league');
   }
 
   /**
@@ -372,7 +528,6 @@ export class LeagueMemberService {
       throw new LeagueMemberNotFoundException(id);
     }
 
-    // Approve with activity logging and rating initialization in transaction
     return await this.prisma.$transaction(async (tx) => {
       const updated = await this.leagueMemberRepository.update(
         id,
@@ -421,7 +576,7 @@ export class LeagueMemberService {
             losses: 0,
             draws: 0,
           },
-          tx, // Pass transaction client for atomicity
+          tx,
         );
       } catch (error) {
         this.logger.warn(
