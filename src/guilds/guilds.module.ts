@@ -29,6 +29,7 @@ import { GuildAccessValidationService } from './services/guild-access-validation
 import { GuildAuthorizationService } from './services/guild-authorization.service';
 import { GuildAdminGuard } from './guards/guild-admin.guard';
 import { GuildAdminSimpleGuard } from './guards/guild-admin-simple.guard';
+import { IGUILD_ACCESS_PROVIDER } from '../common/tokens/injection.tokens';
 
 @Module({
   imports: [
@@ -64,7 +65,7 @@ import { GuildAdminSimpleGuard } from './guards/guild-admin-simple.guard';
     GuildAdminGuard,
     GuildAdminSimpleGuard,
     {
-      provide: 'IGuildAccessProvider',
+      provide: IGUILD_ACCESS_PROVIDER,
       useFactory: (
         guildSettingsService: GuildSettingsService,
         guildMembersService: GuildMembersService,
@@ -82,7 +83,7 @@ import { GuildAdminSimpleGuard } from './guards/guild-admin-simple.guard';
     GuildSettingsService,
     SettingsDefaultsService,
     GuildRepository,
-    'IGuildAccessProvider',
+    IGUILD_ACCESS_PROVIDER,
     GuildAccessValidationService,
     GuildAuthorizationService,
     GuildAdminGuard,

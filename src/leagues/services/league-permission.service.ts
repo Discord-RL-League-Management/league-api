@@ -4,6 +4,7 @@ import { LeagueRepository } from '../repositories/league.repository';
 import { LeagueAccessValidationService } from './league-access-validation.service';
 import { PlayerService } from '../../players/player.service';
 import type { ILeagueMemberAccess } from '../../common/interfaces/league-domain/league-member-access.interface';
+import { ILEAGUE_MEMBER_ACCESS } from '../../common/tokens/injection.tokens';
 import { PermissionCheckService } from '../../permissions/modules/permission-check/permission-check.service';
 import { SettingsService } from '../../infrastructure/settings/services/settings.service';
 import { LeagueNotFoundException } from '../exceptions/league.exceptions';
@@ -22,7 +23,7 @@ export class LeaguePermissionService {
     private leagueRepository: LeagueRepository,
     private leagueAccessValidationService: LeagueAccessValidationService,
     private playerService: PlayerService,
-    @Inject('ILeagueMemberAccess')
+    @Inject(ILEAGUE_MEMBER_ACCESS)
     private leagueMemberAccess: ILeagueMemberAccess,
     private permissionCheckService: PermissionCheckService,
     private settingsService: SettingsService,

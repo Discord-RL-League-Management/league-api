@@ -3,6 +3,10 @@ import { OrganizationRepository } from '../repositories/organization.repository'
 import type { ILeagueRepositoryAccess } from '../../common/interfaces/league-domain/league-repository-access.interface';
 import { PlayerService } from '../../players/player.service';
 import type { ILeagueSettingsProvider } from '../../common/interfaces/league-domain/league-settings-provider.interface';
+import {
+  ILEAGUE_REPOSITORY_ACCESS,
+  ILEAGUE_SETTINGS_PROVIDER,
+} from '../../common/tokens/injection.tokens';
 import { CreateOrganizationDto } from '../dto/create-organization.dto';
 import {
   OrganizationNotFoundException,
@@ -26,10 +30,10 @@ export class OrganizationValidationService {
 
   constructor(
     private organizationRepository: OrganizationRepository,
-    @Inject('ILeagueRepositoryAccess')
+    @Inject(ILEAGUE_REPOSITORY_ACCESS)
     private leagueRepositoryAccess: ILeagueRepositoryAccess,
     private playerService: PlayerService,
-    @Inject('ILeagueSettingsProvider')
+    @Inject(ILEAGUE_SETTINGS_PROVIDER)
     private leagueSettingsProvider: ILeagueSettingsProvider,
   ) {}
 

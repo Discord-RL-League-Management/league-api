@@ -13,6 +13,10 @@ import { OrganizationValidationProviderAdapter } from './adapters/organization-v
 import { OrganizationProviderAdapter } from './adapters/organization-provider.adapter';
 import { OrganizationAuthorizationService } from './services/organization-authorization.service';
 import { OrganizationGmGuard } from './guards/organization-gm.guard';
+import {
+  IORGANIZATION_PROVIDER,
+  IORGANIZATION_VALIDATION_PROVIDER,
+} from '../common/tokens/injection.tokens';
 
 @Module({
   imports: [
@@ -30,11 +34,11 @@ import { OrganizationGmGuard } from './guards/organization-gm.guard';
     OrganizationAuthorizationService,
     OrganizationGmGuard,
     {
-      provide: 'IOrganizationProvider',
+      provide: IORGANIZATION_PROVIDER,
       useClass: OrganizationProviderAdapter,
     },
     {
-      provide: 'IOrganizationValidationProvider',
+      provide: IORGANIZATION_VALIDATION_PROVIDER,
       useClass: OrganizationValidationProviderAdapter,
     },
   ],
@@ -45,8 +49,8 @@ import { OrganizationGmGuard } from './guards/organization-gm.guard';
     OrganizationValidationService,
     OrganizationAuthorizationService,
     OrganizationGmGuard,
-    'IOrganizationProvider',
-    'IOrganizationValidationProvider',
+    IORGANIZATION_PROVIDER,
+    IORGANIZATION_VALIDATION_PROVIDER,
   ],
 })
 export class OrganizationsModule {}
