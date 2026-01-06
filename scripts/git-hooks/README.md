@@ -103,3 +103,55 @@ git commit --no-verify -m "your message"
 
 ⚠️ **Warning**: Only use `--no-verify` when absolutely necessary. Conventional commits enable automated versioning and changelog generation.
 
+## Post-merge Hook
+
+The `post-merge` hook automatically formats files that were changed during a merge operation. This prevents formatting drift when merging feature branches that may have been created before formatting rules were enforced or that bypassed pre-commit hooks.
+
+### How it works
+
+- After a merge completes, the hook:
+  1. Identifies files that were changed in the merge
+  2. Filters to TypeScript/JavaScript/JSON/Markdown files
+  3. Runs Prettier to format those files
+  4. Reports which files were reformatted
+  5. Does **not** auto-stage files (you can review with `git diff`)
+
+### Why it's needed
+
+- **Merge commits don't trigger pre-commit hooks** (by design)
+- Feature branches may have files without trailing newlines or other formatting issues
+- Without this hook, formatting issues accumulate on `main` after merges
+- This ensures `main` stays consistently formatted
+
+### Behavior
+
+- **Non-blocking**: If formatting fails, the merge still succeeds (you'll get a warning)
+- **Selective**: Only formats files that were actually changed in the merge
+- **Transparent**: Shows you which files were reformatted
+- **Safe**: Doesn't auto-stage changes, so you can review them first
+
+### Example Output
+
+```
+🔄 Post-merge: Formatting files changed in merge...
+📝 Formatting 5 file(s) with Prettier...
+✅ Successfully formatted 5 file(s)
+
+📋 3 file(s) were reformatted:
+   - src/common/interfaces/league-domain/league-member-access.interface.ts
+   - tests/factories/user.factory.ts
+   - tests/setup/e2e-setup.ts
+
+💡 Tip: Review the changes with 'git diff' and commit if desired
+```
+
+### Bypassing (when necessary)
+
+Post-merge hooks cannot be bypassed with `--no-verify` (they run after the merge). If you need to skip formatting:
+
+1. Temporarily rename the hook: `mv .git/hooks/post-merge .git/hooks/post-merge.bak`
+2. Perform your merge
+3. Restore the hook: `mv .git/hooks/post-merge.bak .git/hooks/post-merge`
+
+⚠️ **Note**: This is rarely necessary. The hook is designed to be safe and non-intrusive.
+

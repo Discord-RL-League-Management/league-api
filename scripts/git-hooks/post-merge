@@ -1,0 +1,73 @@
+#!/bin/bash
+
+# Post-merge hook to:
+# 1. Automatically format files that were changed in the merge
+# 2. Ensure consistent formatting (trailing newlines, etc.) after merges
+#
+# This prevents formatting drift when merging feature branches that may have
+# been created before formatting rules were enforced or that bypassed pre-commit hooks.
+
+set -e
+
+# Check if this is actually a merge (not just a checkout)
+# Git sets GIT_REFLOG_ACTION to "merge" during merges
+if [ "$GIT_REFLOG_ACTION" != "merge" ] && [ -z "$GIT_MERGE_AUTOEDIT" ]; then
+  # Check if we're in a merge state
+  if [ ! -f ".git/MERGE_HEAD" ]; then
+    # Not a merge, exit silently
+    exit 0
+  fi
+fi
+
+echo "🔄 Post-merge: Formatting files changed in merge..."
+
+# Get files that were changed in the merge
+# Compare HEAD^1 (before merge) with HEAD (after merge)
+MERGE_BASE=$(git merge-base HEAD^1 HEAD^2 2>/dev/null || git rev-parse HEAD^1)
+CHANGED_FILES=$(git diff --name-only --diff-filter=ACMR "$MERGE_BASE" HEAD 2>/dev/null || git diff --name-only --diff-filter=ACMR HEAD^1 HEAD 2>/dev/null || echo "")
+
+if [ -z "$CHANGED_FILES" ]; then
+  echo "ℹ️  No files changed in merge, skipping formatting"
+  exit 0
+fi
+
+# Filter to only TypeScript/JavaScript files that Prettier can format
+FORMATTABLE_FILES=$(echo "$CHANGED_FILES" | grep -E '\.(ts|js|tsx|jsx|json|md)$' || true)
+
+if [ -z "$FORMATTABLE_FILES" ]; then
+  echo "ℹ️  No formattable files changed in merge, skipping formatting"
+  exit 0
+fi
+
+# Count files for reporting
+FILE_COUNT=$(echo "$FORMATTABLE_FILES" | grep -c . || echo "0")
+
+echo "📝 Formatting $FILE_COUNT file(s) with Prettier..."
+
+# Format the files (non-blocking - don't fail the merge if formatting fails)
+# Convert newline-separated list to space-separated for Prettier
+FORMATTABLE_LIST=$(echo "$FORMATTABLE_FILES" | tr '\n' ' ')
+
+if npx prettier --write $FORMATTABLE_LIST 2>/dev/null; then
+  echo "✅ Successfully formatted $FILE_COUNT file(s)"
+  
+  # Check if any files were actually modified by Prettier
+  MODIFIED=$(git diff --name-only | grep -E '\.(ts|js|tsx|jsx|json|md)$' || true)
+  
+  if [ -n "$MODIFIED" ]; then
+    MODIFIED_COUNT=$(echo "$MODIFIED" | grep -c . || echo "0")
+    echo ""
+    echo "📋 $MODIFIED_COUNT file(s) were reformatted:"
+    echo "$MODIFIED" | sed 's/^/   - /'
+    echo ""
+    echo "💡 Tip: Review the changes with 'git diff' and commit if desired"
+  else
+    echo "✨ All files were already properly formatted"
+  fi
+else
+  echo "⚠️  Warning: Prettier formatting failed (merge still succeeded)"
+  echo "   You may want to run 'npm run format' manually"
+fi
+
+exit 0
+
