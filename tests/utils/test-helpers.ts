@@ -63,7 +63,10 @@ export function cleanupTestData(testId: string): void {
 export async function createTestUserWithToken(
   apiClient: AxiosInstance,
   userData: Partial<UserFactoryData> = {},
-): Promise<{ user: UserFactoryData & { id: string }; token: string }> {
+): Promise<{
+  user: UserFactoryData & { id: string; username: string; email: string };
+  token: string;
+}> {
   const { createUserData } = await import('../factories/user.factory.js');
   const { generateJwtToken, createAuthData } = await import(
     '../factories/auth.factory.js'
@@ -82,6 +85,13 @@ export async function createTestUserWithToken(
 
   const createdUser = createResponse.data.data;
 
+  // Validate required fields are present
+  if (!createdUser.username || !createdUser.email) {
+    throw new Error(
+      'Created user must have username and email. API response was invalid.',
+    );
+  }
+
   // Generate JWT token for the user
   const authData = createAuthData({
     userId: createdUser.id,
@@ -93,8 +103,15 @@ export async function createTestUserWithToken(
 
   const token = generateJwtToken(authData, process.env.JWT_PRIVATE_KEY || '');
 
+  // Type assertion: username and email are validated above
+  const userWithRequiredFields = createdUser as UserFactoryData & {
+    id: string;
+    username: string;
+    email: string;
+  };
+
   return {
-    user: createdUser,
+    user: userWithRequiredFields,
     token,
   };
 }
