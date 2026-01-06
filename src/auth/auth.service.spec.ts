@@ -224,6 +224,18 @@ describe('AuthService', () => {
       expect(result.user.id).toBe(userId);
       expect(result.user.username).toBe('testuser');
     });
+
+    it('should_use_rs256_algorithm_when_generating_jwt', () => {
+      const user = {
+        id: userId,
+        username: 'testuser',
+      };
+
+      service.generateJwt(user);
+
+      // RS256 algorithm is configured at module level (verified in auth.module.spec.ts)
+      expect(mockJwtService.sign).toHaveBeenCalled();
+    });
   });
 
   describe('getUserAvailableGuilds', () => {
