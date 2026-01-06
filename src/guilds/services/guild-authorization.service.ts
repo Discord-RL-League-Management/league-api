@@ -70,7 +70,6 @@ export class GuildAuthorizationService {
         throw new ForbiddenException('Access token not available');
       }
 
-      // Check Discord permissions first (primary check for Discord admins)
       const guildPermissions =
         await this.discordApiService.checkGuildPermissions(
           accessToken,

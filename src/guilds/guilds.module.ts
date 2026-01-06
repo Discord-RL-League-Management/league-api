@@ -18,7 +18,6 @@ import { SettingsModule } from '../infrastructure/settings/settings.module';
 import { ActivityLogModule } from '../infrastructure/activity-log/activity-log.module';
 import { DiscordModule } from '../discord/discord.module';
 import { TokenManagementModule } from '../auth/services/token-management.module';
-import { GuildMembersService } from '../guild-members/guild-members.service';
 import { cacheModuleOptions } from '../common/config/cache.config';
 import { PrismaModule } from '../prisma/prisma.module';
 import { UsersModule } from '../users/users.module';
@@ -66,16 +65,7 @@ import { IGUILD_ACCESS_PROVIDER } from '../common/tokens/injection.tokens';
     GuildAdminSimpleGuard,
     {
       provide: IGUILD_ACCESS_PROVIDER,
-      useFactory: (
-        guildSettingsService: GuildSettingsService,
-        guildMembersService: GuildMembersService,
-      ) => {
-        return new GuildAccessProviderAdapter(
-          guildSettingsService,
-          guildMembersService,
-        );
-      },
-      inject: [GuildSettingsService, GuildMembersService],
+      useClass: GuildAccessProviderAdapter,
     },
   ],
   exports: [

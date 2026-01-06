@@ -66,17 +66,11 @@ import {
     LeagueAdminOrModeratorGuard,
     {
       provide: ILEAGUE_SETTINGS_PROVIDER,
-      useFactory: (settingsService: LeagueSettingsService) => {
-        return new LeagueSettingsProviderAdapter(settingsService);
-      },
-      inject: [LeagueSettingsService],
+      useClass: LeagueSettingsProviderAdapter,
     },
     {
       provide: ILEAGUE_REPOSITORY_ACCESS,
-      useFactory: (leagueRepository: LeagueRepository) => {
-        return new LeagueRepositoryAccessAdapter(leagueRepository);
-      },
-      inject: [LeagueRepository],
+      useClass: LeagueRepositoryAccessAdapter,
     },
   ],
   exports: [

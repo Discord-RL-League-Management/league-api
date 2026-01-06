@@ -47,7 +47,6 @@ export class OrganizationGmGuard implements CanActivate {
     }
 
     try {
-      // Check if user is General Manager
       const isGM = await this.organizationAuthorizationService.isGeneralManager(
         user.id,
         organizationId,

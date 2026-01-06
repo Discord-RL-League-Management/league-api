@@ -32,7 +32,6 @@ export class GuildAccessProviderAdapter implements IGuildAccessProvider {
   async findOne(userId: string, guildId: string) {
     try {
       const member = await this.guildMembersService.findOne(userId, guildId);
-      // Map to interface-compatible format
       return {
         id: member.id,
         userId: member.userId,

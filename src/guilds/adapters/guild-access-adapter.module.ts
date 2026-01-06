@@ -2,8 +2,6 @@ import { Module } from '@nestjs/common';
 import { GuildsModule } from '../guilds.module';
 import { GuildMembersModule } from '../../guild-members/guild-members.module';
 import { GuildAccessProviderAdapter } from './guild-access-provider.adapter';
-import { GuildSettingsService } from '../guild-settings.service';
-import { GuildMembersService } from '../../guild-members/guild-members.service';
 import { IGUILD_ACCESS_PROVIDER } from '../../common/tokens/injection.tokens';
 
 /**
@@ -17,16 +15,7 @@ import { IGUILD_ACCESS_PROVIDER } from '../../common/tokens/injection.tokens';
   providers: [
     {
       provide: IGUILD_ACCESS_PROVIDER,
-      useFactory: (
-        guildSettingsService: GuildSettingsService,
-        guildMembersService: GuildMembersService,
-      ) => {
-        return new GuildAccessProviderAdapter(
-          guildSettingsService,
-          guildMembersService,
-        );
-      },
-      inject: [GuildSettingsService, GuildMembersService],
+      useClass: GuildAccessProviderAdapter,
     },
   ],
   exports: [IGUILD_ACCESS_PROVIDER],
