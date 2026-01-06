@@ -145,15 +145,14 @@ export class MmrCalculationService {
     const Q = weights.current;
     const R = weights.peak;
 
-    // Step 2: Calculate 2s Score (L)
     // Note: Peak data not available in tracker data structure, using current as both
+    // Step 2: Calculate 2s Score (L)
     const twosCurrent = trackerData.twos || 0;
     const twosPeak = trackerData.twos || 0;
     const twosScore =
       Q + R > 0 ? (twosCurrent * Q + twosPeak * R) / (Q + R) : 0;
 
     // Step 3: Calculate 3s Score (M)
-    // Note: Peak data not available in tracker data structure, using current as both
     const threesCurrent = trackerData.threes || 0;
     const threesPeak = trackerData.threes || 0;
     const threesScore =
@@ -283,7 +282,6 @@ export class MmrCalculationService {
       const expr = this.math.parse(config.customFormula);
       const result = expr.evaluate(formulaData) as unknown;
 
-      // Ensure result is a valid number
       if (typeof result !== 'number' || !isFinite(result)) {
         throw new Error('Formula evaluated to invalid number');
       }

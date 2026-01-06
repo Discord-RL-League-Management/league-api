@@ -1,4 +1,4 @@
-import { Team } from '@prisma/client';
+import { Team, Prisma } from '@prisma/client';
 
 /**
  * IOrganizationTeamProvider - Interface for team operations needed by OrganizationsModule
@@ -18,10 +18,23 @@ export interface IOrganizationTeamProvider {
    * Update a team's organization assignment
    * @param teamId - Team ID
    * @param data - Update data containing organizationId (can be null to remove from organization)
+   * @param tx - Optional transaction client for atomic operations
    * @returns Updated team
    */
   update(
     teamId: string,
     data: { organizationId: string | null },
+    tx?: Prisma.TransactionClient,
   ): Promise<Team>;
+
+  /**
+   * Count teams by organization ID
+   * @param organizationId - Organization ID
+   * @param tx - Optional transaction client for atomic operations
+   * @returns Number of teams in the organization
+   */
+  countByOrganizationId(
+    organizationId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<number>;
 }

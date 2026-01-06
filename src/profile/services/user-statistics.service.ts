@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { GuildMemberRepository } from '../../guild-members/repositories/guild-member.repository';
+import { GuildMemberQueryService } from '../../guild-members/services/guild-member-query.service';
 
 /**
  * UserStatisticsService - Aggregates statistics for user profiles
@@ -12,7 +12,7 @@ import { GuildMemberRepository } from '../../guild-members/repositories/guild-me
 export class UserStatisticsService {
   private readonly logger = new Logger(UserStatisticsService.name);
 
-  constructor(private guildMemberRepository: GuildMemberRepository) {}
+  constructor(private guildMemberQueryService: GuildMemberQueryService) {}
 
   /**
    * Get user statistics aggregated from guild memberships
@@ -28,12 +28,8 @@ export class UserStatisticsService {
     activeGuildsCount: number;
   }> {
     try {
-      const memberships = await this.guildMemberRepository.findByUserId(
-        userId,
-        {
-          guild: true,
-        },
-      );
+      const memberships =
+        await this.guildMemberQueryService.findMembersByUser(userId);
 
       type GuildMemberWithGuild = Prisma.GuildMemberGetPayload<{
         include: { guild: true };
@@ -88,10 +84,11 @@ export class UserStatisticsService {
     roles: string[];
   }> {
     try {
-      const membership = await this.guildMemberRepository.findByCompositeKey(
-        userId,
-        guildId,
-      );
+      const membership =
+        await this.guildMemberQueryService.findMemberWithGuildSettings(
+          userId,
+          guildId,
+        );
 
       if (!membership) {
         return {
@@ -108,7 +105,7 @@ export class UserStatisticsService {
         wins: 0,
         losses: 0,
         winRate: 0,
-        roles: membership.roles || [],
+        roles: membership.roles ?? [],
       };
     } catch (error) {
       this.logger.error(

@@ -43,7 +43,6 @@ import { ILEAGUE_MEMBER_ACCESS } from '../common/tokens/injection.tokens';
   exports: [
     LeagueMemberService,
     LeagueJoinValidationService,
-    LeagueMemberRepository,
     ILEAGUE_MEMBER_ACCESS,
   ],
 })

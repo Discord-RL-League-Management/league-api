@@ -53,7 +53,6 @@ export class GuildSettingsController {
   ) {
     try {
       this.logger.log(`Getting settings for guild ${guildId}`);
-      // Validate user and bot have access to guild
       await this.guildAccessValidationService.validateUserGuildAccess(
         user.id,
         guildId,

@@ -61,7 +61,6 @@ export class UsersService {
   }> {
     const tokens = await this.userRepository.getUserTokens(userId);
     if (!tokens || (!tokens.accessToken && !tokens.refreshToken)) {
-      // Check if user exists
       const exists = await this.userRepository.exists(userId);
       if (!exists) {
         throw new UserNotFoundException(userId);
@@ -91,5 +90,18 @@ export class UsersService {
 
   async exists(userId: string): Promise<boolean> {
     return this.userRepository.exists(userId);
+  }
+
+  /**
+   * Upsert user - create or update if exists
+   * Single Responsibility: User upsert logic
+   */
+  async upsert(data: {
+    id: string;
+    username: string;
+    globalName?: string | null;
+    avatar?: string | null;
+  }): Promise<User> {
+    return this.userRepository.upsert(data);
   }
 }

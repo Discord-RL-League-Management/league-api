@@ -31,7 +31,6 @@ export class ConfigMigrationService {
     }
 
     const configObj = config as Record<string, unknown>;
-    // Check if config has metadata
     if (
       !configObj._metadata ||
       typeof configObj._metadata !== 'object' ||
@@ -41,7 +40,6 @@ export class ConfigMigrationService {
     }
 
     const metadata = configObj._metadata as Record<string, unknown>;
-    // Check schema version
     const schemaVersion =
       typeof metadata.schemaVersion === 'number' ? metadata.schemaVersion : 1;
     return schemaVersion < CURRENT_SCHEMA_VERSION;
@@ -61,7 +59,6 @@ export class ConfigMigrationService {
     }
 
     const configObj = config as Record<string, unknown>;
-    // Ensure config has metadata
     if (
       !configObj._metadata ||
       typeof configObj._metadata !== 'object' ||
@@ -81,7 +78,6 @@ export class ConfigMigrationService {
     }
 
     const metadata = configObj._metadata as Record<string, unknown>;
-    // Get current schema version from config
     const currentVersion =
       typeof metadata.schemaVersion === 'number' ? metadata.schemaVersion : 1;
 
@@ -111,7 +107,6 @@ export class ConfigMigrationService {
       migrated = this.migrateToVersion(migrated, version);
     }
 
-    // Update metadata
     const migratedObj = migrated as Record<string, unknown>;
     migratedObj._metadata = {
       version: CURRENT_CONFIG_VERSION,

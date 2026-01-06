@@ -33,7 +33,6 @@ export class TeamMemberService {
   async addMember(createDto: CreateTeamMemberDto) {
     const team = await this.teamService.findOne(createDto.teamId);
 
-    // Check capacity
     const activeCount = await this.teamMemberRepository.countActiveMembers(
       createDto.teamId,
     );
@@ -43,7 +42,6 @@ export class TeamMemberService {
       );
     }
 
-    // Check if already a member
     const existing = await this.teamMemberRepository.findByPlayerAndLeague(
       createDto.playerId,
       createDto.leagueId,

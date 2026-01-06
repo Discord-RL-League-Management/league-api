@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException, Inject } from '@nestjs/common';
-import { LeagueRepository } from '../repositories/league.repository';
-import { GuildRepository } from '../../guilds/repositories/guild.repository';
+import { LeaguesService } from '../leagues.service';
+import { GuildsService } from '../../guilds/guilds.service';
 import { PlayerService } from '../../players/player.service';
 import type { ILeagueMemberAccess } from '../../common/interfaces/league-domain/league-member-access.interface';
 import { ILEAGUE_MEMBER_ACCESS } from '../../common/tokens/injection.tokens';
@@ -21,8 +21,8 @@ export class LeagueAccessValidationService {
   private readonly logger = new Logger(LeagueAccessValidationService.name);
 
   constructor(
-    private leagueRepository: LeagueRepository,
-    private guildRepository: GuildRepository,
+    private leaguesService: LeaguesService,
+    private guildsService: GuildsService,
     private playerService: PlayerService,
     @Inject(ILEAGUE_MEMBER_ACCESS)
     private leagueMemberAccess: ILeagueMemberAccess,
@@ -38,10 +38,7 @@ export class LeagueAccessValidationService {
    */
   async validateGuildAccess(userId: string, guildId: string): Promise<void> {
     try {
-      const guild = await this.guildRepository.findOne(guildId);
-      if (!guild) {
-        throw new NotFoundException('Guild', guildId);
-      }
+      await this.guildsService.findOne(guildId);
       // Guild exists - user access is validated at a higher level (AdminGuard, etc.)
       this.logger.debug(`User ${userId} has access to guild ${guildId}`);
     } catch (error) {
@@ -64,10 +61,7 @@ export class LeagueAccessValidationService {
    */
   async validateLeagueAccess(userId: string, leagueId: string): Promise<void> {
     try {
-      const league = await this.leagueRepository.findOne(leagueId);
-      if (!league) {
-        throw new LeagueNotFoundException(leagueId);
-      }
+      const league = await this.leaguesService.findOne(leagueId);
 
       await this.validateGuildAccess(userId, league.guildId);
 
@@ -116,6 +110,6 @@ export class LeagueAccessValidationService {
    * @returns true if league exists
    */
   async leagueExists(leagueId: string): Promise<boolean> {
-    return this.leagueRepository.exists(leagueId);
+    return this.leaguesService.exists(leagueId);
   }
 }

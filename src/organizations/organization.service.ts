@@ -18,7 +18,6 @@ import {
   ILEAGUE_SETTINGS_PROVIDER,
   IORGANIZATION_TEAM_PROVIDER,
 } from '../common/tokens/injection.tokens';
-import { TeamRepository } from '../teams/repositories/team.repository';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
@@ -48,7 +47,6 @@ export class OrganizationService {
     private leagueSettingsProvider: ILeagueSettingsProvider,
     @Inject(IORGANIZATION_TEAM_PROVIDER)
     private organizationTeamProvider: IOrganizationTeamProvider,
-    private teamRepository: TeamRepository,
     private prisma: PrismaService,
   ) {}
 
@@ -280,7 +278,10 @@ export class OrganizationService {
       // Count teams using transaction client to ensure consistent view of data
       if (maxTeamsPerOrg !== null && maxTeamsPerOrg !== undefined) {
         const currentTeamCount =
-          await this.teamRepository.countByOrganizationId(organizationId, tx);
+          await this.organizationTeamProvider.countByOrganizationId(
+            organizationId,
+            tx,
+          );
         const totalTeamsAfterAssignment = currentTeamCount + teamIds.length;
 
         if (totalTeamsAfterAssignment > maxTeamsPerOrg) {
@@ -291,10 +292,9 @@ export class OrganizationService {
         }
       }
 
-      // This ensures all-or-nothing semantics: if any update fails, all updates are rolled back
       const results = [];
       for (const teamId of teamIds) {
-        const team = await this.teamRepository.update(
+        const team = await this.organizationTeamProvider.update(
           teamId,
           { organizationId },
           tx,

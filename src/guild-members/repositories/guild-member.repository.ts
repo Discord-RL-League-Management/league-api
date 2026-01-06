@@ -335,7 +335,9 @@ export class GuildMemberRepository
   async findWithGuildSettings(
     userId: string,
     guildId: string,
-  ): Promise<GuildMember | null> {
+  ): Promise<Prisma.GuildMemberGetPayload<{
+    include: { guild: true };
+  }> | null> {
     return this.prisma.guildMember.findUnique({
       where: {
         userId_guildId: { userId, guildId },

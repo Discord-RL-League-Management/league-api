@@ -104,7 +104,6 @@ export class TokenManagementService {
         refresh_token: string;
       };
 
-      // Update user tokens
       await this.usersService.updateUserTokens(userId, {
         accessToken: access_token,
         refreshToken: refresh_token,
@@ -130,7 +129,6 @@ export class TokenManagementService {
         return null;
       }
 
-      // Validate current token
       const isValid = await this.validateDiscordToken(tokens.accessToken);
       if (isValid) {
         return tokens.accessToken;

@@ -38,7 +38,6 @@ export class GuildMembersService {
    */
   async create(createGuildMemberDto: CreateGuildMemberDto) {
     try {
-      // Validate user exists
       const userExists = await this.usersService.exists(
         createGuildMemberDto.userId,
       );
@@ -135,7 +134,6 @@ export class GuildMembersService {
     updateGuildMemberDto: UpdateGuildMemberDto,
   ) {
     try {
-      // Check if member exists
       const exists = await this.guildMemberRepository.existsByCompositeKey(
         userId,
         guildId,
@@ -224,7 +222,12 @@ export class GuildMembersService {
    * Find member with guild settings included
    * Single Responsibility: Delegate to query service
    */
-  async findMemberWithGuildSettings(userId: string, guildId: string) {
+  async findMemberWithGuildSettings(
+    userId: string,
+    guildId: string,
+  ): Promise<Prisma.GuildMemberGetPayload<{
+    include: { guild: true };
+  }> | null> {
     return this.guildMemberQueryService.findMemberWithGuildSettings(
       userId,
       guildId,

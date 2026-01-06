@@ -10,6 +10,6 @@ import { InternalTeamMembersController } from './internal-team-members.controlle
   imports: [PrismaModule, TeamsModule],
   controllers: [TeamMembersController, InternalTeamMembersController],
   providers: [TeamMemberService, TeamMemberRepository],
-  exports: [TeamMemberService, TeamMemberRepository],
+  exports: [TeamMemberService],
 })
 export class TeamMembersModule {}

@@ -72,12 +72,12 @@ import { IGUILD_ACCESS_PROVIDER } from '../common/tokens/injection.tokens';
     GuildsService,
     GuildSettingsService,
     SettingsDefaultsService,
-    GuildRepository,
     IGUILD_ACCESS_PROVIDER,
     GuildAccessValidationService,
     GuildAuthorizationService,
     GuildAdminGuard,
     GuildAdminSimpleGuard,
+    GuildRepository,
   ],
 })
 export class GuildsModule {}

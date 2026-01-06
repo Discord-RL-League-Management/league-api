@@ -77,7 +77,6 @@ import {
     LeaguesService,
     LeagueSettingsService,
     LeagueSettingsDefaultsService,
-    LeagueRepository,
     ILEAGUE_SETTINGS_PROVIDER,
     ILEAGUE_REPOSITORY_ACCESS,
     LeagueAccessValidationService,
@@ -85,6 +84,7 @@ import {
     LeagueAccessGuard,
     LeagueAdminGuard,
     LeagueAdminOrModeratorGuard,
+    LeagueRepository,
   ],
 })
 export class LeaguesModule {}
