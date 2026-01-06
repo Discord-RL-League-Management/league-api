@@ -60,7 +60,7 @@ export class AuthService {
       globalName: user.globalName,
       avatar: user.avatar,
       email: user.email,
-      guilds: user.guilds?.map((g) => g.id) || [], // Only guild IDs
+      guilds: user.guilds?.map((g) => g.id) || [],
       // SECURITY: Never include OAuth tokens in JWT
     };
 

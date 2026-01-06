@@ -32,8 +32,11 @@ import { UserOrchestratorService } from '../users/services/user-orchestrator.ser
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('auth.jwtSecret')!,
-        signOptions: { expiresIn: '7d' },
+        privateKey: configService.get<string>('auth.jwtPrivateKey')!,
+        signOptions: {
+          expiresIn: '7d',
+          algorithm: 'RS256',
+        },
       }),
       inject: [ConfigService],
     }),

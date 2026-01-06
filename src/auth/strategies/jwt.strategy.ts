@@ -9,7 +9,7 @@ import { Request } from 'express';
  * Custom JWT extraction from HttpOnly cookies
  * Falls back to Authorization header for backwards compatibility
  */
-const cookieExtractor = (req: Request): string | null => {
+export const cookieExtractor = (req: Request): string | null => {
   let token: string | null = null;
   if (req && req.cookies) {
     token =
@@ -36,7 +36,8 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     super({
       jwtFromRequest: cookieExtractor,
       ignoreExpiration: false,
-      secretOrKey: configService.get<string>('auth.jwtSecret')!,
+      secretOrKey: configService.get<string>('auth.jwtPublicKey')!,
+      algorithms: ['RS256'],
     });
   }
 
@@ -47,6 +48,6 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       throw new UnauthorizedException('User not found');
     }
 
-    return user; // Available as req.user in controllers
+    return user;
   }
 }

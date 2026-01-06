@@ -66,7 +66,6 @@ describe('JwtAuthGuard', () => {
 
     it('should_call_parent_canActivate_when_route_is_not_public', () => {
       vi.mocked(mockReflector.getAllAndOverride).mockReturnValue(false);
-      // Mock the parent's canActivate
       const parentPrototype = Object.getPrototypeOf(
         Object.getPrototypeOf(guard),
       );

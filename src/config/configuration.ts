@@ -10,12 +10,13 @@ export default () => {
     auth: {
       botApiKey: process.env.BOT_API_KEY || '',
       apiKeySalt: process.env.API_KEY_SALT || '',
-      jwtSecret: process.env.JWT_SECRET || '',
+      jwtPrivateKey: process.env.JWT_PRIVATE_KEY || '',
+      jwtPublicKey: process.env.JWT_PUBLIC_KEY || '',
       jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
       cookieSecure: process.env.NODE_ENV === 'production',
       cookieSameSite:
         (process.env.COOKIE_SAME_SITE as 'lax' | 'strict' | 'none') || 'lax',
-      cookieMaxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      cookieMaxAge: 7 * 24 * 60 * 60 * 1000,
     },
     encryption: {
       key: process.env.ENCRYPTION_KEY || '',

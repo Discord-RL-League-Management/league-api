@@ -9,6 +9,12 @@ dist/
 coverage/
 docs/reports/
 
+# JWT Keys (never commit these!)
+jwt-private.pem
+jwt-public.pem
+*-private.pem
+*-public.pem
+
 # Cursor IDE workspace files
 .cursor/worktrees.json
 .cursor/rules/

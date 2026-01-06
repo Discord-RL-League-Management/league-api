@@ -15,7 +15,14 @@ export const configurationSchema = Joi.object({
   API_KEY_SALT: Joi.string().required(),
 
   // JWT Authentication
-  JWT_SECRET: Joi.string().required(),
+  JWT_PRIVATE_KEY: Joi.string()
+    .required()
+    .pattern(/-----BEGIN (RSA )?PRIVATE KEY-----/)
+    .description('RSA private key in PEM format for signing JWT tokens'),
+  JWT_PUBLIC_KEY: Joi.string()
+    .required()
+    .pattern(/-----BEGIN PUBLIC KEY-----/)
+    .description('RSA public key in PEM format for verifying JWT tokens'),
   JWT_EXPIRES_IN: Joi.string().default('7d'),
 
   // Encryption
