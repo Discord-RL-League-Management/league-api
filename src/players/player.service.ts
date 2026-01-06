@@ -159,7 +159,7 @@ export class PlayerService {
    * Auto-create player on first league join attempt
    * Single Responsibility: Auto-creation with transaction
    */
-  async ensurePlayerExists(userId: string, guildId: string): Promise<any> {
+  async ensurePlayerExists(userId: string, guildId: string): Promise<Player> {
     const player = await this.playerRepository.findByUserIdAndGuildId(
       userId,
       guildId,

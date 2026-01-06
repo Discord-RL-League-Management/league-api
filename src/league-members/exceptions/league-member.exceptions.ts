@@ -44,3 +44,12 @@ export class LeagueCooldownException extends ValidationException {
     });
   }
 }
+
+/**
+ * InvalidLeagueMemberStatusException - Invalid league member status or status transition
+ */
+export class InvalidLeagueMemberStatusException extends ValidationException {
+  constructor(message: string) {
+    super(`Invalid league member status: ${message}`, { message });
+  }
+}

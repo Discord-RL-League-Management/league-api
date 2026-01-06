@@ -244,7 +244,6 @@ export class MmrCalculationService {
       );
     }
 
-    // Validate formula if not already validated
     const validation = this.formulaValidation.validateFormula(
       config.customFormula,
     );

@@ -36,7 +36,7 @@ export class GuildSyncService {
 
   /**
    * Atomically sync guild with members in a single transaction
-   * Single Responsibility: Atomic guild and member synchronization
+   * Single Responsibility: Atomic guild and member synchronization orchestration
    *
    * Eliminates race conditions by combining guild upsert and member sync
    * in a single database transaction. Used during bot startup sync.
@@ -67,108 +67,11 @@ export class GuildSyncService {
     rolesData?: { admin: Array<{ id: string; name: string }> },
   ): Promise<{ guild: Guild; membersSynced: number }> {
     try {
-      const defaultSettings = this.settingsDefaults.getDefaults();
-
       const result = await this.prisma.$transaction(async (tx) => {
-        const guild = await tx.guild.upsert({
-          where: { id: guildData.id },
-          update: {
-            name: guildData.name,
-            icon: guildData.icon ?? null,
-            ownerId: guildData.ownerId,
-            memberCount: guildData.memberCount ?? 0,
-            isActive: true,
-            leftAt: null,
-          },
-          create: guildData,
-        });
-
-        const existingSettings = await tx.settings.findUnique({
-          where: {
-            ownerType_ownerId: {
-              ownerType: 'guild',
-              ownerId: guild.id,
-            },
-          },
-        });
-
-        const settingsToSave =
-          rolesData?.admin && rolesData.admin.length > 0
-            ? {
-                ...defaultSettings,
-                roles: {
-                  ...defaultSettings.roles,
-                  admin: rolesData.admin,
-                },
-              }
-            : defaultSettings;
-
-        await tx.settings.upsert({
-          where: {
-            ownerType_ownerId: {
-              ownerType: 'guild',
-              ownerId: guild.id,
-            },
-          },
-          update:
-            rolesData?.admin && rolesData.admin.length > 0
-              ? {
-                  settings: {
-                    ...((existingSettings?.settings as unknown as GuildSettings) ||
-                      defaultSettings),
-                    roles: {
-                      ...((
-                        existingSettings?.settings as unknown as GuildSettings
-                      )?.roles || {}),
-                      admin: rolesData.admin,
-                    },
-                  } as unknown as Prisma.InputJsonValue,
-                }
-              : {},
-          create: {
-            ownerType: 'guild',
-            ownerId: guild.id,
-            settings: JSON.parse(
-              JSON.stringify(settingsToSave),
-            ) as Prisma.InputJsonValue,
-          },
-        });
-
-        if (members.length > 0) {
-          const uniqueUsers = Array.from(
-            new Map(members.map((m) => [m.userId, m])).values(),
-          );
-
-          for (const member of uniqueUsers) {
-            await this.userRepository.upsert(
-              {
-                id: member.userId,
-                username: member.username,
-                globalName: member.globalName ?? null,
-                avatar: member.avatar ?? null,
-              },
-              tx,
-            );
-          }
-        }
-
-        await tx.guildMember.deleteMany({
-          where: { guildId },
-        });
-
-        if (members.length > 0) {
-          const memberData = members.map((member) => ({
-            userId: member.userId,
-            guildId,
-            username: member.username,
-            nickname: member.nickname || null,
-            roles: member.roles,
-          }));
-
-          await tx.guildMember.createMany({
-            data: memberData,
-          });
-        }
+        const guild = await this.upsertGuildInTransaction(guildData, tx);
+        await this.upsertSettingsInTransaction(guild.id, rolesData, tx);
+        await this.syncUsersInTransaction(members, tx);
+        await this.syncMembersInTransaction(guildId, members, tx);
 
         return {
           guild,
@@ -182,63 +85,266 @@ export class GuildSyncService {
 
       return result;
     } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2003'
-      ) {
-        this.logger.error(
-          `Foreign key constraint error syncing guild ${guildId} with members:`,
-          {
-            message: error.message,
-            meta: error.meta,
-            cause: error.cause,
-            guildId,
-          },
-        );
+      this.handleSyncError(error, guildId, guildData, members.length);
+    }
+  }
 
-        const meta = error.meta as { field_name?: string } | undefined;
-        if (meta?.field_name) {
-          if (
-            meta.field_name.includes('userId') ||
-            meta.field_name.includes('user')
-          ) {
-            throw new NotFoundException(
-              `User not found for one or more members`,
-            );
-          } else if (
-            meta.field_name.includes('guildId') ||
-            meta.field_name.includes('guild')
-          ) {
-            throw new NotFoundException(`Guild ${guildId} not found`);
-          }
-        }
+  /**
+   * Upsert guild in transaction
+   * Single Responsibility: Guild upsert logic
+   */
+  private async upsertGuildInTransaction(
+    guildData: CreateGuildDto,
+    tx: Prisma.TransactionClient,
+  ): Promise<Guild> {
+    return await tx.guild.upsert({
+      where: { id: guildData.id },
+      update: {
+        name: guildData.name,
+        icon: guildData.icon ?? null,
+        ownerId: guildData.ownerId,
+        memberCount: guildData.memberCount ?? 0,
+        isActive: true,
+        leftAt: null,
+      },
+      create: guildData,
+    });
+  }
 
-        throw new NotFoundException(
-          `Foreign key constraint failed: required record not found`,
-        );
-      }
+  /**
+   * Upsert settings in transaction
+   * Single Responsibility: Settings upsert logic with role handling
+   */
+  private async upsertSettingsInTransaction(
+    guildId: string,
+    rolesData: { admin: Array<{ id: string; name: string }> } | undefined,
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    const defaultSettings = this.settingsDefaults.getDefaults();
 
-      const errorInfo = this.errorHandler.extractErrorInfo(error, guildId);
-
-      this.logger.error(`Failed to sync guild ${guildId} with members:`, {
-        error: errorInfo.message,
-        code: errorInfo.code,
-        details: errorInfo.details,
-        stack: error instanceof Error ? error.stack : undefined,
-        guildData: {
-          id: guildData.id,
-          name: guildData.name,
-          ownerId: guildData.ownerId,
-          memberCount: guildData.memberCount,
+    const existingSettings = await tx.settings.findUnique({
+      where: {
+        ownerType_ownerId: {
+          ownerType: 'guild',
+          ownerId: guildId,
         },
-        memberCount: members.length,
-      });
+      },
+    });
 
-      throw new InternalServerErrorException({
-        message: 'Failed to sync guild with members',
-        code: errorInfo.code || 'GUILD_SYNC_ERROR',
-        details: errorInfo.details,
+    const settingsToSave = this.prepareSettingsToSave(
+      defaultSettings,
+      existingSettings,
+      rolesData,
+    );
+
+    await tx.settings.upsert({
+      where: {
+        ownerType_ownerId: {
+          ownerType: 'guild',
+          ownerId: guildId,
+        },
+      },
+      update: this.prepareSettingsUpdate(
+        existingSettings,
+        defaultSettings,
+        rolesData,
+      ),
+      create: {
+        ownerType: 'guild',
+        ownerId: guildId,
+        settings: JSON.parse(
+          JSON.stringify(settingsToSave),
+        ) as Prisma.InputJsonValue,
+      },
+    });
+  }
+
+  /**
+   * Prepare settings to save
+   * Single Responsibility: Settings data preparation
+   */
+  private prepareSettingsToSave(
+    defaultSettings: GuildSettings,
+    existingSettings: { settings: unknown } | null,
+    rolesData?: { admin: Array<{ id: string; name: string }> },
+  ): GuildSettings {
+    if (rolesData?.admin && rolesData.admin.length > 0) {
+      return {
+        ...defaultSettings,
+        roles: {
+          ...defaultSettings.roles,
+          admin: rolesData.admin,
+        },
+      };
+    }
+    return defaultSettings;
+  }
+
+  /**
+   * Prepare settings update payload
+   * Single Responsibility: Settings update payload preparation
+   */
+  private prepareSettingsUpdate(
+    existingSettings: { settings: unknown } | null,
+    defaultSettings: GuildSettings,
+    rolesData?: { admin: Array<{ id: string; name: string }> },
+  ): { settings: Prisma.InputJsonValue } | Record<string, never> {
+    if (rolesData?.admin && rolesData.admin.length > 0) {
+      return {
+        settings: {
+          ...((existingSettings?.settings as GuildSettings) || defaultSettings),
+          roles: {
+            ...((existingSettings?.settings as GuildSettings)?.roles || {}),
+            admin: rolesData.admin,
+          },
+        } as unknown as Prisma.InputJsonValue,
+      };
+    }
+    return {};
+  }
+
+  /**
+   * Sync users in transaction
+   * Single Responsibility: User upsert logic
+   */
+  private async syncUsersInTransaction(
+    members: Array<{
+      userId: string;
+      username: string;
+      globalName?: string;
+      avatar?: string;
+    }>,
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    if (members.length === 0) {
+      return;
+    }
+
+    const uniqueUsers = Array.from(
+      new Map(members.map((m) => [m.userId, m])).values(),
+    );
+
+    for (const member of uniqueUsers) {
+      await this.userRepository.upsert(
+        {
+          id: member.userId,
+          username: member.username,
+          globalName: member.globalName ?? null,
+          avatar: member.avatar ?? null,
+        },
+        tx,
+      );
+    }
+  }
+
+  /**
+   * Sync members in transaction
+   * Single Responsibility: Member deletion and creation
+   */
+  private async syncMembersInTransaction(
+    guildId: string,
+    members: Array<{
+      userId: string;
+      username: string;
+      nickname?: string;
+      roles: string[];
+    }>,
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    await tx.guildMember.deleteMany({
+      where: { guildId },
+    });
+
+    if (members.length > 0) {
+      const memberData = members.map((member) => ({
+        userId: member.userId,
+        guildId,
+        username: member.username,
+        nickname: member.nickname || null,
+        roles: member.roles,
+      }));
+
+      await tx.guildMember.createMany({
+        data: memberData,
       });
     }
+  }
+
+  /**
+   * Handle sync errors
+   * Single Responsibility: Error handling and transformation
+   */
+  private handleSyncError(
+    error: unknown,
+    guildId: string,
+    guildData: CreateGuildDto,
+    memberCount: number,
+  ): never {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2003'
+    ) {
+      return this.handleForeignKeyError(error, guildId);
+    }
+
+    const errorInfo = this.errorHandler.extractErrorInfo(error, guildId);
+
+    this.logger.error(`Failed to sync guild ${guildId} with members:`, {
+      error: errorInfo.message,
+      code: errorInfo.code,
+      details: errorInfo.details,
+      stack: error instanceof Error ? error.stack : undefined,
+      guildData: {
+        id: guildData.id,
+        name: guildData.name,
+        ownerId: guildData.ownerId,
+        memberCount: guildData.memberCount,
+      },
+      memberCount,
+    });
+
+    throw new InternalServerErrorException({
+      message: 'Failed to sync guild with members',
+      code: errorInfo.code || 'GUILD_SYNC_ERROR',
+      details: errorInfo.details,
+    });
+  }
+
+  /**
+   * Handle foreign key constraint errors
+   * Single Responsibility: Foreign key error handling
+   */
+  private handleForeignKeyError(
+    error: Prisma.PrismaClientKnownRequestError,
+    guildId: string,
+  ): never {
+    this.logger.error(
+      `Foreign key constraint error syncing guild ${guildId} with members:`,
+      {
+        message: error.message,
+        meta: error.meta,
+        cause: error.cause,
+        guildId,
+      },
+    );
+
+    const meta = error.meta as { field_name?: string } | undefined;
+    if (meta?.field_name) {
+      if (
+        meta.field_name.includes('userId') ||
+        meta.field_name.includes('user')
+      ) {
+        throw new NotFoundException(`User not found for one or more members`);
+      } else if (
+        meta.field_name.includes('guildId') ||
+        meta.field_name.includes('guild')
+      ) {
+        throw new NotFoundException(`Guild ${guildId} not found`);
+      }
+    }
+
+    throw new NotFoundException(
+      `Foreign key constraint failed: required record not found`,
+    );
   }
 }
