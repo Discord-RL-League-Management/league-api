@@ -40,7 +40,6 @@ export class GuildAccessValidationService {
     userId: string,
     guildId: string,
   ): Promise<void> {
-    // Check bot is in guild (guild exists and is active)
     const guildExists = await this.guildRepository.exists(guildId);
     if (!guildExists) {
       this.logger.warn(
@@ -49,7 +48,6 @@ export class GuildAccessValidationService {
       throw new NotFoundException('Guild not found or bot is not a member');
     }
 
-    // Check user is member of guild
     const membership = await this.guildMemberRepository.findByCompositeKey(
       userId,
       guildId,

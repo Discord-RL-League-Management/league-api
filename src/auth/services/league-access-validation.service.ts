@@ -81,7 +81,6 @@ export class LeagueAccessValidationService {
         );
         // Not a player yet - that's okay, they can still view public leagues
       } else {
-        // Check if player is a league member (optional - depends on league visibility settings)
         const member = await this.leagueMemberAccess.findByPlayerAndLeague(
           player.id,
           leagueId,
