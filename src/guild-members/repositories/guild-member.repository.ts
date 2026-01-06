@@ -488,7 +488,6 @@ export class GuildMemberRepository
         where: { guildId },
       });
 
-      // Create new members
       const memberData = members.map((member) => ({
         userId: member.userId,
         guildId,
