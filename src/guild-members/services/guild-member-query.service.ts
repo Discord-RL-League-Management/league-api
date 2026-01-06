@@ -3,6 +3,7 @@ import {
   Logger,
   InternalServerErrorException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { GuildMemberRepository } from '../repositories/guild-member.repository';
 
 /**
@@ -120,7 +121,9 @@ export class GuildMemberQueryService {
   async findMemberWithGuildSettings(
     userId: string,
     guildId: string,
-  ): Promise<Record<string, unknown> | null> {
+  ): Promise<Prisma.GuildMemberGetPayload<{
+    include: { guild: true };
+  }> | null> {
     try {
       return await this.guildMemberRepository.findWithGuildSettings(
         userId,

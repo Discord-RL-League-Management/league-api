@@ -288,7 +288,6 @@ export class LeagueMemberService {
     const cooldownDays = settings.membership.cooldownAfterLeave;
 
     return await this.prisma.$transaction(async (tx) => {
-      // Get league and player for activity logging (inside transaction for atomicity)
       const league = await this.leagueRepository.findById(
         leagueId,
         undefined,
@@ -384,7 +383,6 @@ export class LeagueMemberService {
         tx,
       );
 
-      // Get player and league for activity logging
       const player = await this.playerRepository.findById(
         member.playerId,
         undefined,

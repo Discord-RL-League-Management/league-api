@@ -48,8 +48,6 @@ export class LeaguesService {
       // Instead, we'll check for duplicate name within the same guild if needed
       // For now, we'll allow multiple leagues with the same name in a guild
 
-      // Create league with settings in transaction (handled by repository)
-      // Ensure createdBy is included in the data
       const leagueData: CreateLeagueDto & { createdBy: string } = {
         ...createLeagueDto,
         createdBy,
@@ -216,7 +214,6 @@ export class LeaguesService {
     try {
       const league = await this.findOne(id);
 
-      // Validate status transition (can be enhanced with specific rules later)
       this.validateStatusTransition(league.status, status);
 
       return await this.leagueRepository.update(id, { status });
@@ -249,7 +246,6 @@ export class LeaguesService {
         throw new LeagueNotFoundException(id);
       }
 
-      // Hard delete league (cascade will handle related records)
       const deletedLeague = await this.leagueRepository.delete(id);
 
       this.logger.log(`Deleted league ${id}`);

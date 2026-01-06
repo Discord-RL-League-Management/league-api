@@ -20,7 +20,6 @@ import { OrganizationMemberService } from './services/organization-member.servic
 import { OrganizationValidationService } from './services/organization-validation.service';
 import { PlayerService } from '@/players/player.service';
 import { LeagueRepository } from '@/leagues/repositories/league.repository';
-import { TeamRepository } from '@/teams/repositories/team.repository';
 import type { ILeagueSettingsProvider } from '@/common/interfaces/league-domain/league-settings-provider.interface';
 import type { IOrganizationTeamProvider } from '@/common/interfaces/league-domain/organization-team-provider.interface';
 import { PrismaService } from '@/prisma/prisma.service';
@@ -41,7 +40,6 @@ describe('OrganizationService', () => {
   let mockValidationService: OrganizationValidationService;
   let mockPlayerService: PlayerService;
   let mockLeagueRepository: LeagueRepository;
-  let mockTeamRepository: TeamRepository;
   let mockLeagueSettingsProvider: ILeagueSettingsProvider;
   let mockOrganizationTeamProvider: IOrganizationTeamProvider;
   let mockPrisma: PrismaService;
@@ -118,11 +116,6 @@ describe('OrganizationService', () => {
       findById: vi.fn(),
     } as unknown as LeagueRepository;
 
-    mockTeamRepository = {
-      countByOrganizationId: vi.fn(),
-      update: vi.fn(),
-    } as unknown as TeamRepository;
-
     mockLeagueSettingsProvider = {
       getSettings: vi.fn(),
     } as unknown as ILeagueSettingsProvider;
@@ -130,6 +123,7 @@ describe('OrganizationService', () => {
     mockOrganizationTeamProvider = {
       findById: vi.fn(),
       update: vi.fn(),
+      countByOrganizationId: vi.fn(),
     } as unknown as IOrganizationTeamProvider;
 
     mockPrisma = {
@@ -147,7 +141,6 @@ describe('OrganizationService', () => {
       mockLeagueRepository,
       mockLeagueSettingsProvider,
       mockOrganizationTeamProvider,
-      mockTeamRepository,
       mockPrisma,
     );
   });
@@ -621,8 +614,10 @@ describe('OrganizationService', () => {
           return await callback(mockTx);
         },
       );
-      vi.mocked(mockTeamRepository.countByOrganizationId).mockResolvedValue(3); // Current count
-      vi.mocked(mockTeamRepository.update)
+      vi.mocked(
+        mockOrganizationTeamProvider.countByOrganizationId,
+      ).mockResolvedValue(3); // Current count
+      vi.mocked(mockOrganizationTeamProvider.update)
         .mockResolvedValueOnce({
           id: teamIds[0],
           organizationId,
@@ -640,11 +635,10 @@ describe('OrganizationService', () => {
 
       expect(result).toHaveLength(2);
       expect(result[0].organizationId).toBe(organizationId);
-      expect(mockTeamRepository.countByOrganizationId).toHaveBeenCalledWith(
-        organizationId,
-        expect.anything(),
-      );
-      expect(mockTeamRepository.update).toHaveBeenCalledTimes(2);
+      expect(
+        mockOrganizationTeamProvider.countByOrganizationId,
+      ).toHaveBeenCalledWith(organizationId, expect.anything());
+      expect(mockOrganizationTeamProvider.update).toHaveBeenCalledTimes(2);
     });
 
     it('should_throw_OrganizationCapacityExceededException_when_capacity_exceeded', async () => {
@@ -667,15 +661,16 @@ describe('OrganizationService', () => {
           return await callback(mockTx);
         },
       );
-      vi.mocked(mockTeamRepository.countByOrganizationId).mockResolvedValue(4); // Current count (4 + 2 = 6 > 5)
+      vi.mocked(
+        mockOrganizationTeamProvider.countByOrganizationId,
+      ).mockResolvedValue(4); // Current count (4 + 2 = 6 > 5)
 
       await expect(
         service.assignTeamsToOrganization(leagueId, organizationId, teamIds),
       ).rejects.toThrow(OrganizationCapacityExceededException);
-      expect(mockTeamRepository.countByOrganizationId).toHaveBeenCalledWith(
-        organizationId,
-        expect.anything(),
-      );
+      expect(
+        mockOrganizationTeamProvider.countByOrganizationId,
+      ).toHaveBeenCalledWith(organizationId, expect.anything());
     });
 
     it('should_throw_OrganizationNotFoundException_when_organization_not_in_league', async () => {

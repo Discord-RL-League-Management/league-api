@@ -34,11 +34,6 @@ import {
       useClass: OrganizationTeamProviderAdapter,
     },
   ],
-  exports: [
-    TeamService,
-    TeamRepository,
-    ITEAM_PROVIDER,
-    IORGANIZATION_TEAM_PROVIDER,
-  ],
+  exports: [TeamService, ITEAM_PROVIDER, IORGANIZATION_TEAM_PROVIDER],
 })
 export class TeamsModule {}

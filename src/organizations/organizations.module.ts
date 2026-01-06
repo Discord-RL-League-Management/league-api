@@ -43,7 +43,6 @@ import {
     },
   ],
   exports: [
-    OrganizationRepository,
     OrganizationService,
     OrganizationMemberService,
     OrganizationValidationService,

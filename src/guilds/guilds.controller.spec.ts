@@ -128,8 +128,6 @@ describe('GuildsController', () => {
 
   describe('getGuildSettings', () => {
     it('should_return_settings_when_user_is_admin', async () => {
-      // Note: GuildAdminGuard is applied, so we skip permission checks here
-      // The guard handles validation, so the controller just returns settings
       vi.mocked(mockGuildSettingsService.getSettings).mockResolvedValue(
         mockSettings as never,
       );
@@ -146,7 +144,6 @@ describe('GuildsController', () => {
   describe('getGuildChannels', () => {
     it('should_return_channels_when_user_is_admin', async () => {
       const mockChannels = [{ id: 'channel-1', name: 'General' }];
-      // Note: GuildAdminGuard is applied, so we skip permission checks here
       vi.mocked(mockDiscordBotService.getGuildChannels).mockResolvedValue(
         mockChannels as never,
       );
@@ -163,7 +160,6 @@ describe('GuildsController', () => {
   describe('getGuildRoles', () => {
     it('should_return_roles_when_user_is_admin', async () => {
       const mockRoles = [{ id: 'role-1', name: 'Admin' }];
-      // Note: GuildAdminGuard is applied, so we skip permission checks here
       vi.mocked(mockDiscordBotService.getGuildRoles).mockResolvedValue(
         mockRoles as never,
       );

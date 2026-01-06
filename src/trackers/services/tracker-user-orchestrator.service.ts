@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { UserRepository } from '../../users/repositories/user.repository';
+import { UsersService } from '../../users/users.service';
 
 /**
  * TrackerUserOrchestratorService - User management for tracker operations
@@ -11,7 +11,7 @@ import { UserRepository } from '../../users/repositories/user.repository';
 export class TrackerUserOrchestratorService {
   private readonly logger = new Logger(TrackerUserOrchestratorService.name);
 
-  constructor(private readonly userRepository: UserRepository) {}
+  constructor(private readonly usersService: UsersService) {}
 
   /**
    * Ensure user exists in database, creating or updating as needed
@@ -28,7 +28,7 @@ export class TrackerUserOrchestratorService {
     const globalName = userData?.globalName ?? null;
     const avatar = userData?.avatar ?? null;
 
-    await this.userRepository.upsert({
+    await this.usersService.upsert({
       id: userId,
       username,
       globalName,

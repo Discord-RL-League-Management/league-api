@@ -21,10 +21,10 @@ import { PrismaModule } from '../prisma/prisma.module';
   ],
   exports: [
     GuildMembersService,
-    GuildMemberRepository,
     GuildMemberQueryService,
     GuildMemberStatisticsService,
     GuildMemberSyncService,
+    GuildMemberRepository,
   ],
 })
 export class GuildMembersModule {}
