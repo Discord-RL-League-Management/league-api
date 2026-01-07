@@ -14,8 +14,8 @@ export interface AuthConfig {
 // Note: process.env usage here is intentional - this factory function
 // is called by ConfigModule during initialization and validates via Joi schema
 export default registerAs('auth', () => ({
-  jwtPrivateKey: process.env.JWT_PRIVATE_KEY || '',
-  jwtPublicKey: process.env.JWT_PUBLIC_KEY || '',
+  jwtPrivateKey: process.env.JWT_PRIVATE_KEY!,
+  jwtPublicKey: process.env.JWT_PUBLIC_KEY!,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   cookieName: 'auth_token',
   cookieHttpOnly: true,

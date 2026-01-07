@@ -10,8 +10,8 @@ export default () => {
     auth: {
       botApiKey: process.env.BOT_API_KEY || '',
       apiKeySalt: process.env.API_KEY_SALT || '',
-      jwtPrivateKey: process.env.JWT_PRIVATE_KEY || '',
-      jwtPublicKey: process.env.JWT_PUBLIC_KEY || '',
+      jwtPrivateKey: process.env.JWT_PRIVATE_KEY!,
+      jwtPublicKey: process.env.JWT_PUBLIC_KEY!,
       jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
       cookieSecure: process.env.NODE_ENV === 'production',
       cookieSameSite:
@@ -19,7 +19,7 @@ export default () => {
       cookieMaxAge: 7 * 24 * 60 * 60 * 1000,
     },
     encryption: {
-      key: process.env.ENCRYPTION_KEY || '',
+      key: process.env.ENCRYPTION_KEY!,
     },
     discord: {
       clientId: process.env.DISCORD_CLIENT_ID || '',
