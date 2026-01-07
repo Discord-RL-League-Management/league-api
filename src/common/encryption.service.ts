@@ -16,20 +16,14 @@ export class EncryptionService {
 
   /**
    * Get encryption key from environment
-   * Falls back to generated key in development
+   * SECURITY: No fallback - ENCRYPTION_KEY is required via schema validation
+   * Uses ConfigService.getOrThrow() which is the NestJS best practice for required config values
    */
   private getEncryptionKey(): Buffer {
-    const key = this.configService.get<string>('ENCRYPTION_KEY');
+    const key = this.configService.getOrThrow<string>('ENCRYPTION_KEY', {
+      infer: true,
+    });
 
-    if (!key) {
-      this.logger.warn(
-        'ENCRYPTION_KEY not set. Using default key for development only!',
-      );
-      // For development only - in production this should throw an error
-      return crypto.scryptSync('default-key-for-development', 'salt', 32);
-    }
-
-    // Convert hex string to buffer
     return Buffer.from(key, 'hex');
   }
 
@@ -49,16 +43,12 @@ export class EncryptionService {
 
       const cipher = crypto.createCipheriv(this.algorithm, key, iv);
 
-      // Encrypt data
       const encrypted = Buffer.concat([
         cipher.update(text, 'utf8'),
         cipher.final(),
       ]);
 
-      // Get authentication tag
       const tag = cipher.getAuthTag();
-
-      // Combine: salt + iv + tag + encrypted data
       const combined = Buffer.concat([salt, iv, tag, encrypted]);
 
       return combined.toString('base64');
@@ -80,7 +70,6 @@ export class EncryptionService {
     try {
       const combined = Buffer.from(encryptedText, 'base64');
 
-      // Extract components
       // Skip salt bytes (salt is stored but not used in decryption - key is derived from config)
       combined.subarray(0, this.saltLength);
       const iv = combined.subarray(
@@ -98,7 +87,6 @@ export class EncryptionService {
       const decipher = crypto.createDecipheriv(this.algorithm, key, iv);
       decipher.setAuthTag(tag);
 
-      // Decrypt data
       const decrypted = Buffer.concat([
         decipher.update(encrypted),
         decipher.final(),
@@ -122,7 +110,6 @@ export class EncryptionService {
 
     try {
       const buffer = Buffer.from(data, 'base64');
-      // Check if buffer has minimum size for encrypted data
       return buffer.length >= this.encryptedDataPosition;
     } catch {
       return false;
