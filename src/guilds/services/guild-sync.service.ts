@@ -41,11 +41,9 @@ export class GuildSyncService {
    * Eliminates race conditions by combining guild upsert and member sync
    * in a single database transaction. Used during bot startup sync.
    *
-   * Architectural Note: This method uses direct Prisma transaction access
-   * for guild and member operations because:
-   * 1. It requires atomic operations across multiple entities (guild, settings, members)
-   * 2. The transaction scope requires tight coordination between entities
-   * 3. This is an exception to the repository pattern, justified by atomicity requirements
+   * Uses direct Prisma transaction access (exception to repository pattern) because:
+   * - Requires atomic operations across multiple entities (guild, settings, members)
+   * - Transaction scope requires tight coordination between entities
    *
    * @param guildId - Discord guild ID
    * @param guildData - Guild data to upsert

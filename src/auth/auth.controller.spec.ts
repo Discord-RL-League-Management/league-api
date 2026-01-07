@@ -12,6 +12,9 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Test } from '@nestjs/testing';
 import { InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
+import type { Mocked } from 'vitest';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { DiscordOAuthService } from './services/discord-oauth.service';
@@ -29,6 +32,7 @@ describe('AuthController', () => {
   let mockAuthOrchestrationService: AuthOrchestrationService;
   let mockTokenManagementService: TokenManagementService;
   let mockConfigService: ConfigService;
+  let mockCacheManager: Mocked<Cache>;
   let mockResponse: Response;
 
   const mockUser: AuthenticatedUser = {
@@ -54,7 +58,13 @@ describe('AuthController', () => {
     } as unknown as AuthOrchestrationService;
 
     mockDiscordOAuthService = {
-      getAuthorizationUrl: vi.fn().mockReturnValue('https://discord.com/oauth'),
+      getAuthorizationUrl: vi
+        .fn()
+        .mockImplementation((state?: string) =>
+          state
+            ? `https://discord.com/oauth?state=${state}`
+            : 'https://discord.com/oauth',
+        ),
       exchangeCode: vi.fn(),
     } as unknown as DiscordOAuthService;
 
@@ -71,6 +81,12 @@ describe('AuthController', () => {
     mockConfigService = {
       get: vi.fn().mockReturnValue('http://localhost:3000'),
     } as unknown as ConfigService;
+
+    mockCacheManager = {
+      get: vi.fn(),
+      set: vi.fn(),
+      del: vi.fn(),
+    } as unknown as Mocked<Cache>;
 
     mockResponse = {
       redirect: vi.fn(),
@@ -94,6 +110,7 @@ describe('AuthController', () => {
           useValue: mockTokenManagementService,
         },
         { provide: ConfigService, useValue: mockConfigService },
+        { provide: CACHE_MANAGER, useValue: mockCacheManager },
       ],
     }).compile();
 
@@ -170,12 +187,42 @@ describe('AuthController', () => {
   });
 
   describe('discordLogin', () => {
-    it('should_redirect_to_discord_oauth_when_initiated', () => {
-      controller.discordLogin(mockResponse);
+    it('should_generate_state_token_and_store_in_cache_when_initiated', async () => {
+      vi.mocked(mockCacheManager.set).mockResolvedValue(undefined);
+      vi.mocked(mockDiscordOAuthService.getAuthorizationUrl).mockReturnValue(
+        'https://discord.com/oauth?state=test-state-token',
+      );
 
-      expect(mockDiscordOAuthService.getAuthorizationUrl).toHaveBeenCalled();
+      await controller.discordLogin(mockResponse);
+
+      // Verify state token was stored in cache with correct parameters
+      expect(mockCacheManager.set).toHaveBeenCalledWith(
+        expect.stringMatching(/^oauth:state:/),
+        expect.objectContaining({ timestamp: expect.any(Number) }),
+        600000, // 10 minutes TTL
+      );
+
+      // Verify authorization URL generation with state parameter
+      expect(mockDiscordOAuthService.getAuthorizationUrl).toHaveBeenCalledWith(
+        expect.any(String),
+      );
+
+      // Verify redirect response
+      expect(mockResponse.redirect).toHaveBeenCalled();
+    });
+
+    it('should_redirect_to_error_when_cache_storage_fails', async () => {
+      vi.mocked(mockCacheManager.set).mockRejectedValue(
+        new Error('Cache error'),
+      );
+
+      await controller.discordLogin(mockResponse);
+
       expect(mockResponse.redirect).toHaveBeenCalledWith(
-        'https://discord.com/oauth',
+        expect.stringContaining('/auth/error'),
+      );
+      expect(mockResponse.redirect).toHaveBeenCalledWith(
+        expect.stringContaining('oauth_init_failed'),
       );
     });
   });
@@ -187,6 +234,7 @@ describe('AuthController', () => {
 
       await controller.discordCallback(
         '' as string,
+        '' as string,
         error,
         errorDescription,
         mockResponse,
@@ -197,8 +245,9 @@ describe('AuthController', () => {
       );
     });
 
-    it('should_redirect_to_error_when_code_missing', async () => {
+    it('should_redirect_to_error_when_state_parameter_missing', async () => {
       await controller.discordCallback(
+        'auth-code-123',
         '' as string,
         '' as string,
         '' as string,
@@ -207,6 +256,121 @@ describe('AuthController', () => {
 
       expect(mockResponse.redirect).toHaveBeenCalledWith(
         expect.stringContaining('/auth/error'),
+      );
+      expect(mockResponse.redirect).toHaveBeenCalledWith(
+        expect.stringContaining('invalid_state'),
+      );
+      // URL-encoded: "State parameter missing" becomes "State%20parameter%20missing"
+      expect(mockResponse.redirect).toHaveBeenCalledWith(
+        expect.stringContaining('State%20parameter%20missing'),
+      );
+    });
+
+    it('should_redirect_to_error_when_state_not_in_cache', async () => {
+      vi.mocked(mockCacheManager.get).mockResolvedValue(undefined);
+
+      await controller.discordCallback(
+        'auth-code-123',
+        'invalid-state-token',
+        '' as string,
+        '' as string,
+        mockResponse,
+      );
+
+      expect(mockCacheManager.get).toHaveBeenCalledWith(
+        'oauth:state:invalid-state-token',
+      );
+      expect(mockResponse.redirect).toHaveBeenCalledWith(
+        expect.stringContaining('/auth/error'),
+      );
+      expect(mockResponse.redirect).toHaveBeenCalledWith(
+        expect.stringContaining('invalid_state'),
+      );
+    });
+
+    it('should_validate_state_and_delete_from_cache_when_valid', async () => {
+      const stateToken = 'valid-state-token-123';
+      const cachedState = { timestamp: Date.now() };
+      const mockTokenResponse = {
+        access_token: 'access-token',
+        token_type: 'Bearer',
+        expires_in: 604800,
+        refresh_token: 'refresh-token',
+        scope: 'identify email',
+      };
+      const mockDiscordUser = {
+        id: 'discord-user-123',
+        username: 'testuser',
+        discriminator: '0001',
+        global_name: 'Test User',
+        avatar: 'avatar_hash',
+        email: 'test@example.com',
+      };
+
+      vi.mocked(mockCacheManager.get).mockResolvedValue(cachedState);
+      vi.mocked(mockCacheManager.del).mockResolvedValue(undefined);
+      vi.mocked(mockDiscordOAuthService.exchangeCode).mockResolvedValue(
+        mockTokenResponse,
+      );
+      vi.mocked(mockDiscordApiService.getUserProfile).mockResolvedValue(
+        mockDiscordUser as never,
+      );
+      vi.mocked(mockAuthService.validateDiscordUser).mockResolvedValue(
+        mockUser,
+      );
+      vi.mocked(mockAuthService.generateJwt).mockReturnValue({
+        access_token: 'jwt-token',
+      });
+      vi.mocked(
+        mockAuthOrchestrationService.syncUserGuildMemberships,
+      ).mockResolvedValue(undefined);
+
+      await controller.discordCallback(
+        'auth-code-123',
+        stateToken,
+        '' as string,
+        '' as string,
+        mockResponse,
+      );
+
+      // Verify state was validated
+      expect(mockCacheManager.get).toHaveBeenCalledWith(
+        `oauth:state:${stateToken}`,
+      );
+
+      // Verify state was deleted (one-time use)
+      expect(mockCacheManager.del).toHaveBeenCalledWith(
+        `oauth:state:${stateToken}`,
+      );
+
+      // Verify OAuth flow continued
+      expect(mockDiscordOAuthService.exchangeCode).toHaveBeenCalledWith(
+        'auth-code-123',
+      );
+    });
+
+    it('should_redirect_to_error_when_code_missing_after_state_validation', async () => {
+      const stateToken = 'valid-state-token-123';
+      const cachedState = { timestamp: Date.now() };
+
+      vi.mocked(mockCacheManager.get).mockResolvedValue(cachedState);
+      vi.mocked(mockCacheManager.del).mockResolvedValue(undefined);
+
+      await controller.discordCallback(
+        '' as string,
+        stateToken,
+        '' as string,
+        '' as string,
+        mockResponse,
+      );
+
+      // State should still be deleted even if code is missing
+      expect(mockCacheManager.del).toHaveBeenCalled();
+      expect(mockResponse.redirect).toHaveBeenCalledWith(
+        expect.stringContaining('/auth/error'),
+      );
+      expect(mockResponse.redirect).toHaveBeenCalledWith(
+        expect.stringContaining('no_code'),
       );
     });
   });

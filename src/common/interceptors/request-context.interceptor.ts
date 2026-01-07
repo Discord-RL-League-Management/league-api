@@ -36,9 +36,8 @@ export class RequestContextInterceptor implements NestInterceptor {
       traceId: requestId, // Use requestId as traceId for New Relic
     };
 
-    // Use defer to ensure AsyncLocalStorage context is set up when the Observable is subscribed to,
-    // not when it's created. This ensures the context is maintained throughout the entire Observable chain,
-    // including all async operations in route handlers, services, and other interceptors.
+    // Defer ensures AsyncLocalStorage context is set up when Observable is subscribed to,
+    // maintaining context throughout the Observable chain including all async operations.
     return defer(() => {
       return requestContextStore.run(requestContext, () => {
         return next.handle();

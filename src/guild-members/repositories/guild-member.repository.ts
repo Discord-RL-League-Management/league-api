@@ -55,7 +55,6 @@ export class GuildMemberRepository
 
   /**
    * Find all members with optional pagination
-   * Note: This is less useful for GuildMember since we typically filter by guildId or userId
    */
   async findAll(options?: { page?: number; limit?: number }): Promise<{
     data: GuildMember[];

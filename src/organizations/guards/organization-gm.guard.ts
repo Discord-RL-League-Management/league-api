@@ -55,7 +55,6 @@ export class OrganizationGmGuard implements CanActivate {
       if (!isGM) {
         // Special case: If organization has no General Managers, allow bot users
         // This handles system-created default organizations that need to be managed
-        // Note: JWT users (user.id) will never be 'system' as they are Discord user IDs.
         // System-created organizations (created with userId='system') are managed via
         // bot endpoints which use BotAuthGuard and have user.type === 'bot'
         const hasGMs =

@@ -86,7 +86,6 @@ export class TeamRepository
           description: data.description,
         }),
         ...(data.captainId !== undefined && { captainId: data.captainId }),
-        // Handle null explicitly - null means remove from organization
         ...(data.organizationId !== undefined && {
           organizationId: data.organizationId,
         }),

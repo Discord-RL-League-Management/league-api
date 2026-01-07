@@ -56,7 +56,7 @@ export class UserGuildsService {
       );
 
       // Enrich guilds with permission information
-      // Note: For performance, we pass undefined for settings and let the
+      // For performance, we pass undefined for settings and let the
       // permission service fetch them only when needed for admin checks.
       const enrichedGuilds = await Promise.all(
         guilds.map(async (guild) => {

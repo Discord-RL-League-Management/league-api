@@ -15,7 +15,6 @@ export class RequestContextService {
    * Single Responsibility: Extract IP address
    */
   getIpAddress(request: Request): string {
-    // Try various headers for IP (in case behind proxy)
     const forwarded = request.headers['x-forwarded-for'];
     if (typeof forwarded === 'string') {
       return forwarded.split(',')[0].trim();

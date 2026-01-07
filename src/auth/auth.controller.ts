@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Res, Logger, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Res,
+  Logger,
+  Query,
+  Inject,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -9,6 +17,9 @@ import {
 import { SkipThrottle } from '@nestjs/throttler';
 import type { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
+import * as crypto from 'crypto';
 import { AuthService } from './auth.service';
 import { DiscordOAuthService } from './services/discord-oauth.service';
 import { DiscordApiService } from '../discord/discord-api.service';
@@ -31,7 +42,19 @@ export class AuthController {
     private authOrchestrationService: AuthOrchestrationService,
     private tokenManagementService: TokenManagementService,
     private configService: ConfigService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
+
+  /**
+   * Generate a cryptographically secure state token for OAuth CSRF protection
+   * Following OAuth 2.0 Security Best Practices: https://oauth.net/2/oauth-best-practice/
+   * @returns Base64url-encoded state token
+   */
+  private generateStateToken(): string {
+    const randomBytes = crypto.randomBytes(32);
+    const base64 = randomBytes.toString('base64');
+    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+  }
 
   @Get('discord')
   @Public()
@@ -41,10 +64,26 @@ export class AuthController {
     description: 'Redirects to Discord authorization page',
   })
   @ApiExcludeEndpoint()
-  discordLogin(@Res() res: Response) {
-    const authUrl = this.discordOAuthService.getAuthorizationUrl();
-    this.logger.log('Discord OAuth flow initiated');
-    res.redirect(authUrl);
+  async discordLogin(@Res() res: Response) {
+    try {
+      const stateToken = this.generateStateToken();
+
+      const stateCacheKey = `oauth:state:${stateToken}`;
+      await this.cacheManager.set(
+        stateCacheKey,
+        { timestamp: Date.now() },
+        600000,
+      );
+
+      const authUrl = this.discordOAuthService.getAuthorizationUrl(stateToken);
+      this.logger.log('Discord OAuth flow initiated with state parameter');
+      res.redirect(authUrl);
+    } catch (error) {
+      this.logger.error('Failed to initiate OAuth flow:', error);
+      const frontendUrl = this.configService.get<string>('frontend.url', '');
+      const errorUrl = `${frontendUrl}/auth/error?error=oauth_init_failed&description=${encodeURIComponent('Failed to initiate authentication')}`;
+      res.redirect(errorUrl);
+    }
   }
 
   @Get('discord/callback')
@@ -57,20 +96,45 @@ export class AuthController {
   @ApiExcludeEndpoint()
   async discordCallback(
     @Query('code') code: string,
+    @Query('state') state: string,
     @Query('error') error: string,
     @Query('error_description') errorDescription: string,
     @Res() res: Response,
   ) {
+    const frontendUrl = this.configService.get<string>('frontend.url', '');
+
     if (error) {
       this.logger.warn(`OAuth error: ${error} - ${errorDescription}`);
-      const frontendUrl = this.configService.get<string>('frontend.url', '');
       const errorUrl = `${frontendUrl}/auth/error?error=${encodeURIComponent(error)}&description=${encodeURIComponent(errorDescription || '')}`;
       return res.redirect(errorUrl);
     }
 
+    if (!state) {
+      this.logger.warn(
+        'OAuth callback received without state parameter - potential CSRF attempt',
+      );
+      const errorUrl = `${frontendUrl}/auth/error?error=invalid_state&description=${encodeURIComponent('State parameter missing')}`;
+      return res.redirect(errorUrl);
+    }
+
+    const stateCacheKey = `oauth:state:${state}`;
+    const cachedState = await this.cacheManager.get<{ timestamp: number }>(
+      stateCacheKey,
+    );
+
+    if (!cachedState) {
+      this.logger.warn(
+        `OAuth callback received with invalid/expired state parameter - potential replay attack. State: ${state?.substring(0, 8) || 'empty'}...`,
+      );
+      const errorUrl = `${frontendUrl}/auth/error?error=invalid_state&description=${encodeURIComponent('Invalid or expired state parameter')}`;
+      return res.redirect(errorUrl);
+    }
+
+    await this.cacheManager.del(stateCacheKey);
+    this.logger.debug('State parameter validated and deleted from cache');
+
     if (!code) {
       this.logger.error('OAuth callback received without authorization code');
-      const frontendUrl = this.configService.get<string>('frontend.url', '');
       const errorUrl = `${frontendUrl}/auth/error?error=no_code&description=${encodeURIComponent('Authorization code missing')}`;
       return res.redirect(errorUrl);
     }
@@ -95,21 +159,18 @@ export class AuthController {
 
       this.logger.log(`OAuth callback successful for user ${user.id}`);
 
-      // Sync guild memberships during OAuth to ensure user roles are current when they first log in
       try {
         await this.authOrchestrationService.syncUserGuildMemberships(
           user.id,
           tokenResponse.access_token,
         );
       } catch (error) {
-        // Log error but don't fail OAuth callback - role sync is not critical
         this.logger.error(
           `Failed to sync guild memberships with roles for user ${user.id}:`,
           error,
         );
       }
 
-      // Convert null to undefined because JWT payload uses optional properties that don't accept null
       const jwt = this.authService.generateJwt({
         id: user.id,
         username: user.username,
@@ -134,13 +195,10 @@ export class AuthController {
 
       res.cookie('auth_token', jwt.access_token, cookieOptions);
 
-      // Use cookie-based auth instead of URL token to prevent token exposure in browser history and logs
-      const frontendUrl = this.configService.get<string>('frontend.url', '');
       const redirectUrl = `${frontendUrl}/auth/callback`;
       res.redirect(redirectUrl);
     } catch (error) {
       this.logger.error('OAuth callback failed:', error);
-      const frontendUrl = this.configService.get<string>('frontend.url', '');
       const errorUrl = `${frontendUrl}/auth/error?error=oauth_failed&description=${encodeURIComponent('Authentication failed')}`;
       res.redirect(errorUrl);
     }

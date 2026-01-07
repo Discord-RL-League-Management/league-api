@@ -18,11 +18,20 @@ This test suite follows **ISO/IEC/IEEE 29119** standards and implements the **Te
 
 ## Test Levels
 
-### 1. Unit Tests (`tests/unit/`)
+### 1. Unit Tests (`src/**/*.spec.ts`)
+
+**Location:** Colocated with source files in `src/` directory  
+**NestJS Convention:** Following NestJS best practices, unit test files are placed alongside their corresponding source files using the `.spec.ts` naming convention (e.g., `auth.service.ts` → `auth.service.spec.ts`)
 
 **Tool:** Vitest  
 **Methodology:** Test-Driven Development (TDD)  
 **Focus:** Code correctness, individual function logic, speed
+
+**NestJS Best Practices:**
+- ✅ **Colocation:** Test files live next to source files in `src/` directory
+- ✅ **Naming:** Use `.spec.ts` suffix (NestJS standard)
+- ✅ **Structure:** Mirror source directory structure
+- ✅ **Isolation:** Each test is independent with mocked dependencies
 
 **Standards:**
 - Focus on functional core, not imperative shell
@@ -31,7 +40,18 @@ This test suite follows **ISO/IEC/IEEE 29119** standards and implements the **Te
 - Mock external dependencies
 - Fast execution (< 100ms per test)
 
-**Example:**
+**Example Structure:**
+```
+src/
+  auth/
+    services/
+      discord-oauth.service.ts          # Source file
+      discord-oauth.service.spec.ts      # Unit test (colocated)
+    auth.controller.ts
+    auth.controller.spec.ts              # Unit test (colocated)
+```
+
+**Example Test:**
 ```typescript
 it('should_calculate_weighted_average_mmr_with_valid_data', () => {
   // ARRANGE
@@ -159,15 +179,53 @@ All tests support **parallel execution** in CI/CD:
 - No shared state between tests
 - Independent setup/teardown per test
 
+## File Structure
+
+```
+src/                          # Source code with colocated unit tests
+  auth/
+    auth.service.ts
+    auth.service.spec.ts      # ✅ Unit test (NestJS convention)
+    services/
+      discord-oauth.service.ts
+      discord-oauth.service.spec.ts  # ✅ Unit test (NestJS convention)
+
+tests/                        # Integration and E2E tests
+  api/                        # API/Integration tests
+    *.test.ts
+  e2e/                        # End-to-end tests
+    *.spec.ts
+  integration/                # Integration test utilities
+    adapters/
+  factories/                  # Test data factories
+  setup/                      # Test setup files
+    unit-setup.ts
+    api-setup.ts
+    e2e-setup.ts
+  utils/                      # Test utility helpers
+    db-helpers.ts
+    test-helpers.ts
+```
+
 ## Configuration Files
 
-- `vitest.config.mts` - Vitest configuration for unit and API tests
+- `vitest.config.mts` - Vitest configuration for unit tests (`src/**/*.spec.ts`)
+- `vitest.api.config.mts` - Vitest configuration for API tests (`tests/api/**/*.test.ts`)
 - `playwright.config.ts` - Playwright configuration for E2E tests
-- `tests/setup/unit-setup.ts` - Unit test setup
+- `tests/setup/unit-setup.ts` - Unit test setup (used by `src/**/*.spec.ts`)
 - `tests/setup/api-setup.ts` - API test setup
 - `tests/setup/e2e-setup.ts` - E2E test setup
 
 ## Best Practices
+
+### NestJS Conventions (Unit Tests)
+
+1. **Colocation:** Place `.spec.ts` files next to source files in `src/` directory
+2. **Naming:** Use `.spec.ts` suffix (not `.test.ts`) for unit tests
+3. **Structure:** Mirror the source directory structure exactly
+4. **Import Paths:** Use relative imports within the same module
+
+### General Testing Practices
 
 1. **State Verification:** Verify the final state, not internal interactions
 2. **Descriptive Names:** Test names should clearly state the behavior being verified
@@ -179,6 +237,7 @@ All tests support **parallel execution** in CI/CD:
 
 ## References
 
+- [NestJS Testing Documentation](https://docs.nestjs.com/fundamentals/testing) - Official NestJS testing best practices
 - ISO/IEC/IEEE 29119 Software Testing Standards
 - Test Automation Pyramid (Mike Cohn)
 - Shift-Left Testing Methodology

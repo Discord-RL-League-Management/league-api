@@ -174,7 +174,6 @@ export class InternalGuildsController {
     @Body() settings: GuildSettingsDto,
   ) {
     this.logger.log(`Bot updating settings for guild ${id}`);
-    // Use placeholder userId for audit trail since bot endpoints lack user context
     return this.guildSettingsService.updateSettings(id, settings, 'bot');
   }
 }

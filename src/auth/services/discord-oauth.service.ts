@@ -39,14 +39,19 @@ export class DiscordOAuthService {
   /**
    * Generate Discord OAuth2 authorization URL
    * Following: https://discord.com/developers/docs/topics/oauth2#authorization-code-grant
+   * @param state - Optional OAuth state parameter for CSRF protection
    */
-  getAuthorizationUrl(): string {
+  getAuthorizationUrl(state?: string): string {
     const params = new URLSearchParams({
       client_id: this.clientId,
       redirect_uri: this.redirectUri,
       response_type: 'code',
       scope: 'identify email guilds guilds.members.read',
     });
+
+    if (state) {
+      params.append('state', state);
+    }
 
     return `${this.authorizationUrl}?${params.toString()}`;
   }

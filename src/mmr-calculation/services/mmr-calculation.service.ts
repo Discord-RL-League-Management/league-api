@@ -144,7 +144,7 @@ export class MmrCalculationService {
     const Q = weights.current;
     const R = weights.peak;
 
-    // Note: Peak data not available in tracker data structure, using current as both
+    // Peak data not available in tracker data structure; using current value for both current and peak
     const twosCurrent = trackerData.twos || 0;
     const twosPeak = trackerData.twos || 0;
     const twosScore =

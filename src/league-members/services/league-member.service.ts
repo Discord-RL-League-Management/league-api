@@ -211,7 +211,6 @@ export class LeagueMemberService {
       );
     }
 
-    // If inactive, validate join eligibility (including cooldown) before reactivating
     await this.joinValidationService.validateJoin(playerId, leagueId);
 
     return this.leagueMemberRepository.update(existing.id, {
