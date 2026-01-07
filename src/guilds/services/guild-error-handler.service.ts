@@ -23,7 +23,6 @@ export class GuildErrorHandlerService {
     error: unknown,
     contextId?: string,
   ): { message: string; code?: string; details?: Record<string, unknown> } {
-    // Handle Prisma known request errors
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       return {
         message: error.message,
@@ -36,7 +35,6 @@ export class GuildErrorHandlerService {
       };
     }
 
-    // Handle Prisma validation errors
     if (error instanceof Prisma.PrismaClientValidationError) {
       return {
         message: error.message,
@@ -47,7 +45,6 @@ export class GuildErrorHandlerService {
       };
     }
 
-    // Handle Prisma client initialization errors
     if (error instanceof Prisma.PrismaClientInitializationError) {
       return {
         message: error.message,
@@ -59,7 +56,6 @@ export class GuildErrorHandlerService {
       };
     }
 
-    // Handle Prisma rust panic errors
     if (error instanceof Prisma.PrismaClientRustPanicError) {
       return {
         message: error.message,
@@ -70,7 +66,6 @@ export class GuildErrorHandlerService {
       };
     }
 
-    // Handle generic errors
     if (error instanceof Error) {
       return {
         message: error.message,
@@ -82,7 +77,6 @@ export class GuildErrorHandlerService {
       };
     }
 
-    // Handle unknown error types
     return {
       message: 'Unknown error occurred during guild operation',
       code: 'UNKNOWN_ERROR',

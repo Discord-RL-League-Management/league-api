@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Res,
-  UseGuards,
-  Logger,
-  Query,
-} from '@nestjs/common';
+import { Controller, Get, Post, Res, Logger, Query } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -22,7 +14,6 @@ import { DiscordOAuthService } from './services/discord-oauth.service';
 import { DiscordApiService } from '../discord/discord-api.service';
 import { AuthOrchestrationService } from './services/auth-orchestration.service';
 import { TokenManagementService } from './services/token-management.service';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Public } from '../common/decorators';
 import type { AuthenticatedUser } from '../common/interfaces/user.interface';
@@ -156,7 +147,6 @@ export class AuthController {
   }
 
   @Get('me')
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get current authenticated user' })
   @ApiResponse({
     status: 200,
@@ -184,7 +174,6 @@ export class AuthController {
   }
 
   @Get('guilds')
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "Get user's available guilds" })
   @ApiResponse({
     status: 200,
@@ -204,7 +193,6 @@ export class AuthController {
   }
 
   @Post('logout')
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Logout user and revoke tokens' })
   @ApiResponse({ status: 200, description: 'User logged out successfully' })
   @ApiResponse({ status: 401, description: 'Invalid JWT token' })

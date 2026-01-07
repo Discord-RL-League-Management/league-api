@@ -6,10 +6,8 @@ import {
   Delete,
   Param,
   Body,
-  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TeamService } from './services/team.service';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { UpdateTeamDto } from './dto/update-team.dto';
@@ -17,7 +15,6 @@ import { ParseCUIDPipe } from '../common/pipes';
 
 @ApiTags('Teams')
 @Controller('api/leagues/:leagueId/teams')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class TeamsController {
   constructor(private teamService: TeamService) {}

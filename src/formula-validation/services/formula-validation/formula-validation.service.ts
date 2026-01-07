@@ -23,8 +23,6 @@ export class FormulaValidationService {
   ];
 
   constructor() {
-    // Create a sandboxed math.js instance
-    // Use all functions but we'll validate variable usage separately
     this.math = create(all);
   }
 
@@ -96,7 +94,6 @@ export class FormulaValidationService {
    */
   private extractVariables(expr: unknown): string[] {
     const variables = new Set<string>();
-    // List of known mathjs function names to exclude from variable extraction
     const functionNames = new Set([
       'abs',
       'acos',
@@ -131,7 +128,6 @@ export class FormulaValidationService {
       'not',
     ]);
 
-    // Type guard for AST node with type property
     const isAstNode = (
       node: unknown,
     ): node is { type?: string; name?: string; args?: unknown[] } => {
@@ -143,23 +139,16 @@ export class FormulaValidationService {
         return;
       }
 
-      // math.js uses 'SymbolNode' for variables
-      // Only add if it's not a function name and not in a FunctionNode context
       if (node.type === 'SymbolNode' && typeof node.name === 'string') {
-        // Check if parent is a FunctionNode - if so, it's a function call, not a variable
-        // We'll check this by seeing if we're inside a FunctionNode's args
-        // For now, just exclude known function names
         if (!functionNames.has(node.name)) {
           variables.add(node.name);
         }
       }
 
-      // Traverse children
       if (Array.isArray(node.args)) {
         node.args.forEach(traverse);
       }
 
-      // Traverse other properties
       for (const key in node) {
         if (Object.prototype.hasOwnProperty.call(node, key) && key !== 'args') {
           const value = (node as Record<string, unknown>)[key];

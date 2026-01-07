@@ -10,7 +10,6 @@ export class DiscordMessageService {
   private readonly botToken: string;
   private readonly apiUrl: string;
 
-  // Circuit breaker state
   private failureCount = 0;
   private lastFailureTime: Date | null = null;
   private circuitOpen = false;
@@ -46,15 +45,12 @@ export class DiscordMessageService {
       throw new Error('Discord bot token not configured');
     }
 
-    // Check circuit breaker
     if (this.isCircuitOpen()) {
       this.logger.warn('Circuit breaker is open, refusing to send Discord DM');
       throw new Error('Circuit breaker is open');
     }
 
     try {
-      // First, create or get the DM channel
-      // Discord API expects the recipient_id in the request body
       const dmChannelResponse = await firstValueFrom(
         this.httpService.post(
           `${this.apiUrl}/users/@me/channels`,
@@ -116,7 +112,6 @@ export class DiscordMessageService {
       throw new Error('Discord bot token not configured');
     }
 
-    // Validate interaction token
     if (!interactionToken || interactionToken.trim().length === 0) {
       this.logger.warn(
         'Invalid interaction token provided, skipping ephemeral follow-up',
@@ -124,15 +119,12 @@ export class DiscordMessageService {
       throw new Error('Invalid interaction token provided');
     }
 
-    // Check circuit breaker
     if (this.isCircuitOpen()) {
       this.logger.warn('Circuit breaker is open, skipping ephemeral follow-up');
       throw new Error('Circuit breaker is open');
     }
 
     try {
-      // Discord API endpoint for follow-up messages
-      // Using @me as application_id works with bot tokens
       const followUpPayload: Record<string, unknown> = {
         ...(payload as Record<string, unknown>),
         flags: 64, // EPHEMERAL flag
@@ -151,7 +143,6 @@ export class DiscordMessageService {
         ),
       );
 
-      // Safely log token prefix (token is guaranteed to be non-empty at this point)
       const tokenPrefix =
         interactionToken.length >= 10
           ? interactionToken.substring(0, 10)
@@ -161,19 +152,15 @@ export class DiscordMessageService {
       );
       this.recordSuccess();
     } catch (error: unknown) {
-      // Handle token expiration gracefully (Discord returns 404 or 400)
       const axiosError = error as AxiosError<{ message?: string }>;
       const statusCode = axiosError.response?.status;
       if (statusCode === 404 || statusCode === 400) {
         this.logger.warn(
           `Interaction token expired or invalid, skipping ephemeral follow-up`,
         );
-        // Don't record as failure - token expiration is expected after 15 minutes
-        // Throw to trigger fallback to DM notification
         throw new Error('Interaction token expired or invalid');
       }
 
-      // For other errors, log and throw to trigger fallback
       const errorMessage =
         axiosError.response?.data?.message ||
         axiosError.message ||
@@ -183,7 +170,6 @@ export class DiscordMessageService {
         error,
       );
       this.recordFailure();
-      // Throw to trigger fallback to DM notification
       throw error;
     }
   }
@@ -200,7 +186,6 @@ export class DiscordMessageService {
       throw new Error('Discord bot token not configured');
     }
 
-    // Check circuit breaker
     if (this.isCircuitOpen()) {
       this.logger.warn(
         'Circuit breaker is open, refusing to send Discord message',
@@ -224,7 +209,6 @@ export class DiscordMessageService {
         ),
       );
 
-      // Record success
       this.recordSuccess();
     } catch (error: unknown) {
       const errorMessage =
@@ -233,7 +217,6 @@ export class DiscordMessageService {
         `Failed to send Discord message to channel ${channelId}: ${errorMessage}`,
       );
 
-      // Record failure
       this.recordFailure();
 
       throw error;
@@ -248,7 +231,6 @@ export class DiscordMessageService {
       return false;
     }
 
-    // Check if timeout has elapsed
     if (
       this.lastFailureTime &&
       Date.now() - this.lastFailureTime.getTime() > this.circuitBreakerTimeout

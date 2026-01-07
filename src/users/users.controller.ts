@@ -4,10 +4,8 @@ import {
   Patch,
   Param,
   Body,
-  UseGuards,
   ForbiddenException,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UsersService } from './users.service';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
@@ -18,7 +16,6 @@ import type { AuthenticatedUser } from '../common/interfaces/user.interface';
  * Single Responsibility: User-facing endpoints for profile management
  */
 @Controller('api/users')
-@UseGuards(JwtAuthGuard)
 export class UsersController {
   constructor(private usersService: UsersService) {}
 

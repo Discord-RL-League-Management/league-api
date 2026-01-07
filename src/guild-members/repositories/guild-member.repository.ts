@@ -483,7 +483,6 @@ export class GuildMemberRepository
     }>,
   ): Promise<{ synced: number }> {
     return this.prisma.$transaction(async (tx) => {
-      // Delete existing members
       await tx.guildMember.deleteMany({
         where: { guildId },
       });

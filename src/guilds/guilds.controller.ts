@@ -1,5 +1,4 @@
 import { Controller, Get, Param, UseGuards, Logger } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { GuildAdminSimpleGuard } from './guards/guild-admin-simple.guard';
 import { GuildsService } from './guilds.service';
@@ -17,7 +16,6 @@ import type { AuthenticatedUser } from '../common/interfaces/user.interface';
 
 @ApiTags('Guilds')
 @Controller('api/guilds')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class GuildsController {
   private readonly logger = new Logger(GuildsController.name);
@@ -67,7 +65,6 @@ export class GuildsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     this.logger.log(`User ${user.id} requested settings for guild ${id}`);
-    // GuildAdminGuard handles all permission checks
     return this.guildSettingsService.getSettings(id);
   }
 
@@ -84,7 +81,6 @@ export class GuildsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     this.logger.log(`User ${user.id} requested channels for guild ${id}`);
-    // GuildAdminGuard handles all permission checks
     return this.discordBotService.getGuildChannels(id);
   }
 
@@ -101,7 +97,6 @@ export class GuildsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     this.logger.log(`User ${user.id} requested roles for guild ${id}`);
-    // GuildAdminGuard handles all permission checks
     return this.discordBotService.getGuildRoles(id);
   }
 }

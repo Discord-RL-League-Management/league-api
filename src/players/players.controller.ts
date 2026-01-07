@@ -5,7 +5,6 @@ import {
   Param,
   Query,
   Body,
-  UseGuards,
   ForbiddenException,
 } from '@nestjs/common';
 import {
@@ -16,7 +15,6 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { PlayerService } from './player.service';
 import { Player } from '@prisma/client';
@@ -32,7 +30,6 @@ import { ParseCUIDPipe } from '../common/pipes';
  */
 @ApiTags('Players')
 @Controller('api/players')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class PlayersController {
   constructor(
@@ -68,7 +65,6 @@ export class PlayersController {
     @CurrentUser() user: AuthenticatedUser,
     @Query() query: PlayerQueryOptions,
   ) {
-    // Restrict player listings to guild members to protect user privacy
     await this.guildAccessValidationService.validateUserGuildAccess(
       user.id,
       guildId,

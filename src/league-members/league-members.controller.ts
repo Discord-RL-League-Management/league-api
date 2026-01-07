@@ -7,7 +7,6 @@ import {
   Param,
   Body,
   Query,
-  UseGuards,
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
@@ -19,7 +18,6 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { LeagueMemberService } from './services/league-member.service';
 import { PlayerOwnershipService } from '../players/services/player-ownership.service';
@@ -35,7 +33,6 @@ import type { LeagueMemberQueryOptions } from './interfaces/league-member.interf
  */
 @ApiTags('League Members')
 @Controller('api/leagues/:leagueId/members')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class LeagueMembersController {
   constructor(
@@ -57,7 +54,6 @@ export class LeagueMembersController {
     @Body() joinLeagueDto: JoinLeagueDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    // Prevents users from joining leagues with other users' players
     await this.playerOwnershipService.validatePlayerOwnership(
       user.id,
       joinLeagueDto.playerId,
@@ -100,7 +96,6 @@ export class LeagueMembersController {
     @Param('playerId') playerId: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    // Prevents users from leaving leagues on behalf of other users' players
     await this.playerOwnershipService.validatePlayerOwnership(
       user.id,
       playerId,
@@ -130,7 +125,6 @@ export class LeagueMembersController {
       throw new NotFoundException('Member not found');
     }
 
-    // Allow updates if user owns the player, otherwise require admin/moderator privileges
     try {
       await this.playerOwnershipService.validatePlayerOwnership(
         user.id,

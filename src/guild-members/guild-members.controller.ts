@@ -6,11 +6,9 @@ import {
   Delete,
   Param,
   Query,
-  UseGuards,
   Logger,
   Body,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GuildMembersService } from './guild-members.service';
 import { CreateGuildMemberDto } from './dto/create-guild-member.dto';
 import { UpdateGuildMemberDto } from './dto/update-guild-member.dto';
@@ -25,7 +23,6 @@ import {
 
 @ApiTags('Guild Members')
 @Controller('api/guilds/:guildId/members')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class GuildMembersController {
   private readonly logger = new Logger(GuildMembersController.name);
