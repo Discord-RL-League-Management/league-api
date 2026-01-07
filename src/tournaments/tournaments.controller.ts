@@ -1,6 +1,5 @@
-import { Controller, Get, Post, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TournamentService } from './services/tournament.service';
 import { CreateTournamentDto } from './dto/create-tournament.dto';
 import { RegisterParticipantDto } from './dto/register-participant.dto';
@@ -8,7 +7,6 @@ import { ParseCUIDPipe } from '../common/pipes';
 
 @ApiTags('Tournaments')
 @Controller('api/tournaments')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class TournamentsController {
   constructor(private tournamentService: TournamentService) {}

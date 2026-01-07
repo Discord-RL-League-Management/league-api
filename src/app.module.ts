@@ -40,6 +40,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { FormulaValidationModule } from './formula-validation/formula-validation.module';
+import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 
 export const VALIDATION_FAILED_MESSAGE = 'Validation failed';
 
@@ -81,6 +82,10 @@ export const VALIDATION_FAILED_MESSAGE = 'Validation failed';
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
     },
     {
       provide: APP_INTERCEPTOR,

@@ -1,12 +1,9 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { UseGuards } from '@nestjs/common';
 import { PlayerLeagueStatsService } from './services/player-league-stats.service';
 
 @ApiTags('Player Stats')
 @Controller('api/players/:playerId/stats')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class PlayerStatsController {
   constructor(private statsService: PlayerLeagueStatsService) {}
@@ -23,7 +20,6 @@ export class PlayerStatsController {
 
 @ApiTags('Leagues')
 @Controller('api/leagues/:leagueId/leaderboard')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class LeaderboardController {
   constructor(private statsService: PlayerLeagueStatsService) {}

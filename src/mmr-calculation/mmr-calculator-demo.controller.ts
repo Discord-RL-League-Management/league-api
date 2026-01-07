@@ -2,7 +2,6 @@ import {
   Controller,
   Post,
   Body,
-  UseGuards,
   Logger,
   BadRequestException,
   NotFoundException,
@@ -13,7 +12,6 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { MmrCalculationService } from './services/mmr-calculation.service';
 import { CalculateMmrDto } from './dto/calculate-mmr.dto';
 import { GuildSettingsService } from '../guilds/guild-settings.service';
@@ -29,7 +27,6 @@ import { MmrCalculationConfig } from '../guilds/interfaces/settings.interface';
  */
 @ApiTags('MMR Calculator Demo')
 @Controller('api/calculator')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class MMRCalculatorDemoController {
   private readonly logger = new Logger(MMRCalculatorDemoController.name);

@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards, Logger } from '@nestjs/common';
+import { Controller, Get, Param, Logger } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -6,7 +6,6 @@ import {
   ApiBearerAuth,
   ApiParam,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { PermissionCheckService } from './modules/permission-check/permission-check.service';
 import { GuildMembersService } from '../guild-members/guild-members.service';
@@ -21,7 +20,6 @@ import { GuildSettings } from '../guilds/interfaces/settings.interface';
  */
 @ApiTags('Permissions')
 @Controller('api/guilds/:guildId/permissions')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class PermissionsController {
   private readonly logger = new Logger(PermissionsController.name);
@@ -45,7 +43,6 @@ export class PermissionsController {
       `User ${user.id} requested permissions for guild ${guildId}`,
     );
 
-    // Fetch settings separately (settings are not a Prisma relation)
     const settings = await this.guildSettingsService.getSettings(guildId);
 
     const permissionState = await this.permissionCheckService.checkGuildAccess(
@@ -54,7 +51,6 @@ export class PermissionsController {
       settings as GuildSettings | Record<string, unknown> | undefined,
     );
 
-    // Get user roles from guild membership
     const membership = await this.guildMembersService.findOne(user.id, guildId);
 
     return {

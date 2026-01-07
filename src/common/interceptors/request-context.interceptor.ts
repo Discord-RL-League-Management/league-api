@@ -28,11 +28,9 @@ export class RequestContextInterceptor implements NestInterceptor {
       .switchToHttp()
       .getRequest<Request & { requestId?: string }>();
 
-    // Get or create request ID
     const requestId = request.requestId || uuidv4();
     request.requestId = requestId;
 
-    // Create request context
     const requestContext: RequestContext = {
       requestId,
       traceId: requestId, // Use requestId as traceId for New Relic

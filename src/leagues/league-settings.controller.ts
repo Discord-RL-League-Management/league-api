@@ -9,7 +9,6 @@ import {
   BadRequestException,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { LeagueSettingsService } from './league-settings.service';
 import { LeagueAdminGuard } from './guards/league-admin.guard';
@@ -26,7 +25,6 @@ import type { AuthenticatedUser } from '../common/interfaces/user.interface';
 
 @ApiTags('League Settings')
 @Controller('api/leagues/:leagueId/settings')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class LeagueSettingsController {
   private readonly logger = new Logger(LeagueSettingsController.name);
@@ -46,7 +44,6 @@ export class LeagueSettingsController {
   async getSettings(@Param('leagueId') leagueId: string) {
     try {
       this.logger.log(`Getting settings for league ${leagueId}`);
-      // LeagueAdminOrModeratorGuard handles all permission checks
       return await this.leagueSettingsService.getSettings(leagueId);
     } catch (error) {
       this.logger.error(
@@ -74,7 +71,6 @@ export class LeagueSettingsController {
       this.logger.log(
         `Updating settings for league ${leagueId} by user ${user.id}`,
       );
-      // LeagueAdminGuard handles all permission checks
       return await this.leagueSettingsService.updateSettings(
         leagueId,
         settingsDto,

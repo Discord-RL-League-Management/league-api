@@ -12,7 +12,6 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { LeaguesService } from './leagues.service';
 import { LeagueAccessValidationService } from './services/league-access-validation.service';
@@ -37,7 +36,6 @@ import { ParseCUIDPipe, ParseEnumPipe } from '../common/pipes';
 
 @ApiTags('Leagues')
 @Controller('api/leagues')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class LeaguesController {
   private readonly logger = new Logger(LeaguesController.name);
@@ -95,7 +93,6 @@ export class LeaguesController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     this.logger.log(`User ${user.id} requested league ${id}`);
-    // LeagueAccessGuard handles all permission checks
     return this.leaguesService.findOne(id);
   }
 
@@ -142,7 +139,6 @@ export class LeaguesController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     this.logger.log(`User ${user.id} updating league ${id}`);
-    // LeagueAdminOrModeratorGuard handles all permission checks
     return this.leaguesService.update(id, updateLeagueDto);
   }
 
@@ -164,7 +160,6 @@ export class LeaguesController {
     this.logger.log(
       `User ${user.id} updating league ${id} status to ${body.status}`,
     );
-    // LeagueAdminGuard handles all permission checks
     return this.leaguesService.updateStatus(id, body.status);
   }
 
@@ -179,7 +174,6 @@ export class LeaguesController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     this.logger.log(`User ${user.id} deleting league ${id}`);
-    // LeagueAdminGuard handles all permission checks (deletion requires admin)
     return this.leaguesService.remove(id);
   }
 }

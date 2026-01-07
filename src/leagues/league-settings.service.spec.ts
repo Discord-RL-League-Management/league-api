@@ -102,6 +102,84 @@ describe('LeagueSettingsService', () => {
     updatedAt: new Date(),
   };
 
+  // Helper functions for test setup
+  function createMockTeam(overrides: Partial<Team> = {}): Team {
+    return {
+      id: 'team-1',
+      leagueId,
+      organizationId: null,
+      name: 'Test Team',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      ...overrides,
+    };
+  }
+
+  function createMockOrganization(
+    overrides: Partial<Organization> = {},
+  ): Organization {
+    return {
+      id: 'org-1',
+      leagueId,
+      name: 'Test Org',
+      tag: 'TEST',
+      description: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      ...overrides,
+    };
+  }
+
+  function setupUpdateSettingsMocks(options: {
+    currentSettings: LeagueConfiguration;
+    mergedSettings: LeagueConfiguration;
+    teams?: Team[];
+    organizations?: Organization[];
+    mergeSettingsCalls?: number;
+  }): void {
+    leagueRepository.exists = vi.fn().mockResolvedValue(true);
+    cacheManager.get = vi
+      .fn()
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null);
+    settingsService.getSettings = vi.fn().mockResolvedValue({
+      ...mockSettingsRecord,
+      settings: options.currentSettings as unknown as Prisma.JsonValue,
+    });
+    configMigration.needsMigration = vi.fn().mockReturnValue(false);
+    cacheManager.set = vi.fn().mockResolvedValue(undefined);
+
+    const mergeCalls = options.mergeSettingsCalls ?? 1;
+    if (mergeCalls === 2) {
+      settingsDefaults.mergeSettings = vi
+        .fn()
+        .mockReturnValueOnce(options.currentSettings)
+        .mockReturnValue(options.mergedSettings);
+    } else {
+      settingsDefaults.mergeSettings = vi
+        .fn()
+        .mockReturnValue(options.mergedSettings);
+    }
+
+    if (options.teams !== undefined) {
+      teamProvider.findTeamsWithoutOrganization = vi
+        .fn()
+        .mockResolvedValue(options.teams);
+    }
+
+    if (options.organizations !== undefined) {
+      organizationProvider.findByLeagueId = vi
+        .fn()
+        .mockResolvedValue(options.organizations);
+    }
+
+    settingsService.updateSettings = vi.fn().mockResolvedValue({
+      ...mockSettingsRecord,
+      settings: options.mergedSettings as unknown as Prisma.JsonValue,
+    });
+    cacheManager.del = vi.fn().mockResolvedValue(undefined);
+  }
+
   beforeEach(async () => {
     const { unit, unitRef } = await TestBed.solitary(
       LeagueSettingsService,
@@ -410,64 +488,29 @@ describe('LeagueSettingsService', () => {
         ...mockDefaultSettings,
         membership: {
           ...mockDefaultSettings.membership,
-          requireOrganization: false, // Current state is false
+          requireOrganization: false,
         },
       };
       const mergedSettings: LeagueConfiguration = {
         ...mockDefaultSettings,
         membership: {
           ...mockDefaultSettings.membership,
-          requireOrganization: true, // Changing to true
+          requireOrganization: true,
         },
       };
-      const mockTeam: Team = {
-        id: 'team-1',
-        leagueId,
-        organizationId: null,
-        name: 'Test Team',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      const mockOrg: Organization = {
-        id: 'org-1',
-        leagueId,
-        name: 'Test Org',
-        tag: 'TEST',
-        description: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+      const mockTeam = createMockTeam();
+      const mockOrg = createMockOrganization();
 
-      leagueRepository.exists = vi.fn().mockResolvedValue(true);
-      cacheManager.get = vi
-        .fn()
-        .mockResolvedValueOnce(null) // First call in updateSettings -> getSettings
-        .mockResolvedValueOnce(null); // Second call if needed
-      settingsService.getSettings = vi.fn().mockResolvedValue({
-        ...mockSettingsRecord,
-        settings: currentSettings as unknown as Prisma.JsonValue,
+      setupUpdateSettingsMocks({
+        currentSettings,
+        mergedSettings,
+        teams: [mockTeam],
+        organizations: [mockOrg],
+        mergeSettingsCalls: 2,
       });
-      configMigration.needsMigration = vi.fn().mockReturnValue(false);
-      cacheManager.set = vi.fn().mockResolvedValue(undefined);
-      // mergeSettings is called twice: once in getSettings normalization, once in updateSettings
-      settingsDefaults.mergeSettings = vi
-        .fn()
-        .mockReturnValueOnce(currentSettings) // First call in getSettings normalization
-        .mockReturnValue(mergedSettings); // Second call in updateSettings
-      teamProvider.findTeamsWithoutOrganization = vi
-        .fn()
-        .mockResolvedValue([mockTeam]);
-      organizationProvider.findByLeagueId = vi
-        .fn()
-        .mockResolvedValue([mockOrg]);
       organizationProvider.assignTeamsToOrganization = vi
         .fn()
         .mockResolvedValue(undefined);
-      settingsService.updateSettings = vi.fn().mockResolvedValue({
-        ...mockSettingsRecord,
-        settings: mergedSettings as unknown as Prisma.JsonValue,
-      });
-      cacheManager.del = vi.fn().mockResolvedValue(undefined);
 
       const result = await service.updateSettings(leagueId, updateDto);
 
@@ -501,24 +544,11 @@ describe('LeagueSettingsService', () => {
         },
       };
 
-      leagueRepository.exists = vi.fn().mockResolvedValue(true);
-      cacheManager.get = vi
-        .fn()
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(null);
-      settingsService.getSettings = vi.fn().mockResolvedValue({
-        ...mockSettingsRecord,
-        settings: currentSettings as unknown as Prisma.JsonValue,
+      setupUpdateSettingsMocks({
+        currentSettings,
+        mergedSettings,
+        teams: [],
       });
-      configMigration.needsMigration = vi.fn().mockReturnValue(false);
-      cacheManager.set = vi.fn().mockResolvedValue(undefined);
-      settingsDefaults.mergeSettings = vi.fn().mockReturnValue(mergedSettings);
-      teamProvider.findTeamsWithoutOrganization = vi.fn().mockResolvedValue([]);
-      settingsService.updateSettings = vi.fn().mockResolvedValue({
-        ...mockSettingsRecord,
-        settings: mergedSettings as unknown as Prisma.JsonValue,
-      });
-      cacheManager.del = vi.fn().mockResolvedValue(undefined);
 
       const result = await service.updateSettings(leagueId, updateDto);
 
@@ -546,53 +576,24 @@ describe('LeagueSettingsService', () => {
           requireOrganization: true,
         },
       };
-      const mockTeam: Team = {
-        id: 'team-1',
-        leagueId,
-        organizationId: null,
-        name: 'Test Team',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      const mockOrg: Organization = {
-        id: 'org-1',
-        leagueId,
+      const mockTeam = createMockTeam();
+      const mockOrg = createMockOrganization({
         name: 'Unassigned Teams',
         tag: 'UNASSIGNED',
         description: 'Default organization for teams without an organization',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      leagueRepository.exists = vi.fn().mockResolvedValue(true);
-      cacheManager.get = vi
-        .fn()
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(null);
-      settingsService.getSettings = vi.fn().mockResolvedValue({
-        ...mockSettingsRecord,
-        settings: currentSettings as unknown as Prisma.JsonValue,
       });
-      configMigration.needsMigration = vi.fn().mockReturnValue(false);
-      cacheManager.set = vi.fn().mockResolvedValue(undefined);
-      // mergeSettings is called twice: once in getSettings normalization, once in updateSettings
-      settingsDefaults.mergeSettings = vi
-        .fn()
-        .mockReturnValueOnce(currentSettings) // First call in getSettings normalization
-        .mockReturnValue(mergedSettings); // Second call in updateSettings
-      teamProvider.findTeamsWithoutOrganization = vi
-        .fn()
-        .mockResolvedValue([mockTeam]);
-      organizationProvider.findByLeagueId = vi.fn().mockResolvedValue([]);
+
+      setupUpdateSettingsMocks({
+        currentSettings,
+        mergedSettings,
+        teams: [mockTeam],
+        organizations: [],
+        mergeSettingsCalls: 2,
+      });
       organizationProvider.create = vi.fn().mockResolvedValue(mockOrg);
       organizationProvider.assignTeamsToOrganization = vi
         .fn()
         .mockResolvedValue(undefined);
-      settingsService.updateSettings = vi.fn().mockResolvedValue({
-        ...mockSettingsRecord,
-        settings: mergedSettings as unknown as Prisma.JsonValue,
-      });
-      cacheManager.del = vi.fn().mockResolvedValue(undefined);
 
       const result = await service.updateSettings(leagueId, updateDto);
 
@@ -626,54 +627,22 @@ describe('LeagueSettingsService', () => {
           requireOrganization: true,
         },
       };
-      const mockTeam: Team = {
-        id: 'team-1',
-        leagueId,
-        organizationId: null,
-        name: 'Test Team',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      const mockOrg: Organization = {
-        id: 'org-1',
-        leagueId,
+      const mockTeam = createMockTeam();
+      const mockOrg = createMockOrganization({
         name: 'Existing Org',
         tag: 'EXIST',
-        description: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      leagueRepository.exists = vi.fn().mockResolvedValue(true);
-      cacheManager.get = vi
-        .fn()
-        .mockResolvedValueOnce(null) // First call in updateSettings -> getSettings
-        .mockResolvedValueOnce(null); // Second call if needed
-      settingsService.getSettings = vi.fn().mockResolvedValue({
-        ...mockSettingsRecord,
-        settings: currentSettings as unknown as Prisma.JsonValue,
       });
-      configMigration.needsMigration = vi.fn().mockReturnValue(false);
-      cacheManager.set = vi.fn().mockResolvedValue(undefined);
-      // mergeSettings is called twice: once in getSettings normalization, once in updateSettings
-      settingsDefaults.mergeSettings = vi
-        .fn()
-        .mockReturnValueOnce(currentSettings) // First call in getSettings normalization
-        .mockReturnValue(mergedSettings); // Second call in updateSettings
-      teamProvider.findTeamsWithoutOrganization = vi
-        .fn()
-        .mockResolvedValue([mockTeam]);
-      organizationProvider.findByLeagueId = vi
-        .fn()
-        .mockResolvedValue([mockOrg]);
+
+      setupUpdateSettingsMocks({
+        currentSettings,
+        mergedSettings,
+        teams: [mockTeam],
+        organizations: [mockOrg],
+        mergeSettingsCalls: 2,
+      });
       organizationProvider.assignTeamsToOrganization = vi
         .fn()
         .mockResolvedValue(undefined);
-      settingsService.updateSettings = vi.fn().mockResolvedValue({
-        ...mockSettingsRecord,
-        settings: mergedSettings as unknown as Prisma.JsonValue,
-      });
-      cacheManager.del = vi.fn().mockResolvedValue(undefined);
 
       const result = await service.updateSettings(leagueId, updateDto);
 
@@ -707,45 +676,21 @@ describe('LeagueSettingsService', () => {
           requireOrganization: true,
         },
       };
-      const mockTeam: Team = {
-        id: 'team-1',
-        leagueId,
-        organizationId: null,
-        name: 'Test Team',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      const mockOrg: Organization = {
-        id: 'org-1',
-        leagueId,
+      const mockTeam = createMockTeam();
+      const mockOrg = createMockOrganization({
         name: 'Unassigned Teams',
         tag: 'UNASSIGNED',
         description: 'Default organization for teams without an organization',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+      });
       const assignmentError = new Error('Capacity exceeded');
 
-      leagueRepository.exists = vi.fn().mockResolvedValue(true);
-      cacheManager.get = vi
-        .fn()
-        .mockResolvedValueOnce(null) // First call in updateSettings -> getSettings
-        .mockResolvedValueOnce(null); // Second call if needed
-      settingsService.getSettings = vi.fn().mockResolvedValue({
-        ...mockSettingsRecord,
-        settings: currentSettings as unknown as Prisma.JsonValue,
+      setupUpdateSettingsMocks({
+        currentSettings,
+        mergedSettings,
+        teams: [mockTeam],
+        organizations: [],
+        mergeSettingsCalls: 2,
       });
-      configMigration.needsMigration = vi.fn().mockReturnValue(false);
-      cacheManager.set = vi.fn().mockResolvedValue(undefined);
-      // mergeSettings is called twice: once in getSettings normalization, once in updateSettings
-      settingsDefaults.mergeSettings = vi
-        .fn()
-        .mockReturnValueOnce(currentSettings) // First call in getSettings normalization
-        .mockReturnValue(mergedSettings); // Second call in updateSettings
-      teamProvider.findTeamsWithoutOrganization = vi
-        .fn()
-        .mockResolvedValue([mockTeam]);
-      organizationProvider.findByLeagueId = vi.fn().mockResolvedValue([]);
       organizationProvider.create = vi.fn().mockResolvedValue(mockOrg);
       organizationProvider.assignTeamsToOrganization = vi
         .fn()
@@ -780,45 +725,22 @@ describe('LeagueSettingsService', () => {
           requireOrganization: true,
         },
       };
-      const mockTeam: Team = {
-        id: 'team-1',
-        leagueId,
-        organizationId: null,
-        name: 'Test Team',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      const assignmentError = new Error('Capacity exceeded');
-
-      leagueRepository.exists = vi.fn().mockResolvedValue(true);
-      cacheManager.get = vi
-        .fn()
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(null);
-      settingsService.getSettings = vi.fn().mockResolvedValue({
-        ...mockSettingsRecord,
-        settings: currentSettings as unknown as Prisma.JsonValue,
-      });
-      configMigration.needsMigration = vi.fn().mockReturnValue(false);
-      cacheManager.set = vi.fn().mockResolvedValue(undefined);
-      // mergeSettings is called twice: once in getSettings normalization, once in updateSettings
-      settingsDefaults.mergeSettings = vi
-        .fn()
-        .mockReturnValueOnce(currentSettings) // First call in getSettings normalization
-        .mockReturnValue(mergedSettings); // Second call in updateSettings
-      teamProvider.findTeamsWithoutOrganization = vi
-        .fn()
-        .mockResolvedValue([mockTeam]);
-      organizationProvider.findByLeagueId = vi.fn().mockResolvedValue([]);
-      organizationProvider.create = vi.fn().mockResolvedValue({
-        id: 'org-1',
-        leagueId,
+      const mockTeam = createMockTeam();
+      const mockOrg = createMockOrganization({
         name: 'Unassigned Teams',
         tag: 'UNASSIGNED',
         description: 'Default organization for teams without an organization',
-        createdAt: new Date(),
-        updatedAt: new Date(),
       });
+      const assignmentError = new Error('Capacity exceeded');
+
+      setupUpdateSettingsMocks({
+        currentSettings,
+        mergedSettings,
+        teams: [mockTeam],
+        organizations: [],
+        mergeSettingsCalls: 2,
+      });
+      organizationProvider.create = vi.fn().mockResolvedValue(mockOrg);
       organizationProvider.assignTeamsToOrganization = vi
         .fn()
         .mockRejectedValue(assignmentError);

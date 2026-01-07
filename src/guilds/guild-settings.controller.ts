@@ -80,7 +80,6 @@ export class GuildSettingsController {
       this.logger.log(
         `Updating settings for guild ${guildId} by user ${user.id}`,
       );
-      // Validate user and bot have access to guild
       await this.guildAccessValidationService.validateUserGuildAccess(
         user.id,
         guildId,
@@ -113,7 +112,6 @@ export class GuildSettingsController {
       this.logger.log(
         `Resetting settings for guild ${guildId} by user ${user.id}`,
       );
-      // Validate user and bot have access to guild
       await this.guildAccessValidationService.validateUserGuildAccess(
         user.id,
         guildId,
@@ -148,7 +146,6 @@ export class GuildSettingsController {
     try {
       const limitNum = limit ? parseInt(limit, 10) : 50;
       this.logger.log(`Getting settings history for guild ${guildId}`);
-      // Validate user and bot have access to guild
       await this.guildAccessValidationService.validateUserGuildAccess(
         user.id,
         guildId,

@@ -15,6 +15,7 @@ import { AuthOrchestrationService } from './services/auth-orchestration.service'
 import { TokenManagementModule } from './services/token-management.module';
 import { BotApiKeyStrategy } from './strategies/bot-api-key.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { httpModuleOptions } from '../common/config/http.config';
 import { cacheModuleOptions } from '../common/config/cache.config';
 import { UserOrchestratorService } from '../users/services/user-orchestrator.service';
@@ -49,7 +50,8 @@ import { UserOrchestratorService } from '../users/services/user-orchestrator.ser
     BotApiKeyStrategy,
     JwtStrategy,
     UserOrchestratorService,
+    JwtAuthGuard,
   ],
-  exports: [AuthService],
+  exports: [AuthService, JwtAuthGuard],
 })
 export class AuthModule {}

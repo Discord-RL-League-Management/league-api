@@ -15,7 +15,6 @@ import {
   ApiResponse,
   ApiParam,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../common/interfaces/user.interface';
 import { OrganizationService } from './organization.service';
@@ -31,7 +30,6 @@ import { ParseCUIDPipe } from '../common/pipes';
 
 @ApiTags('Organizations')
 @Controller('api')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class OrganizationsController {
   constructor(

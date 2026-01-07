@@ -94,7 +94,6 @@ export class GuildAuditLogsController {
       offset: offset ? parseInt(offset, 10) : undefined,
     });
 
-    // Format response to match previous AuditLogController structure
     return {
       logs: result.logs,
       total: result.total,
