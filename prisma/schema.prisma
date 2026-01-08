@@ -322,6 +322,28 @@ model ActivityLog {
   @@map("activity_logs")
 }
 
+model AuditLog {
+  id           String   @id @default(cuid())
+  userId       String?  @db.VarChar(20)
+  botId        String?  @db.VarChar(50)
+  ipAddress    String   @db.VarChar(45) // IPv6 max length
+  userAgent    String?  @db.VarChar(500)
+  method       String   @db.VarChar(10)
+  endpoint     String   @db.VarChar(500)
+  action       String   @db.VarChar(100)
+  resourceType String?  @db.VarChar(50)
+  resourceId   String?  @db.VarChar(100)
+  requestBody  Json?
+  responseStatus Int?
+  timestamp    DateTime @default(now())
+
+  @@index([userId, timestamp])
+  @@index([botId, timestamp])
+  @@index([resourceType, resourceId, timestamp])
+  @@index([method, endpoint, timestamp])
+  @@map("audit_logs")
+}
+
 model Settings {
   id            String   @id @default(cuid())
   ownerType     String   @db.VarChar(50)

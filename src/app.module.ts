@@ -35,12 +35,14 @@ import { OrganizationsModule } from './organizations/organizations.module';
 import { MmrCalculationModule } from './mmr-calculation/mmr-calculation.module';
 import { AuthLoggerMiddleware } from './common/middleware/auth-logger.middleware';
 import { RequestContextInterceptor } from './common/interceptors/request-context.interceptor';
+import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor';
 import { throttlerConfig } from './config/throttler.config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { FormulaValidationModule } from './formula-validation/formula-validation.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { RequestContextModule } from './common/request-context/request-context.module';
 
 export const VALIDATION_FAILED_MESSAGE = 'Validation failed';
 
@@ -77,6 +79,7 @@ export const VALIDATION_FAILED_MESSAGE = 'Validation failed';
     TournamentsModule,
     MmrCalculationModule,
     FormulaValidationModule,
+    RequestContextModule,
   ],
   providers: [
     {
@@ -90,6 +93,10 @@ export const VALIDATION_FAILED_MESSAGE = 'Validation failed';
     {
       provide: APP_INTERCEPTOR,
       useClass: RequestContextInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AuditLogInterceptor,
     },
     {
       provide: APP_PIPE,

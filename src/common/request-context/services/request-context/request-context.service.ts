@@ -28,7 +28,12 @@ export class RequestContextService {
    * Single Responsibility: Extract user agent
    */
   getUserAgent(request: Request): string {
-    return request.headers['user-agent'] || 'unknown';
+    const userAgent = request.headers['user-agent'];
+    if (Array.isArray(userAgent) && userAgent.length > 0) {
+      const first: unknown = userAgent[0];
+      return typeof first === 'string' ? first : 'unknown';
+    }
+    return typeof userAgent === 'string' ? userAgent : 'unknown';
   }
 
   /**
