@@ -67,12 +67,9 @@ export class OrganizationValidationService {
 
     await this.playerService.findOne(playerId);
 
-    // Note: findMembersByPlayer now filters out REMOVED members, so this only returns ACTIVE memberships
     const existingMembership =
       await this.organizationRepository.findMembersByPlayer(playerId, leagueId);
     if (existingMembership) {
-      // If already in the same organization, throw error (duplicate add attempt)
-      // This prevents Prisma unique constraint violation
       if (existingMembership.organizationId === organizationId) {
         throw new PlayerAlreadyInOrganizationException(playerId, leagueId);
       }

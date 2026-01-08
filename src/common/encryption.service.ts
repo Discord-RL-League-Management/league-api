@@ -70,7 +70,6 @@ export class EncryptionService {
     try {
       const combined = Buffer.from(encryptedText, 'base64');
 
-      // Skip salt bytes (salt is stored but not used in decryption - key is derived from config)
       combined.subarray(0, this.saltLength);
       const iv = combined.subarray(
         this.saltLength,

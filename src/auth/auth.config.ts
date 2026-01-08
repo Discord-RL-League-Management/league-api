@@ -11,7 +11,7 @@ export interface AuthConfig {
   cookieMaxAge: number;
 }
 
-// Note: process.env usage here is intentional - this factory function
+// process.env usage here is intentional - this factory function
 // is called by ConfigModule during initialization and validates via Joi schema
 export default registerAs('auth', () => ({
   jwtPrivateKey: process.env.JWT_PRIVATE_KEY!,

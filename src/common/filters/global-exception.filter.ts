@@ -55,10 +55,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       const status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
 
-      // Handle both string and object responses from HttpException
-      // When InternalServerErrorException is thrown with an object like:
-      // new InternalServerErrorException({ message, code, details }),
-      // the exceptionResponse will be that object
       const isObjectResponse =
         typeof exceptionResponse === 'object' && exceptionResponse !== null;
       const errorData = isObjectResponse
@@ -96,7 +92,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       };
     }
 
-    // Handle null or undefined exceptions
     if (exception === null || exception === undefined) {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,

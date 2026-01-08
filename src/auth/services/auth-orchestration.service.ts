@@ -43,7 +43,6 @@ export class AuthOrchestrationService {
       const userGuilds =
         await this.discordApiService.getUserGuilds(accessToken);
 
-      // Filter to guilds where bot is present to avoid storing data for inaccessible guilds
       const botGuildIds = await this.guildsService.findActiveGuildIds();
       const botGuildIdsSet = new Set(botGuildIds);
 
@@ -65,7 +64,6 @@ export class AuthOrchestrationService {
                 `Failed to fetch roles for guild ${guild.id}:`,
                 error,
               );
-              // Continue with empty roles if fetch fails to prevent OAuth failure from partial role fetch errors
               return {
                 ...guild,
                 roles: [],
@@ -83,12 +81,10 @@ export class AuthOrchestrationService {
         `Synced ${mutualGuildsWithRoles.length} guild memberships with roles for user ${userId}`,
       );
     } catch (error) {
-      // Log error but don't fail OAuth callback - role sync is not critical
       this.logger.error(
         `Failed to sync guild memberships with roles for user ${userId}:`,
         error,
       );
-      // Re-throw to allow caller to handle if needed, but typically this is caught in controller
       throw error;
     }
   }

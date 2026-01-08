@@ -64,9 +64,7 @@ export class LeagueSettingsService {
    * Get league settings with caching and defaults
    *
    * Automatically persists default settings if they don't exist (lazy initialization).
-   * Settings creation is independent of user validation - they exist regardless of who accesses them.
-   * If settings don't exist, that's a bug - auto-create them immediately.
-   * If creation fails, that's a system error - throw it.
+   * Settings creation is independent of user validation.
    */
   async getSettings(leagueId: string): Promise<LeagueConfiguration> {
     try {

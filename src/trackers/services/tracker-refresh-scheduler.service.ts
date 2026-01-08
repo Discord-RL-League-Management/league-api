@@ -134,7 +134,6 @@ export class TrackerRefreshSchedulerService
       this.cronJob = null;
     }
 
-    // Check if cron job exists before attempting to delete (official NestJS approach)
     if (this.schedulerRegistry.doesExist('cron', 'tracker-refresh')) {
       this.schedulerRegistry.deleteCronJob('tracker-refresh');
       this.logger.debug('Tracker refresh cron job deleted from registry');

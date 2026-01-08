@@ -44,10 +44,6 @@ export class LeaguesService {
     createdBy: string,
   ): Promise<League> {
     try {
-      // Note: We can't check for duplicate league by ID since ID is generated (cuid)
-      // Instead, we'll check for duplicate name within the same guild if needed
-      // For now, we'll allow multiple leagues with the same name in a guild
-
       const leagueData: CreateLeagueDto & { createdBy: string } = {
         ...createLeagueDto,
         createdBy,

@@ -244,8 +244,6 @@ export class SettingsValidationService {
    * Single Responsibility: Tracker processing config validation
    */
   private validateTrackerProcessing(config: { enabled?: boolean }): void {
-    // Note: class-validator decorators handle most validation,
-    // but this provides explicit validation for consistency
     if (config.enabled !== undefined && typeof config.enabled !== 'boolean') {
       throw new BadRequestException(
         'trackerProcessing.enabled must be a boolean',

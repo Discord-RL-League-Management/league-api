@@ -314,7 +314,6 @@ export class ScheduledTrackerProcessingService
   /**
    * Convert a Date to a cron expression
    * Format: second minute hour day month dayOfWeek
-   * Note: For one-time jobs, we use a specific date/time
    */
   private dateToCronExpression(date: Date): string {
     const second = date.getSeconds();
