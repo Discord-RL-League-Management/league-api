@@ -4,6 +4,7 @@ import { IdempotencyModule } from './idempotency/idempotency.module';
 import { ActivityLogModule } from './activity-log/activity-log.module';
 import { SettingsModule } from './settings/settings.module';
 import { VisibilityModule } from './visibility/visibility.module';
+import { AuditLogModule } from './audit-log/audit-log.module';
 
 /**
  * InfrastructureModule - Barrel export for all infrastructure modules
@@ -18,6 +19,7 @@ import { VisibilityModule } from './visibility/visibility.module';
     ActivityLogModule,
     SettingsModule,
     VisibilityModule,
+    AuditLogModule,
   ],
   exports: [
     OutboxModule,
@@ -25,6 +27,7 @@ import { VisibilityModule } from './visibility/visibility.module';
     ActivityLogModule,
     SettingsModule,
     VisibilityModule,
+    AuditLogModule,
   ],
 })
 export class InfrastructureModule {}
