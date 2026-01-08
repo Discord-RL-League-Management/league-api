@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
+import { LogSanitizer } from '../utils/log-sanitizer';
 
 interface ErrorResponse {
   statusCode: number;
@@ -20,6 +21,12 @@ interface ErrorResponse {
   stack?: string;
 }
 
+/**
+ * GlobalExceptionFilter - Catches all exceptions and formats error responses
+ *
+ * Reference: NestJS Exception Filters
+ * https://docs.nestjs.com/exception-filters
+ */
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(GlobalExceptionFilter.name);
@@ -86,9 +93,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         code: typeof errorData.code === 'string' ? errorData.code : undefined,
         details:
           typeof errorData.details === 'object' && errorData.details !== null
-            ? (errorData.details as Record<string, unknown>)
+            ? (LogSanitizer.sanitizeObject(
+                errorData.details as Record<string, unknown>,
+              ) as Record<string, unknown>)
             : undefined,
-        stack: this.isDevelopment ? exception.stack : undefined,
+        stack: this.isDevelopment
+          ? LogSanitizer.sanitizeString(exception.stack || '')
+          : undefined,
       };
     }
 
@@ -109,7 +120,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       path,
       method,
       message: 'Internal server error',
-      stack: this.isDevelopment ? (exception as Error)?.stack : undefined,
+      stack: this.isDevelopment
+        ? LogSanitizer.sanitizeString((exception as Error)?.stack || '')
+        : undefined,
     };
   }
 
@@ -121,20 +134,40 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const { method, url, ip, headers } = request;
     const userAgent = headers['user-agent'] || 'Unknown';
 
+    const sanitizedMessage = LogSanitizer.sanitizeString(errorResponse.message);
+    const logMessage = `${method} ${url} - ${errorResponse.statusCode} - ${sanitizedMessage}`;
+
+    const sanitizedHeaders = LogSanitizer.sanitizeHeaders(
+      headers as Record<string, unknown>,
+    );
+    const sanitizedRequest = {
+      method,
+      url,
+      ip,
+      userAgent,
+      headers: sanitizedHeaders,
+    };
+
+    const sanitizedException =
+      exception instanceof Error
+        ? LogSanitizer.sanitizeString(exception.stack || exception.message)
+        : exception;
+
+    const sanitizedError = LogSanitizer.sanitizeObject(
+      errorResponse,
+    ) as ErrorResponse;
+
     if (errorResponse.statusCode >= 500) {
-      this.logger.error(
-        `${method} ${url} - ${errorResponse.statusCode} - ${errorResponse.message}`,
-        {
-          exception: exception instanceof Error ? exception.stack : exception,
-          request: { method, url, ip, userAgent },
-          error: errorResponse,
-        },
-      );
+      this.logger.error(logMessage, {
+        exception: sanitizedException,
+        request: sanitizedRequest,
+        error: sanitizedError,
+      });
     } else {
-      this.logger.warn(
-        `${method} ${url} - ${errorResponse.statusCode} - ${errorResponse.message}`,
-        { request: { method, url, ip, userAgent }, error: errorResponse },
-      );
+      this.logger.warn(logMessage, {
+        request: sanitizedRequest,
+        error: sanitizedError,
+      });
     }
   }
 }
