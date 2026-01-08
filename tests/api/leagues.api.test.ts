@@ -15,6 +15,7 @@ import {
   generateTestId,
   createTestUserWithToken,
   cleanupTestUser,
+  getBotApiKey,
 } from '../utils/test-helpers';
 import { Game, LeagueStatus } from '@prisma/client';
 
@@ -56,7 +57,7 @@ describe.skipIf(!isServerAvailable)(
 
       await apiClient.post('/internal/guilds', guildData, {
         headers: {
-          Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+          Authorization: `Bearer ${getBotApiKey()}`,
         },
       });
       // Create test league via bot API
@@ -68,7 +69,7 @@ describe.skipIf(!isServerAvailable)(
 
       await apiClient.post('/internal/leagues', leagueData, {
         headers: {
-          Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+          Authorization: `Bearer ${getBotApiKey()}`,
         },
       });
     });
@@ -78,7 +79,7 @@ describe.skipIf(!isServerAvailable)(
       try {
         await apiClient.delete(`/internal/leagues/${testLeagueId}`, {
           headers: {
-            Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+            Authorization: `Bearer ${getBotApiKey()}`,
           },
         });
       } catch {
@@ -89,7 +90,7 @@ describe.skipIf(!isServerAvailable)(
       try {
         await apiClient.delete(`/internal/guilds/${testGuildId}`, {
           headers: {
-            Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+            Authorization: `Bearer ${getBotApiKey()}`,
           },
         });
       } catch {
@@ -262,7 +263,7 @@ describe.skipIf(!isServerAvailable)(
         try {
           await apiClient.delete(`/internal/leagues/${response.data.id}`, {
             headers: {
-              Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+              Authorization: `Bearer ${getBotApiKey()}`,
             },
           });
         } catch {

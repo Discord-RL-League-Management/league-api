@@ -9,6 +9,21 @@ import type { AxiosInstance } from 'axios';
 import type { UserFactoryData } from '../factories/user.factory';
 
 /**
+ * Gets the BOT_API_KEY with validation
+ * @throws Error if BOT_API_KEY is not set
+ */
+export function getBotApiKey(): string {
+  const botApiKey = process.env.BOT_API_KEY;
+  if (!botApiKey) {
+    throw new Error(
+      'BOT_API_KEY environment variable is required for API tests. ' +
+        'Set BOT_API_KEY in your test environment.',
+    );
+  }
+  return botApiKey;
+}
+
+/**
  * Generates a unique identifier for test isolation
  *
  * @returns Unique identifier string
@@ -74,25 +89,22 @@ export async function createTestUserWithToken(
 
   const testUserData = createUserData(userData);
 
-  // Create user via bot API
   const createResponse = await apiClient.post<{
     data: UserFactoryData & { id: string };
   }>('/internal/users', testUserData, {
     headers: {
-      Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+      Authorization: `Bearer ${getBotApiKey()}`,
     },
   });
 
   const createdUser = createResponse.data.data;
 
-  // Validate required fields are present
   if (!createdUser.username || !createdUser.email) {
     throw new Error(
       'Created user must have username and email. API response was invalid.',
     );
   }
 
-  // Generate JWT token for the user
   const authData = createAuthData({
     userId: createdUser.id,
     username: createdUser.username,
@@ -101,9 +113,8 @@ export async function createTestUserWithToken(
     email: createdUser.email,
   });
 
-  const token = generateJwtToken(authData, process.env.JWT_PRIVATE_KEY || '');
+  const token = generateJwtToken(authData);
 
-  // Type assertion: username and email are validated above
   const userWithRequiredFields = createdUser as UserFactoryData & {
     id: string;
     username: string;
@@ -136,14 +147,11 @@ export async function generateJwtTokenForUser(
 ): Promise<string> {
   const { generateJwtToken } = await import('../factories/auth.factory.js');
 
-  return generateJwtToken(
-    {
-      userId,
-      username,
-      ...options,
-    },
-    process.env.JWT_PRIVATE_KEY || '',
-  );
+  return generateJwtToken({
+    userId,
+    username,
+    ...options,
+  });
 }
 
 /**
@@ -156,7 +164,6 @@ export async function cleanupTestUser(
   apiClient: AxiosInstance,
   userId?: string | null,
 ): Promise<void> {
-  // Always attempt cleanup - function handles undefined/null userId gracefully
   if (!userId) {
     return;
   }
@@ -164,7 +171,7 @@ export async function cleanupTestUser(
   try {
     await apiClient.delete(`/internal/users/${userId}`, {
       headers: {
-        Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+        Authorization: `Bearer ${getBotApiKey()}`,
       },
     });
   } catch {
