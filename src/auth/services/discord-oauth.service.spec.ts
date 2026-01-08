@@ -58,11 +58,9 @@ describe('DiscordOAuthService', () => {
     it('should_generate_authorization_url_without_state_when_state_not_provided', () => {
       const url = service.getAuthorizationUrl();
 
-      // Verify URL contains all required OAuth2 parameters
       expect(url).toMatch(
         /^https:\/\/discord\.com\/api\/oauth2\/authorize\?.*client_id=test-client-id.*redirect_uri=.*response_type=code.*scope=identify\+email\+guilds\+guilds\.members\.read/,
       );
-      // Verify state parameter is not present
       expect(url).not.toContain('state=');
     });
 
@@ -71,11 +69,9 @@ describe('DiscordOAuthService', () => {
 
       const url = service.getAuthorizationUrl(stateToken);
 
-      // Verify URL contains all required OAuth2 parameters including state
       expect(url).toMatch(
         /^https:\/\/discord\.com\/api\/oauth2\/authorize\?.*client_id=test-client-id.*redirect_uri=.*response_type=code.*scope=identify\+email\+guilds\+guilds\.members\.read/,
       );
-      // Verify state parameter is present with correct value
       expect(url).toContain('state=test-state-token-12345');
     });
 
@@ -89,7 +85,7 @@ describe('DiscordOAuthService', () => {
   });
 
   describe('exchangeCode', () => {
-    it('should_exchange_authorization_code_for_access_token_when_valid', async () => {
+    it('should_return_token_response_when_exchange_succeeds', async () => {
       const mockTokenResponse = {
         access_token: 'access-token-123',
         token_type: 'Bearer',
@@ -105,6 +101,23 @@ describe('DiscordOAuthService', () => {
       const result = await service.exchangeCode('auth-code-123');
 
       expect(result).toEqual(mockTokenResponse);
+    });
+
+    it('should_call_http_service_with_correct_parameters_when_exchanging_code', async () => {
+      const mockTokenResponse = {
+        access_token: 'access-token-123',
+        token_type: 'Bearer',
+        expires_in: 604800,
+        refresh_token: 'refresh-token-123',
+        scope: 'identify email guilds',
+      };
+
+      vi.mocked(mockHttpService.post).mockReturnValue(
+        of({ data: mockTokenResponse } as never),
+      );
+
+      await service.exchangeCode('auth-code-123');
+
       expect(mockHttpService.post).toHaveBeenCalledWith(
         'https://discord.com/api/oauth2/token',
         expect.stringContaining('grant_type=authorization_code'),

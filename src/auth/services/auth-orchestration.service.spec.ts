@@ -55,15 +55,11 @@ describe('AuthOrchestrationService', () => {
   });
 
   describe('syncUserGuildMemberships', () => {
-    it('should_sync_mutual_guilds_with_roles_when_user_has_guilds', async () => {
-      const userGuilds = [
-        { id: 'guild-1', name: 'Guild 1' },
-        { id: 'guild-2', name: 'Guild 2' },
-        { id: 'guild-3', name: 'Guild 3' },
-      ];
-      const botGuildIds = ['guild-1', 'guild-3'];
-      const memberData = { roles: ['role-1', 'role-2'] };
-
+    const setupMocksForSync = (
+      userGuilds: Array<{ id: string; name: string }>,
+      botGuildIds: string[],
+      memberData: { roles: string[] },
+    ) => {
       vi.mocked(mockDiscordApiService.getUserGuilds).mockResolvedValue(
         userGuilds,
       );
@@ -76,10 +72,21 @@ describe('AuthOrchestrationService', () => {
       vi.mocked(
         mockUserGuildsService.syncUserGuildMembershipsWithRoles,
       ).mockResolvedValue(undefined);
+    };
+
+    it('should_sync_mutual_guilds_with_roles_when_user_has_guilds', async () => {
+      const userGuilds = [
+        { id: 'guild-1', name: 'Guild 1' },
+        { id: 'guild-2', name: 'Guild 2' },
+        { id: 'guild-3', name: 'Guild 3' },
+      ];
+      const botGuildIds = ['guild-1', 'guild-3'];
+      const memberData = { roles: ['role-1', 'role-2'] };
+
+      setupMocksForSync(userGuilds, botGuildIds, memberData);
 
       await service.syncUserGuildMemberships(userId, accessToken);
 
-      // Verify mutual guilds are synced with roles
       expect(
         mockUserGuildsService.syncUserGuildMembershipsWithRoles,
       ).toHaveBeenCalledWith(
@@ -110,7 +117,6 @@ describe('AuthOrchestrationService', () => {
 
       await service.syncUserGuildMemberships(userId, accessToken);
 
-      // Verify guild is synced with empty roles on error
       expect(
         mockUserGuildsService.syncUserGuildMembershipsWithRoles,
       ).toHaveBeenCalledWith(
@@ -152,8 +158,6 @@ describe('AuthOrchestrationService', () => {
       ).mockResolvedValue(undefined);
 
       await service.syncUserGuildMemberships(userId, accessToken);
-
-      // Verify only mutual guild is synced
       expect(
         mockUserGuildsService.syncUserGuildMembershipsWithRoles,
       ).toHaveBeenCalledWith(userId, [
