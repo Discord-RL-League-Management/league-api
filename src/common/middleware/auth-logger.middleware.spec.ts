@@ -11,10 +11,20 @@ describe('AuthLoggerMiddleware', () => {
   let mockResponse: Partial<Response>;
   let mockNext: NextFunction;
   let logSpy: ReturnType<typeof vi.spyOn>;
+  const TEST_BOT_API_KEY = 'test-bot-api-key';
+  const TEST_API_KEY_SALT = 'test-salt-key';
 
   beforeEach(async () => {
     mockConfigService = {
-      get: vi.fn().mockReturnValue('test-bot-api-key'),
+      get: vi.fn().mockImplementation((key: string) => {
+        if (key === 'auth.botApiKey') {
+          return TEST_BOT_API_KEY;
+        }
+        if (key === 'auth.apiKeySalt') {
+          return TEST_API_KEY_SALT;
+        }
+        return undefined;
+      }),
     } as unknown as ConfigService;
 
     const moduleRef = await Test.createTestingModule({
@@ -178,6 +188,99 @@ describe('AuthLoggerMiddleware', () => {
       expect(mockNext).toHaveBeenCalled();
       const logCall = logSpy.mock.calls[0][0] as string;
       expect(logCall).not.toContain('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9');
+    });
+
+    it('should_not_store_api_key_in_plain_text', () => {
+      const middlewareInstance = middleware as any;
+      expect(middlewareInstance.botApiKey).toBeUndefined();
+    });
+
+    it('should_hash_api_key_during_initialization', () => {
+      const middlewareInstance = middleware as any;
+      expect(middlewareInstance.botApiKeyHash).toBeDefined();
+      expect(typeof middlewareInstance.botApiKeyHash).toBe('string');
+    });
+
+    it('should_generate_64_character_hash', () => {
+      const middlewareInstance = middleware as any;
+      expect(middlewareInstance.botApiKeyHash.length).toBe(64);
+      expect(middlewareInstance.botApiKeyHash).not.toBe(TEST_BOT_API_KEY);
+    });
+
+    it('should_use_hash_based_comparison_when_bot_api_key_matches', () => {
+      mockRequest.headers = {
+        authorization: `Bearer ${TEST_BOT_API_KEY}`,
+      };
+
+      middleware.use(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext,
+      );
+
+      expect(logSpy).toHaveBeenCalledWith('Bot request: GET /api/test');
+      expect(mockNext).toHaveBeenCalled();
+    });
+
+    it('should_not_identify_bot_request_when_api_key_does_not_match', () => {
+      mockRequest.headers = {
+        authorization: 'Bearer wrong-api-key',
+      };
+
+      middleware.use(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext,
+      );
+
+      expect(logSpy).toHaveBeenCalledWith('User request: GET /api/test');
+      expect(mockNext).toHaveBeenCalled();
+    });
+
+    it('should_handle_missing_api_key_salt_gracefully', async () => {
+      const invalidConfigService = {
+        get: vi.fn().mockImplementation((key: string) => {
+          if (key === 'auth.botApiKey') {
+            return TEST_BOT_API_KEY;
+          }
+          if (key === 'auth.apiKeySalt') {
+            return '';
+          }
+          return undefined;
+        }),
+      } as unknown as ConfigService;
+
+      await expect(
+        Test.createTestingModule({
+          providers: [
+            AuthLoggerMiddleware,
+            { provide: ConfigService, useValue: invalidConfigService },
+          ],
+        }).compile(),
+      ).rejects.toThrow();
+    });
+
+    it('should_handle_missing_bot_api_key_gracefully', async () => {
+      const invalidConfigService = {
+        get: vi.fn().mockImplementation((key: string) => {
+          if (key === 'auth.botApiKey') {
+            return '';
+          }
+          if (key === 'auth.apiKeySalt') {
+            return TEST_API_KEY_SALT;
+          }
+          return undefined;
+        }),
+      } as unknown as ConfigService;
+
+      await expect(
+        Test.createTestingModule({
+          providers: [
+            AuthLoggerMiddleware,
+            { provide: ConfigService, useValue: invalidConfigService },
+          ],
+        }).compile(),
+      ).rejects.toThrow();
     });
   });
 });

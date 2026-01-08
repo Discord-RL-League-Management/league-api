@@ -105,7 +105,6 @@ export class UserGuildsService {
         existingMemberships.map((m) => (m as { guildId: string }).guildId),
       );
 
-      // Prepare bulk operations with roles from OAuth
       const newMemberships = userGuilds
         .filter((guild) => !existingGuildIds.has(guild.id))
         .map((guild) => ({
@@ -190,14 +189,12 @@ export class UserGuildsService {
         return [];
       }
 
-      // Fetch user's guilds from Discord API
       const userGuilds =
         await this.discordApiService.getUserGuilds(accessToken);
 
       const guildIds = await this.guildsService.findActiveGuildIds();
       const botGuildIds = new Set(guildIds);
 
-      // Filter user guilds to only include mutual guilds
       const mutualGuilds = userGuilds.filter((userGuild) =>
         botGuildIds.has(userGuild.id),
       );

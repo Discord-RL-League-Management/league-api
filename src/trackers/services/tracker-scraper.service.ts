@@ -244,7 +244,6 @@ export class TrackerScraperService {
         continue;
       }
 
-      // Map playlistId to our field name
       const fieldName = PLAYLIST_ID_MAP[playlistId];
       if (!fieldName) {
         // Skip unsupported playlists (Hoops, Rumble, etc.)

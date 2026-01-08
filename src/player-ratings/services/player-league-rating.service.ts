@@ -38,7 +38,6 @@ export class PlayerLeagueRatingService {
   ) {
     const client = tx || this.prisma;
 
-    // Fetch existing rating to check peak value
     const existing = await client.playerLeagueRating.findUnique({
       where: { playerId_leagueId: { playerId, leagueId } },
     });
@@ -50,7 +49,6 @@ export class PlayerLeagueRatingService {
       (existing.peakRating === null ||
         Number(rating.currentRating) > Number(existing.peakRating));
 
-    // Use upsert to handle both create and update
     return client.playerLeagueRating.upsert({
       where: { playerId_leagueId: { playerId, leagueId } },
       create: {
