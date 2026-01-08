@@ -32,16 +32,17 @@ export interface AuthFactoryData {
  */
 export function generateJwtToken(
   userData: AuthFactoryData,
-  privateKey: string = process.env.JWT_PRIVATE_KEY || '',
+  privateKey?: string,
 ): string {
-  if (!privateKey || !privateKey.trim()) {
+  const key = privateKey ?? process.env.JWT_PRIVATE_KEY;
+  if (!key || !key.trim()) {
     throw new Error(
       'JWT_PRIVATE_KEY environment variable is required for test token generation. ' +
         'Set JWT_PRIVATE_KEY in your test environment or pass a valid RSA private key.',
     );
   }
 
-  if (!privateKey.includes('BEGIN') || !privateKey.includes('PRIVATE KEY')) {
+  if (!key.includes('BEGIN') || !key.includes('PRIVATE KEY')) {
     throw new Error(
       'Invalid JWT private key format. Expected PEM format with BEGIN/END markers. ' +
         'Generate keys using: openssl genrsa -out jwt-private.pem 2048',
@@ -57,7 +58,7 @@ export function generateJwtToken(
     guilds: userData.guilds?.map((g) => g.id) || [],
   };
 
-  return jwt.sign(payload, privateKey, {
+  return jwt.sign(payload, key, {
     algorithm: 'RS256',
     expiresIn: '7d',
   });

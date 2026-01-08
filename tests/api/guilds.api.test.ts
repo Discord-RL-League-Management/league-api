@@ -13,6 +13,7 @@ import { createGuildData } from '../factories/guild.factory';
 import {
   createTestUserWithToken,
   cleanupTestUser,
+  getBotApiKey,
 } from '../utils/test-helpers';
 
 // Check if API server is available before running tests
@@ -51,7 +52,7 @@ describe.skipIf(!isServerAvailable)(
 
       await apiClient.post('/internal/guilds', guildData, {
         headers: {
-          Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+          Authorization: `Bearer ${getBotApiKey()}`,
         },
       });
     });
@@ -61,7 +62,7 @@ describe.skipIf(!isServerAvailable)(
       try {
         await apiClient.delete(`/internal/guilds/${testGuildId}`, {
           headers: {
-            Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+            Authorization: `Bearer ${getBotApiKey()}`,
           },
         });
       } catch {
@@ -232,8 +233,6 @@ describe.skipIf(!isServerAvailable)(
 
     describe('PATCH /internal/guilds/:id/settings - Update Tracker Processing', () => {
       it('should_update_tracker_processing_enabled_to_false', async () => {
-        const botApiKey = process.env.BOT_API_KEY || '';
-
         const updateResponse = await apiClient.patch(
           `/internal/guilds/${testGuildId}/settings`,
           {
@@ -243,7 +242,7 @@ describe.skipIf(!isServerAvailable)(
           },
           {
             headers: {
-              Authorization: `Bearer ${botApiKey}`,
+              Authorization: `Bearer ${getBotApiKey()}`,
             },
             validateStatus: (status) => status < 500,
           },
@@ -255,7 +254,7 @@ describe.skipIf(!isServerAvailable)(
           `/internal/guilds/${testGuildId}/settings`,
           {
             headers: {
-              Authorization: `Bearer ${botApiKey}`,
+              Authorization: `Bearer ${getBotApiKey()}`,
             },
             validateStatus: (status) => status < 500,
           },
@@ -268,8 +267,6 @@ describe.skipIf(!isServerAvailable)(
       });
 
       it('should_update_tracker_processing_enabled_to_true', async () => {
-        const botApiKey = process.env.BOT_API_KEY || '';
-
         const updateResponse = await apiClient.patch(
           `/internal/guilds/${testGuildId}/settings`,
           {
@@ -279,7 +276,7 @@ describe.skipIf(!isServerAvailable)(
           },
           {
             headers: {
-              Authorization: `Bearer ${botApiKey}`,
+              Authorization: `Bearer ${getBotApiKey()}`,
             },
             validateStatus: (status) => status < 500,
           },
@@ -291,7 +288,7 @@ describe.skipIf(!isServerAvailable)(
           `/internal/guilds/${testGuildId}/settings`,
           {
             headers: {
-              Authorization: `Bearer ${botApiKey}`,
+              Authorization: `Bearer ${getBotApiKey()}`,
             },
             validateStatus: (status) => status < 500,
           },
@@ -304,13 +301,11 @@ describe.skipIf(!isServerAvailable)(
       });
 
       it('should_return_tracker_processing_in_get_settings', async () => {
-        const botApiKey = process.env.BOT_API_KEY || '';
-
         const response = await apiClient.get(
           `/internal/guilds/${testGuildId}/settings`,
           {
             headers: {
-              Authorization: `Bearer ${botApiKey}`,
+              Authorization: `Bearer ${getBotApiKey()}`,
             },
             validateStatus: (status) => status < 500,
           },
@@ -324,8 +319,6 @@ describe.skipIf(!isServerAvailable)(
       });
 
       it('should_validate_tracker_processing_enabled_must_be_boolean', async () => {
-        const botApiKey = process.env.BOT_API_KEY || '';
-
         const response = await apiClient.patch(
           `/internal/guilds/${testGuildId}/settings`,
           {
@@ -335,7 +328,7 @@ describe.skipIf(!isServerAvailable)(
           },
           {
             headers: {
-              Authorization: `Bearer ${botApiKey}`,
+              Authorization: `Bearer ${getBotApiKey()}`,
             },
             validateStatus: (status) => status < 500,
           },

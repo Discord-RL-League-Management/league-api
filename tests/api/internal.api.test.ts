@@ -16,6 +16,7 @@ import {
   generateTestId,
   createTestUserWithToken,
   cleanupTestUser,
+  getBotApiKey,
 } from '../utils/test-helpers';
 
 // Check if API server is available before running tests
@@ -46,7 +47,7 @@ describe.skipIf(!isServerAvailable)(
       const userData = createUserData();
       const userResponse = await apiClient.post('/internal/users', userData, {
         headers: {
-          Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+          Authorization: `Bearer ${getBotApiKey()}`,
         },
       });
       testUser = userResponse.data;
@@ -62,7 +63,7 @@ describe.skipIf(!isServerAvailable)(
         guildData,
         {
           headers: {
-            Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+            Authorization: `Bearer ${getBotApiKey()}`,
           },
         },
       );
@@ -82,7 +83,7 @@ describe.skipIf(!isServerAvailable)(
         leagueData,
         {
           headers: {
-            Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+            Authorization: `Bearer ${getBotApiKey()}`,
           },
         },
       );
@@ -96,7 +97,7 @@ describe.skipIf(!isServerAvailable)(
       try {
         await apiClient.delete(`/internal/leagues/${testLeagueId}`, {
           headers: {
-            Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+            Authorization: `Bearer ${getBotApiKey()}`,
           },
         });
       } catch {
@@ -107,7 +108,7 @@ describe.skipIf(!isServerAvailable)(
       try {
         await apiClient.delete(`/internal/guilds/${testGuildId}`, {
           headers: {
-            Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+            Authorization: `Bearer ${getBotApiKey()}`,
           },
         });
       } catch {
@@ -131,7 +132,7 @@ describe.skipIf(!isServerAvailable)(
       it('should_return_health_status_when_authenticated_with_bot_key', async () => {
         const response = await apiClient.get('/internal/health', {
           headers: {
-            Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+            Authorization: `Bearer ${getBotApiKey()}`,
           },
         });
 
@@ -171,7 +172,7 @@ describe.skipIf(!isServerAvailable)(
       it('should_return_users_list_when_authenticated_with_bot_key', async () => {
         const response = await apiClient.get('/internal/users', {
           headers: {
-            Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+            Authorization: `Bearer ${getBotApiKey()}`,
           },
         });
 
@@ -192,7 +193,7 @@ describe.skipIf(!isServerAvailable)(
       it('should_return_user_details_when_user_exists', async () => {
         const response = await apiClient.get(`/internal/users/${testUser.id}`, {
           headers: {
-            Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+            Authorization: `Bearer ${getBotApiKey()}`,
           },
         });
 
@@ -208,7 +209,7 @@ describe.skipIf(!isServerAvailable)(
           `/internal/users/${nonExistentUserId}`,
           {
             headers: {
-              Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+              Authorization: `Bearer ${getBotApiKey()}`,
             },
             validateStatus: (status) => status < 500,
           },
@@ -227,7 +228,7 @@ describe.skipIf(!isServerAvailable)(
 
         const response = await apiClient.post('/internal/users', userData, {
           headers: {
-            Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+            Authorization: `Bearer ${getBotApiKey()}`,
           },
         });
 
@@ -249,7 +250,7 @@ describe.skipIf(!isServerAvailable)(
 
         const response = await apiClient.post('/internal/users', invalidData, {
           headers: {
-            Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+            Authorization: `Bearer ${getBotApiKey()}`,
           },
           validateStatus: (status) => status < 500,
         });
@@ -270,7 +271,7 @@ describe.skipIf(!isServerAvailable)(
           updateData,
           {
             headers: {
-              Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+              Authorization: `Bearer ${getBotApiKey()}`,
             },
           },
         );
@@ -291,7 +292,7 @@ describe.skipIf(!isServerAvailable)(
           updateData,
           {
             headers: {
-              Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+              Authorization: `Bearer ${getBotApiKey()}`,
             },
             validateStatus: (status) => status < 500,
           },
@@ -311,7 +312,7 @@ describe.skipIf(!isServerAvailable)(
           userData,
           {
             headers: {
-              Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+              Authorization: `Bearer ${getBotApiKey()}`,
             },
           },
         );
@@ -321,7 +322,7 @@ describe.skipIf(!isServerAvailable)(
           `/internal/users/${userIdToDelete}`,
           {
             headers: {
-              Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+              Authorization: `Bearer ${getBotApiKey()}`,
             },
           },
         );
@@ -336,7 +337,7 @@ describe.skipIf(!isServerAvailable)(
           `/internal/users/${nonExistentUserId}`,
           {
             headers: {
-              Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+              Authorization: `Bearer ${getBotApiKey()}`,
             },
             validateStatus: (status) => status < 500,
           },
@@ -352,7 +353,7 @@ describe.skipIf(!isServerAvailable)(
           `/internal/leagues/${testLeagueId}`,
           {
             headers: {
-              Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+              Authorization: `Bearer ${getBotApiKey()}`,
             },
           },
         );
@@ -369,7 +370,7 @@ describe.skipIf(!isServerAvailable)(
           `/internal/leagues/${nonExistentLeagueId}`,
           {
             headers: {
-              Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+              Authorization: `Bearer ${getBotApiKey()}`,
             },
             validateStatus: (status) => status < 500,
           },
@@ -389,7 +390,7 @@ describe.skipIf(!isServerAvailable)(
 
         const response = await apiClient.post('/internal/leagues', leagueData, {
           headers: {
-            Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+            Authorization: `Bearer ${getBotApiKey()}`,
           },
         });
 
@@ -401,7 +402,7 @@ describe.skipIf(!isServerAvailable)(
         try {
           await apiClient.delete(`/internal/leagues/${response.data.id}`, {
             headers: {
-              Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+              Authorization: `Bearer ${getBotApiKey()}`,
             },
           });
         } catch {
@@ -417,7 +418,7 @@ describe.skipIf(!isServerAvailable)(
           invalidData,
           {
             headers: {
-              Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+              Authorization: `Bearer ${getBotApiKey()}`,
             },
             validateStatus: (status) => status < 500,
           },
@@ -443,7 +444,7 @@ describe.skipIf(!isServerAvailable)(
           scheduleData,
           {
             headers: {
-              Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+              Authorization: `Bearer ${getBotApiKey()}`,
             },
             validateStatus: (status) => status < 500,
           },
@@ -465,7 +466,7 @@ describe.skipIf(!isServerAvailable)(
             {},
             {
               headers: {
-                Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+                Authorization: `Bearer ${getBotApiKey()}`,
               },
             },
           );
@@ -487,7 +488,7 @@ describe.skipIf(!isServerAvailable)(
           scheduleData,
           {
             headers: {
-              Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+              Authorization: `Bearer ${getBotApiKey()}`,
             },
             validateStatus: (status) => status < 500,
           },
@@ -504,7 +505,7 @@ describe.skipIf(!isServerAvailable)(
           invalidData,
           {
             headers: {
-              Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+              Authorization: `Bearer ${getBotApiKey()}`,
             },
             validateStatus: (status) => status < 500,
           },
@@ -527,7 +528,7 @@ describe.skipIf(!isServerAvailable)(
           scheduleData,
           {
             headers: {
-              Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+              Authorization: `Bearer ${getBotApiKey()}`,
             },
             validateStatus: (status) => status < 500,
           },
@@ -573,7 +574,7 @@ describe.skipIf(!isServerAvailable)(
             scheduleData,
             {
               headers: {
-                Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+                Authorization: `Bearer ${getBotApiKey()}`,
               },
             },
           );
@@ -592,7 +593,7 @@ describe.skipIf(!isServerAvailable)(
               {},
               {
                 headers: {
-                  Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+                  Authorization: `Bearer ${getBotApiKey()}`,
                 },
               },
             );
@@ -608,7 +609,7 @@ describe.skipIf(!isServerAvailable)(
           `/internal/trackers/schedule/guild/${testGuildId}`,
           {
             headers: {
-              Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+              Authorization: `Bearer ${getBotApiKey()}`,
             },
             validateStatus: (status) => status < 500,
           },
@@ -626,7 +627,7 @@ describe.skipIf(!isServerAvailable)(
           `/internal/trackers/schedule/guild/${testGuildId}?status=${status}`,
           {
             headers: {
-              Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+              Authorization: `Bearer ${getBotApiKey()}`,
             },
             validateStatus: (status) => status < 500,
           },
@@ -647,7 +648,7 @@ describe.skipIf(!isServerAvailable)(
           `/internal/trackers/schedule/guild/${testGuildId}?includeCompleted=${includeCompleted}`,
           {
             headers: {
-              Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+              Authorization: `Bearer ${getBotApiKey()}`,
             },
             validateStatus: (status) => status < 500,
           },
@@ -672,7 +673,7 @@ describe.skipIf(!isServerAvailable)(
             otherGuildData,
             {
               headers: {
-                Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+                Authorization: `Bearer ${getBotApiKey()}`,
               },
             },
           );
@@ -682,7 +683,7 @@ describe.skipIf(!isServerAvailable)(
             `/internal/trackers/schedule/guild/${otherGuildId}`,
             {
               headers: {
-                Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+                Authorization: `Bearer ${getBotApiKey()}`,
               },
               validateStatus: (status) => status < 500,
             },
@@ -697,7 +698,7 @@ describe.skipIf(!isServerAvailable)(
             try {
               await apiClient.delete(`/internal/guilds/${otherGuildId}`, {
                 headers: {
-                  Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+                  Authorization: `Bearer ${getBotApiKey()}`,
                 },
               });
             } catch {
@@ -714,7 +715,7 @@ describe.skipIf(!isServerAvailable)(
           `/internal/trackers/schedule/guild/${testGuildId}?status=${invalidStatus}`,
           {
             headers: {
-              Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+              Authorization: `Bearer ${getBotApiKey()}`,
             },
             validateStatus: (status) => status < 500,
           },
@@ -752,7 +753,7 @@ describe.skipIf(!isServerAvailable)(
             scheduleData,
             {
               headers: {
-                Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+                Authorization: `Bearer ${getBotApiKey()}`,
               },
             },
           );
@@ -771,7 +772,7 @@ describe.skipIf(!isServerAvailable)(
               {},
               {
                 headers: {
-                  Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+                  Authorization: `Bearer ${getBotApiKey()}`,
                 },
               },
             );
@@ -788,7 +789,7 @@ describe.skipIf(!isServerAvailable)(
           {},
           {
             headers: {
-              Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+              Authorization: `Bearer ${getBotApiKey()}`,
             },
             validateStatus: (status) => status < 500,
           },
@@ -809,7 +810,7 @@ describe.skipIf(!isServerAvailable)(
             {},
             {
               headers: {
-                Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+                Authorization: `Bearer ${getBotApiKey()}`,
               },
             },
           );
@@ -822,7 +823,7 @@ describe.skipIf(!isServerAvailable)(
           {},
           {
             headers: {
-              Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+              Authorization: `Bearer ${getBotApiKey()}`,
             },
             validateStatus: (status) => status < 500,
           },
@@ -839,7 +840,7 @@ describe.skipIf(!isServerAvailable)(
           {},
           {
             headers: {
-              Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+              Authorization: `Bearer ${getBotApiKey()}`,
             },
             validateStatus: (status) => status < 500,
           },

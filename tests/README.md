@@ -163,6 +163,42 @@ npm run test:all               # Run all test suites
 npm run test:ci                # CI/CD optimized
 ```
 
+## Required Environment Variables
+
+All test suites require specific environment variables to be set. The test setup files validate these variables and will throw clear error messages if they are missing.
+
+### Required Variables
+
+- **`JWT_PRIVATE_KEY`** - RSA private key in PEM format for JWT token generation in tests
+  - **Required for:** All test suites (unit, API, E2E)
+  - **Format:** PEM format with BEGIN/END markers
+  - **Generation:** `openssl genrsa -out jwt-private.pem 2048`
+  - **Note:** This should be a test-specific key, different from production keys
+
+### Setting Environment Variables
+
+**Local Development:**
+```bash
+# Export in your shell
+export JWT_PRIVATE_KEY="$(cat jwt-private.pem)"
+
+# Or use a .env file (if supported by your test runner)
+```
+
+**CI/CD:**
+Ensure `JWT_PRIVATE_KEY` is set in your CI/CD environment variables/secrets.
+
+### Error Messages
+
+If a required environment variable is missing, tests will fail early with a clear error message:
+```
+Error: JWT_PRIVATE_KEY environment variable is required for tests.
+Set JWT_PRIVATE_KEY in your test environment.
+Generate test keys using: openssl genrsa -out jwt-private.pem 2048
+```
+
+**Security Note:** Test secrets must come from explicit environment configuration, not hardcoded fallback values. This ensures test secrets never accidentally leak into production builds.
+
 ## Test Isolation and CI/CD Readiness
 
 ### Statelessness

@@ -16,6 +16,7 @@ import {
   generateTestId,
   createTestUserWithToken,
   cleanupTestUser,
+  getBotApiKey,
 } from '../utils/test-helpers';
 import { MatchStatus } from '@prisma/client';
 
@@ -58,7 +59,7 @@ describe.skipIf(!isServerAvailable)(
 
       await apiClient.post('/internal/guilds', guildData, {
         headers: {
-          Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+          Authorization: `Bearer ${getBotApiKey()}`,
         },
       });
       // Create test league via bot API
@@ -70,7 +71,7 @@ describe.skipIf(!isServerAvailable)(
 
       await apiClient.post('/internal/leagues', leagueData, {
         headers: {
-          Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+          Authorization: `Bearer ${getBotApiKey()}`,
         },
       });
     });
@@ -80,7 +81,7 @@ describe.skipIf(!isServerAvailable)(
       try {
         await apiClient.delete(`/internal/matches/${testMatchId}`, {
           headers: {
-            Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+            Authorization: `Bearer ${getBotApiKey()}`,
           },
         });
       } catch {
@@ -91,7 +92,7 @@ describe.skipIf(!isServerAvailable)(
       try {
         await apiClient.delete(`/internal/leagues/${testLeagueId}`, {
           headers: {
-            Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+            Authorization: `Bearer ${getBotApiKey()}`,
           },
         });
       } catch {
@@ -102,7 +103,7 @@ describe.skipIf(!isServerAvailable)(
       try {
         await apiClient.delete(`/internal/guilds/${testGuildId}`, {
           headers: {
-            Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+            Authorization: `Bearer ${getBotApiKey()}`,
           },
         });
       } catch {
@@ -135,7 +136,7 @@ describe.skipIf(!isServerAvailable)(
           matchData,
           {
             headers: {
-              Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+              Authorization: `Bearer ${getBotApiKey()}`,
             },
             validateStatus: (status) => status < 500,
           },
@@ -246,7 +247,7 @@ describe.skipIf(!isServerAvailable)(
           matchData,
           {
             headers: {
-              Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+              Authorization: `Bearer ${getBotApiKey()}`,
             },
             validateStatus: (status) => status < 500,
           },
@@ -333,7 +334,7 @@ describe.skipIf(!isServerAvailable)(
           matchData,
           {
             headers: {
-              Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+              Authorization: `Bearer ${getBotApiKey()}`,
             },
             validateStatus: (status) => status < 500,
           },
@@ -420,7 +421,7 @@ describe.skipIf(!isServerAvailable)(
           matchData,
           {
             headers: {
-              Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+              Authorization: `Bearer ${getBotApiKey()}`,
             },
             validateStatus: (status) => status < 500,
           },

@@ -22,6 +22,7 @@ import {
   generateTestId,
   cleanupTestData,
   cleanupTestUser,
+  getBotApiKey,
 } from '../utils/test-helpers';
 
 // Check if API server is available before running tests
@@ -50,7 +51,7 @@ describe.skipIf(!isServerAvailable)('Users API - Contract Verification', () => {
     });
     const createResponse = await apiClient.post('/internal/users', userData, {
       headers: {
-        Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+        Authorization: `Bearer ${getBotApiKey()}`,
       },
     });
     testUser = createResponse.data;
@@ -66,10 +67,10 @@ describe.skipIf(!isServerAvailable)('Users API - Contract Verification', () => {
     testUser = null;
   });
 
-  afterAll(async () => {
+  afterAll(() => {
     // Teardown: Clean up test data - always attempt, catch errors
     try {
-      await cleanupTestData(testId);
+      cleanupTestData(testId);
     } catch {
       // Ignore cleanup errors (resource may not exist or already deleted)
     }
@@ -84,7 +85,7 @@ describe.skipIf(!isServerAvailable)('Users API - Contract Verification', () => {
 
       const response = await apiClient.post('/internal/users', userData, {
         headers: {
-          Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+          Authorization: `Bearer ${getBotApiKey()}`,
         },
       });
 
@@ -101,7 +102,7 @@ describe.skipIf(!isServerAvailable)('Users API - Contract Verification', () => {
 
       const response = await apiClient.post('/internal/users', invalidData, {
         headers: {
-          Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+          Authorization: `Bearer ${getBotApiKey()}`,
         },
         validateStatus: (status) => status < 500, // Don't throw on 4xx
       });
@@ -129,7 +130,7 @@ describe.skipIf(!isServerAvailable)('Users API - Contract Verification', () => {
 
       const createResponse = await apiClient.post('/internal/users', userData, {
         headers: {
-          Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+          Authorization: `Bearer ${getBotApiKey()}`,
         },
       });
 
@@ -137,7 +138,7 @@ describe.skipIf(!isServerAvailable)('Users API - Contract Verification', () => {
 
       const response = await apiClient.get(`/internal/users/${userId}`, {
         headers: {
-          Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+          Authorization: `Bearer ${getBotApiKey()}`,
         },
       });
 
@@ -151,7 +152,7 @@ describe.skipIf(!isServerAvailable)('Users API - Contract Verification', () => {
 
       const response = await apiClient.get(`/internal/users/${nonExistentId}`, {
         headers: {
-          Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+          Authorization: `Bearer ${getBotApiKey()}`,
         },
         validateStatus: (status) => status < 500,
       });
@@ -164,7 +165,7 @@ describe.skipIf(!isServerAvailable)('Users API - Contract Verification', () => {
     it('should_return_array_of_users_with_valid_structure', async () => {
       const response = await apiClient.get('/internal/users', {
         headers: {
-          Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+          Authorization: `Bearer ${getBotApiKey()}`,
         },
       });
 
@@ -177,7 +178,7 @@ describe.skipIf(!isServerAvailable)('Users API - Contract Verification', () => {
 
       const response = await apiClient.get('/internal/users', {
         headers: {
-          Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+          Authorization: `Bearer ${getBotApiKey()}`,
         },
       });
 
@@ -204,7 +205,7 @@ describe.skipIf(!isServerAvailable)('Users API - Contract Verification', () => {
         updateData,
         {
           headers: {
-            Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+            Authorization: `Bearer ${getBotApiKey()}`,
           },
         },
       );
@@ -225,7 +226,7 @@ describe.skipIf(!isServerAvailable)('Users API - Contract Verification', () => {
         updateData,
         {
           headers: {
-            Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+            Authorization: `Bearer ${getBotApiKey()}`,
           },
         },
       );
@@ -246,7 +247,7 @@ describe.skipIf(!isServerAvailable)('Users API - Contract Verification', () => {
         updateData,
         {
           headers: {
-            Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+            Authorization: `Bearer ${getBotApiKey()}`,
           },
           validateStatus: (status) => status < 500,
         },
@@ -279,7 +280,7 @@ describe.skipIf(!isServerAvailable)('Users API - Contract Verification', () => {
       });
       const createResponse = await apiClient.post('/internal/users', userData, {
         headers: {
-          Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+          Authorization: `Bearer ${getBotApiKey()}`,
         },
       });
       const userIdToDelete = createResponse.data.id;
@@ -288,7 +289,7 @@ describe.skipIf(!isServerAvailable)('Users API - Contract Verification', () => {
         `/internal/users/${userIdToDelete}`,
         {
           headers: {
-            Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+            Authorization: `Bearer ${getBotApiKey()}`,
           },
         },
       );
@@ -303,7 +304,7 @@ describe.skipIf(!isServerAvailable)('Users API - Contract Verification', () => {
         `/internal/users/${nonExistentId}`,
         {
           headers: {
-            Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+            Authorization: `Bearer ${getBotApiKey()}`,
           },
           validateStatus: (status) => status < 500,
         },
@@ -329,14 +330,14 @@ describe.skipIf(!isServerAvailable)('Users API - Contract Verification', () => {
       });
       const createResponse = await apiClient.post('/internal/users', userData, {
         headers: {
-          Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+          Authorization: `Bearer ${getBotApiKey()}`,
         },
       });
       const userIdToDelete = createResponse.data.id;
 
       await apiClient.delete(`/internal/users/${userIdToDelete}`, {
         headers: {
-          Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+          Authorization: `Bearer ${getBotApiKey()}`,
         },
       });
 
@@ -344,7 +345,7 @@ describe.skipIf(!isServerAvailable)('Users API - Contract Verification', () => {
         `/internal/users/${userIdToDelete}`,
         {
           headers: {
-            Authorization: `Bearer ${process.env.BOT_API_KEY || ''}`,
+            Authorization: `Bearer ${getBotApiKey()}`,
           },
           validateStatus: (status) => status < 500,
         },
