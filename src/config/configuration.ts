@@ -33,6 +33,20 @@ export default () => {
     frontend: {
       url: process.env.FRONTEND_URL || '',
     },
+    oauth: {
+      redirectUris: (() => {
+        const frontendUrl = process.env.FRONTEND_URL || '';
+        const redirectUris = process.env.OAUTH_REDIRECT_URIS || '';
+        const uris = redirectUris
+          .split(',')
+          .map((uri) => uri.trim())
+          .filter(Boolean);
+        if (frontendUrl && !uris.includes(frontendUrl)) {
+          uris.unshift(frontendUrl);
+        }
+        return uris;
+      })(),
+    },
     throttler: {
       ttl: parseInt(process.env.THROTTLE_TTL || '60000', 10),
       limit: parseInt(process.env.THROTTLE_LIMIT || '100', 10),

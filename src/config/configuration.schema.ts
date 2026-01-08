@@ -43,6 +43,13 @@ export const configurationSchema = Joi.object({
   // Frontend
   FRONTEND_URL: Joi.string().required(),
 
+  // OAuth Redirect URI Whitelist
+  OAUTH_REDIRECT_URIS: Joi.string()
+    .optional()
+    .allow('')
+    .default('')
+    .description('Comma-separated list of allowed OAuth redirect URIs'),
+
   // Rate Limiting
   THROTTLE_TTL: Joi.number().default(60000), // 1 minute
   THROTTLE_LIMIT: Joi.number().default(100),
