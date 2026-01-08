@@ -12,6 +12,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { DiscordOAuthService } from './services/discord-oauth.service';
 import { AuthOrchestrationService } from './services/auth-orchestration.service';
+import { RedirectUriValidationService } from './services/redirect-uri-validation.service';
 import { TokenManagementModule } from './services/token-management.module';
 import { BotApiKeyStrategy } from './strategies/bot-api-key.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
@@ -47,6 +48,7 @@ import { UserOrchestratorService } from '../users/services/user-orchestrator.ser
     AuthService,
     DiscordOAuthService,
     AuthOrchestrationService,
+    RedirectUriValidationService,
     BotApiKeyStrategy,
     JwtStrategy,
     UserOrchestratorService,

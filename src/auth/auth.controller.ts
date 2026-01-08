@@ -6,6 +6,7 @@ import {
   Logger,
   Query,
   Inject,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -24,6 +25,7 @@ import { AuthService } from './auth.service';
 import { DiscordOAuthService } from './services/discord-oauth.service';
 import { DiscordApiService } from '../discord/discord-api.service';
 import { AuthOrchestrationService } from './services/auth-orchestration.service';
+import { RedirectUriValidationService } from './services/redirect-uri-validation.service';
 import { TokenManagementService } from './services/token-management.service';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Public } from '../common/decorators';
@@ -40,6 +42,7 @@ export class AuthController {
     private discordOAuthService: DiscordOAuthService,
     private discordApiService: DiscordApiService,
     private authOrchestrationService: AuthOrchestrationService,
+    private redirectUriValidationService: RedirectUriValidationService,
     private tokenManagementService: TokenManagementService,
     private configService: ConfigService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
@@ -99,13 +102,37 @@ export class AuthController {
     @Query('state') state: string,
     @Query('error') error: string,
     @Query('error_description') errorDescription: string,
+    @Query('redirect_uri') redirectUri: string,
     @Res() res: Response,
   ) {
     const frontendUrl = this.configService.get<string>('frontend.url', '');
+    const allowedRedirectUris = this.configService.get<string[]>(
+      'oauth.redirectUris',
+      [],
+    );
+
+    let validatedRedirectUri: string;
+    try {
+      validatedRedirectUri =
+        this.redirectUriValidationService.validateRedirectUri(
+          redirectUri,
+          allowedRedirectUris,
+          frontendUrl,
+        );
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        this.logger.warn(
+          `OAuth callback received with invalid redirect URI - potential open redirect attack. URI: ${redirectUri}`,
+        );
+        const errorUrl = `${frontendUrl}/auth/error?error=invalid_redirect_uri&description=${encodeURIComponent('Invalid redirect URI')}`;
+        return res.redirect(errorUrl);
+      }
+      throw error;
+    }
 
     if (error) {
       this.logger.warn(`OAuth error: ${error} - ${errorDescription}`);
-      const errorUrl = `${frontendUrl}/auth/error?error=${encodeURIComponent(error)}&description=${encodeURIComponent(errorDescription || '')}`;
+      const errorUrl = `${validatedRedirectUri}/auth/error?error=${encodeURIComponent(error)}&description=${encodeURIComponent(errorDescription || '')}`;
       return res.redirect(errorUrl);
     }
 
@@ -113,7 +140,7 @@ export class AuthController {
       this.logger.warn(
         'OAuth callback received without state parameter - potential CSRF attempt',
       );
-      const errorUrl = `${frontendUrl}/auth/error?error=invalid_state&description=${encodeURIComponent('State parameter missing')}`;
+      const errorUrl = `${validatedRedirectUri}/auth/error?error=invalid_state&description=${encodeURIComponent('State parameter missing')}`;
       return res.redirect(errorUrl);
     }
 
@@ -126,16 +153,15 @@ export class AuthController {
       this.logger.warn(
         `OAuth callback received with invalid/expired state parameter - potential replay attack. State: ${state?.substring(0, 8) || 'empty'}...`,
       );
-      const errorUrl = `${frontendUrl}/auth/error?error=invalid_state&description=${encodeURIComponent('Invalid or expired state parameter')}`;
+      const errorUrl = `${validatedRedirectUri}/auth/error?error=invalid_state&description=${encodeURIComponent('Invalid or expired state parameter')}`;
       return res.redirect(errorUrl);
     }
 
     await this.cacheManager.del(stateCacheKey);
-    this.logger.debug('State parameter validated and deleted from cache');
 
     if (!code) {
       this.logger.error('OAuth callback received without authorization code');
-      const errorUrl = `${frontendUrl}/auth/error?error=no_code&description=${encodeURIComponent('Authorization code missing')}`;
+      const errorUrl = `${validatedRedirectUri}/auth/error?error=no_code&description=${encodeURIComponent('Authorization code missing')}`;
       return res.redirect(errorUrl);
     }
 
@@ -195,11 +221,11 @@ export class AuthController {
 
       res.cookie('auth_token', jwt.access_token, cookieOptions);
 
-      const redirectUrl = `${frontendUrl}/auth/callback`;
+      const redirectUrl = `${validatedRedirectUri}/auth/callback`;
       res.redirect(redirectUrl);
     } catch (error) {
       this.logger.error('OAuth callback failed:', error);
-      const errorUrl = `${frontendUrl}/auth/error?error=oauth_failed&description=${encodeURIComponent('Authentication failed')}`;
+      const errorUrl = `${validatedRedirectUri}/auth/error?error=oauth_failed&description=${encodeURIComponent('Authentication failed')}`;
       res.redirect(errorUrl);
     }
   }

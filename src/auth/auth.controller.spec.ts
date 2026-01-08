@@ -10,7 +10,10 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Test } from '@nestjs/testing';
-import { InternalServerErrorException } from '@nestjs/common';
+import {
+  InternalServerErrorException,
+  BadRequestException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
@@ -20,6 +23,7 @@ import { AuthService } from './auth.service';
 import { DiscordOAuthService } from './services/discord-oauth.service';
 import { DiscordApiService } from '@/discord/discord-api.service';
 import { AuthOrchestrationService } from './services/auth-orchestration.service';
+import { RedirectUriValidationService } from './services/redirect-uri-validation.service';
 import { TokenManagementService } from './services/token-management.service';
 import type { AuthenticatedUser } from '@/common/interfaces/user.interface';
 import type { Response } from 'express';
@@ -30,6 +34,7 @@ describe('AuthController', () => {
   let mockDiscordOAuthService: DiscordOAuthService;
   let mockDiscordApiService: DiscordApiService;
   let mockAuthOrchestrationService: AuthOrchestrationService;
+  let mockRedirectUriValidationService: RedirectUriValidationService;
   let mockTokenManagementService: TokenManagementService;
   let mockConfigService: ConfigService;
   let mockCacheManager: Mocked<Cache>;
@@ -57,6 +62,12 @@ describe('AuthController', () => {
       syncUserGuildMemberships: vi.fn(),
     } as unknown as AuthOrchestrationService;
 
+    mockRedirectUriValidationService = {
+      validateRedirectUri: vi.fn(),
+      normalizeUri: vi.fn(),
+      isUriAllowed: vi.fn(),
+    } as unknown as RedirectUriValidationService;
+
     mockDiscordOAuthService = {
       getAuthorizationUrl: vi
         .fn()
@@ -79,7 +90,15 @@ describe('AuthController', () => {
     } as unknown as TokenManagementService;
 
     mockConfigService = {
-      get: vi.fn().mockReturnValue('http://localhost:3000'),
+      get: vi.fn().mockImplementation((key: string) => {
+        if (key === 'frontend.url') {
+          return 'http://localhost:3000';
+        }
+        if (key === 'oauth.redirectUris') {
+          return ['http://localhost:3000'];
+        }
+        return undefined;
+      }),
     } as unknown as ConfigService;
 
     mockCacheManager = {
@@ -104,6 +123,10 @@ describe('AuthController', () => {
         {
           provide: AuthOrchestrationService,
           useValue: mockAuthOrchestrationService,
+        },
+        {
+          provide: RedirectUriValidationService,
+          useValue: mockRedirectUriValidationService,
         },
         {
           provide: TokenManagementService,
@@ -195,19 +218,16 @@ describe('AuthController', () => {
 
       await controller.discordLogin(mockResponse);
 
-      // Verify state token was stored in cache with correct parameters
       expect(mockCacheManager.set).toHaveBeenCalledWith(
         expect.stringMatching(/^oauth:state:/),
         expect.objectContaining({ timestamp: expect.any(Number) }),
         600000, // 10 minutes TTL
       );
 
-      // Verify authorization URL generation with state parameter
       expect(mockDiscordOAuthService.getAuthorizationUrl).toHaveBeenCalledWith(
         expect.any(String),
       );
 
-      // Verify redirect response
       expect(mockResponse.redirect).toHaveBeenCalled();
     });
 
@@ -228,6 +248,81 @@ describe('AuthController', () => {
   });
 
   describe('discordCallback', () => {
+    beforeEach(() => {
+      vi.mocked(
+        mockRedirectUriValidationService.validateRedirectUri,
+      ).mockImplementation((redirectUri, allowedUris, defaultUri) => {
+        return defaultUri;
+      });
+    });
+
+    // Helper Functions
+    // These functions configure existing mocks (created in beforeEach) using vi.mocked()
+    // This maintains the NestJS DI pattern with useValue providers
+
+    function createDiscordTokenResponse() {
+      return {
+        access_token: 'access-token',
+        token_type: 'Bearer',
+        expires_in: 604800,
+        refresh_token: 'refresh-token',
+        scope: 'identify email',
+      };
+    }
+
+    function createDiscordUserResponse() {
+      return {
+        id: 'discord-user-123',
+        username: 'testuser',
+        discriminator: '0001',
+        global_name: 'Test User',
+        avatar: 'avatar_hash',
+        email: 'test@example.com',
+      };
+    }
+
+    function createOAuthSuccessMocks() {
+      const stateToken = 'valid-state-token-123';
+      const cachedState = { timestamp: Date.now() };
+      const tokenResponse = createDiscordTokenResponse();
+      const discordUser = createDiscordUserResponse();
+
+      vi.mocked(mockCacheManager.get).mockResolvedValue(cachedState);
+      vi.mocked(mockCacheManager.del).mockResolvedValue(undefined);
+      vi.mocked(mockDiscordOAuthService.exchangeCode).mockResolvedValue(
+        tokenResponse,
+      );
+      vi.mocked(mockDiscordApiService.getUserProfile).mockResolvedValue(
+        discordUser as never,
+      );
+      vi.mocked(mockAuthService.validateDiscordUser).mockResolvedValue(
+        mockUser,
+      );
+      vi.mocked(mockAuthService.generateJwt).mockReturnValue({
+        access_token: 'jwt-token',
+      });
+      vi.mocked(
+        mockAuthOrchestrationService.syncUserGuildMemberships,
+      ).mockResolvedValue(undefined);
+
+      return { stateToken, cachedState };
+    }
+
+    function setupConfigServiceMock(redirectUriConfig: {
+      defaultUri: string;
+      allowedUris: string[];
+    }) {
+      vi.mocked(mockConfigService.get).mockImplementation((key: string) => {
+        if (key === 'frontend.url') {
+          return redirectUriConfig.defaultUri;
+        }
+        if (key === 'oauth.redirectUris') {
+          return redirectUriConfig.allowedUris;
+        }
+        return undefined;
+      });
+    }
+
     it('should_redirect_to_error_when_oauth_error_present', async () => {
       const error = 'access_denied';
       const errorDescription = 'User denied access';
@@ -237,6 +332,7 @@ describe('AuthController', () => {
         '' as string,
         error,
         errorDescription,
+        undefined as string,
         mockResponse,
       );
 
@@ -251,6 +347,7 @@ describe('AuthController', () => {
         '' as string,
         '' as string,
         '' as string,
+        undefined as string,
         mockResponse,
       );
 
@@ -260,7 +357,7 @@ describe('AuthController', () => {
       expect(mockResponse.redirect).toHaveBeenCalledWith(
         expect.stringContaining('invalid_state'),
       );
-      // URL-encoded: "State parameter missing" becomes "State%20parameter%20missing"
+      // Error description is URL-encoded in the redirect URL
       expect(mockResponse.redirect).toHaveBeenCalledWith(
         expect.stringContaining('State%20parameter%20missing'),
       );
@@ -274,6 +371,7 @@ describe('AuthController', () => {
         'invalid-state-token',
         '' as string,
         '' as string,
+        undefined as string,
         mockResponse,
       );
 
@@ -289,61 +387,24 @@ describe('AuthController', () => {
     });
 
     it('should_validate_state_and_delete_from_cache_when_valid', async () => {
-      const stateToken = 'valid-state-token-123';
-      const cachedState = { timestamp: Date.now() };
-      const mockTokenResponse = {
-        access_token: 'access-token',
-        token_type: 'Bearer',
-        expires_in: 604800,
-        refresh_token: 'refresh-token',
-        scope: 'identify email',
-      };
-      const mockDiscordUser = {
-        id: 'discord-user-123',
-        username: 'testuser',
-        discriminator: '0001',
-        global_name: 'Test User',
-        avatar: 'avatar_hash',
-        email: 'test@example.com',
-      };
-
-      vi.mocked(mockCacheManager.get).mockResolvedValue(cachedState);
-      vi.mocked(mockCacheManager.del).mockResolvedValue(undefined);
-      vi.mocked(mockDiscordOAuthService.exchangeCode).mockResolvedValue(
-        mockTokenResponse,
-      );
-      vi.mocked(mockDiscordApiService.getUserProfile).mockResolvedValue(
-        mockDiscordUser as never,
-      );
-      vi.mocked(mockAuthService.validateDiscordUser).mockResolvedValue(
-        mockUser,
-      );
-      vi.mocked(mockAuthService.generateJwt).mockReturnValue({
-        access_token: 'jwt-token',
-      });
-      vi.mocked(
-        mockAuthOrchestrationService.syncUserGuildMemberships,
-      ).mockResolvedValue(undefined);
+      const { stateToken } = createOAuthSuccessMocks();
 
       await controller.discordCallback(
         'auth-code-123',
         stateToken,
         '' as string,
         '' as string,
+        undefined as string,
         mockResponse,
       );
 
-      // Verify state was validated
       expect(mockCacheManager.get).toHaveBeenCalledWith(
         `oauth:state:${stateToken}`,
       );
-
-      // Verify state was deleted (one-time use)
+      // State token is deleted after validation to prevent replay attacks (one-time use)
       expect(mockCacheManager.del).toHaveBeenCalledWith(
         `oauth:state:${stateToken}`,
       );
-
-      // Verify OAuth flow continued
       expect(mockDiscordOAuthService.exchangeCode).toHaveBeenCalledWith(
         'auth-code-123',
       );
@@ -361,16 +422,143 @@ describe('AuthController', () => {
         stateToken,
         '' as string,
         '' as string,
+        undefined as string,
         mockResponse,
       );
 
-      // State should still be deleted even if code is missing
+      // State token is deleted even on error to prevent reuse in replay attacks
       expect(mockCacheManager.del).toHaveBeenCalled();
       expect(mockResponse.redirect).toHaveBeenCalledWith(
         expect.stringContaining('/auth/error'),
       );
       expect(mockResponse.redirect).toHaveBeenCalledWith(
         expect.stringContaining('no_code'),
+      );
+    });
+
+    it('should_accept_valid_redirect_uri_from_whitelist', async () => {
+      const redirectUri = 'https://example.com';
+      const allowedUris = ['https://example.com', 'http://localhost:3000'];
+      const defaultUri = 'http://localhost:3000';
+
+      setupConfigServiceMock({ defaultUri, allowedUris });
+      vi.mocked(
+        mockRedirectUriValidationService.validateRedirectUri,
+      ).mockReturnValue(redirectUri);
+      const { stateToken } = createOAuthSuccessMocks();
+
+      await controller.discordCallback(
+        'auth-code-123',
+        stateToken,
+        '' as string,
+        '' as string,
+        redirectUri,
+        mockResponse,
+      );
+
+      expect(
+        mockRedirectUriValidationService.validateRedirectUri,
+      ).toHaveBeenCalledWith(redirectUri, allowedUris, defaultUri);
+      expect(mockResponse.redirect).toHaveBeenCalledWith(
+        `${redirectUri}/auth/callback`,
+      );
+    });
+
+    it('should_default_to_frontend_url_when_redirect_uri_not_provided', async () => {
+      const defaultUri = 'http://localhost:3000';
+      const allowedUris = ['http://localhost:3000'];
+
+      setupConfigServiceMock({ defaultUri, allowedUris });
+      vi.mocked(
+        mockRedirectUriValidationService.validateRedirectUri,
+      ).mockReturnValue(defaultUri);
+      const { stateToken } = createOAuthSuccessMocks();
+
+      await controller.discordCallback(
+        'auth-code-123',
+        stateToken,
+        '' as string,
+        '' as string,
+        undefined as string,
+        mockResponse,
+      );
+
+      expect(
+        mockRedirectUriValidationService.validateRedirectUri,
+      ).toHaveBeenCalledWith(undefined, allowedUris, defaultUri);
+      expect(mockResponse.redirect).toHaveBeenCalledWith(
+        `${defaultUri}/auth/callback`,
+      );
+    });
+
+    it('should_reject_invalid_redirect_uri_not_in_whitelist', async () => {
+      const redirectUri = 'https://malicious.com';
+      const allowedUris = ['https://example.com', 'http://localhost:3000'];
+      const defaultUri = 'http://localhost:3000';
+
+      vi.mocked(mockConfigService.get).mockImplementation((key: string) => {
+        if (key === 'frontend.url') {
+          return defaultUri;
+        }
+        if (key === 'oauth.redirectUris') {
+          return allowedUris;
+        }
+        return undefined;
+      });
+
+      vi.mocked(
+        mockRedirectUriValidationService.validateRedirectUri,
+      ).mockImplementation(() => {
+        throw new BadRequestException('Invalid redirect URI');
+      });
+
+      await controller.discordCallback(
+        'auth-code-123',
+        'state-token',
+        '' as string,
+        '' as string,
+        redirectUri,
+        mockResponse,
+      );
+
+      expect(
+        mockRedirectUriValidationService.validateRedirectUri,
+      ).toHaveBeenCalledWith(redirectUri, allowedUris, defaultUri);
+
+      expect(mockResponse.redirect).toHaveBeenCalledWith(
+        expect.stringContaining('/auth/error'),
+      );
+      expect(mockResponse.redirect).toHaveBeenCalledWith(
+        expect.stringContaining('invalid_redirect_uri'),
+      );
+    });
+
+    it('should_normalize_trailing_slashes_in_redirect_uri', async () => {
+      const redirectUri = 'https://example.com/';
+      const normalizedUri = 'https://example.com';
+      const allowedUris = ['https://example.com', 'http://localhost:3000'];
+      const defaultUri = 'http://localhost:3000';
+
+      setupConfigServiceMock({ defaultUri, allowedUris });
+      vi.mocked(
+        mockRedirectUriValidationService.validateRedirectUri,
+      ).mockReturnValue(normalizedUri);
+      const { stateToken } = createOAuthSuccessMocks();
+
+      await controller.discordCallback(
+        'auth-code-123',
+        stateToken,
+        '' as string,
+        '' as string,
+        redirectUri,
+        mockResponse,
+      );
+
+      expect(
+        mockRedirectUriValidationService.validateRedirectUri,
+      ).toHaveBeenCalledWith(redirectUri, allowedUris, defaultUri);
+      expect(mockResponse.redirect).toHaveBeenCalledWith(
+        `${normalizedUri}/auth/callback`,
       );
     });
   });
