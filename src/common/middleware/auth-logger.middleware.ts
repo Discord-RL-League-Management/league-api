@@ -1,6 +1,7 @@
 import { Injectable, NestMiddleware, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request, Response, NextFunction } from 'express';
+import { LogSanitizer } from '../utils/log-sanitizer';
 
 /**
  * AuthLoggerMiddleware - Logs authentication method for each request
@@ -8,6 +9,9 @@ import { Request, Response, NextFunction } from 'express';
  * Single Responsibility: Only logs auth type, doesn't handle authentication itself
  * Separation of Concerns: Logging separated from authentication logic
  * Modularity: Can be easily enabled/disabled or replaced
+ *
+ * Reference: NestJS Middleware
+ * https://docs.nestjs.com/middleware
  */
 @Injectable()
 export class AuthLoggerMiddleware implements NestMiddleware {
@@ -22,8 +26,16 @@ export class AuthLoggerMiddleware implements NestMiddleware {
     const authHeader = req.headers.authorization;
     const { method, path } = req;
 
-    if (authHeader) {
-      if (authHeader === `Bearer ${this.botApiKey}`) {
+    const sanitizedHeaders = LogSanitizer.sanitizeHeaders(
+      req.headers as Record<string, unknown>,
+    );
+    const sanitizedAuthHeader = sanitizedHeaders.authorization as
+      | string
+      | undefined;
+
+    if (sanitizedAuthHeader) {
+      const isBotRequest = authHeader === `Bearer ${this.botApiKey}`;
+      if (isBotRequest) {
         this.logger.log(`Bot request: ${method} ${path}`);
       } else {
         this.logger.log(`User request: ${method} ${path}`);
