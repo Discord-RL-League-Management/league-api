@@ -70,6 +70,38 @@ services:
     networks:
       - default
 
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: league_api
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      # Override connection strings to use Docker Compose service names
+      DATABASE_URL: postgresql://${POSTGRES_USER:-league_user}:${POSTGRES_PASSWORD:-league_pass}@postgres:5432/${POSTGRES_DB:-league_db}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-league_redis_pass}
+      FLARESOLVERR_URL: http://flaresolverr:8191
+      NODE_ENV: ${NODE_ENV:-production}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      start_period: 40s
+      retries: 3
+    networks:
+      - default
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   postgres_test_data:
