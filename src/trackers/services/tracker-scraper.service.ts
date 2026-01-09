@@ -177,7 +177,6 @@ export class TrackerScraperService {
           this.logger.error(
             `Failed to scrape season ${seasonNum}: ${errorMessage}`,
           );
-          // Return null for failed seasons, we'll filter them out
           return null;
         }
       });
@@ -327,7 +326,6 @@ export class TrackerScraperService {
       metadata: { name: string };
     }>,
   ): string | null {
-    // First, try to find season name in availableSegments
     if (availableSegments) {
       const seasonSegment = availableSegments.find(
         (seg) => seg.attributes.season === seasonNumber,
@@ -337,13 +335,11 @@ export class TrackerScraperService {
       }
     }
 
-    // Try to find season name in overview segment metadata
     const overviewSegment = segments.find((seg) => seg.type === 'overview');
     if (overviewSegment?.metadata?.name) {
       return overviewSegment.metadata.name;
     }
 
-    // Default to season number if no name found
     return `Season ${seasonNumber}`;
   }
 
