@@ -32,7 +32,10 @@
     "debt:fix": "ts-node -r tsconfig-paths/register scripts/debt-marker-fix.ts",
     "test:decodo": "ts-node -r tsconfig-paths/register scripts/test-decodo-scraper.ts",
     "setup:hooks": "bash scripts/setup-git-hooks.sh",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "docker:build": "docker build -t league-api .",
+    "docker:run": "docker run --rm --env-file .env -p 3000:3000 league-api",
+    "docker:test": "npm run docker:build && docker run --rm --env-file .env -p 3000:3000 --health-cmd='wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1' --health-interval=10s --health-timeout=5s --health-retries=3 league-api"
   },
   "lint-staged": {
     "*.{ts,js}": [
