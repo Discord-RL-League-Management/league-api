@@ -1,23 +1,22 @@
-/**
- * PrismaExceptionFilter Unit Tests
- *
- * Demonstrates TDD methodology with Vitest.
- * Focus: Functional core, state verification, fast execution.
- */
-
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { HttpStatus } from '@nestjs/common';
 import { PrismaExceptionFilter } from './prisma-exception.filter';
 import { Prisma } from '@prisma/client';
 import { ArgumentsHost } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 describe('PrismaExceptionFilter', () => {
   let filter: PrismaExceptionFilter;
+  let mockConfigService: ConfigService;
   let mockResponse: any;
   let mockRequest: any;
   let mockArgumentsHost: ArgumentsHost;
 
   beforeEach(() => {
+    mockConfigService = {
+      get: vi.fn().mockReturnValue('development'),
+    } as unknown as ConfigService;
+
     mockResponse = {
       status: vi.fn().mockReturnThis(),
       json: vi.fn(),
@@ -35,7 +34,7 @@ describe('PrismaExceptionFilter', () => {
       }),
     } as unknown as ArgumentsHost;
 
-    filter = new PrismaExceptionFilter();
+    filter = new PrismaExceptionFilter(mockConfigService);
   });
 
   afterEach(() => {
@@ -183,6 +182,124 @@ describe('PrismaExceptionFilter', () => {
       expect(mockResponse.json).toHaveBeenCalledWith(
         expect.objectContaining({
           timestamp: expect.any(String),
+        }),
+      );
+    });
+  });
+
+  describe('production mode', () => {
+    beforeEach(() => {
+      vi.mocked(mockConfigService.get).mockReturnValue('production');
+    });
+
+    it('should_exclude_details_in_production_for_KnownRequestError', () => {
+      const filterProd = new PrismaExceptionFilter(mockConfigService);
+      const exception = new Prisma.PrismaClientKnownRequestError(
+        'Unique constraint failed',
+        {
+          code: 'P2002',
+          clientVersion: '6.18.0',
+          meta: { target: ['email'], filePath: '/path/to/db.ts' },
+        },
+      );
+
+      filterProd.catch(exception, mockArgumentsHost);
+
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          statusCode: HttpStatus.CONFLICT,
+          message: 'Unique constraint violation',
+          code: 'UNIQUE_CONSTRAINT_VIOLATION',
+          details: undefined,
+        }),
+      );
+    });
+
+    it('should_exclude_details_in_production_for_ValidationError', () => {
+      const filterProd = new PrismaExceptionFilter(mockConfigService);
+      const exception = new Prisma.PrismaClientValidationError(
+        'Invalid input at schema.prisma:50',
+        {
+          clientVersion: '6.18.0',
+        },
+      );
+
+      filterProd.catch(exception, mockArgumentsHost);
+
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          statusCode: HttpStatus.BAD_REQUEST,
+          message: 'Database validation error',
+          code: 'PRISMA_VALIDATION_ERROR',
+          details: undefined,
+        }),
+      );
+    });
+
+    it('should_exclude_details_in_production_for_InitializationError', () => {
+      const filterProd = new PrismaExceptionFilter(mockConfigService);
+      const exception = {
+        message: 'Connection error to localhost:5432',
+        errorCode: 'P1001',
+        clientVersion: '6.18.0',
+        name: 'PrismaClientInitializationError',
+      } as Prisma.PrismaClientInitializationError;
+
+      filterProd.catch(exception, mockArgumentsHost);
+
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          statusCode: HttpStatus.SERVICE_UNAVAILABLE,
+          message: 'Database connection error',
+          code: 'PRISMA_INITIALIZATION_ERROR',
+          details: undefined,
+        }),
+      );
+    });
+
+    it('should_exclude_details_in_production_for_RustPanicError', () => {
+      const filterProd = new PrismaExceptionFilter(mockConfigService);
+      const exception = {
+        message: 'Rust panic at engine.rs:123',
+        clientVersion: '6.18.0',
+        name: 'PrismaClientRustPanicError',
+      } as Prisma.PrismaClientRustPanicError;
+
+      filterProd.catch(exception, mockArgumentsHost);
+
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+          message: 'Unexpected database error',
+          code: 'PRISMA_RUST_PANIC_ERROR',
+          details: undefined,
+        }),
+      );
+    });
+
+    it('should_include_details_in_development_mode', () => {
+      vi.mocked(mockConfigService.get).mockReturnValue('development');
+      const filterDev = new PrismaExceptionFilter(mockConfigService);
+      const exception = new Prisma.PrismaClientKnownRequestError(
+        'Unique constraint failed',
+        {
+          code: 'P2002',
+          clientVersion: '6.18.0',
+          meta: { target: ['email'] },
+        },
+      );
+
+      filterDev.catch(exception, mockArgumentsHost);
+
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          statusCode: HttpStatus.CONFLICT,
+          message: 'Unique constraint violation',
+          code: 'UNIQUE_CONSTRAINT_VIOLATION',
+          details: expect.objectContaining({
+            prismaCode: 'P2002',
+            meta: { target: ['email'] },
+          }),
         }),
       );
     });

@@ -5,6 +5,7 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import { Request, Response } from 'express';
 
@@ -26,6 +27,13 @@ import { Request, Response } from 'express';
 )
 export class PrismaExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(PrismaExceptionFilter.name);
+  private readonly isDevelopment: boolean;
+
+  constructor(private configService: ConfigService) {
+    this.isDevelopment =
+      this.configService.get<string>('app.nodeEnv', 'development') ===
+      'development';
+  }
 
   catch(
     exception:
@@ -139,7 +147,7 @@ export class PrismaExceptionFilter implements ExceptionFilter {
       method,
       message: errorInfo.message,
       code: errorInfo.code,
-      details: errorInfo.details,
+      details: this.isDevelopment ? errorInfo.details : undefined,
     });
   }
 
