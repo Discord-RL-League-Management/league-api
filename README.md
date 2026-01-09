@@ -27,34 +27,42 @@
 
 ## Project setup
 
+This project uses [pnpm](https://pnpm.io/) as the package manager. Install it globally if you haven't already:
+
 ```bash
-$ npm install
+npm install -g pnpm
+```
+
+Then install dependencies:
+
+```bash
+$ pnpm install
 ```
 
 ## Compile and run the project
 
 ```bash
 # development
-$ npm run start
+$ pnpm run start
 
 # watch mode
-$ npm run start:dev
+$ pnpm run start:dev
 
 # production mode
-$ npm run start:prod
+$ pnpm run start:prod
 ```
 
 ## Run tests
 
 ```bash
 # unit tests
-$ npm run test
+$ pnpm run test
 
 # e2e tests
-$ npm run test:e2e
+$ pnpm run test:e2e
 
 # test coverage
-$ npm run test:cov
+$ pnpm run test:unit:coverage
 ```
 
 ## Docker
@@ -64,7 +72,7 @@ $ npm run test:cov
 Build the Docker image locally:
 
 ```bash
-npm run docker:build
+pnpm run docker:build
 ```
 
 Or manually:
@@ -84,7 +92,7 @@ Environment variables are passed to the container at runtime, not baked into the
 Run the container with environment variables from a local `.env` file:
 
 ```bash
-npm run docker:run
+pnpm run docker:run
 ```
 
 Or manually:
@@ -121,7 +129,7 @@ If using Docker Compose, environment variables can be provided via:
 Build and test the Docker image with health check verification:
 
 ```bash
-npm run docker:test
+pnpm run docker:test
 ```
 
 Or test manually:
@@ -167,7 +175,10 @@ The Railway CLI allows you to manage deployments, environment variables, and run
 # macOS (Homebrew)
 brew install railway
 
-# All platforms (npm)
+# All platforms (pnpm)
+pnpm add -g @railway/cli
+
+# Or using npm (alternative)
 npm i -g @railway/cli
 
 # Or using install script
@@ -273,14 +284,14 @@ railway <command> --help
    - Port: Railway will automatically detect from EXPOSE in Dockerfile
 
 5. **Configure Pre-Deploy Command**
-   - Set Pre-Deploy Command: `npx prisma migrate deploy`
+   - Set Pre-Deploy Command: `pnpm exec prisma migrate deploy`
    - **Important**: Migrations run as a pre-deploy step, not inside the container
    - This ensures migrations run before each deployment and can be tracked/logged separately
    
    **Alternative: Run Migrations Manually via CLI:**
    ```bash
    # Run migrations manually when needed
-   railway run npx prisma migrate deploy
+   railway run pnpm exec prisma migrate deploy
    ```
 
 6. **Configure Health Check**
@@ -413,7 +424,7 @@ The following environment variables must be configured in Railway:
 - Easier troubleshooting of migration failures
 - Better integration with Railway's deployment pipeline
 
-The pre-deploy command runs: `npx prisma migrate deploy`
+The pre-deploy command runs: `pnpm exec prisma migrate deploy`
 
 This requires Prisma CLI to be available in the build environment. Railway automatically includes `node_modules` from the build, which contains Prisma CLI as a dependency.
 

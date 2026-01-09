@@ -7,8 +7,9 @@
   "license": "UNLICENSED",
   "engines": {
     "node": ">=24.0.0",
-    "npm": ">=10.0.0"
+    "pnpm": ">=8.0.0"
   },
+  "packageManager": "pnpm@10.27.0",
   "scripts": {
     "build": "nest build --webpack",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
@@ -16,7 +17,7 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "NODE_ENV=production node dist/main",
-    "migrate:prod": "NODE_ENV=production npx prisma migrate deploy",
+    "migrate:prod": "NODE_ENV=production pnpm exec prisma migrate deploy",
     "lint": "eslint \"{src,apps,libs}/**/*.ts\" --fix",
     "test": "vitest run",
     "test:unit": "vitest run",
@@ -26,7 +27,7 @@
     "test:api:watch": "vitest --config vitest.api.config.mts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:all": "npm run test:unit && npm run test:api && npm run test:e2e",
+    "test:all": "pnpm run test:unit && pnpm run test:api && pnpm run test:e2e",
     "test:ci": "vitest run --coverage && playwright test",
     "debt:check": "ts-node -r tsconfig-paths/register scripts/debt-marker-check.ts",
     "debt:fix": "ts-node -r tsconfig-paths/register scripts/debt-marker-fix.ts",
@@ -35,7 +36,7 @@
     "prepare": "husky install",
     "docker:build": "docker build -t league-api .",
     "docker:run": "docker run --rm --env-file .env -p 3000:3000 league-api",
-    "docker:test": "npm run docker:build && docker run --rm --env-file .env -p 3000:3000 --health-cmd='wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1' --health-interval=10s --health-timeout=5s --health-retries=3 league-api"
+    "docker:test": "pnpm run docker:build && docker run --rm --env-file .env -p 3000:3000 --health-cmd='wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1' --health-interval=10s --health-timeout=5s --health-retries=3 league-api"
   },
   "lint-staged": {
     "*.{ts,js}": [
