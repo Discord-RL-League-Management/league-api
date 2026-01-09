@@ -118,6 +118,110 @@ describe('GlobalExceptionFilter', () => {
       );
     });
 
+    it('should_exclude_details_field_in_production_for_HttpException', () => {
+      vi.mocked(mockConfigService.get).mockReturnValue('production');
+      const filterProd = new GlobalExceptionFilter(mockConfigService);
+      const exception = new BadRequestException({
+        message: 'Validation failed',
+        code: 'VALIDATION_ERROR',
+        details: {
+          field: 'email',
+          reason: 'Invalid format',
+        },
+      });
+
+      filterProd.catch(exception, mockArgumentsHost);
+
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          statusCode: HttpStatus.BAD_REQUEST,
+          message: 'Validation failed',
+          code: 'VALIDATION_ERROR',
+          details: undefined,
+        }),
+      );
+    });
+
+    it('should_return_generic_error_message_in_production_for_non_HttpException', () => {
+      vi.mocked(mockConfigService.get).mockReturnValue('production');
+      const filterProd = new GlobalExceptionFilter(mockConfigService);
+      const exception = new Error('Internal implementation detail');
+
+      filterProd.catch(exception, mockArgumentsHost);
+
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+          message: 'Internal server error',
+          stack: undefined,
+        }),
+      );
+    });
+
+    it('should_not_expose_file_paths_in_stack_trace_in_production', () => {
+      vi.mocked(mockConfigService.get).mockReturnValue('production');
+      const filterProd = new GlobalExceptionFilter(mockConfigService);
+      const exception = new Error('Internal error');
+      exception.stack = `Error: Internal error
+    at Object.handler (/path/to/file.ts:123:45)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)`;
+
+      filterProd.catch(exception, mockArgumentsHost);
+
+      const responseCall = mockResponse.json.mock.calls[0][0];
+      expect(responseCall.message).toBe('Internal server error');
+      expect(responseCall.stack).toBeUndefined();
+    });
+
+    it('should_not_expose_internal_details_in_HttpException_details_in_production', () => {
+      vi.mocked(mockConfigService.get).mockReturnValue('production');
+      const filterProd = new GlobalExceptionFilter(mockConfigService);
+      const exception = new InternalServerErrorException({
+        message: 'Database connection error',
+        code: 'DB_ERROR',
+        details: {
+          host: 'localhost',
+          port: 5432,
+          database: 'app_db',
+          filePath: '/path/to/db.ts',
+          line: 50,
+        },
+      });
+
+      filterProd.catch(exception, mockArgumentsHost);
+
+      const responseCall = mockResponse.json.mock.calls[0][0];
+      expect(responseCall.details).toBeUndefined();
+      expect(responseCall.stack).toBeUndefined();
+    });
+
+    it('should_include_details_in_development_mode_for_HttpException', () => {
+      vi.mocked(mockConfigService.get).mockReturnValue('development');
+      const filterDev = new GlobalExceptionFilter(mockConfigService);
+      const exception = new BadRequestException({
+        message: 'Validation failed',
+        code: 'VALIDATION_ERROR',
+        details: {
+          field: 'email',
+          reason: 'Invalid format',
+        },
+      });
+
+      filterDev.catch(exception, mockArgumentsHost);
+
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          statusCode: HttpStatus.BAD_REQUEST,
+          message: 'Validation failed',
+          code: 'VALIDATION_ERROR',
+          details: expect.objectContaining({
+            field: 'email',
+            reason: 'Invalid format',
+          }),
+        }),
+      );
+    });
+
     it('should_handle_null_exception', () => {
       const exception = null;
 

@@ -92,7 +92,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
                 : 'Unknown error',
         code: typeof errorData.code === 'string' ? errorData.code : undefined,
         details:
-          typeof errorData.details === 'object' && errorData.details !== null
+          this.isDevelopment &&
+          typeof errorData.details === 'object' &&
+          errorData.details !== null
             ? (LogSanitizer.sanitizeObject(
                 errorData.details as Record<string, unknown>,
               ) as Record<string, unknown>)
