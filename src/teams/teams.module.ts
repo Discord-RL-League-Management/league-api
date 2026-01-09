@@ -17,7 +17,20 @@ import {
 @Module({
   imports: [
     PrismaModule,
+
+    // INTENTIONAL: Circular dependency with LeaguesModule is properly handled.
+    // - TeamsModule needs ILEAGUE_SETTINGS_PROVIDER (provided via ModuleRef lazy injection in TeamValidationService)
+    // - LeaguesModule needs ITeamProvider (provided via ModuleRef lazy injection)
+    // - Using forwardRef() is the NestJS-recommended pattern for module-level circular dependencies
+    // Reference: https://docs.nestjs.com/fundamentals/circular-dependency
+    // eslint-disable-next-line @trilon/detect-circular-reference
     forwardRef(() => LeaguesModule),
+    // INTENTIONAL: Circular dependency with OrganizationsModule is properly handled.
+    // - TeamsModule needs IORGANIZATION_VALIDATION_PROVIDER (constructor injection, one-way dependency)
+    // - OrganizationsModule needs IORGANIZATION_TEAM_PROVIDER (provided via ModuleRef lazy injection)
+    // - Using forwardRef() is the NestJS-recommended pattern for module-level circular dependencies
+    // Reference: https://docs.nestjs.com/fundamentals/circular-dependency
+    // eslint-disable-next-line @trilon/detect-circular-reference
     forwardRef(() => OrganizationsModule),
   ],
   controllers: [TeamsController, InternalTeamsController],

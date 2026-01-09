@@ -4,8 +4,8 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
-  Inject,
 } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { OrganizationRepository } from './repositories/organization.repository';
 import { OrganizationMemberService } from './services/organization-member.service';
 import { OrganizationValidationService } from './services/organization-validation.service';
@@ -35,20 +35,57 @@ import {
 @Injectable()
 export class OrganizationService {
   private readonly logger = new Logger(OrganizationService.name);
+  private organizationTeamProvider?: IOrganizationTeamProvider;
+  private leagueRepositoryAccess?: ILeagueRepositoryAccess;
+  private leagueSettingsProvider?: ILeagueSettingsProvider;
 
   constructor(
     private organizationRepository: OrganizationRepository,
     private organizationMemberService: OrganizationMemberService,
     private validationService: OrganizationValidationService,
     private playerService: PlayerService,
-    @Inject(ILEAGUE_REPOSITORY_ACCESS)
-    private leagueRepositoryAccess: ILeagueRepositoryAccess,
-    @Inject(ILEAGUE_SETTINGS_PROVIDER)
-    private leagueSettingsProvider: ILeagueSettingsProvider,
-    @Inject(IORGANIZATION_TEAM_PROVIDER)
-    private organizationTeamProvider: IOrganizationTeamProvider,
     private prisma: PrismaService,
+    private moduleRef: ModuleRef,
   ) {}
+
+  /**
+   * Get organization team provider lazily to break circular dependency
+   */
+  private getOrganizationTeamProvider(): IOrganizationTeamProvider {
+    if (!this.organizationTeamProvider) {
+      this.organizationTeamProvider = this.moduleRef.get(
+        IORGANIZATION_TEAM_PROVIDER,
+        { strict: false },
+      );
+    }
+    return this.organizationTeamProvider;
+  }
+
+  /**
+   * Get league repository access lazily to break circular dependency
+   */
+  private getLeagueRepositoryAccess(): ILeagueRepositoryAccess {
+    if (!this.leagueRepositoryAccess) {
+      this.leagueRepositoryAccess = this.moduleRef.get(
+        ILEAGUE_REPOSITORY_ACCESS,
+        { strict: false },
+      );
+    }
+    return this.leagueRepositoryAccess;
+  }
+
+  /**
+   * Get league settings provider lazily to break circular dependency
+   */
+  private getLeagueSettingsProvider(): ILeagueSettingsProvider {
+    if (!this.leagueSettingsProvider) {
+      this.leagueSettingsProvider = this.moduleRef.get(
+        ILEAGUE_SETTINGS_PROVIDER,
+        { strict: false },
+      );
+    }
+    return this.leagueSettingsProvider;
+  }
 
   /**
    * Find organization by ID
@@ -83,7 +120,7 @@ export class OrganizationService {
       settings,
     );
 
-    const league = await this.leagueRepositoryAccess.findById(
+    const league = await this.getLeagueRepositoryAccess().findById(
       createDto.leagueId,
     );
     if (!league) {
@@ -185,7 +222,7 @@ export class OrganizationService {
     targetOrganizationId: string,
     userId: string,
   ) {
-    const team = await this.organizationTeamProvider.findById(teamId);
+    const team = await this.getOrganizationTeamProvider().findById(teamId);
     if (!team) {
       throw new NotFoundException(`Team ${teamId} not found`);
     }
@@ -221,7 +258,7 @@ export class OrganizationService {
       leagueId,
     );
 
-    return this.organizationTeamProvider.update(teamId, {
+    return this.getOrganizationTeamProvider().update(teamId, {
       organizationId: targetOrganizationId,
     });
   }
@@ -269,7 +306,8 @@ export class OrganizationService {
     // Use provided settings if available (for validation during settings updates before persistence),
     // otherwise fall back to getSettings() which may return cached data
     const leagueSettings =
-      settings || (await this.leagueSettingsProvider.getSettings(leagueId));
+      settings ||
+      (await this.getLeagueSettingsProvider().getSettings(leagueId));
     const maxTeamsPerOrg = leagueSettings.membership.maxTeamsPerOrganization;
 
     // Capacity validation occurs inside the transaction to prevent race conditions where
@@ -278,7 +316,7 @@ export class OrganizationService {
       // Count teams using transaction client to ensure consistent view of data
       if (maxTeamsPerOrg !== null && maxTeamsPerOrg !== undefined) {
         const currentTeamCount =
-          await this.organizationTeamProvider.countByOrganizationId(
+          await this.getOrganizationTeamProvider().countByOrganizationId(
             organizationId,
             tx,
           );
@@ -294,7 +332,7 @@ export class OrganizationService {
 
       const results = [];
       for (const teamId of teamIds) {
-        const team = await this.organizationTeamProvider.update(
+        const team = await this.getOrganizationTeamProvider().update(
           teamId,
           { organizationId },
           tx,

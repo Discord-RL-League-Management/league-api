@@ -6,15 +6,21 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException, Inject } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { TeamValidationService } from './team-validation.service';
 import type { ILeagueSettingsProvider } from '@/common/interfaces/league-domain/league-settings-provider.interface';
 import type { IOrganizationValidationProvider } from '@/common/interfaces/league-domain/organization-validation-provider.interface';
+import {
+  ILEAGUE_SETTINGS_PROVIDER,
+  IORGANIZATION_VALIDATION_PROVIDER,
+} from '@/common/tokens/injection.tokens';
 
 describe('TeamValidationService', () => {
   let service: TeamValidationService;
   let mockLeagueSettingsProvider: ILeagueSettingsProvider;
   let mockOrganizationValidationProvider: IOrganizationValidationProvider;
+  let mockModuleRef: ModuleRef;
 
   beforeEach(() => {
     mockLeagueSettingsProvider = {
@@ -26,9 +32,18 @@ describe('TeamValidationService', () => {
       validateOrganizationCapacity: vi.fn(),
     } as unknown as IOrganizationValidationProvider;
 
+    mockModuleRef = {
+      get: vi.fn().mockImplementation((token) => {
+        if (token === ILEAGUE_SETTINGS_PROVIDER) {
+          return mockLeagueSettingsProvider;
+        }
+        return null;
+      }),
+    } as unknown as ModuleRef;
+
     service = new TeamValidationService(
-      mockLeagueSettingsProvider,
       mockOrganizationValidationProvider,
+      mockModuleRef,
     );
   });
 

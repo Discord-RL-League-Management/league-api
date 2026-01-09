@@ -6,11 +6,12 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { ModuleRef } from '@nestjs/core';
 import { OrganizationValidationService } from './organization-validation.service';
 import { OrganizationRepository } from '../repositories/organization.repository';
-import { LeagueRepository } from '@/leagues/repositories/league.repository';
+import type { ILeagueRepositoryAccess } from '@/common/interfaces/league-domain/league-repository-access.interface';
+import type { ILeagueSettingsProvider } from '@/common/interfaces/league-domain/league-settings-provider.interface';
 import { PlayerService } from '@/players/player.service';
-import { LeagueSettingsService } from '@/leagues/league-settings.service';
 import {
   OrganizationNotFoundException,
   NoGeneralManagerException,
@@ -22,13 +23,18 @@ import {
 } from '../exceptions/organization.exceptions';
 import { LeagueNotFoundException } from '@/leagues/exceptions/league.exceptions';
 import { OrganizationMemberRole } from '@prisma/client';
+import {
+  ILEAGUE_REPOSITORY_ACCESS,
+  ILEAGUE_SETTINGS_PROVIDER,
+} from '@/common/tokens/injection.tokens';
 
 describe('OrganizationValidationService', () => {
   let service: OrganizationValidationService;
   let mockOrganizationRepository: OrganizationRepository;
-  let mockLeagueRepository: LeagueRepository;
+  let mockLeagueRepositoryAccess: ILeagueRepositoryAccess;
   let mockPlayerService: PlayerService;
-  let mockLeagueSettingsService: LeagueSettingsService;
+  let mockLeagueSettingsProvider: ILeagueSettingsProvider;
+  let mockModuleRef: ModuleRef;
 
   beforeEach(() => {
     mockOrganizationRepository = {
@@ -41,23 +47,34 @@ describe('OrganizationValidationService', () => {
       findByLeagueId: vi.fn(),
     } as unknown as OrganizationRepository;
 
-    mockLeagueRepository = {
+    mockLeagueRepositoryAccess = {
       exists: vi.fn(),
-    } as unknown as LeagueRepository;
+    } as unknown as ILeagueRepositoryAccess;
 
     mockPlayerService = {
       findOne: vi.fn(),
     } as unknown as PlayerService;
 
-    mockLeagueSettingsService = {
+    mockLeagueSettingsProvider = {
       getSettings: vi.fn(),
-    } as unknown as LeagueSettingsService;
+    } as unknown as ILeagueSettingsProvider;
+
+    mockModuleRef = {
+      get: vi.fn().mockImplementation((token) => {
+        if (token === ILEAGUE_REPOSITORY_ACCESS) {
+          return mockLeagueRepositoryAccess;
+        }
+        if (token === ILEAGUE_SETTINGS_PROVIDER) {
+          return mockLeagueSettingsProvider;
+        }
+        return null;
+      }),
+    } as unknown as ModuleRef;
 
     service = new OrganizationValidationService(
       mockOrganizationRepository,
-      mockLeagueRepository,
       mockPlayerService,
-      mockLeagueSettingsService,
+      mockModuleRef,
     );
   });
 
@@ -68,16 +85,18 @@ describe('OrganizationValidationService', () => {
   describe('validateCreate', () => {
     it('should_pass_when_league_exists', async () => {
       const data = { leagueId: 'league123', name: 'Test Org' };
-      vi.mocked(mockLeagueRepository.exists).mockResolvedValue(true);
+      vi.mocked(mockLeagueRepositoryAccess.exists).mockResolvedValue(true);
 
       await service.validateCreate(data);
 
-      expect(mockLeagueRepository.exists).toHaveBeenCalledWith(data.leagueId);
+      expect(mockLeagueRepositoryAccess.exists).toHaveBeenCalledWith(
+        data.leagueId,
+      );
     });
 
     it('should_throw_LeagueNotFoundException_when_league_does_not_exist', async () => {
       const data = { leagueId: 'league123', name: 'Test Org' };
-      vi.mocked(mockLeagueRepository.exists).mockResolvedValue(false);
+      vi.mocked(mockLeagueRepositoryAccess.exists).mockResolvedValue(false);
 
       await expect(service.validateCreate(data)).rejects.toThrow(
         LeagueNotFoundException,
@@ -255,7 +274,7 @@ describe('OrganizationValidationService', () => {
         membership: { maxTeamsPerOrganization: 5 },
       };
 
-      vi.mocked(mockLeagueSettingsService.getSettings).mockResolvedValue(
+      vi.mocked(mockLeagueSettingsProvider.getSettings).mockResolvedValue(
         settings as any,
       );
       vi.mocked(
@@ -276,7 +295,7 @@ describe('OrganizationValidationService', () => {
         membership: { maxTeamsPerOrganization: 5 },
       };
 
-      vi.mocked(mockLeagueSettingsService.getSettings).mockResolvedValue(
+      vi.mocked(mockLeagueSettingsProvider.getSettings).mockResolvedValue(
         settings as any,
       );
       vi.mocked(
@@ -299,7 +318,7 @@ describe('OrganizationValidationService', () => {
         id: `org${i}`,
       }));
 
-      vi.mocked(mockLeagueSettingsService.getSettings).mockResolvedValue(
+      vi.mocked(mockLeagueSettingsProvider.getSettings).mockResolvedValue(
         settings as any,
       );
       vi.mocked(mockOrganizationRepository.findByLeagueId).mockResolvedValue(
@@ -322,7 +341,7 @@ describe('OrganizationValidationService', () => {
         id: `org${i}`,
       }));
 
-      vi.mocked(mockLeagueSettingsService.getSettings).mockResolvedValue(
+      vi.mocked(mockLeagueSettingsProvider.getSettings).mockResolvedValue(
         settings as any,
       );
       vi.mocked(mockOrganizationRepository.findByLeagueId).mockResolvedValue(
