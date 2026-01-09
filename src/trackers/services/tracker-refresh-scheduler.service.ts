@@ -72,13 +72,11 @@ export class TrackerRefreshSchedulerService
     );
   }
 
-  // Executes on cron schedule to refresh trackers that exceed their refresh interval
   async scheduledRefresh() {
     this.logger.log('Starting scheduled tracker refresh');
     await this.triggerManualRefresh();
   }
 
-  // Allows admin-triggered refresh of specific trackers or all trackers when none specified
   async triggerManualRefresh(trackerIds?: string[]): Promise<void> {
     try {
       if (trackerIds && trackerIds.length > 0) {
@@ -108,7 +106,6 @@ export class TrackerRefreshSchedulerService
     }
   }
 
-  // Identifies trackers that haven't been scraped within their configured refresh interval
   private async getTrackersNeedingRefresh(): Promise<string[]> {
     const trackers = await this.trackerRepository.findPendingAndStale(
       this.refreshIntervalHours,
@@ -116,7 +113,6 @@ export class TrackerRefreshSchedulerService
 
     const trackerIds = trackers.map((t) => t.id);
 
-    // Filter trackers to only those that can be processed based on guild settings
     return this.processingGuard.filterProcessableTrackers(trackerIds);
   }
 

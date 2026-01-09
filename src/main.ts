@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { NewRelicLoggerService } from './logging/newrelic-logger.service';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
+import type { Request } from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -49,38 +50,109 @@ async function bootstrap() {
   );
 
   // Configure CORS to allow only trusted origins while supporting development and mobile clients
-  app.enableCors({
-    origin: (
-      origin: string | undefined,
-      callback: (err: Error | null, allow?: boolean) => void,
+  app.enableCors(
+    (
+      req: Request,
+      callback: (err: Error | null, options?: unknown) => void,
     ) => {
+      // Normalize origin header to handle array type (Express can return string | string[] | undefined)
+      const originHeader = req.headers.origin;
+      const origin: string | undefined = Array.isArray(originHeader)
+        ? typeof originHeader[0] === 'string'
+          ? originHeader[0]
+          : undefined
+        : typeof originHeader === 'string'
+          ? originHeader
+          : undefined;
+
+      // Filter out empty strings, null, and undefined from allowed origins
       const allowedOrigins = [
         configService.get<string>('frontend.url'),
         'http://localhost:5173',
         'http://localhost:3000',
-      ];
+      ].filter((allowedOrigin): allowedOrigin is string =>
+        Boolean(allowedOrigin),
+      );
 
-      // Allow requests with no origin (mobile apps, Postman, etc.)
-      if (!origin) return callback(null, true);
+      // CORS options object - shared across all allowed requests
+      const corsOptions = {
+        origin: true,
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+        allowedHeaders: [
+          'Origin',
+          'X-Requested-With',
+          'Content-Type',
+          'Accept',
+          'Authorization',
+        ],
+        credentials: true,
+        maxAge: 86400,
+      };
 
+      // Handle requests with no origin header
+      if (!origin) {
+        const requestPath = req.path || req.url || '';
+        const hasAuthHeader = !!req.headers.authorization;
+        const nodeEnv = configService.get<string>('app.nodeEnv');
+        const isDevelopment = nodeEnv === 'development';
+
+        const isHealthEndpoint = requestPath.startsWith('/health');
+
+        const allowNoOriginHealth = configService.get<boolean>(
+          'cors.allowNoOriginHealth',
+          true,
+        );
+        const allowNoOriginAuthenticated = configService.get<boolean>(
+          'cors.allowNoOriginAuthenticated',
+          true,
+        );
+        const allowNoOriginDevelopment = configService.get<boolean>(
+          'cors.allowNoOriginDevelopment',
+          true,
+        );
+
+        // Determine if no-origin request should be allowed
+        let allowNoOrigin = false;
+        let reason = '';
+
+        if (isHealthEndpoint && allowNoOriginHealth) {
+          allowNoOrigin = true;
+          reason = 'health endpoint';
+        } else if (hasAuthHeader && allowNoOriginAuthenticated) {
+          allowNoOrigin = true;
+          reason = 'authenticated request';
+        } else if (isDevelopment && allowNoOriginDevelopment) {
+          allowNoOrigin = true;
+          reason = 'development environment';
+        }
+
+        // Log no-origin requests for security monitoring
+        if (allowNoOrigin) {
+          logger.log(
+            `CORS: Allowed no-origin request - path: ${requestPath}, reason: ${reason}, hasAuth: ${hasAuthHeader}`,
+          );
+        } else {
+          logger.warn(
+            `CORS: Blocked no-origin request - path: ${requestPath}, hasAuth: ${hasAuthHeader}, environment: ${nodeEnv}`,
+          );
+        }
+
+        if (allowNoOrigin) {
+          return callback(null, corsOptions);
+        } else {
+          return callback(new Error('CORS: No-origin requests not allowed'));
+        }
+      }
+
+      // Handle requests with origin header
       if (allowedOrigins.includes(origin)) {
-        callback(null, true);
+        callback(null, corsOptions);
       } else {
         logger.warn(`CORS blocked request from origin: ${origin}`);
         callback(new Error('Not allowed by CORS'));
       }
     },
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-    allowedHeaders: [
-      'Origin',
-      'X-Requested-With',
-      'Content-Type',
-      'Accept',
-      'Authorization',
-    ],
-    credentials: true,
-    maxAge: 86400,
-  });
+  );
 
   // Expose Swagger documentation only in non-production to avoid exposing API structure in production
   if (configService.get<string>('app.nodeEnv') !== 'production') {

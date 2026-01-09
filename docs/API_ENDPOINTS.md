@@ -7,6 +7,15 @@ This document provides a comprehensive reference of all available API endpoints 
 - **Development**: `http://localhost:3000`
 - **Production**: `https://your-domain.com`
 
+## CORS Configuration
+
+The API implements a restrictive CORS policy. Requests without origin headers are only allowed for:
+- Health check endpoints (`/health*`)
+- Authenticated requests (with valid `Authorization` header)
+- Development environment (all requests)
+
+For detailed CORS configuration, see [CORS Configuration](./CORS_CONFIGURATION.md).
+
 ## Authentication Types
 
 - **Bot Authentication**: Bearer token with API key (`Authorization: Bearer <BOT_API_KEY>`)

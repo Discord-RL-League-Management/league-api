@@ -109,4 +109,21 @@ export const configurationSchema = Joi.object({
     .allow('')
     .pattern(/^(\d{17,20})(,\s*\d{17,20})*$/)
     .description('Comma-separated Discord user IDs (snowflakes)'),
+
+  // CORS Configuration
+  CORS_ALLOW_NO_ORIGIN_HEALTH: Joi.boolean()
+    .default(true)
+    .description(
+      'Allow requests with no origin header for health check endpoints',
+    ),
+  CORS_ALLOW_NO_ORIGIN_AUTHENTICATED: Joi.boolean()
+    .default(true)
+    .description(
+      'Allow requests with no origin header for authenticated requests (API key/JWT)',
+    ),
+  CORS_ALLOW_NO_ORIGIN_DEVELOPMENT: Joi.boolean()
+    .default(true)
+    .description(
+      'Allow requests with no origin header in development environment',
+    ),
 });

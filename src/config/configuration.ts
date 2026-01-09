@@ -139,5 +139,12 @@ export default () => {
             .filter(Boolean)
         : [],
     },
+    cors: {
+      allowNoOriginHealth: process.env.CORS_ALLOW_NO_ORIGIN_HEALTH !== 'false',
+      allowNoOriginAuthenticated:
+        process.env.CORS_ALLOW_NO_ORIGIN_AUTHENTICATED !== 'false',
+      allowNoOriginDevelopment:
+        process.env.CORS_ALLOW_NO_ORIGIN_DEVELOPMENT !== 'false',
+    },
   };
 };
