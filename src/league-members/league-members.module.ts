@@ -28,6 +28,12 @@ import { ILEAGUE_MEMBER_ACCESS } from '../common/tokens/injection.tokens';
     GuildMembersModule,
     InfrastructureModule,
     PlayerRatingsModule,
+    // INTENTIONAL: Circular dependency with LeaguesModule is properly handled.
+    // - Both modules legitimately need each other for validation/access checks
+    // - Using forwardRef() is the NestJS-recommended pattern for module-level circular dependencies
+    // - Service-level circular dependencies are broken using ModuleRef lazy injection
+    // Reference: https://docs.nestjs.com/fundamentals/circular-dependency
+    // eslint-disable-next-line @trilon/detect-circular-reference
     forwardRef(() => LeaguesModule),
   ],
   controllers: [LeagueMembersController, InternalLeagueMembersController],

@@ -115,6 +115,7 @@ export class CreateTrackerSnapshotDto {
     description: 'Guild IDs that can see this snapshot',
     example: ['123456789012345678'],
     type: [String],
+    isArray: true,
   })
   @IsOptional()
   @IsArray()

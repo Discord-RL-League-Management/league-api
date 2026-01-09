@@ -6,6 +6,7 @@ import {
   Query,
   Body,
   ForbiddenException,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -16,6 +17,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PlayerService } from './player.service';
 import { Player } from '@prisma/client';
 import { GuildAccessValidationService } from '../guilds/services/guild-access-validation.service';
@@ -30,6 +32,7 @@ import { ParseCUIDPipe } from '../common/pipes';
  */
 @ApiTags('Players')
 @Controller('api/players')
+@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class PlayersController {
   constructor(

@@ -92,6 +92,8 @@
   "devDependencies": {
     "@commitlint/cli": "^20.2.0",
     "@commitlint/config-conventional": "^20.2.0",
+    "@darraghor/eslint-plugin-nestjs-typed": "^7.1.12",
+    "@elsikora/eslint-plugin-nestjs-typed": "^3.0.1",
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.18.0",
     "@nestjs/cli": "^11.0.0",
@@ -102,6 +104,7 @@
     "@suites/doubles.vitest": "^3.0.1",
     "@suites/unit": "^3.0.1",
     "@swc/core": "^1.15.7",
+    "@trilon/eslint-plugin": "^0.2.1",
     "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.0",
     "@types/node": "^22.10.7",

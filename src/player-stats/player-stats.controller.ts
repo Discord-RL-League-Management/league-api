@@ -1,15 +1,24 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiResponse,
+} from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PlayerLeagueStatsService } from './services/player-league-stats.service';
 
 @ApiTags('Player Stats')
 @Controller('api/players/:playerId/stats')
+@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class PlayerStatsController {
   constructor(private statsService: PlayerLeagueStatsService) {}
 
   @Get('league/:leagueId')
   @ApiOperation({ summary: 'Get player stats for league' })
+  @ApiResponse({ status: 200, description: 'Player statistics' })
+  @ApiResponse({ status: 404, description: 'Stats not found' })
   getStats(
     @Param('playerId') playerId: string,
     @Param('leagueId') leagueId: string,
@@ -20,12 +29,15 @@ export class PlayerStatsController {
 
 @ApiTags('Leagues')
 @Controller('api/leagues/:leagueId/leaderboard')
+@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class LeaderboardController {
   constructor(private statsService: PlayerLeagueStatsService) {}
 
   @Get()
   @ApiOperation({ summary: 'Get league leaderboard' })
+  @ApiResponse({ status: 200, description: 'League leaderboard' })
+  @ApiResponse({ status: 404, description: 'League not found' })
   getLeaderboard(
     @Param('leagueId') leagueId: string,
     @Query('limit') limit?: number,

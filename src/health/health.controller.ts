@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import {
   HealthCheck,
   HealthCheckService,
@@ -11,10 +11,12 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { DiscordApiHealthIndicator } from './indicators/discord-api.health';
 import { Public } from '../common/decorators';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 // Public health check endpoint that bypasses authentication to allow monitoring tools and load balancers to check service availability
 @ApiTags('Health')
 @Controller('health')
+@UseGuards(JwtAuthGuard)
 export class HealthController {
   constructor(
     private health: HealthCheckService,

@@ -43,8 +43,26 @@ import {
     GuildsModule,
     PlayersModule,
     PermissionCheckModule,
+    // INTENTIONAL: Circular dependency with LeagueMembersModule is properly handled.
+    // - Both modules legitimately need each other for validation/access checks
+    // - Using forwardRef() is the NestJS-recommended pattern for module-level circular dependencies
+    // - Service-level circular dependencies are broken using ModuleRef lazy injection
+    // Reference: https://docs.nestjs.com/fundamentals/circular-dependency
+    // eslint-disable-next-line @trilon/detect-circular-reference
     forwardRef(() => LeagueMembersModule),
+    // INTENTIONAL: Circular dependency with OrganizationsModule is properly handled.
+    // - OrganizationsModule needs ILEAGUE_REPOSITORY_ACCESS (provided via ModuleRef lazy injection)
+    // - LeaguesModule needs IOrganizationProvider (provided via ModuleRef lazy injection)
+    // - Using forwardRef() is the NestJS-recommended pattern for module-level circular dependencies
+    // Reference: https://docs.nestjs.com/fundamentals/circular-dependency
+    // eslint-disable-next-line @trilon/detect-circular-reference
     forwardRef(() => OrganizationsModule),
+    // INTENTIONAL: Circular dependency with TeamsModule is properly handled.
+    // - TeamsModule needs ILEAGUE_SETTINGS_PROVIDER (provided via ModuleRef lazy injection)
+    // - LeaguesModule needs ITeamProvider (provided via ModuleRef lazy injection)
+    // - Using forwardRef() is the NestJS-recommended pattern for module-level circular dependencies
+    // Reference: https://docs.nestjs.com/fundamentals/circular-dependency
+    // eslint-disable-next-line @trilon/detect-circular-reference
     forwardRef(() => TeamsModule),
   ],
   controllers: [

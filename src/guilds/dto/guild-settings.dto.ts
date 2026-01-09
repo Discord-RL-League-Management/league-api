@@ -18,7 +18,7 @@ import { ApiPropertyOptional, ApiProperty } from '@nestjs/swagger';
  * Channel configuration with Discord ID validation
  */
 export class ChannelConfigDto {
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'Discord channel ID (17-20 digit snowflake)',
     example: '123456789012345678',
   })
@@ -28,7 +28,7 @@ export class ChannelConfigDto {
   })
   id!: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'Channel name',
     example: 'bot-commands',
   })
@@ -211,6 +211,7 @@ export class GuildSettingsDto {
     type: [ChannelConfigDto],
     description:
       'Channels where bot listens for commands. Empty = all channels.',
+    isArray: true,
   })
   @IsOptional()
   @IsArray()
@@ -222,6 +223,7 @@ export class GuildSettingsDto {
     type: [ChannelConfigDto],
     description:
       'Channels where /register command can be used. Empty = uses bot_command_channels or all channels.',
+    isArray: true,
   })
   @IsOptional()
   @IsArray()

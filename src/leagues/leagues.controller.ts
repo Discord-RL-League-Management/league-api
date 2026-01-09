@@ -13,6 +13,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { LeaguesService } from './leagues.service';
 import { LeagueAccessValidationService } from './services/league-access-validation.service';
 import { LeaguePermissionService } from './services/league-permission.service';
@@ -36,6 +37,7 @@ import { ParseCUIDPipe, ParseEnumPipe } from '../common/pipes';
 
 @ApiTags('Leagues')
 @Controller('api/leagues')
+@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class LeaguesController {
   private readonly logger = new Logger(LeaguesController.name);

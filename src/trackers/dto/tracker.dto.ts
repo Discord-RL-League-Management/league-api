@@ -82,6 +82,7 @@ export class RegisterTrackersDto {
     ],
     minItems: 1,
     maxItems: 4,
+    isArray: true,
   })
   @IsArray()
   @ArrayMinSize(1)

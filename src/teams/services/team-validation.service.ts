@@ -5,6 +5,7 @@ import {
   NotFoundException,
   Inject,
 } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import type { ILeagueSettingsProvider } from '../../common/interfaces/league-domain/league-settings-provider.interface';
 import type { IOrganizationValidationProvider } from '../../common/interfaces/league-domain/organization-validation-provider.interface';
 import {
@@ -18,13 +19,26 @@ import {
 @Injectable()
 export class TeamValidationService {
   private readonly logger = new Logger(TeamValidationService.name);
+  private leagueSettingsProvider?: ILeagueSettingsProvider;
 
   constructor(
-    @Inject(ILEAGUE_SETTINGS_PROVIDER)
-    private leagueSettingsProvider: ILeagueSettingsProvider,
     @Inject(IORGANIZATION_VALIDATION_PROVIDER)
     private organizationValidationProvider: IOrganizationValidationProvider,
+    private moduleRef: ModuleRef,
   ) {}
+
+  /**
+   * Get league settings provider lazily to break circular dependency
+   */
+  private getLeagueSettingsProvider(): ILeagueSettingsProvider {
+    if (!this.leagueSettingsProvider) {
+      this.leagueSettingsProvider = this.moduleRef.get(
+        ILEAGUE_SETTINGS_PROVIDER,
+        { strict: false },
+      );
+    }
+    return this.leagueSettingsProvider;
+  }
 
   /**
    * Validate organization requirement for team
@@ -33,7 +47,8 @@ export class TeamValidationService {
     leagueId: string,
     organizationId?: string,
   ): Promise<void> {
-    const settings = await this.leagueSettingsProvider.getSettings(leagueId);
+    const settings =
+      await this.getLeagueSettingsProvider().getSettings(leagueId);
 
     if (settings.membership.requireOrganization) {
       if (!organizationId) {

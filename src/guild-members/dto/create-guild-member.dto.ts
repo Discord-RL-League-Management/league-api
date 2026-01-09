@@ -60,6 +60,7 @@ export class CreateGuildMemberDto {
     description: 'Array of Discord role IDs',
     example: ['role1', 'role2'],
     maxItems: 250,
+    isArray: true,
   })
   @IsOptional()
   @IsArray()

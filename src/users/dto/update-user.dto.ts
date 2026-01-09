@@ -12,5 +12,5 @@ export class UpdateUserDto extends PartialType(
   })
   @IsOptional()
   @IsDateString()
-  lastLoginAt?: Date;
+  lastLoginAt?: string;
 }

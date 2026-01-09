@@ -8,6 +8,7 @@ import {
   Query,
   Logger,
   Body,
+  UseGuards,
 } from '@nestjs/common';
 import { GuildMembersService } from './guild-members.service';
 import { CreateGuildMemberDto } from './dto/create-guild-member.dto';
@@ -20,9 +21,11 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('Guild Members')
 @Controller('api/guilds/:guildId/members')
+@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class GuildMembersController {
   private readonly logger = new Logger(GuildMembersController.name);

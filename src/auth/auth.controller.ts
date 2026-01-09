@@ -7,6 +7,7 @@ import {
   Query,
   Inject,
   BadRequestException,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -29,10 +30,12 @@ import { RedirectUriValidationService } from './services/redirect-uri-validation
 import { TokenManagementService } from './services/token-management.service';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Public } from '../common/decorators';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import type { AuthenticatedUser } from '../common/interfaces/user.interface';
 
 @ApiTags('Authentication')
 @Controller('auth')
+@UseGuards(JwtAuthGuard)
 @SkipThrottle()
 export class AuthController {
   private readonly logger = new Logger(AuthController.name);

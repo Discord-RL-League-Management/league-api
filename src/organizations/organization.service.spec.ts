@@ -14,6 +14,7 @@ import {
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { OrganizationService } from './organization.service';
 import { OrganizationRepository } from './repositories/organization.repository';
 import { OrganizationMemberService } from './services/organization-member.service';
@@ -32,6 +33,12 @@ import {
   OrganizationCapacityExceededException,
 } from './exceptions/organization.exceptions';
 import { Organization, LeagueStatus } from '@prisma/client';
+import {
+  ILEAGUE_REPOSITORY_ACCESS,
+  ILEAGUE_SETTINGS_PROVIDER,
+  IORGANIZATION_TEAM_PROVIDER,
+} from '@/common/tokens/injection.tokens';
+import type { ILeagueRepositoryAccess } from '@/common/interfaces/league-domain/league-repository-access.interface';
 
 describe('OrganizationService', () => {
   let service: OrganizationService;
@@ -39,10 +46,11 @@ describe('OrganizationService', () => {
   let mockOrganizationMemberService: OrganizationMemberService;
   let mockValidationService: OrganizationValidationService;
   let mockPlayerService: PlayerService;
-  let mockLeagueRepository: LeagueRepository;
+  let mockLeagueRepositoryAccess: ILeagueRepositoryAccess;
   let mockLeagueSettingsProvider: ILeagueSettingsProvider;
   let mockOrganizationTeamProvider: IOrganizationTeamProvider;
   let mockPrisma: PrismaService;
+  let mockModuleRef: ModuleRef;
 
   const organizationId = 'org-123';
   const leagueId = 'league-123';
@@ -112,9 +120,9 @@ describe('OrganizationService', () => {
       ensurePlayerExists: vi.fn(),
     } as unknown as PlayerService;
 
-    mockLeagueRepository = {
+    mockLeagueRepositoryAccess = {
       findById: vi.fn(),
-    } as unknown as LeagueRepository;
+    } as unknown as ILeagueRepositoryAccess;
 
     mockLeagueSettingsProvider = {
       getSettings: vi.fn(),
@@ -133,15 +141,28 @@ describe('OrganizationService', () => {
       }),
     } as unknown as PrismaService;
 
+    mockModuleRef = {
+      get: vi.fn().mockImplementation((token) => {
+        if (token === IORGANIZATION_TEAM_PROVIDER) {
+          return mockOrganizationTeamProvider;
+        }
+        if (token === ILEAGUE_REPOSITORY_ACCESS) {
+          return mockLeagueRepositoryAccess;
+        }
+        if (token === ILEAGUE_SETTINGS_PROVIDER) {
+          return mockLeagueSettingsProvider;
+        }
+        return null;
+      }),
+    } as unknown as ModuleRef;
+
     service = new OrganizationService(
       mockOrganizationRepository,
       mockOrganizationMemberService,
       mockValidationService,
       mockPlayerService,
-      mockLeagueRepository,
-      mockLeagueSettingsProvider,
-      mockOrganizationTeamProvider,
       mockPrisma,
+      mockModuleRef,
     );
   });
 
@@ -204,7 +225,9 @@ describe('OrganizationService', () => {
       };
       const createdOrg = { ...mockOrganization, ...createDto };
 
-      vi.mocked(mockLeagueRepository.findById).mockResolvedValue(mockLeague);
+      vi.mocked(mockLeagueRepositoryAccess.findById).mockResolvedValue(
+        mockLeague,
+      );
       vi.mocked(mockPlayerService.ensurePlayerExists).mockResolvedValue(
         mockPlayer as any,
       );
@@ -228,7 +251,9 @@ describe('OrganizationService', () => {
       };
       const createdOrg = { ...mockOrganization, ...createDto };
 
-      vi.mocked(mockLeagueRepository.findById).mockResolvedValue(mockLeague);
+      vi.mocked(mockLeagueRepositoryAccess.findById).mockResolvedValue(
+        mockLeague,
+      );
       vi.mocked(mockOrganizationRepository.create).mockResolvedValue(
         createdOrg,
       );
@@ -247,7 +272,7 @@ describe('OrganizationService', () => {
         leagueId: 'non-existent',
         name: 'Test Org',
       };
-      vi.mocked(mockLeagueRepository.findById).mockResolvedValue(null);
+      vi.mocked(mockLeagueRepositoryAccess.findById).mockResolvedValue(null);
 
       await expect(service.create(createDto, userId)).rejects.toThrow(
         NotFoundException,
@@ -263,7 +288,9 @@ describe('OrganizationService', () => {
       vi.mocked(mockValidationService.validateCreate).mockRejectedValue(
         validationError,
       );
-      vi.mocked(mockLeagueRepository.findById).mockResolvedValue(mockLeague);
+      vi.mocked(mockLeagueRepositoryAccess.findById).mockResolvedValue(
+        mockLeague,
+      );
 
       await expect(service.create(createDto, userId)).rejects.toThrow(
         BadRequestException,
@@ -279,7 +306,9 @@ describe('OrganizationService', () => {
       vi.mocked(
         mockValidationService.validateLeagueOrganizationCapacity,
       ).mockRejectedValue(capacityError);
-      vi.mocked(mockLeagueRepository.findById).mockResolvedValue(mockLeague);
+      vi.mocked(mockLeagueRepositoryAccess.findById).mockResolvedValue(
+        mockLeague,
+      );
 
       await expect(service.create(createDto, userId)).rejects.toThrow(
         BadRequestException,

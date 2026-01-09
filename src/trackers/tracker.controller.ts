@@ -19,6 +19,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TrackerService } from './tracker.service';
 import { TrackerProcessingService } from './services/tracker-processing.service';
 import { TrackerSnapshotService } from './services/tracker-snapshot.service';
@@ -38,6 +39,7 @@ import { TrackerAccessGuard } from './guards/tracker-access.guard';
 
 @ApiTags('Trackers')
 @Controller('api/trackers')
+@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class TrackerController {
   private readonly logger = new Logger(TrackerController.name);

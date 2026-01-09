@@ -1,4 +1,5 @@
-import { Injectable, Logger, Inject } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { OrganizationRepository } from '../repositories/organization.repository';
 import type { ILeagueRepositoryAccess } from '../../common/interfaces/league-domain/league-repository-access.interface';
 import { PlayerService } from '../../players/player.service';
@@ -27,21 +28,46 @@ import { LeagueConfiguration } from '../../leagues/interfaces/league-settings.in
 @Injectable()
 export class OrganizationValidationService {
   private readonly logger = new Logger(OrganizationValidationService.name);
+  private leagueRepositoryAccess?: ILeagueRepositoryAccess;
+  private leagueSettingsProvider?: ILeagueSettingsProvider;
 
   constructor(
     private organizationRepository: OrganizationRepository,
-    @Inject(ILEAGUE_REPOSITORY_ACCESS)
-    private leagueRepositoryAccess: ILeagueRepositoryAccess,
     private playerService: PlayerService,
-    @Inject(ILEAGUE_SETTINGS_PROVIDER)
-    private leagueSettingsProvider: ILeagueSettingsProvider,
+    private moduleRef: ModuleRef,
   ) {}
+
+  /**
+   * Get league repository access lazily to break circular dependency
+   */
+  private getLeagueRepositoryAccess(): ILeagueRepositoryAccess {
+    if (!this.leagueRepositoryAccess) {
+      this.leagueRepositoryAccess = this.moduleRef.get(
+        ILEAGUE_REPOSITORY_ACCESS,
+        { strict: false },
+      );
+    }
+    return this.leagueRepositoryAccess;
+  }
+
+  /**
+   * Get league settings provider lazily to break circular dependency
+   */
+  private getLeagueSettingsProvider(): ILeagueSettingsProvider {
+    if (!this.leagueSettingsProvider) {
+      this.leagueSettingsProvider = this.moduleRef.get(
+        ILEAGUE_SETTINGS_PROVIDER,
+        { strict: false },
+      );
+    }
+    return this.leagueSettingsProvider;
+  }
 
   /**
    * Validate organization creation
    */
   async validateCreate(data: CreateOrganizationDto): Promise<void> {
-    const leagueExists = await this.leagueRepositoryAccess.exists(
+    const leagueExists = await this.getLeagueRepositoryAccess().exists(
       data.leagueId,
     );
     if (!leagueExists) {
@@ -125,7 +151,8 @@ export class OrganizationValidationService {
 
     // Use provided settings or fetch from service (for cache-aware validation)
     const leagueSettings =
-      settings || (await this.leagueSettingsProvider.getSettings(leagueId));
+      settings ||
+      (await this.getLeagueSettingsProvider().getSettings(leagueId));
     const maxTeamsPerOrg = leagueSettings.membership.maxTeamsPerOrganization;
 
     if (maxTeamsPerOrg !== null && maxTeamsPerOrg !== undefined) {
@@ -153,7 +180,8 @@ export class OrganizationValidationService {
   ): Promise<void> {
     // Use provided settings or fetch from service (for cache-aware validation)
     const leagueSettings =
-      settings || (await this.leagueSettingsProvider.getSettings(leagueId));
+      settings ||
+      (await this.getLeagueSettingsProvider().getSettings(leagueId));
     const maxOrganizations = leagueSettings.membership.maxOrganizations;
 
     if (maxOrganizations !== null && maxOrganizations !== undefined) {

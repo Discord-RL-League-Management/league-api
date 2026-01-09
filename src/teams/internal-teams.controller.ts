@@ -9,7 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { BotAuthGuard } from '../auth/guards/bot-auth.guard';
 import { TeamService } from './services/team.service';
 import { CreateTeamDto } from './dto/create-team.dto';
@@ -25,18 +25,24 @@ export class InternalTeamsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get team (Bot only)' })
+  @ApiResponse({ status: 200, description: 'Team details' })
+  @ApiResponse({ status: 404, description: 'Team not found' })
   getTeam(@Param('id', ParseCUIDPipe) id: string) {
     return this.teamService.findOne(id);
   }
 
   @Post()
   @ApiOperation({ summary: 'Create team (Bot only)' })
+  @ApiResponse({ status: 201, description: 'Team created successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid request data' })
   createTeam(@Body() createDto: CreateTeamDto) {
     return this.teamService.create(createDto);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update team (Bot only)' })
+  @ApiResponse({ status: 200, description: 'Team updated successfully' })
+  @ApiResponse({ status: 404, description: 'Team not found' })
   updateTeam(
     @Param('id', ParseCUIDPipe) id: string,
     @Body() updateDto: UpdateTeamDto,
@@ -46,6 +52,8 @@ export class InternalTeamsController {
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete team (Bot only)' })
+  @ApiResponse({ status: 200, description: 'Team deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Team not found' })
   deleteTeam(@Param('id', ParseCUIDPipe) id: string) {
     return this.teamService.delete(id);
   }
