@@ -1,5 +1,6 @@
 import { Controller, Get, Param, UseGuards, Logger } from '@nestjs/common';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GuildAdminSimpleGuard } from './guards/guild-admin-simple.guard';
 import { GuildsService } from './guilds.service';
 import { GuildSettingsService } from './guild-settings.service';
@@ -16,6 +17,7 @@ import type { AuthenticatedUser } from '../common/interfaces/user.interface';
 
 @ApiTags('Guilds')
 @Controller('api/guilds')
+@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class GuildsController {
   private readonly logger = new Logger(GuildsController.name);

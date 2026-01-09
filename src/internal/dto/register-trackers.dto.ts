@@ -39,6 +39,7 @@ export class InternalRegisterTrackersDto {
     description: 'Array of tracker URLs',
     example: ['https://tracker.gg/rocket-league/profile/steam/player1'],
     type: [String],
+    isArray: true,
   })
   @IsArray()
   @IsString({ each: true })

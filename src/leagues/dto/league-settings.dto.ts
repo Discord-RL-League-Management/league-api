@@ -162,7 +162,7 @@ export class GameConfigDto {
 
   @ApiPropertyOptional({
     enum: ['STEAM', 'EPIC', 'XBL', 'PSN', 'SWITCH'],
-    isArray: true,
+    type: [String],
     description: 'Allowed platforms',
   })
   @IsOptional()
@@ -215,7 +215,7 @@ export class SkillConfigDto {
 
   @ApiPropertyOptional({
     description: 'Allowed tracker platforms',
-    isArray: true,
+    type: [String],
   })
   @IsOptional()
   @IsArray()
@@ -259,6 +259,7 @@ export class AdministrationConfigDto {
   })
   @IsOptional()
   @IsArray()
+  @Type(() => String)
   @IsString({ each: true })
   @Matches(/^\d{17,20}$/, {
     each: true,

@@ -7,6 +7,7 @@ export class BatchRefreshDto {
       'Array of tracker IDs to refresh. If not provided, all trackers will be refreshed.',
     example: ['clx1234567890abcdef', 'clx9876543210fedcba'],
     type: [String],
+    isArray: true,
   })
   @IsOptional()
   @IsArray()

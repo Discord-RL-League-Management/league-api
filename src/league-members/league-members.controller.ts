@@ -9,6 +9,7 @@ import {
   Query,
   ForbiddenException,
   NotFoundException,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -19,6 +20,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { LeagueMemberService } from './services/league-member.service';
 import { PlayerOwnershipService } from '../players/services/player-ownership.service';
 import { LeaguePermissionService } from '../leagues/services/league-permission.service';
@@ -33,6 +35,7 @@ import type { LeagueMemberQueryOptions } from './interfaces/league-member.interf
  */
 @ApiTags('League Members')
 @Controller('api/leagues/:leagueId/members')
+@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class LeagueMembersController {
   constructor(

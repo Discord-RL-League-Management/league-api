@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Logger } from '@nestjs/common';
+import { Controller, Get, Param, Logger, UseGuards } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -7,6 +7,7 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionCheckService } from './modules/permission-check/permission-check.service';
 import { GuildMembersService } from '../guild-members/guild-members.service';
 import { GuildSettingsService } from '../guilds/guild-settings.service';
@@ -20,6 +21,7 @@ import { GuildSettings } from '../guilds/interfaces/settings.interface';
  */
 @ApiTags('Permissions')
 @Controller('api/guilds/:guildId/permissions')
+@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class PermissionsController {
   private readonly logger = new Logger(PermissionsController.name);

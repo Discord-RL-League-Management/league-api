@@ -19,7 +19,6 @@ export class TrackerQueryDto {
     description: 'Filter by platform (single value or comma-separated array)',
     enum: GamePlatform,
     example: GamePlatform.STEAM,
-    isArray: true,
   })
   @IsOptional()
   @Transform(({ value }): GamePlatform | GamePlatform[] | undefined => {
@@ -40,7 +39,6 @@ export class TrackerQueryDto {
       'Filter by scraping status (single value or comma-separated array)',
     enum: TrackerScrapingStatus,
     example: TrackerScrapingStatus.COMPLETED,
-    isArray: true,
   })
   @IsOptional()
   @Transform(

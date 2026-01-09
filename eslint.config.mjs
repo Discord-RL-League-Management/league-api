@@ -5,6 +5,9 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 import vitestPlugin from 'eslint-plugin-vitest';
 import playwrightPlugin from 'eslint-plugin-playwright';
+import trilonPlugin from '@trilon/eslint-plugin';
+import nestjsTypedPlugin from '@darraghor/eslint-plugin-nestjs-typed';
+import nestjsTypedElsikoraPlugin from '@elsikora/eslint-plugin-nestjs-typed';
 
 export default tseslint.config(
   {
@@ -26,6 +29,11 @@ export default tseslint.config(
   eslintPluginPrettierRecommended,
   {
     files: ['src/**/*.ts', '!src/**/*.test.ts', '!src/**/*.spec.ts'],
+    plugins: {
+      '@trilon': trilonPlugin,
+      '@darraghor/nestjs-typed': nestjsTypedPlugin.plugin || nestjsTypedPlugin,
+      '@elsikora/nestjs-typed': nestjsTypedElsikoraPlugin.plugin || nestjsTypedElsikoraPlugin,
+    },
     languageOptions: {
       globals: {
         ...globals.node,
@@ -43,6 +51,32 @@ export default tseslint.config(
       'prettier/prettier': ['error', { endOfLine: 'auto' }],
       // Cyclomatic complexity rule - blocks functions with complexity >= 30
       complexity: ['error', { max: 30 }],
+      
+      // ============================================
+      // NestJS Best Practices (@trilon/eslint-plugin)
+      // ============================================
+      '@trilon/enforce-close-testing-module': 'error',
+      '@trilon/check-inject-decorator': 'warn',
+      '@trilon/detect-circular-reference': 'warn',
+      
+      // ============================================
+      // NestJS Type Safety (@darraghor/eslint-plugin-nestjs-typed)
+      // ============================================
+      '@darraghor/nestjs-typed/controllers-should-supply-api-tags': 'warn',
+      '@darraghor/nestjs-typed/api-methods-should-be-guarded': 'warn',
+      '@darraghor/nestjs-typed/api-method-should-specify-api-response': 'warn',
+      '@darraghor/nestjs-typed/param-decorator-name-matches-route-param': 'error',
+      '@darraghor/nestjs-typed/all-properties-are-whitelisted': 'warn',
+      '@darraghor/nestjs-typed/validated-non-primitive-property-needs-type-decorator': 'error',
+      
+      // ============================================
+      // NestJS Documentation Enforcement (@elsikora/eslint-plugin-nestjs-typed)
+      // Additional documentation rules not in @darraghor plugin
+      // ============================================
+      '@elsikora/nestjs-typed/api-method-should-specify-api-operation': 'warn',
+      '@elsikora/nestjs-typed/api-property-matches-property-optionality': 'warn',
+      '@elsikora/nestjs-typed/api-property-returning-array-should-set-array': 'warn',
+      '@elsikora/nestjs-typed/api-enum-property-best-practices': 'warn',
     },
   },
   // Exclude configuration.ts from complexity check - it's a configuration factory with many env vars

@@ -16,6 +16,7 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { AuthenticatedUser } from '../common/interfaces/user.interface';
 import { OrganizationService } from './organization.service';
 import { OrganizationMemberService } from './services/organization-member.service';
@@ -30,6 +31,7 @@ import { ParseCUIDPipe } from '../common/pipes';
 
 @ApiTags('Organizations')
 @Controller('api')
+@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class OrganizationsController {
   constructor(
@@ -40,6 +42,7 @@ export class OrganizationsController {
   @Get('leagues/:leagueId/organizations')
   @ApiOperation({ summary: 'List organizations in league' })
   @ApiParam({ name: 'leagueId', description: 'League ID' })
+  @ApiResponse({ status: 200, description: 'List of organizations' })
   getOrganizations(@Param('leagueId', ParseCUIDPipe) leagueId: string) {
     return this.organizationService.findByLeagueId(leagueId);
   }
@@ -47,6 +50,8 @@ export class OrganizationsController {
   @Get('organizations/:id')
   @ApiOperation({ summary: 'Get organization details' })
   @ApiParam({ name: 'id', description: 'Organization ID' })
+  @ApiResponse({ status: 200, description: 'Organization details' })
+  @ApiResponse({ status: 404, description: 'Organization not found' })
   getOrganization(@Param('id', ParseCUIDPipe) id: string) {
     return this.organizationService.findOne(id);
   }
@@ -54,6 +59,8 @@ export class OrganizationsController {
   @Get('organizations/:id/teams')
   @ApiOperation({ summary: 'List teams in organization' })
   @ApiParam({ name: 'id', description: 'Organization ID' })
+  @ApiResponse({ status: 200, description: 'List of teams' })
+  @ApiResponse({ status: 404, description: 'Organization not found' })
   getOrganizationTeams(@Param('id', ParseCUIDPipe) id: string) {
     return this.organizationService.findTeams(id);
   }
@@ -61,6 +68,8 @@ export class OrganizationsController {
   @Get('organizations/:id/stats')
   @ApiOperation({ summary: 'Get organization statistics' })
   @ApiParam({ name: 'id', description: 'Organization ID' })
+  @ApiResponse({ status: 200, description: 'Organization statistics' })
+  @ApiResponse({ status: 404, description: 'Organization not found' })
   getOrganizationStats(@Param('id', ParseCUIDPipe) id: string) {
     return this.organizationService.getOrganizationStats(id);
   }
@@ -140,6 +149,8 @@ export class OrganizationsController {
   @Get('organizations/:id/members')
   @ApiOperation({ summary: 'List organization members' })
   @ApiParam({ name: 'id', description: 'Organization ID' })
+  @ApiResponse({ status: 200, description: 'List of organization members' })
+  @ApiResponse({ status: 404, description: 'Organization not found' })
   getOrganizationMembers(@Param('id', ParseCUIDPipe) id: string) {
     return this.organizationMemberService.findMembers(id);
   }
