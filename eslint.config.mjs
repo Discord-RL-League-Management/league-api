@@ -8,6 +8,8 @@ import playwrightPlugin from 'eslint-plugin-playwright';
 import trilonPlugin from '@trilon/eslint-plugin';
 import nestjsTypedPlugin from '@darraghor/eslint-plugin-nestjs-typed';
 import nestjsTypedElsikoraPlugin from '@elsikora/eslint-plugin-nestjs-typed';
+import securityPlugin from 'eslint-plugin-security';
+import securityNodePlugin from 'eslint-plugin-security-node';
 
 export default tseslint.config(
   {
@@ -15,6 +17,7 @@ export default tseslint.config(
       'eslint.config.mjs',
       '.eslintrc.js',
       'commitlint.config.js',
+      'eslint-rules/**',
       'node_modules/**',
       'dist/**',
       'coverage/**',
@@ -33,6 +36,8 @@ export default tseslint.config(
       '@trilon': trilonPlugin,
       '@darraghor/nestjs-typed': nestjsTypedPlugin.plugin || nestjsTypedPlugin,
       '@elsikora/nestjs-typed': nestjsTypedElsikoraPlugin.plugin || nestjsTypedElsikoraPlugin,
+      security: securityPlugin,
+      'security-node': securityNodePlugin,
     },
     languageOptions: {
       globals: {
@@ -63,7 +68,7 @@ export default tseslint.config(
       // NestJS Type Safety (@darraghor/eslint-plugin-nestjs-typed)
       // ============================================
       '@darraghor/nestjs-typed/controllers-should-supply-api-tags': 'warn',
-      '@darraghor/nestjs-typed/api-methods-should-be-guarded': 'warn',
+      '@darraghor/nestjs-typed/api-methods-should-be-guarded': 'error', // Upgraded from warn to error
       '@darraghor/nestjs-typed/api-method-should-specify-api-response': 'warn',
       '@darraghor/nestjs-typed/param-decorator-name-matches-route-param': 'error',
       '@darraghor/nestjs-typed/all-properties-are-whitelisted': 'warn',
@@ -77,6 +82,54 @@ export default tseslint.config(
       '@elsikora/nestjs-typed/api-property-matches-property-optionality': 'warn',
       '@elsikora/nestjs-typed/api-property-returning-array-should-set-array': 'warn',
       '@elsikora/nestjs-typed/api-enum-property-best-practices': 'warn',
+      
+      // ============================================
+      // General Node.js Security (eslint-plugin-security)
+      // ============================================
+      'security/detect-buffer-noassert': 'error',
+      'security/detect-child-process': 'warn',
+      'security/detect-disable-mustache-escape': 'error',
+      'security/detect-eval-with-expression': 'error',
+      'security/detect-no-csrf-before-method-override': 'warn',
+      'security/detect-non-literal-fs-filename': 'warn',
+      'security/detect-non-literal-regexp': 'warn',
+      'security/detect-non-literal-require': 'warn',
+      'security/detect-object-injection': 'warn', // Many false positives in TypeScript object access patterns
+      'security/detect-possible-timing-attacks': 'warn',
+      'security/detect-unsafe-regex': 'warn',
+      'security/detect-new-buffer': 'error',
+      
+      // ============================================
+      // Node.js-Specific Security (eslint-plugin-security-node)
+      // ============================================
+      'security-node/detect-buffer-unsafe-allocation': 'error',
+      'security-node/detect-crlf': 'warn',
+      'security-node/detect-dangerous-redirects': 'warn',
+      'security-node/detect-insecure-randomness': 'error',
+      'security-node/detect-sql-injection': 'error',
+      'security-node/detect-nosql-injection': 'error',
+      'security-node/detect-child-process': 'warn',
+      'security-node/detect-eval-with-expr': 'error',
+      'security-node/detect-possible-timing-attacks': 'warn',
+    },
+  },
+  // Exclude utility classes from object injection warnings
+  {
+    files: [
+      'src/common/utils/log-sanitizer.ts',
+      'src/common/interceptors/audit-log.interceptor.ts',
+      'src/guilds/services/settings-defaults.service.ts',
+      'src/leagues/services/league-settings-defaults.service.ts',
+    ],
+    rules: {
+      'security/detect-object-injection': 'off', // These are safe utility functions
+    },
+  },
+  // Exclude redirects in auth controller (validated redirects)
+  {
+    files: ['src/auth/auth.controller.ts'],
+    rules: {
+      'security-node/detect-dangerous-redirects': 'off', // Redirects are validated via whitelist
     },
   },
   // Exclude configuration.ts from complexity check - it's a configuration factory with many env vars

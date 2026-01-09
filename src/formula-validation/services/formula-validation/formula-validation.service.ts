@@ -149,9 +149,11 @@ export class FormulaValidationService {
         node.args.forEach(traverse);
       }
 
-      for (const key in node) {
-        if (Object.prototype.hasOwnProperty.call(node, key) && key !== 'args') {
-          const value = (node as Record<string, unknown>)[key];
+      // Use Object.entries() instead of for...in to avoid dynamic property access warning
+      // AST structure is controlled by mathjs library, expression already validated
+      const nodeEntries = Object.entries(node as Record<string, unknown>);
+      for (const [key, value] of nodeEntries) {
+        if (key !== 'args') {
           if (Array.isArray(value)) {
             value.forEach(traverse);
           } else if (isAstNode(value)) {

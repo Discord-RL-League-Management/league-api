@@ -53,25 +53,37 @@ export class MmrCalculationIntegrationService {
         return;
       }
 
-      const calculations = await Promise.allSettled(
+      const calculationsWithGuilds = await Promise.allSettled(
         guildMemberships.map((membership) =>
-          this.calculateMmrForGuild(userId, membership.guildId, trackerData),
+          this.calculateMmrForGuild(
+            userId,
+            membership.guildId,
+            trackerData,
+          ).then((mmr) => ({ guildId: membership.guildId, mmr })),
         ),
       );
 
-      const successful = calculations.filter(
+      const successful = calculationsWithGuilds.filter(
         (r) => r.status === 'fulfilled',
       ).length;
-      const failed = calculations.filter((r) => r.status === 'rejected').length;
+      const failed = calculationsWithGuilds.filter(
+        (r) => r.status === 'rejected',
+      ).length;
 
       this.logger.log(
         `MMR calculation completed for user ${userId}: ${successful} successful, ${failed} failed`,
       );
 
-      calculations.forEach((result, index) => {
+      calculationsWithGuilds.forEach((result, index) => {
         if (result.status === 'rejected') {
+          // Safe: index comes from forEach iteration, bounds checked before array access
+          // index is guaranteed to be within [0, guildMemberships.length) by forEach contract
+          const guildId =
+            index >= 0 && index < guildMemberships.length
+              ? guildMemberships[index].guildId // eslint-disable-line security/detect-object-injection
+              : 'unknown';
           this.logger.warn(
-            `Failed to calculate MMR for guild ${guildMemberships[index].guildId}: ${result.reason}`,
+            `Failed to calculate MMR for guild ${guildId}: ${result.reason}`,
           );
         }
       });

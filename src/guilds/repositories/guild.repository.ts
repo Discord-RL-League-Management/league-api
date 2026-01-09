@@ -17,9 +17,11 @@ import {
  * making services more focused and testable.
  */
 @Injectable()
-export class GuildRepository
-  implements BaseRepository<Guild, CreateGuildDto, UpdateGuildDto>
-{
+export class GuildRepository implements BaseRepository<
+  Guild,
+  CreateGuildDto,
+  UpdateGuildDto
+> {
   private readonly logger = new Logger(GuildRepository.name);
 
   constructor(private prisma: PrismaService) {}

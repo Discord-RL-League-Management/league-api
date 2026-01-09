@@ -15,10 +15,11 @@ import {
  * OrganizationRepository - Handles all database operations for Organization entity
  */
 @Injectable()
-export class OrganizationRepository
-  implements
-    BaseRepository<Organization, CreateOrganizationDto, UpdateOrganizationDto>
-{
+export class OrganizationRepository implements BaseRepository<
+  Organization,
+  CreateOrganizationDto,
+  UpdateOrganizationDto
+> {
   private readonly logger = new Logger(OrganizationRepository.name);
 
   constructor(private prisma: PrismaService) {}

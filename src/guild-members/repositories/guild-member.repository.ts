@@ -13,10 +13,11 @@ import { BaseRepository } from '../../common/repositories/base.repository.interf
  * making services more focused and testable.
  */
 @Injectable()
-export class GuildMemberRepository
-  implements
-    BaseRepository<GuildMember, CreateGuildMemberDto, UpdateGuildMemberDto>
-{
+export class GuildMemberRepository implements BaseRepository<
+  GuildMember,
+  CreateGuildMemberDto,
+  UpdateGuildMemberDto
+> {
   constructor(private prisma: PrismaService) {}
 
   /**

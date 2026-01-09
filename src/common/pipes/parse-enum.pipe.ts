@@ -6,9 +6,10 @@ import {
 } from '@nestjs/common';
 
 @Injectable()
-export class ParseEnumPipe<T extends object>
-  implements PipeTransform<string | undefined, T[keyof T] | undefined>
-{
+export class ParseEnumPipe<T extends object> implements PipeTransform<
+  string | undefined,
+  T[keyof T] | undefined
+> {
   constructor(private enumObject: T) {}
 
   transform(

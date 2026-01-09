@@ -107,7 +107,23 @@ export const configurationSchema = Joi.object({
   SYSTEM_ADMIN_USER_IDS: Joi.string()
     .optional()
     .allow('')
-    .pattern(/^(\d{17,20})(,\s*\d{17,20})*$/)
+    .custom((value: string) => {
+      if (!value || value.trim() === '') {
+        return value;
+      }
+      // Split by comma and validate each ID individually to avoid regex backtracking issues
+      // This approach is safer than complex regex patterns with quantifiers
+      const ids = value.split(',').map((id) => id.trim());
+      const isValidSnowflake = /^\d{17,20}$/;
+      for (const id of ids) {
+        if (!isValidSnowflake.test(id)) {
+          throw new Error(
+            `Invalid Discord user ID format: ${id}. Must be 17-20 digits.`,
+          );
+        }
+      }
+      return value;
+    })
     .description('Comma-separated Discord user IDs (snowflakes)'),
 
   // CORS Configuration

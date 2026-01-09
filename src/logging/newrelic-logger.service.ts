@@ -22,6 +22,7 @@ export class NewRelicLoggerService implements LoggerService {
   private readonly serviceName: string;
   private readonly hostname: string;
   private readonly axiosInstance: AxiosInstance;
+  private readonly errorRateLimitMap = new Map<string, boolean>();
 
   constructor(private configService: ConfigService) {
     this.apiKey = this.configService.get<string>('newrelic.apiKey') || '';
@@ -108,18 +109,23 @@ export class NewRelicLoggerService implements LoggerService {
         message?: string;
       };
       const errorCode = errorObj?.code || errorObj?.response?.status;
-      const errorKey = `_error_${errorCode}_logged`;
+      // Convert errorCode to string safely for use as object key
+      const errorCodeStr = String(errorCode ?? 'unknown');
+      const errorKey = `_error_${errorCodeStr}_logged`;
 
-      const loggerInstance = this as unknown as Record<string, boolean>;
-      if (!loggerInstance[errorKey]) {
+      // Use Map for error tracking instead of dynamic object property access
+      if (!this.errorRateLimitMap.has(errorKey)) {
+        const sanitizedMessage = errorObj?.message
+          ? LogSanitizer.sanitizeString(String(errorObj.message))
+          : 'Unknown error';
         console.error(
-          `[NewRelicLogger] Failed to send log to New Relic: ${errorCode || 'unknown'} - ${errorObj?.message || 'Unknown error'}`,
+          `[NewRelicLogger] Failed to send log to New Relic: ${errorCodeStr} - ${sanitizedMessage}`,
         );
-        loggerInstance[errorKey] = true;
+        this.errorRateLimitMap.set(errorKey, true);
 
         setTimeout(
           () => {
-            loggerInstance[errorKey] = false;
+            this.errorRateLimitMap.delete(errorKey);
           },
           5 * 60 * 1000,
         );
@@ -129,30 +135,59 @@ export class NewRelicLoggerService implements LoggerService {
 
   log(message: string, context?: string): void {
     this.sendToNewRelic('info', message, context).catch(() => {});
-    console.log(`[${context || 'Application'}] ${message}`);
+    const sanitizedMessage = LogSanitizer.sanitizeString(message);
+    const sanitizedContext = context
+      ? LogSanitizer.sanitizeString(context)
+      : 'Application';
+
+    // Safe: sanitizedMessage and sanitizedContext are sanitized via LogSanitizer.sanitizeString()
+    // which explicitly removes CRLF characters (\r\n, \r, \n) - see log-sanitizer.ts lines 135-138
+    console.log('[' + sanitizedContext + '] ' + sanitizedMessage); // eslint-disable-line security-node/detect-crlf
   }
 
   error(message: string, trace?: string, context?: string): void {
     this.sendToNewRelic('error', message, context, { trace }).catch(() => {});
-    console.error(`[${context || 'Application'}] ${message}`, trace);
+    const sanitizedMessage = LogSanitizer.sanitizeString(message);
+    const sanitizedContext = context
+      ? LogSanitizer.sanitizeString(context)
+      : 'Application';
+    const sanitizedTrace = trace
+      ? LogSanitizer.sanitizeString(trace)
+      : undefined;
+    console.error(`[${sanitizedContext}] ${sanitizedMessage}`, sanitizedTrace);
   }
 
   warn(message: string, context?: string): void {
     this.sendToNewRelic('warn', message, context).catch(() => {});
-    console.warn(`[${context || 'Application'}] ${message}`);
+    const sanitizedMessage = LogSanitizer.sanitizeString(message);
+    const sanitizedContext = context
+      ? LogSanitizer.sanitizeString(context)
+      : 'Application';
+    console.warn(`[${sanitizedContext}] ${sanitizedMessage}`);
   }
 
   debug(message: string, context?: string): void {
     if (process.env.NODE_ENV === 'development') {
       this.sendToNewRelic('debug', message, context).catch(() => {});
-      console.debug(`[${context || 'Application'}] ${message}`);
+      const sanitizedMessage = LogSanitizer.sanitizeString(message);
+      const sanitizedContext = context
+        ? LogSanitizer.sanitizeString(context)
+        : 'Application';
+      console.debug(`[${sanitizedContext}] ${sanitizedMessage}`);
     }
   }
 
   verbose(message: string, context?: string): void {
     if (process.env.NODE_ENV === 'development') {
       this.sendToNewRelic('verbose', message, context).catch(() => {});
-      console.log(`[${context || 'Application'}] VERBOSE: ${message}`);
+      const sanitizedMessage = LogSanitizer.sanitizeString(message);
+      const sanitizedContext = context
+        ? LogSanitizer.sanitizeString(context)
+        : 'Application';
+
+      // Safe: sanitizedMessage and sanitizedContext are sanitized via LogSanitizer.sanitizeString()
+      // which explicitly removes CRLF characters (\r\n, \r, \n) - see log-sanitizer.ts lines 135-138
+      console.log('[' + sanitizedContext + '] VERBOSE: ' + sanitizedMessage); // eslint-disable-line security-node/detect-crlf
     }
   }
 }

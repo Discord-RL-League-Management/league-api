@@ -82,18 +82,22 @@ export class OutboxService {
     currentStatus: OutboxStatus,
     newStatus: OutboxStatus,
   ): void {
-    const validTransitions: Record<OutboxStatus, OutboxStatus[]> = {
-      [OutboxStatus.PENDING]: [OutboxStatus.PROCESSING],
-      [OutboxStatus.PROCESSING]: [
-        OutboxStatus.COMPLETED,
-        OutboxStatus.PENDING, // Retry on error
-        OutboxStatus.FAILED, // After max retries
+    // Use Map to avoid dynamic property access warnings
+    const validTransitions = new Map<OutboxStatus, OutboxStatus[]>([
+      [OutboxStatus.PENDING, [OutboxStatus.PROCESSING]],
+      [
+        OutboxStatus.PROCESSING,
+        [
+          OutboxStatus.COMPLETED,
+          OutboxStatus.PENDING, // Retry on error
+          OutboxStatus.FAILED, // After max retries
+        ],
       ],
-      [OutboxStatus.COMPLETED]: [], // Terminal state - no transitions allowed
-      [OutboxStatus.FAILED]: [], // Terminal state - no transitions allowed
-    };
+      [OutboxStatus.COMPLETED, []], // Terminal state - no transitions allowed
+      [OutboxStatus.FAILED, []], // Terminal state - no transitions allowed
+    ]);
 
-    const allowedTransitions = validTransitions[currentStatus] || [];
+    const allowedTransitions = validTransitions.get(currentStatus) || [];
     if (
       !allowedTransitions.includes(newStatus) &&
       currentStatus !== newStatus

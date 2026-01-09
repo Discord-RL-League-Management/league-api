@@ -17,14 +17,11 @@ import {
  * making services more focused and testable.
  */
 @Injectable()
-export class LeagueRepository
-  implements
-    BaseRepository<
-      League,
-      CreateLeagueDto & { createdBy: string },
-      UpdateLeagueDto
-    >
-{
+export class LeagueRepository implements BaseRepository<
+  League,
+  CreateLeagueDto & { createdBy: string },
+  UpdateLeagueDto
+> {
   private readonly logger = new Logger(LeagueRepository.name);
 
   constructor(private prisma: PrismaService) {}

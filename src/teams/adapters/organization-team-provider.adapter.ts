@@ -10,9 +10,7 @@ import { Team, Prisma } from '@prisma/client';
  * between OrganizationsModule and TeamsModule.
  */
 @Injectable()
-export class OrganizationTeamProviderAdapter
-  implements IOrganizationTeamProvider
-{
+export class OrganizationTeamProviderAdapter implements IOrganizationTeamProvider {
   constructor(private readonly teamRepository: TeamRepository) {}
 
   async findById(teamId: string): Promise<Team | null> {

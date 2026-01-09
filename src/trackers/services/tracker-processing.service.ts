@@ -89,10 +89,18 @@ export class TrackerProcessingService {
     );
 
     const parsedResults = await Promise.all(validationPromises);
-    return uniqueUrls.map((url, index) => ({
-      url,
-      parsed: parsedResults[index],
-    }));
+    return uniqueUrls.map((url, index) => {
+      // Safe: index comes from map() iteration, bounds checked before array access
+      // parsedResults.length === uniqueUrls.length by construction (Promise.all ensures 1:1 mapping)
+      const parsed =
+        index >= 0 && index < parsedResults.length
+          ? parsedResults[index] // eslint-disable-line security/detect-object-injection
+          : null;
+      if (!parsed) {
+        throw new Error(`Index ${index} out of bounds for parsedResults`);
+      }
+      return { url, parsed };
+    });
   }
 
   /**

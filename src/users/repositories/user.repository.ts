@@ -14,9 +14,11 @@ import { UserTransformer } from '../transformers/user.transformer';
  * making services more focused and testable.
  */
 @Injectable()
-export class UserRepository
-  implements BaseRepository<User, CreateUserDto, UpdateUserDto>
-{
+export class UserRepository implements BaseRepository<
+  User,
+  CreateUserDto,
+  UpdateUserDto
+> {
   constructor(
     private prisma: PrismaService,
     private userTransformer: UserTransformer,

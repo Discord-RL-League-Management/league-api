@@ -57,22 +57,25 @@ export class TrackerUrlConverterService {
    * Most platforms use the same name, but this allows for any differences
    */
   private mapPlatformToApiFormat(platform: string): string {
-    const platformMap: Record<string, string> = {
-      steam: 'steam',
-      epic: 'epic',
-      xbl: 'xbl',
-      psn: 'psn',
-      switch: 'switch',
-    };
-
     const normalizedPlatform = platform.toLowerCase();
-    if (!platformMap[normalizedPlatform]) {
-      throw new BadRequestException(
-        `Unsupported platform: ${platform}. Supported platforms: steam, epic, xbl, psn, switch`,
-      );
-    }
 
-    return platformMap[normalizedPlatform];
+    // Use explicit switch statement to avoid dynamic property access
+    switch (normalizedPlatform) {
+      case 'steam':
+        return 'steam';
+      case 'epic':
+        return 'epic';
+      case 'xbl':
+        return 'xbl';
+      case 'psn':
+        return 'psn';
+      case 'switch':
+        return 'switch';
+      default:
+        throw new BadRequestException(
+          `Unsupported platform: ${platform}. Supported platforms: steam, epic, xbl, psn, switch`,
+        );
+    }
   }
 
   /**

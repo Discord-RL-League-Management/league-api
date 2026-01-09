@@ -11,9 +11,7 @@ import { Organization } from '@prisma/client';
  * to break circular dependency between TeamsModule and OrganizationsModule.
  */
 @Injectable()
-export class OrganizationValidationProviderAdapter
-  implements IOrganizationValidationProvider
-{
+export class OrganizationValidationProviderAdapter implements IOrganizationValidationProvider {
   constructor(
     private readonly organizationRepository: OrganizationRepository,
     private readonly organizationValidationService: OrganizationValidationService,

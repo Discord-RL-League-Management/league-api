@@ -9,9 +9,11 @@ import { BaseRepository } from '../../common/repositories/base.repository.interf
  * TeamRepository - Handles all database operations for Team entity
  */
 @Injectable()
-export class TeamRepository
-  implements BaseRepository<Team, CreateTeamDto, UpdateTeamDto>
-{
+export class TeamRepository implements BaseRepository<
+  Team,
+  CreateTeamDto,
+  UpdateTeamDto
+> {
   private readonly logger = new Logger(TeamRepository.name);
 
   constructor(private prisma: PrismaService) {}

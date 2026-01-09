@@ -22,20 +22,20 @@ import { trackerSegmentStatsSchema } from '../schemas/tracker-segment.schema';
  * Based on user clarification: ranked 1v1 is 1, ranked 2v2 is 2, ranked 3v3 is 3, ranked 4v4 is 8
  * Also supporting alternative IDs that may appear in API responses: 10, 11, 13, 61
  */
-const PLAYLIST_ID_MAP: Record<
+const PLAYLIST_ID_MAP = new Map<
   number,
   'playlist1v1' | 'playlist2v2' | 'playlist3v3' | 'playlist4v4'
-> = {
-  1: 'playlist1v1', // Ranked Duel 1v1 (primary ID)
-  2: 'playlist2v2', // Ranked Doubles 2v2 (primary ID)
-  3: 'playlist3v3', // Ranked Standard 3v3 (primary ID)
-  8: 'playlist4v4', // Ranked 4v4 Quads (primary ID)
+>([
+  [1, 'playlist1v1'], // Ranked Duel 1v1 (primary ID)
+  [2, 'playlist2v2'], // Ranked Doubles 2v2 (primary ID)
+  [3, 'playlist3v3'], // Ranked Standard 3v3 (primary ID)
+  [8, 'playlist4v4'], // Ranked 4v4 Quads (primary ID)
   // Alternative IDs that may appear in some API responses
-  10: 'playlist1v1', // Ranked Duel 1v1 (alternative ID)
-  11: 'playlist2v2', // Ranked Doubles 2v2 (alternative ID)
-  13: 'playlist3v3', // Ranked Standard 3v3 (alternative ID)
-  61: 'playlist4v4', // Ranked 4v4 Quads (alternative ID)
-};
+  [10, 'playlist1v1'], // Ranked Duel 1v1 (alternative ID)
+  [11, 'playlist2v2'], // Ranked Doubles 2v2 (alternative ID)
+  [13, 'playlist3v3'], // Ranked Standard 3v3 (alternative ID)
+  [61, 'playlist4v4'], // Ranked 4v4 Quads (alternative ID)
+]);
 
 @Injectable()
 export class TrackerScraperService {
@@ -243,7 +243,7 @@ export class TrackerScraperService {
         continue;
       }
 
-      const fieldName = PLAYLIST_ID_MAP[playlistId];
+      const fieldName = PLAYLIST_ID_MAP.get(playlistId);
       if (!fieldName) {
         // Skip unsupported playlists (Hoops, Rumble, etc.)
         continue;
@@ -251,7 +251,21 @@ export class TrackerScraperService {
 
       const playlistData = this.extractPlaylistData(segment);
       if (playlistData) {
-        seasonData[fieldName] = playlistData;
+        // Use explicit property assignment based on validated fieldName
+        switch (fieldName) {
+          case 'playlist1v1':
+            seasonData.playlist1v1 = playlistData;
+            break;
+          case 'playlist2v2':
+            seasonData.playlist2v2 = playlistData;
+            break;
+          case 'playlist3v3':
+            seasonData.playlist3v3 = playlistData;
+            break;
+          case 'playlist4v4':
+            seasonData.playlist4v4 = playlistData;
+            break;
+        }
       }
     }
 

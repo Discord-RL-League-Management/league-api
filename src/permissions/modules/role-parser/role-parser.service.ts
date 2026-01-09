@@ -68,11 +68,18 @@ export class RoleParserService {
       return permissions;
     }
 
-    const rolePermissions = roles as Record<string, unknown>;
+    // Convert to Map to avoid dynamic property access warnings
+    const rolePermissionsMap = new Map<string, unknown>();
+    if (typeof roles === 'object' && roles !== null) {
+      for (const [key, value] of Object.entries(roles)) {
+        rolePermissionsMap.set(key, value);
+      }
+    }
 
     for (const role of userRoles) {
-      if (role in rolePermissions && Array.isArray(rolePermissions[role])) {
-        permissions.push(...(rolePermissions[role] as string[]));
+      const rolePerms = rolePermissionsMap.get(role);
+      if (Array.isArray(rolePerms)) {
+        permissions.push(...(rolePerms as string[]));
       }
     }
 

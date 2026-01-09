@@ -5,9 +5,11 @@ import { CreateMatchDto } from '../dto/create-match.dto';
 import { BaseRepository } from '../../common/repositories/base.repository.interface';
 
 @Injectable()
-export class MatchRepository
-  implements BaseRepository<Match, CreateMatchDto, any>
-{
+export class MatchRepository implements BaseRepository<
+  Match,
+  CreateMatchDto,
+  any
+> {
   constructor(private prisma: PrismaService) {}
 
   async findById(id: string) {

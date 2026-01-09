@@ -275,22 +275,21 @@ export class LeaguesService {
     currentStatus: LeagueStatus,
     newStatus: LeagueStatus,
   ): void {
-    const validTransitions: Record<LeagueStatus, LeagueStatus[]> = {
-      [LeagueStatus.ACTIVE]: [
-        LeagueStatus.PAUSED,
-        LeagueStatus.ARCHIVED,
-        LeagueStatus.CANCELLED,
-      ],
-      [LeagueStatus.PAUSED]: [
+    // Use Map to avoid dynamic property access warnings
+    const validTransitions = new Map<LeagueStatus, LeagueStatus[]>([
+      [
         LeagueStatus.ACTIVE,
-        LeagueStatus.ARCHIVED,
-        LeagueStatus.CANCELLED,
+        [LeagueStatus.PAUSED, LeagueStatus.ARCHIVED, LeagueStatus.CANCELLED],
       ],
-      [LeagueStatus.ARCHIVED]: [], // Archived leagues cannot transition
-      [LeagueStatus.CANCELLED]: [], // Cancelled leagues cannot transition
-    };
+      [
+        LeagueStatus.PAUSED,
+        [LeagueStatus.ACTIVE, LeagueStatus.ARCHIVED, LeagueStatus.CANCELLED],
+      ],
+      [LeagueStatus.ARCHIVED, []], // Archived leagues cannot transition
+      [LeagueStatus.CANCELLED, []], // Cancelled leagues cannot transition
+    ]);
 
-    const allowedTransitions = validTransitions[currentStatus] || [];
+    const allowedTransitions = validTransitions.get(currentStatus) || [];
     if (
       !allowedTransitions.includes(newStatus) &&
       currentStatus !== newStatus

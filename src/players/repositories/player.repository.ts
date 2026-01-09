@@ -17,9 +17,11 @@ import {
  * making services more focused and testable.
  */
 @Injectable()
-export class PlayerRepository
-  implements BaseRepository<Player, CreatePlayerDto, UpdatePlayerDto>
-{
+export class PlayerRepository implements BaseRepository<
+  Player,
+  CreatePlayerDto,
+  UpdatePlayerDto
+> {
   private readonly logger = new Logger(PlayerRepository.name);
 
   constructor(private prisma: PrismaService) {}
