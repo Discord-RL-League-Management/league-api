@@ -15,6 +15,7 @@ import {
 import type { Response } from 'express';
 import { SkipThrottle } from '@nestjs/throttler';
 import { BotAuthGuard } from '../auth/guards/bot-auth.guard';
+import { BotOnly } from '../common/decorators';
 import { GuildsService } from './guilds.service';
 import { GuildSettingsService } from './guild-settings.service';
 import { GuildSyncService } from './services/guild-sync.service';
@@ -33,6 +34,7 @@ import {
 @Controller('internal/guilds')
 @UseGuards(BotAuthGuard)
 @SkipThrottle()
+@BotOnly()
 @ApiBearerAuth('bot-api-key')
 export class InternalGuildsController {
   private readonly logger = new Logger(InternalGuildsController.name);

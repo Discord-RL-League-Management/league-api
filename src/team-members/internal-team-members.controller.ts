@@ -11,6 +11,7 @@ import {
 import { SkipThrottle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { BotAuthGuard } from '../auth/guards/bot-auth.guard';
+import { BotOnly } from '../common/decorators';
 import { TeamMemberService } from './services/team-member.service';
 import { CreateTeamMemberDto } from './dto/create-team-member.dto';
 import { UpdateTeamMemberDto } from './dto/update-team-member.dto';
@@ -19,6 +20,7 @@ import { UpdateTeamMemberDto } from './dto/update-team-member.dto';
 @Controller('internal/team-members')
 @UseGuards(BotAuthGuard)
 @SkipThrottle()
+@BotOnly()
 export class InternalTeamMembersController {
   constructor(private teamMemberService: TeamMemberService) {}
 

@@ -19,6 +19,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { BotAuthGuard } from '../auth/guards/bot-auth.guard';
+import { BotOnly } from '../common/decorators';
 import { LeagueMemberService } from './services/league-member.service';
 import { CreateLeagueMemberDto } from './dto/create-league-member.dto';
 import { UpdateLeagueMemberDto } from './dto/update-league-member.dto';
@@ -34,6 +35,7 @@ import type { LeagueMemberQueryOptions } from './interfaces/league-member.interf
 @Controller('internal/leagues/:leagueId/members')
 @UseGuards(BotAuthGuard)
 @SkipThrottle()
+@BotOnly()
 export class InternalLeagueMembersController {
   private readonly logger = new Logger(InternalLeagueMembersController.name);
 

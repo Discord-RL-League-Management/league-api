@@ -4,6 +4,7 @@ import { Reflector } from '@nestjs/core';
 import { TokenExpiredError, JsonWebTokenError } from 'jsonwebtoken';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { IS_PUBLIC_KEY } from '../../common/decorators/public.decorator';
+import { IS_BOT_ONLY_KEY } from '../../common/decorators/bot-only.decorator';
 import type { AuthenticatedUser } from '../../common/interfaces/user.interface';
 
 describe('JwtAuthGuard', () => {
@@ -45,7 +46,9 @@ describe('JwtAuthGuard', () => {
 
   describe('canActivate', () => {
     it('should_allow_access_when_route_is_public', () => {
-      vi.mocked(mockReflector.getAllAndOverride).mockReturnValue(true);
+      vi.mocked(mockReflector.getAllAndOverride).mockImplementation((key) => {
+        return key === IS_PUBLIC_KEY;
+      });
       // Mock the parent's canActivate to avoid calling the real passport strategy
       const parentPrototype = Object.getPrototypeOf(
         Object.getPrototypeOf(guard),
@@ -64,8 +67,66 @@ describe('JwtAuthGuard', () => {
       expect(parentCanActivateSpy).not.toHaveBeenCalled();
     });
 
-    it('should_call_parent_canActivate_when_route_is_not_public', () => {
-      vi.mocked(mockReflector.getAllAndOverride).mockReturnValue(false);
+    it('should_skip_jwt_auth_when_route_is_bot_only', () => {
+      vi.mocked(mockReflector.getAllAndOverride).mockImplementation((key) => {
+        if (key === IS_PUBLIC_KEY) return false;
+        if (key === IS_BOT_ONLY_KEY) return true;
+        return false;
+      });
+      const parentPrototype = Object.getPrototypeOf(
+        Object.getPrototypeOf(guard),
+      );
+      const parentCanActivateSpy = vi
+        .spyOn(parentPrototype, 'canActivate')
+        .mockReturnValue(true);
+
+      const result = guard.canActivate(mockContext);
+
+      expect(result).toBe(true);
+      expect(mockReflector.getAllAndOverride).toHaveBeenCalledWith(
+        IS_PUBLIC_KEY,
+        [mockContext.getHandler(), mockContext.getClass()],
+      );
+      expect(mockReflector.getAllAndOverride).toHaveBeenCalledWith(
+        IS_BOT_ONLY_KEY,
+        [mockContext.getHandler(), mockContext.getClass()],
+      );
+      expect(parentCanActivateSpy).not.toHaveBeenCalled();
+    });
+
+    it('should_prioritize_public_over_bot_only', () => {
+      vi.mocked(mockReflector.getAllAndOverride).mockImplementation((key) => {
+        if (key === IS_PUBLIC_KEY) return true;
+        if (key === IS_BOT_ONLY_KEY) return true;
+        return false;
+      });
+      const parentPrototype = Object.getPrototypeOf(
+        Object.getPrototypeOf(guard),
+      );
+      const parentCanActivateSpy = vi
+        .spyOn(parentPrototype, 'canActivate')
+        .mockReturnValue(true);
+
+      const result = guard.canActivate(mockContext);
+
+      expect(result).toBe(true);
+      expect(mockReflector.getAllAndOverride).toHaveBeenCalledWith(
+        IS_PUBLIC_KEY,
+        [mockContext.getHandler(), mockContext.getClass()],
+      );
+      expect(mockReflector.getAllAndOverride).not.toHaveBeenCalledWith(
+        IS_BOT_ONLY_KEY,
+        [mockContext.getHandler(), mockContext.getClass()],
+      );
+      expect(parentCanActivateSpy).not.toHaveBeenCalled();
+    });
+
+    it('should_call_parent_canActivate_when_route_is_not_public_or_bot_only', () => {
+      vi.mocked(mockReflector.getAllAndOverride).mockImplementation((key) => {
+        if (key === IS_PUBLIC_KEY) return false;
+        if (key === IS_BOT_ONLY_KEY) return false;
+        return false;
+      });
       const parentPrototype = Object.getPrototypeOf(
         Object.getPrototypeOf(guard),
       );
@@ -75,6 +136,14 @@ describe('JwtAuthGuard', () => {
 
       void guard.canActivate(mockContext);
 
+      expect(mockReflector.getAllAndOverride).toHaveBeenCalledWith(
+        IS_PUBLIC_KEY,
+        [mockContext.getHandler(), mockContext.getClass()],
+      );
+      expect(mockReflector.getAllAndOverride).toHaveBeenCalledWith(
+        IS_BOT_ONLY_KEY,
+        [mockContext.getHandler(), mockContext.getClass()],
+      );
       expect(parentCanActivateSpy).toHaveBeenCalledWith(mockContext);
     });
   });

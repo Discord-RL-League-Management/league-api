@@ -2,7 +2,7 @@
 
 # Pre-commit hook to:
 # 1. Prevent commits directly to main/master branch
-# 2. Run linter
+# 2. Run lint-staged (formats with Prettier and lints with ESLint)
 # 3. Run test suite
 
 set -e
@@ -24,15 +24,15 @@ if [ "$current_branch" = "main" ] || [ "$current_branch" = "master" ]; then
   exit 1
 fi
 
-echo "🔍 Running linter (includes complexity check)..."
-npm run lint
+echo "🔍 Running lint-staged (formatting and linting staged files)..."
+npx lint-staged
 if [ $? -ne 0 ]; then
-  echo "❌ Linter failed. Please fix linting errors before committing."
+  echo "❌ Lint-staged failed. Please fix the issues and try again."
   echo "   Note: ESLint includes cyclomatic complexity checking (max: 30)"
   exit 1
 fi
 
-echo "✅ Linter passed (complexity check included)"
+echo "✅ Lint-staged passed"
 echo ""
 echo "🧪 Running test suite..."
 npm test

@@ -11,6 +11,7 @@ import {
 import { SkipThrottle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { BotAuthGuard } from '../auth/guards/bot-auth.guard';
+import { BotOnly } from '../common/decorators';
 import { OrganizationService } from './organization.service';
 import { OrganizationMemberService } from './services/organization-member.service';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
@@ -23,6 +24,7 @@ import { OrganizationMemberRole } from '@prisma/client';
 @Controller('internal/organizations')
 @UseGuards(BotAuthGuard)
 @SkipThrottle()
+@BotOnly()
 export class InternalOrganizationsController {
   constructor(
     private organizationService: OrganizationService,

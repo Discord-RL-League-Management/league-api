@@ -35,20 +35,9 @@ else
   exit 1
 fi
 
-# Install post-merge hook
-if [ -f "$HOOKS_DIR/post-merge" ]; then
-  ln -sf "../../scripts/git-hooks/post-merge" "$GIT_HOOKS_DIR/post-merge"
-  chmod +x "$GIT_HOOKS_DIR/post-merge"
-  echo "✅ Installed post-merge hook"
-else
-  echo "❌ Error: post-merge hook not found at $HOOKS_DIR/post-merge"
-  exit 1
-fi
-
 echo "✨ Git hooks setup complete!"
 echo ""
 echo "Installed hooks:"
-echo "  • pre-commit: Prevents direct commits to main/master, runs linter and tests"
+echo "  • pre-commit: Prevents direct commits to main/master, runs lint-staged and tests"
 echo "  • commit-msg: Validates conventional commit message format"
-echo "  • post-merge: Automatically formats files changed in merges"
 

@@ -19,6 +19,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { BotAuthGuard } from '../auth/guards/bot-auth.guard';
+import { BotOnly } from '../common/decorators';
 import { PlayerService } from './player.service';
 import { CreatePlayerDto } from './dto/create-player.dto';
 import { UpdatePlayerDto } from './dto/update-player.dto';
@@ -33,6 +34,7 @@ import { ParseCUIDPipe } from '../common/pipes';
 @Controller('internal/players')
 @UseGuards(BotAuthGuard)
 @SkipThrottle()
+@BotOnly()
 export class InternalPlayersController {
   private readonly logger = new Logger(InternalPlayersController.name);
 

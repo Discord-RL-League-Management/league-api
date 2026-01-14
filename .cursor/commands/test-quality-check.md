@@ -25,7 +25,7 @@ All rules are classified using the following severity scale:
 | **Warning (1)** | Moderate | Fail CI but allow merge with override | Report as failure, merge requires approval |
 | **Info (0)** | Minor | Report only | No pipeline impact, informational |
 
-**Framework:** This codebase uses **Vitest** for unit and integration testing. All examples and rules reference Vitest APIs (`vi.spyOn`, `vi.fn()`, etc.), not Jest.
+**Framework:** This codebase uses **Vitest** for unit and integration testing with **NestJS** as the application framework. All examples and rules reference Vitest APIs (`vi.spyOn`, `vi.fn()`, etc.) and NestJS testing utilities (`Test.createTestingModule()`, `@nestjs/testing`), not Jest.
 
 ---
 
@@ -89,6 +89,130 @@ When asked to review code, advise on strategy, or evaluate a failure, you must a
 | Hard-Coded Secrets | All | Security hygiene. | **Error (2)** | Prohibit secrets/tokens in test code; a mandatory security gate. |
 | `synthetic-data-only` | All | Prevent production data usage. | **Error (2)** | Mandate use of synthetic data factories; never use production data in tests. |
 
+#### 3.7. NestJS-Specific Best Practices
+
+| Rule ID/Source | Layer | Objective | Severity | Justification/Action |
+| :--- | :--- | :--- | :--- | :--- |
+| `use-testing-module` | Unit, Integration | Enforce proper NestJS test setup. | **Error (2)** | Always use `Test.createTestingModule()` for service/controller tests. Never instantiate services directly with `new`. |
+| `mock-providers` | Unit | Enforce proper provider mocking. | **Error (2)** | Mock all dependencies using `provide` with `useValue` or `useFactory`. Use `vi.fn()` for function mocks, not direct property assignment. |
+| `test-isolated-modules` | Unit | Prevent module state leakage. | **Error (2)** | Create a fresh `TestingModule` in `beforeEach` for each test. Never reuse modules between tests. |
+| `test-controllers-separately` | Unit | Enforce controller isolation. | **Error (2)** | Test controllers independently with mocked services. Use `app.get()` to retrieve controller instances. |
+| `test-services-separately` | Unit | Enforce service isolation. | **Error (2)** | Test services independently with mocked dependencies. Verify business logic, not framework behavior. |
+| `test-guards-separately` | Unit | Enforce guard isolation. | **Error (2)** | Test guards independently with mocked execution context. Use `createMockExecutionContext()` from `@nestjs/testing`. |
+| `test-interceptors-separately` | Unit | Enforce interceptor isolation. | **Error (2)** | Test interceptors independently with mocked call handlers. Verify transformation logic, not framework integration. |
+| `test-pipes-separately` | Unit | Enforce pipe isolation. | **Error (2)** | Test pipes independently with mocked arguments. Verify validation/transformation logic. |
+| `test-filters-separately` | Unit | Enforce exception filter isolation. | **Error (2)** | Test exception filters independently with mocked host arguments. Verify error response formatting. |
+| `mock-repositories` | Unit | Enforce repository mocking. | **Error (2)** | Mock Prisma repositories using `useValue` with `vi.fn()` methods. Never use real database connections in unit tests. |
+| `test-decorators` | Unit | Enforce decorator testing. | **Warning (1)** | Test custom decorators independently using reflection metadata. Verify parameter extraction logic. |
+| `use-override-provider` | Unit | Enforce proper provider overrides. | **Error (2)** | Use `overrideProvider()` for replacing dependencies in tests. Maintain dependency injection contracts. |
+| `test-module-imports` | Integration | Verify module composition. | **Warning (1)** | Test module imports and exports to ensure proper dependency resolution. Use `Test.createTestingModule()` with real module imports. |
+| `test-event-emitters` | Unit | Enforce event emitter testing. | **Warning (1)** | Mock `EventEmitter2` or use `vi.spyOn()` to verify event emissions. Test event handlers separately. |
+| `test-scheduled-tasks` | Unit | Enforce scheduled task testing. | **Warning (1)** | Test `@Cron` decorated methods independently. Mock time or use `vi.useFakeTimers()` for time-based tests. |
+| `test-validation-pipes` | Unit | Enforce validation pipe testing. | **Error (2)** | Test `ValidationPipe` with invalid DTOs. Verify error messages and status codes. Use `class-validator` test utilities. |
+| `test-auth-guards` | Unit | Enforce authentication guard testing. | **Error (2)** | Test JWT and custom guards with mocked execution contexts. Verify token extraction and validation logic. |
+| `test-exception-filters` | Unit | Enforce exception filter testing. | **Error (2)** | Test global and scoped exception filters with various exception types. Verify response formatting and status codes. |
+| `test-request-context` | Unit | Enforce request context testing. | **Warning (1)** | Test request context interceptors and decorators with mocked request objects. Verify context propagation. |
+| `no-real-database-unit` | Unit | Prohibit real database in unit tests. | **Error (2)** | Never use real Prisma client or database connections in unit tests. Always mock repositories. |
+| `test-dependency-injection` | Unit | Verify DI container behavior. | **Warning (1)** | Test that services resolve dependencies correctly. Verify circular dependency handling and optional dependencies. |
+
+**NestJS Testing Patterns:**
+
+```typescript
+// ✅ CORRECT: Using TestingModule
+describe('UserService', () => {
+  let service: UserService;
+  let mockRepository: DeepMocked<UserRepository>;
+
+  beforeEach(async () => {
+    const module = await Test.createTestingModule({
+      providers: [
+        UserService,
+        {
+          provide: UserRepository,
+          useValue: createMock<UserRepository>(),
+        },
+      ],
+    }).compile();
+
+    service = module.get(UserService);
+    mockRepository = module.get(UserRepository);
+  });
+
+  it('should_create_user_when_data_is_valid', async () => {
+    // Arrange
+    const userData = createUserData();
+    mockRepository.create.mockResolvedValue(userData);
+
+    // Act
+    const result = await service.create(userData);
+
+    // Assert
+    expect(result).toEqual(userData);
+    expect(mockRepository.create).toHaveBeenCalledWith(userData);
+  });
+});
+
+// ❌ INCORRECT: Direct instantiation
+describe('UserService', () => {
+  it('should_create_user', () => {
+    const repository = { create: vi.fn() };
+    const service = new UserService(repository); // ❌ Bypasses DI
+    // ...
+  });
+});
+```
+
+```typescript
+// ✅ CORRECT: Testing guards with mocked execution context
+describe('JwtAuthGuard', () => {
+  let guard: JwtAuthGuard;
+  let context: ExecutionContext;
+
+  beforeEach(() => {
+    guard = new JwtAuthGuard();
+    context = createMockExecutionContext({
+      switchToHttp: () => ({
+        getRequest: () => ({ headers: { authorization: 'Bearer token' } }),
+      }),
+    });
+  });
+
+  it('should_allow_request_when_token_is_valid', async () => {
+    // Arrange
+    vi.spyOn(guard['jwtService'], 'verify').mockReturnValue({ userId: '123' });
+
+    // Act & Assert
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+  });
+});
+```
+
+```typescript
+// ✅ CORRECT: Testing interceptors
+describe('LoggingInterceptor', () => {
+  let interceptor: LoggingInterceptor;
+  let context: ExecutionContext;
+  let next: CallHandler;
+
+  beforeEach(() => {
+    interceptor = new LoggingInterceptor();
+    context = createMockExecutionContext();
+    next = createMock<CallHandler>();
+  });
+
+  it('should_log_request_when_intercepting', () => {
+    // Arrange
+    const loggerSpy = vi.spyOn(interceptor['logger'], 'log');
+
+    // Act
+    interceptor.intercept(context, next);
+
+    // Assert
+    expect(loggerSpy).toHaveBeenCalled();
+  });
+});
+```
+
 ---
 
 ### 4. 📊 Code Coverage Thresholds
@@ -98,7 +222,7 @@ Code coverage metrics serve as quality gates for test completeness. The followin
 | Coverage Type | Threshold | Layer | Severity | Action on Failure |
 | :--- | :--- | :--- | :--- | :--- |
 | Statement Coverage | ≥ 80% | Unit | **Error (2)** | Block merge, require additional tests |
-| Branch Coverage | ≥ 75% | Unit | **Error (2)** | Block merge, require additional tests |
+| Branch Coverage | ≥ 80% | Unit | **Error (2)** | Block merge, require additional tests |
 | Function Coverage | ≥ 80% | Unit | **Warning (1)** | Report, recommend additional tests |
 | Line Coverage | ≥ 80% | Integration | **Warning (1)** | Report, recommend additional tests |
 
@@ -206,21 +330,43 @@ npm run test:unit --changed
 **Required Settings:**
 ```typescript
 // vitest.config.mts
+import { defineConfig } from 'vitest/config';
+import swc from 'unplugin-swc';
+
 export default defineConfig({
+  plugins: [
+    swc.vite({
+      // Required for NestJS decorator metadata support
+      jsc: {
+        parser: { syntax: 'typescript', decorators: true },
+        transform: { decoratorMetadata: true },
+      },
+    }),
+  ],
   test: {
     timeout: 100, // Unit tests: 100ms
     maxConcurrency: 5,
     isolate: true, // Enforce test isolation
+    globals: true, // Enable global test APIs
+    environment: 'node', // Node.js environment for NestJS
     coverage: {
+      provider: 'v8',
       thresholds: {
         statements: 80,
-        branches: 75,
+        branches: 80,
         functions: 80,
+        lines: 80,
       },
     },
   },
 });
 ```
+
+**NestJS-Specific Configuration Notes:**
+- Use `unplugin-swc` instead of esbuild to support `emitDecoratorMetadata` required for NestJS dependency injection
+- Enable `decoratorMetadata` in SWC transform options for proper decorator handling
+- Set `environment: 'node'` for all NestJS tests (services, controllers, etc.)
+- Exclude test files and configuration files from coverage: `**/*.spec.ts`, `**/*.test.ts`, `**/main.ts`
 
 ---
 
@@ -253,13 +399,23 @@ Fix: [Specific action with code example]
 CI Impact: [Will/Won't block merge]
 ```
 
-**Example:**
+**Example (General):**
 ```
 ❌ prefer-spy-on - Error (2)
 Issue: Direct property overwrite detected instead of vi.spyOn()
 Location: tests/unit/services/user.service.test.ts:45
 Pillar: II (Test Isolation Enforcement)
 Fix: Replace `mockService.method = vi.fn()` with `vi.spyOn(mockService, 'method')`
+CI Impact: Will block merge
+```
+
+**Example (NestJS-Specific):**
+```
+❌ use-testing-module - Error (2)
+Issue: Service instantiated directly instead of using Test.createTestingModule()
+Location: tests/unit/services/user.service.test.ts:12
+Pillar: II (Test Isolation Enforcement)
+Fix: Use `Test.createTestingModule({ providers: [...] })` and retrieve service via `module.get(UserService)`
 CI Impact: Will block merge
 ```
 
@@ -272,11 +428,14 @@ This TQA protocol is aligned with the project's testing standards:
 | Aspect | Standard | Alignment |
 | :--- | :--- | :--- |
 | **Framework** | Vitest | ✅ All rules reference Vitest APIs |
+| **Application Framework** | NestJS | ✅ Section 3.7 enforces NestJS-specific best practices |
 | **Naming Convention** | `should_<behavior>_when_<condition>` | ✅ Enforced via `test-naming-convention` rule |
 | **Test Structure** | AAA Pattern (Arrange-Act-Assert) | ✅ Implicitly enforced via structure rules |
 | **Test Isolation** | Stateless, independent tests | ✅ Enforced via `no-shared-state` rule |
+| **Dependency Injection** | NestJS TestingModule | ✅ Enforced via `use-testing-module` rule |
 | **Standards** | ISO/IEC/IEEE 29119 | ✅ Aligned with Pillar definitions |
 | **Test Data** | Synthetic factories only | ✅ Enforced via `synthetic-data-only` rule |
+| **Module Testing** | Isolated module creation per test | ✅ Enforced via `test-isolated-modules` rule |
 
 ---
 
@@ -288,3 +447,6 @@ This TQA protocol is aligned with the project's testing standards:
 - **Mutation Testing** Best Practices
 - **Vitest Documentation:** https://vitest.dev/
 - **Stryker.js Documentation:** https://stryker-mutator.io/
+- **NestJS Testing Documentation:** https://docs.nestjs.com/fundamentals/testing
+- **NestJS Testing Best Practices:** https://docs.nestjs.com/recipes/testing
+- **NestJS Testing Module API:** https://docs.nestjs.com/fundamentals/testing#testing-modules

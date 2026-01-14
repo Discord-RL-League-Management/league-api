@@ -11,6 +11,7 @@ import {
 import { SkipThrottle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { BotAuthGuard } from '../auth/guards/bot-auth.guard';
+import { BotOnly } from '../common/decorators';
 import { TeamService } from './services/team.service';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { UpdateTeamDto } from './dto/update-team.dto';
@@ -20,6 +21,7 @@ import { ParseCUIDPipe } from '../common/pipes';
 @Controller('internal/teams')
 @UseGuards(BotAuthGuard)
 @SkipThrottle()
+@BotOnly()
 export class InternalTeamsController {
   constructor(private teamService: TeamService) {}
 

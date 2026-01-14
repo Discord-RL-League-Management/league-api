@@ -15,22 +15,36 @@ export class UserTransformer {
 
   /**
    * Transform user entity for database storage (encrypt sensitive fields)
+   * Accepts DTOs (with string dates) and converts them to Prisma-compatible format
    */
-  transformForStorage(user: Partial<User>): Record<string, unknown> {
-    if (!user) {
+  transformForStorage(user: unknown): Record<string, unknown> {
+    if (!user || typeof user !== 'object') {
       return user as Record<string, unknown>;
     }
 
-    const transformed = { ...user };
+    const transformed: Record<string, unknown> = {
+      ...(user as Record<string, unknown>),
+    };
 
     // Encrypt refresh token if present
-    if (transformed.refreshToken) {
+    if (
+      transformed.refreshToken &&
+      typeof transformed.refreshToken === 'string'
+    ) {
       transformed.refreshToken = this.encryptionService.encrypt(
         transformed.refreshToken,
       );
     }
 
-    return transformed as Record<string, unknown>;
+    // Convert lastLoginAt from ISO string to Date for Prisma
+    if (
+      transformed.lastLoginAt &&
+      typeof transformed.lastLoginAt === 'string'
+    ) {
+      transformed.lastLoginAt = new Date(transformed.lastLoginAt);
+    }
+
+    return transformed;
   }
 
   /**

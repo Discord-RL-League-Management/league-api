@@ -17,6 +17,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { BotAuthGuard } from '../auth/guards/bot-auth.guard';
+import { BotOnly } from '../common/decorators';
 import { ScheduledTrackerProcessingService } from '../trackers/services/scheduled-tracker-processing.service';
 import { ScheduleTrackerProcessingDto } from './dto/schedule-tracker-processing.dto';
 import { GetSchedulesQueryDto } from './dto/get-schedules-query.dto';
@@ -29,6 +30,7 @@ import { GetSchedulesQueryDto } from './dto/get-schedules-query.dto';
 @Controller('internal/trackers')
 @UseGuards(BotAuthGuard)
 @SkipThrottle()
+@BotOnly()
 @ApiBearerAuth('bot-api-key')
 export class InternalScheduledProcessingController {
   private readonly logger = new Logger(
