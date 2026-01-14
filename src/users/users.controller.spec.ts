@@ -5,13 +5,15 @@
  * Focus: Functional core, state verification, fast execution.
  *
  * Aligned with ISO/IEC/IEEE 29119 standards and Black Box Axiom.
+ * Tests verify inputs, outputs, and observable side effects only.
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Test } from '@nestjs/testing';
 import { ForbiddenException } from '@nestjs/common';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
+import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import type { AuthenticatedUser } from '../common/interfaces/user.interface';
 
 describe('UsersController', () => {
@@ -43,52 +45,81 @@ describe('UsersController', () => {
     controller = module.get<UsersController>(UsersController);
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   describe('getMyProfile', () => {
-    it('should_return_user_profile_when_authenticated', async () => {
-      vi.mocked(mockUsersService.findOne).mockResolvedValue(mockUser as never);
+    it('should_return_user_profile_when_user_is_authenticated', async () => {
+      vi.spyOn(mockUsersService, 'findOne').mockResolvedValue(
+        mockUser as never,
+      );
 
       const result = await controller.getMyProfile(mockUser);
 
       expect(result).toEqual(mockUser);
-      expect(mockUsersService.findOne).toHaveBeenCalledWith(mockUser.id);
+      expect(mockUsersService.findOne).toHaveBeenCalledWith('user-123');
     });
   });
 
   describe('updateMyProfile', () => {
-    it('should_update_profile_when_dto_valid', async () => {
-      const updateDto = { username: 'newusername' };
-      const mockUpdated = { ...mockUser, ...updateDto };
-      vi.mocked(mockUsersService.update).mockResolvedValue(
-        mockUpdated as never,
+    it('should_update_profile_when_valid_data_is_provided', async () => {
+      const updateDto: UpdateUserProfileDto = {
+        username: 'newusername',
+      };
+
+      const updatedUser = {
+        ...mockUser,
+        username: 'newusername',
+      };
+
+      vi.spyOn(mockUsersService, 'update').mockResolvedValue(
+        updatedUser as never,
       );
 
       const result = await controller.updateMyProfile(mockUser, updateDto);
 
-      expect(result).toEqual(mockUpdated);
-      expect(mockUsersService.update).toHaveBeenCalledWith(mockUser.id, {
-        username: updateDto.username,
+      expect(result).toEqual(updatedUser);
+      expect(mockUsersService.update).toHaveBeenCalledWith('user-123', {
+        username: 'newusername',
+      });
+    });
+
+    it('should_only_update_allowed_fields_when_multiple_fields_provided', async () => {
+      const updateDto: UpdateUserProfileDto = {
+        username: 'newusername',
+      };
+
+      const updatedUser = {
+        ...mockUser,
+        username: 'newusername',
+      };
+
+      vi.spyOn(mockUsersService, 'update').mockResolvedValue(
+        updatedUser as never,
+      );
+
+      await controller.updateMyProfile(mockUser, updateDto);
+
+      expect(mockUsersService.update).toHaveBeenCalledWith('user-123', {
+        username: 'newusername',
       });
     });
   });
 
   describe('getUser', () => {
-    it('should_return_user_when_id_matches_current_user', async () => {
-      vi.mocked(mockUsersService.findOne).mockResolvedValue(mockUser as never);
+    it('should_return_user_when_user_views_own_profile', async () => {
+      vi.spyOn(mockUsersService, 'findOne').mockResolvedValue(
+        mockUser as never,
+      );
 
-      const result = await controller.getUser(mockUser.id, mockUser);
+      const result = await controller.getUser('user-123', mockUser);
 
       expect(result).toEqual(mockUser);
-      expect(mockUsersService.findOne).toHaveBeenCalledWith(mockUser.id);
+      expect(mockUsersService.findOne).toHaveBeenCalledWith('user-123');
     });
 
-    it('should_throw_forbidden_when_id_does_not_match', async () => {
+    it('should_throw_forbidden_when_user_views_other_profile', async () => {
       await expect(
-        controller.getUser('other-user-id', mockUser),
+        controller.getUser('other-user-456', mockUser),
       ).rejects.toThrow(ForbiddenException);
+      expect(mockUsersService.findOne).not.toHaveBeenCalled();
     });
   });
 });

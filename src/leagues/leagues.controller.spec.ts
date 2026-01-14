@@ -8,20 +8,17 @@
  * Tests verify inputs, outputs, and observable side effects only.
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Test } from '@nestjs/testing';
-import { ForbiddenException } from '@nestjs/common';
 import { LeaguesController } from './leagues.controller';
 import { LeaguesService } from './leagues.service';
 import { LeagueAccessValidationService } from './services/league-access-validation.service';
 import { LeaguePermissionService } from './services/league-permission.service';
-import { LeagueAccessGuard } from './guards/league-access.guard';
-import { LeagueAdminGuard } from './guards/league-admin.guard';
-import { LeagueAdminOrModeratorGuard } from './guards/league-admin-or-moderator.guard';
 import { CreateLeagueDto } from './dto/create-league.dto';
 import { UpdateLeagueDto } from './dto/update-league.dto';
+import { UpdateLeagueStatusDto } from './dto/update-league-status.dto';
 import { LeagueStatus, Game } from '@prisma/client';
-import type { AuthenticatedUser } from '@/common/interfaces/user.interface';
+import type { AuthenticatedUser } from '../common/interfaces/user.interface';
 
 describe('LeaguesController', () => {
   let controller: LeaguesController;
@@ -43,9 +40,12 @@ describe('LeaguesController', () => {
   const mockLeague = {
     id: 'league-123',
     name: 'Test League',
-    guildId: 'guild-1',
-    status: LeagueStatus.ACTIVE,
+    guildId: 'guild-123',
     game: Game.ROCKET_LEAGUE,
+    status: LeagueStatus.ACTIVE,
+    createdBy: 'user-123',
+    createdAt: new Date(),
+    updatedAt: new Date(),
   };
 
   beforeEach(async () => {
@@ -60,13 +60,10 @@ describe('LeaguesController', () => {
 
     mockLeagueAccessValidationService = {
       validateGuildAccess: vi.fn(),
-      validateLeagueAccess: vi.fn(),
     } as unknown as LeagueAccessValidationService;
 
     mockLeaguePermissionService = {
       checkGuildAdminAccessForGuild: vi.fn(),
-      checkLeagueAdminOrModeratorAccess: vi.fn(),
-      checkLeagueAdminAccess: vi.fn(),
     } as unknown as LeaguePermissionService;
 
     const module = await Test.createTestingModule({
@@ -82,50 +79,195 @@ describe('LeaguesController', () => {
           useValue: mockLeaguePermissionService,
         },
       ],
-    })
-      .overrideGuard(LeagueAccessGuard)
-      .useValue({
-        canActivate: vi.fn().mockResolvedValue(true),
-      } as unknown as LeagueAccessGuard)
-      .overrideGuard(LeagueAdminGuard)
-      .useValue({
-        canActivate: vi.fn().mockResolvedValue(true),
-      } as unknown as LeagueAdminGuard)
-      .overrideGuard(LeagueAdminOrModeratorGuard)
-      .useValue({
-        canActivate: vi.fn().mockResolvedValue(true),
-      } as unknown as LeagueAdminOrModeratorGuard)
-      .compile();
+    }).compile();
 
     controller = module.get<LeaguesController>(LeaguesController);
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   describe('getLeaguesByGuild', () => {
-    it('should_return_leagues_when_user_has_guild_access', async () => {
-      const mockLeagues = { leagues: [mockLeague], pagination: {} };
-      vi.mocked(
-        mockLeagueAccessValidationService.validateGuildAccess,
+    it('should_return_leagues_when_guild_id_is_provided', async () => {
+      const mockResult = {
+        leagues: [mockLeague],
+        pagination: {
+          page: 1,
+          limit: 50,
+          total: 1,
+          pages: 1,
+        },
+      };
+
+      vi.spyOn(
+        mockLeagueAccessValidationService,
+        'validateGuildAccess',
       ).mockResolvedValue(undefined);
-      vi.mocked(mockLeaguesService.findByGuild).mockResolvedValue(
-        mockLeagues as never,
+      vi.spyOn(mockLeaguesService, 'findByGuild').mockResolvedValue(
+        mockResult as never,
       );
 
-      const result = await controller.getLeaguesByGuild('guild-1', mockUser);
+      const result = await controller.getLeaguesByGuild(
+        'guild-123',
+        mockUser,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+      );
 
-      expect(result).toEqual(mockLeagues);
+      expect(result).toEqual(mockResult);
       expect(
         mockLeagueAccessValidationService.validateGuildAccess,
-      ).toHaveBeenCalledWith(mockUser.id, 'guild-1');
+      ).toHaveBeenCalledWith('user-123', 'guild-123');
+      expect(mockLeaguesService.findByGuild).toHaveBeenCalledWith('guild-123', {
+        guildId: 'guild-123',
+        page: 1,
+        limit: 50,
+      });
+    });
+
+    it('should_use_default_pagination_when_page_and_limit_not_provided', async () => {
+      const mockResult = {
+        leagues: [mockLeague],
+        pagination: { page: 1, limit: 50, total: 1, pages: 1 },
+      };
+
+      vi.spyOn(
+        mockLeagueAccessValidationService,
+        'validateGuildAccess',
+      ).mockResolvedValue(undefined);
+      vi.spyOn(mockLeaguesService, 'findByGuild').mockResolvedValue(
+        mockResult as never,
+      );
+
+      await controller.getLeaguesByGuild('guild-123', mockUser);
+
+      expect(mockLeaguesService.findByGuild).toHaveBeenCalledWith('guild-123', {
+        guildId: 'guild-123',
+        page: 1,
+        limit: 50,
+      });
+    });
+
+    it('should_parse_page_and_limit_when_provided_as_strings', async () => {
+      const mockResult = {
+        leagues: [mockLeague],
+        pagination: { page: 2, limit: 20, total: 1, pages: 1 },
+      };
+
+      vi.spyOn(
+        mockLeagueAccessValidationService,
+        'validateGuildAccess',
+      ).mockResolvedValue(undefined);
+      vi.spyOn(mockLeaguesService, 'findByGuild').mockResolvedValue(
+        mockResult as never,
+      );
+
+      await controller.getLeaguesByGuild('guild-123', mockUser, '2', '20');
+
+      expect(mockLeaguesService.findByGuild).toHaveBeenCalledWith('guild-123', {
+        guildId: 'guild-123',
+        page: 2,
+        limit: 20,
+      });
+    });
+
+    it('should_include_status_filter_when_status_is_provided', async () => {
+      const mockResult = {
+        leagues: [mockLeague],
+        pagination: { page: 1, limit: 50, total: 1, pages: 1 },
+      };
+
+      vi.spyOn(
+        mockLeagueAccessValidationService,
+        'validateGuildAccess',
+      ).mockResolvedValue(undefined);
+      vi.spyOn(mockLeaguesService, 'findByGuild').mockResolvedValue(
+        mockResult as never,
+      );
+
+      await controller.getLeaguesByGuild(
+        'guild-123',
+        mockUser,
+        undefined,
+        undefined,
+        LeagueStatus.ACTIVE,
+        undefined,
+      );
+
+      expect(mockLeaguesService.findByGuild).toHaveBeenCalledWith('guild-123', {
+        guildId: 'guild-123',
+        page: 1,
+        limit: 50,
+        status: LeagueStatus.ACTIVE,
+      });
+    });
+
+    it('should_include_game_filter_when_game_is_provided', async () => {
+      const mockResult = {
+        leagues: [mockLeague],
+        pagination: { page: 1, limit: 50, total: 1, pages: 1 },
+      };
+
+      vi.spyOn(
+        mockLeagueAccessValidationService,
+        'validateGuildAccess',
+      ).mockResolvedValue(undefined);
+      vi.spyOn(mockLeaguesService, 'findByGuild').mockResolvedValue(
+        mockResult as never,
+      );
+
+      await controller.getLeaguesByGuild(
+        'guild-123',
+        mockUser,
+        undefined,
+        undefined,
+        undefined,
+        Game.ROCKET_LEAGUE,
+      );
+
+      expect(mockLeaguesService.findByGuild).toHaveBeenCalledWith('guild-123', {
+        guildId: 'guild-123',
+        page: 1,
+        limit: 50,
+        game: Game.ROCKET_LEAGUE,
+      });
+    });
+
+    it('should_include_both_filters_when_status_and_game_are_provided', async () => {
+      const mockResult = {
+        leagues: [mockLeague],
+        pagination: { page: 1, limit: 50, total: 1, pages: 1 },
+      };
+
+      vi.spyOn(
+        mockLeagueAccessValidationService,
+        'validateGuildAccess',
+      ).mockResolvedValue(undefined);
+      vi.spyOn(mockLeaguesService, 'findByGuild').mockResolvedValue(
+        mockResult as never,
+      );
+
+      await controller.getLeaguesByGuild(
+        'guild-123',
+        mockUser,
+        undefined,
+        undefined,
+        LeagueStatus.ACTIVE,
+        Game.ROCKET_LEAGUE,
+      );
+
+      expect(mockLeaguesService.findByGuild).toHaveBeenCalledWith('guild-123', {
+        guildId: 'guild-123',
+        page: 1,
+        limit: 50,
+        status: LeagueStatus.ACTIVE,
+        game: Game.ROCKET_LEAGUE,
+      });
     });
   });
 
   describe('getLeague', () => {
-    it('should_return_league_when_user_has_access', async () => {
-      vi.mocked(mockLeaguesService.findOne).mockResolvedValue(
+    it('should_return_league_when_id_is_provided', async () => {
+      vi.spyOn(mockLeaguesService, 'findOne').mockResolvedValue(
         mockLeague as never,
       );
 
@@ -137,42 +279,52 @@ describe('LeaguesController', () => {
   });
 
   describe('createLeague', () => {
-    it('should_create_league_when_user_is_guild_admin', async () => {
+    it('should_create_league_when_valid_data_is_provided', async () => {
       const createDto: CreateLeagueDto = {
         name: 'New League',
-        guildId: 'guild-1',
+        guildId: 'guild-123',
         game: Game.ROCKET_LEAGUE,
       };
-      vi.mocked(
-        mockLeagueAccessValidationService.validateGuildAccess,
+
+      vi.spyOn(
+        mockLeagueAccessValidationService,
+        'validateGuildAccess',
       ).mockResolvedValue(undefined);
-      vi.mocked(
-        mockLeaguePermissionService.checkGuildAdminAccessForGuild,
+      vi.spyOn(
+        mockLeaguePermissionService,
+        'checkGuildAdminAccessForGuild',
       ).mockResolvedValue(undefined);
-      vi.mocked(mockLeaguesService.create).mockResolvedValue(
+      vi.spyOn(mockLeaguesService, 'create').mockResolvedValue(
         mockLeague as never,
       );
 
       const result = await controller.createLeague(createDto, mockUser);
 
       expect(result).toEqual(mockLeague);
-      expect(mockLeaguesService.create).toHaveBeenCalled();
+      expect(
+        mockLeagueAccessValidationService.validateGuildAccess,
+      ).toHaveBeenCalledWith('user-123', 'guild-123');
+      expect(
+        mockLeaguePermissionService.checkGuildAdminAccessForGuild,
+      ).toHaveBeenCalledWith('user-123', 'guild-123');
+      expect(mockLeaguesService.create).toHaveBeenCalledWith(
+        { ...createDto, createdBy: 'user-123' },
+        'user-123',
+      );
     });
   });
 
   describe('updateLeague', () => {
-    it('should_update_league_when_user_is_admin_or_moderator', async () => {
-      const updateDto: UpdateLeagueDto = { name: 'Updated League' };
-      vi.mocked(
-        mockLeagueAccessValidationService.validateLeagueAccess,
-      ).mockResolvedValue(undefined);
-      vi.mocked(
-        mockLeaguePermissionService.checkLeagueAdminOrModeratorAccess,
-      ).mockResolvedValue(undefined);
-      vi.mocked(mockLeaguesService.update).mockResolvedValue({
-        ...mockLeague,
-        ...updateDto,
-      } as never);
+    it('should_update_league_when_valid_data_is_provided', async () => {
+      const updateDto: UpdateLeagueDto = {
+        name: 'Updated League Name',
+      };
+
+      const updatedLeague = { ...mockLeague, name: 'Updated League Name' };
+
+      vi.spyOn(mockLeaguesService, 'update').mockResolvedValue(
+        updatedLeague as never,
+      );
 
       const result = await controller.updateLeague(
         'league-123',
@@ -180,7 +332,7 @@ describe('LeaguesController', () => {
         mockUser,
       );
 
-      expect(result.name).toBe('Updated League');
+      expect(result).toEqual(updatedLeague);
       expect(mockLeaguesService.update).toHaveBeenCalledWith(
         'league-123',
         updateDto,
@@ -189,25 +341,27 @@ describe('LeaguesController', () => {
   });
 
   describe('updateLeagueStatus', () => {
-    it('should_update_status_when_user_is_admin', async () => {
-      vi.mocked(
-        mockLeagueAccessValidationService.validateLeagueAccess,
-      ).mockResolvedValue(undefined);
-      vi.mocked(
-        mockLeaguePermissionService.checkLeagueAdminAccess,
-      ).mockResolvedValue(undefined);
-      vi.mocked(mockLeaguesService.updateStatus).mockResolvedValue({
+    it('should_update_league_status_when_valid_status_is_provided', async () => {
+      const statusDto: UpdateLeagueStatusDto = {
+        status: LeagueStatus.ARCHIVED,
+      };
+
+      const updatedLeague = {
         ...mockLeague,
         status: LeagueStatus.ARCHIVED,
-      } as never);
+      };
+
+      vi.spyOn(mockLeaguesService, 'updateStatus').mockResolvedValue(
+        updatedLeague as never,
+      );
 
       const result = await controller.updateLeagueStatus(
         'league-123',
-        { status: LeagueStatus.ARCHIVED },
+        statusDto,
         mockUser,
       );
 
-      expect(result.status).toBe(LeagueStatus.ARCHIVED);
+      expect(result).toEqual(updatedLeague);
       expect(mockLeaguesService.updateStatus).toHaveBeenCalledWith(
         'league-123',
         LeagueStatus.ARCHIVED,
@@ -216,14 +370,8 @@ describe('LeaguesController', () => {
   });
 
   describe('deleteLeague', () => {
-    it('should_delete_league_when_user_is_admin', async () => {
-      vi.mocked(
-        mockLeagueAccessValidationService.validateLeagueAccess,
-      ).mockResolvedValue(undefined);
-      vi.mocked(
-        mockLeaguePermissionService.checkLeagueAdminAccess,
-      ).mockResolvedValue(undefined);
-      vi.mocked(mockLeaguesService.remove).mockResolvedValue(
+    it('should_delete_league_when_id_is_provided', async () => {
+      vi.spyOn(mockLeaguesService, 'remove').mockResolvedValue(
         mockLeague as never,
       );
 
