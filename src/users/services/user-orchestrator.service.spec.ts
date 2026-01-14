@@ -110,7 +110,7 @@ describe('UserOrchestratorService', () => {
       expect(mockUsersService.update).toHaveBeenCalledWith(
         userId,
         expect.objectContaining({
-          lastLoginAt: expect.any(Date),
+          lastLoginAt: expect.any(String),
         }),
       );
     });
@@ -149,7 +149,7 @@ describe('UserOrchestratorService', () => {
           email: 'test@example.com',
           accessToken: mockPlainTokens.accessToken,
           refreshToken: mockPlainTokens.refreshToken,
-          lastLoginAt: expect.any(Date),
+          lastLoginAt: expect.any(String),
         }),
       );
     });

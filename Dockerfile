@@ -57,9 +57,15 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile --prod --ignore-scripts && \
     pnpm store prune
 
-# Copy Prisma schema and generated Prisma Client from build stage
+# Copy Prisma schema from build stage
 COPY --from=build /app/prisma ./prisma
-COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
+
+# Temporarily install prisma CLI to generate Prisma Client for production runtime
+# Prisma CLI is needed to generate the client, even though @prisma/client is already installed
+RUN pnpm add -D prisma && \
+    pnpm exec prisma generate && \
+    pnpm remove prisma && \
+    pnpm store prune
 
 # Copy built application from build stage
 COPY --from=build /app/dist ./dist

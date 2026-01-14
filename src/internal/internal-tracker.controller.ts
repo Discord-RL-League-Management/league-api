@@ -1,6 +1,7 @@
 import { Controller, Post, Body, UseGuards, Logger } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { BotAuthGuard } from '../auth/guards/bot-auth.guard';
+import { BotOnly } from '../common/decorators';
 import { TrackerProcessingService } from '../trackers/services/tracker-processing.service';
 import {
   ApiTags,
@@ -16,6 +17,7 @@ import { ProcessTrackersDto } from './dto/process-trackers.dto';
 @Controller('internal/trackers')
 @UseGuards(BotAuthGuard)
 @SkipThrottle()
+@BotOnly()
 @ApiBearerAuth('bot-api-key')
 export class InternalTrackerController {
   private readonly logger = new Logger(InternalTrackerController.name);

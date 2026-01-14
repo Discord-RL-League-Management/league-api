@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { BotAuthGuard } from '../auth/guards/bot-auth.guard';
+import { BotOnly } from '../common/decorators';
 import { GuildMembersService } from './guild-members.service';
 import { CreateGuildMemberDto } from './dto/create-guild-member.dto';
 import { UpdateGuildMemberDto } from './dto/update-guild-member.dto';
@@ -27,6 +28,7 @@ import {
 @Controller('internal/guild-members')
 @UseGuards(BotAuthGuard)
 @SkipThrottle()
+@BotOnly()
 @ApiBearerAuth('bot-api-key')
 export class InternalGuildMembersController {
   private readonly logger = new Logger(InternalGuildMembersController.name);

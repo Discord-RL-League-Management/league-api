@@ -36,7 +36,7 @@ export class UserOrchestratorService {
           email: discordData.email,
           accessToken: discordData.accessToken,
           refreshToken: discordData.refreshToken,
-          lastLoginAt: new Date(),
+          lastLoginAt: new Date().toISOString(),
         });
       } else {
         return await this.usersService.create({

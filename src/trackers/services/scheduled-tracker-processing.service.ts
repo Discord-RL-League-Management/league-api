@@ -43,7 +43,7 @@ export class ScheduledTrackerProcessingService
   private async stopJobSafely(job: CronJob, jobId: string): Promise<void> {
     try {
       const stopResult = job.stop();
-      // CronJob.stop() returns void or Promise<void>, handle both
+      // Handle if stop() returns a Promise
       if (stopResult && typeof stopResult.then === 'function') {
         await stopResult;
       }

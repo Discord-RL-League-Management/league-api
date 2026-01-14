@@ -7,7 +7,7 @@ import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
 import { Observable } from 'rxjs';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
-import { IS_PUBLIC_KEY } from '../../common/decorators';
+import { IS_PUBLIC_KEY, IS_BOT_ONLY_KEY } from '../../common/decorators';
 import type { AuthenticatedUser } from '../../common/interfaces/user.interface';
 
 @Injectable()
@@ -26,6 +26,16 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     ]);
 
     if (isPublic) {
+      return true;
+    }
+
+    // Bot-only routes bypass JWT authentication to allow BotAuthGuard to handle authentication
+    const isBotOnly = this.reflector.getAllAndOverride<boolean>(
+      IS_BOT_ONLY_KEY,
+      [context.getHandler(), context.getClass()],
+    );
+
+    if (isBotOnly) {
       return true;
     }
 

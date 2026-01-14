@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { BotAuthGuard } from '../auth/guards/bot-auth.guard';
+import { BotOnly } from '../common/decorators';
 import { LeaguesService } from './leagues.service';
 import { LeagueSettingsService } from './league-settings.service';
 import { CreateLeagueDto } from './dto/create-league.dto';
@@ -31,6 +32,7 @@ import { ParseCUIDPipe } from '../common/pipes';
 @Controller('internal/leagues')
 @UseGuards(BotAuthGuard)
 @SkipThrottle()
+@BotOnly()
 @ApiBearerAuth('bot-api-key')
 export class InternalLeaguesController {
   private readonly logger = new Logger(InternalLeaguesController.name);
