@@ -100,7 +100,7 @@ describe('PlayersController', () => {
   });
 
   describe('getPlayer', () => {
-    it('should_return_player_when_id_provided', async () => {
+    it('should_return_player_when_user_owns_player', async () => {
       const mockPlayer = { id: 'player-1', userId: mockUser.id };
       vi.mocked(mockPlayerService.findOne).mockResolvedValue(
         mockPlayer as never,
@@ -113,6 +113,56 @@ describe('PlayersController', () => {
         includeUser: true,
         includeGuild: true,
       });
+    });
+
+    it('should_throw_forbidden_when_user_does_not_own_player', async () => {
+      const mockPlayer = { id: 'player-1', userId: 'other-user-id' };
+      vi.mocked(mockPlayerService.findOne).mockResolvedValue(
+        mockPlayer as never,
+      );
+
+      await expect(controller.getPlayer('player-1', mockUser)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+  });
+
+  describe('updatePlayer', () => {
+    it('should_update_player_when_user_owns_player', async () => {
+      const updateDto = { name: 'Updated Player Name' };
+      const mockPlayer = { id: 'player-1', userId: mockUser.id };
+      const mockUpdated = { ...mockPlayer, ...updateDto };
+      vi.mocked(mockPlayerService.findOne).mockResolvedValue(
+        mockPlayer as never,
+      );
+      vi.mocked(mockPlayerService.update).mockResolvedValue(
+        mockUpdated as never,
+      );
+
+      const result = await controller.updatePlayer(
+        'player-1',
+        updateDto,
+        mockUser,
+      );
+
+      expect(result).toEqual(mockUpdated);
+      expect(mockPlayerService.findOne).toHaveBeenCalledWith('player-1');
+      expect(mockPlayerService.update).toHaveBeenCalledWith(
+        'player-1',
+        updateDto,
+      );
+    });
+
+    it('should_throw_forbidden_when_user_does_not_own_player', async () => {
+      const updateDto = { name: 'Updated Player Name' };
+      const mockPlayer = { id: 'player-1', userId: 'other-user-id' };
+      vi.mocked(mockPlayerService.findOne).mockResolvedValue(
+        mockPlayer as never,
+      );
+
+      await expect(
+        controller.updatePlayer('player-1', updateDto, mockUser),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 });

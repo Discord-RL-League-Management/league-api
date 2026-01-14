@@ -212,6 +212,80 @@ describe('LeaguesService', () => {
         service.updateStatus('league-123', LeagueStatus.ACTIVE),
       ).rejects.toThrow(InvalidLeagueStatusException);
     });
+
+    it('should_transition_from_active_to_paused', async () => {
+      const activeLeague = { ...mockLeague, status: LeagueStatus.ACTIVE };
+      vi.mocked(mockLeagueRepository.findOne).mockResolvedValue(activeLeague);
+      vi.mocked(mockLeagueRepository.update).mockResolvedValue({
+        ...activeLeague,
+        status: LeagueStatus.PAUSED,
+      });
+
+      const result = await service.updateStatus(
+        'league-123',
+        LeagueStatus.PAUSED,
+      );
+
+      expect(result.status).toBe(LeagueStatus.PAUSED);
+    });
+
+    it('should_transition_from_paused_to_active', async () => {
+      const pausedLeague = { ...mockLeague, status: LeagueStatus.PAUSED };
+      vi.mocked(mockLeagueRepository.findOne).mockResolvedValue(pausedLeague);
+      vi.mocked(mockLeagueRepository.update).mockResolvedValue({
+        ...pausedLeague,
+        status: LeagueStatus.ACTIVE,
+      });
+
+      const result = await service.updateStatus(
+        'league-123',
+        LeagueStatus.ACTIVE,
+      );
+
+      expect(result.status).toBe(LeagueStatus.ACTIVE);
+    });
+
+    it('should_transition_from_active_to_archived', async () => {
+      const activeLeague = { ...mockLeague, status: LeagueStatus.ACTIVE };
+      vi.mocked(mockLeagueRepository.findOne).mockResolvedValue(activeLeague);
+      vi.mocked(mockLeagueRepository.update).mockResolvedValue({
+        ...activeLeague,
+        status: LeagueStatus.ARCHIVED,
+      });
+
+      const result = await service.updateStatus(
+        'league-123',
+        LeagueStatus.ARCHIVED,
+      );
+
+      expect(result.status).toBe(LeagueStatus.ARCHIVED);
+    });
+
+    it('should_throw_when_transitioning_from_archived_to_active', async () => {
+      const archivedLeague = { ...mockLeague, status: LeagueStatus.ARCHIVED };
+      vi.mocked(mockLeagueRepository.findOne).mockResolvedValue(archivedLeague);
+
+      await expect(
+        service.updateStatus('league-123', LeagueStatus.ACTIVE),
+      ).rejects.toThrow(InvalidLeagueStatusException);
+    });
+
+    it('should_throw_when_transitioning_from_archived_to_paused', async () => {
+      const archivedLeague = { ...mockLeague, status: LeagueStatus.ARCHIVED };
+      vi.mocked(mockLeagueRepository.findOne).mockResolvedValue(archivedLeague);
+
+      await expect(
+        service.updateStatus('league-123', LeagueStatus.PAUSED),
+      ).rejects.toThrow(InvalidLeagueStatusException);
+    });
+
+    it('should_throw_when_league_not_found', async () => {
+      vi.mocked(mockLeagueRepository.findOne).mockResolvedValue(null);
+
+      await expect(
+        service.updateStatus('nonexistent', LeagueStatus.PAUSED),
+      ).rejects.toThrow(LeagueNotFoundException);
+    });
   });
 
   describe('remove', () => {

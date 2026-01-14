@@ -503,4 +503,74 @@ describe('TrackerService', () => {
       expect(mockRepository.findBestForUser).toHaveBeenCalledWith(userId);
     });
   });
+
+  describe('createTracker - validation edge cases', () => {
+    it('should_handle_duplicate_url_detection_when_url_exists', async () => {
+      const url =
+        'https://rocketleague.tracker.network/rocket-league/profile/steam/testuser/overview';
+      const game = Game.ROCKET_LEAGUE;
+      const platform = GamePlatform.STEAM;
+      const username = 'testuser';
+      const userId = 'user_123';
+
+      // Mock that URL already exists
+      vi.mocked(mockRepository.findByUrl).mockResolvedValue(mockTracker);
+      vi.mocked(mockRepository.create).mockRejectedValue(
+        new Error('Unique constraint violation'),
+      );
+
+      await expect(
+        service.createTracker(url, game, platform, username, userId),
+      ).rejects.toThrow();
+    });
+  });
+
+  describe('getTrackersByUserId - batch operation edge cases', () => {
+    it('should_handle_empty_result_when_user_has_no_trackers', async () => {
+      const userId = 'user_999';
+      const emptyResult = {
+        data: [],
+        pagination: {
+          page: 1,
+          limit: 50,
+          total: 0,
+          pages: 0,
+        },
+      };
+
+      vi.mocked(mockRepository.findByUserId).mockResolvedValue(
+        emptyResult as any,
+      );
+
+      const result = await service.getTrackersByUserId(userId);
+
+      expect(result.data).toEqual([]);
+      expect(result.pagination.total).toBe(0);
+    });
+
+    it('should_handle_large_result_set_with_pagination', async () => {
+      const userId = 'user_123';
+      const largeResult = {
+        data: Array.from({ length: 100 }, (_, i) => ({
+          ...mockTracker,
+          id: `tracker_${i}`,
+        })),
+        pagination: {
+          page: 1,
+          limit: 50,
+          total: 100,
+          pages: 2,
+        },
+      };
+
+      vi.mocked(mockRepository.findByUserId).mockResolvedValue(
+        largeResult as any,
+      );
+
+      const result = await service.getTrackersByUserId(userId, { limit: 50 });
+
+      expect(result.data.length).toBe(100);
+      expect(result.pagination.pages).toBe(2);
+    });
+  });
 });

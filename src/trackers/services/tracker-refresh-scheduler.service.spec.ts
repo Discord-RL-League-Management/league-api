@@ -100,6 +100,37 @@ describe('TrackerRefreshSchedulerService', () => {
     });
   });
 
+  describe('constructor', () => {
+    it('should_throw_error_when_tracker_config_is_missing', async () => {
+      const mockConfigWithoutTracker = {
+        get: vi.fn().mockReturnValue(null),
+      } as unknown as ConfigService;
+
+      await expect(
+        Test.createTestingModule({
+          providers: [
+            TrackerRefreshSchedulerService,
+            { provide: TrackerRepository, useValue: mockTrackerRepository },
+            {
+              provide: TrackerScrapingQueueService,
+              useValue: mockScrapingQueueService,
+            },
+            {
+              provide: TrackerBatchRefreshService,
+              useValue: mockBatchRefreshService,
+            },
+            { provide: ConfigService, useValue: mockConfigWithoutTracker },
+            { provide: SchedulerRegistry, useValue: mockSchedulerRegistry },
+            {
+              provide: TrackerProcessingGuardService,
+              useValue: mockProcessingGuard,
+            },
+          ],
+        }).compile(),
+      ).rejects.toThrow('Tracker configuration is missing');
+    });
+  });
+
   describe('triggerManualRefresh', () => {
     it('should_refresh_specific_trackers_when_ids_provided', async () => {
       const trackerIds = ['tracker-1', 'tracker-2'];
@@ -112,6 +143,27 @@ describe('TrackerRefreshSchedulerService', () => {
       expect(mockBatchRefreshService.refreshTrackers).toHaveBeenCalledWith(
         trackerIds,
       );
+    });
+
+    it('should_refresh_stale_trackers_when_empty_tracker_ids_array_provided', async () => {
+      const trackerIds: string[] = [];
+      const staleTrackers = [{ id: 'tracker-1' }];
+      vi.mocked(mockTrackerRepository.findPendingAndStale).mockResolvedValue(
+        staleTrackers,
+      );
+      vi.mocked(
+        mockProcessingGuard.filterProcessableTrackers,
+      ).mockResolvedValue(['tracker-1']);
+      vi.mocked(
+        mockBatchRefreshService.refreshTrackersInBatches,
+      ).mockResolvedValue(undefined);
+
+      await service.triggerManualRefresh(trackerIds);
+
+      expect(mockBatchRefreshService.refreshTrackers).not.toHaveBeenCalled();
+      expect(
+        mockBatchRefreshService.refreshTrackersInBatches,
+      ).toHaveBeenCalledWith(['tracker-1'], trackerConfig.batchSize);
     });
 
     it('should_refresh_stale_trackers_when_no_ids_provided', async () => {
@@ -164,6 +216,46 @@ describe('TrackerRefreshSchedulerService', () => {
         'Refresh failed',
       );
     });
+
+    it('should_throw_error_when_finding_stale_trackers_fails', async () => {
+      vi.mocked(mockTrackerRepository.findPendingAndStale).mockRejectedValue(
+        new Error('Database error'),
+      );
+
+      await expect(service.triggerManualRefresh()).rejects.toThrow(
+        'Database error',
+      );
+    });
+
+    it('should_throw_error_when_processing_guard_fails', async () => {
+      const staleTrackers = [{ id: 'tracker-1' }, { id: 'tracker-2' }];
+      vi.mocked(mockTrackerRepository.findPendingAndStale).mockResolvedValue(
+        staleTrackers,
+      );
+      vi.mocked(
+        mockProcessingGuard.filterProcessableTrackers,
+      ).mockRejectedValue(new Error('Guard check failed'));
+
+      await expect(service.triggerManualRefresh()).rejects.toThrow(
+        'Guard check failed',
+      );
+    });
+
+    it('should_not_refresh_when_processing_guard_returns_empty_array', async () => {
+      const staleTrackers = [{ id: 'tracker-1' }, { id: 'tracker-2' }];
+      vi.mocked(mockTrackerRepository.findPendingAndStale).mockResolvedValue(
+        staleTrackers,
+      );
+      vi.mocked(
+        mockProcessingGuard.filterProcessableTrackers,
+      ).mockResolvedValue([]);
+
+      await service.triggerManualRefresh();
+
+      expect(
+        mockBatchRefreshService.refreshTrackersInBatches,
+      ).not.toHaveBeenCalled();
+    });
   });
 
   describe('scheduledRefresh', () => {
@@ -196,6 +288,29 @@ describe('TrackerRefreshSchedulerService', () => {
       vi.mocked(mockSchedulerRegistry.doesExist).mockReturnValue(false);
 
       await service.onApplicationShutdown('SIGTERM');
+
+      expect(mockSchedulerRegistry.deleteCronJob).not.toHaveBeenCalled();
+    });
+
+    it('should_handle_error_when_stopping_cron_job_fails', async () => {
+      const mockCronJob = {
+        stop: vi.fn().mockRejectedValue(new Error('Stop failed')),
+      };
+      service['cronJob'] = mockCronJob as never;
+      vi.mocked(mockSchedulerRegistry.doesExist).mockReturnValue(true);
+
+      await service.onApplicationShutdown('SIGTERM');
+
+      expect(mockCronJob.stop).toHaveBeenCalled();
+      expect(mockSchedulerRegistry.deleteCronJob).toHaveBeenCalledWith(
+        'tracker-refresh',
+      );
+    });
+
+    it('should_handle_shutdown_without_signal', async () => {
+      vi.mocked(mockSchedulerRegistry.doesExist).mockReturnValue(false);
+
+      await service.onApplicationShutdown();
 
       expect(mockSchedulerRegistry.deleteCronJob).not.toHaveBeenCalled();
     });

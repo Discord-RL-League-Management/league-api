@@ -193,6 +193,47 @@ describe('TrackerBatchProcessorService', () => {
         mockScrapingQueueService.addBatchScrapingJobs,
       ).not.toHaveBeenCalled();
     });
+
+    it('should_throw_error_when_finding_pending_trackers_fails', async () => {
+      vi.mocked(mockTrackerRepository.findPending).mockRejectedValue(
+        new Error('Database error'),
+      );
+
+      await expect(service.processPendingTrackers()).rejects.toThrow(
+        'Database error',
+      );
+    });
+
+    it('should_throw_error_when_filtering_processable_trackers_fails', async () => {
+      const mockTrackers = [{ id: 'tracker_1' }];
+      vi.mocked(mockTrackerRepository.findPending).mockResolvedValue(
+        mockTrackers as unknown as any[],
+      );
+      vi.mocked(
+        mockProcessingGuard.filterProcessableTrackers,
+      ).mockRejectedValue(new Error('Guard check failed'));
+
+      await expect(service.processPendingTrackers()).rejects.toThrow(
+        'Guard check failed',
+      );
+    });
+
+    it('should_throw_error_when_enqueueing_batch_jobs_fails', async () => {
+      const mockTrackers = [{ id: 'tracker_1' }];
+      vi.mocked(mockTrackerRepository.findPending).mockResolvedValue(
+        mockTrackers as unknown as any[],
+      );
+      vi.mocked(
+        mockProcessingGuard.filterProcessableTrackers,
+      ).mockResolvedValue(['tracker_1']);
+      vi.mocked(
+        mockScrapingQueueService.addBatchScrapingJobs,
+      ).mockRejectedValue(new Error('Queue error'));
+
+      await expect(service.processPendingTrackers()).rejects.toThrow(
+        'Queue error',
+      );
+    });
   });
 
   describe('processPendingTrackersForGuild', () => {
@@ -351,6 +392,32 @@ describe('TrackerBatchProcessorService', () => {
       expect(
         mockTrackerRepository.findPendingAndStaleForGuild,
       ).toHaveBeenCalledWith(guildId, 24);
+    });
+
+    it('should_throw_error_when_finding_guild_trackers_fails', async () => {
+      const guildId = 'guild_123';
+      vi.mocked(
+        mockTrackerRepository.findPendingAndStaleForGuild,
+      ).mockRejectedValue(new Error('Database error'));
+
+      await expect(
+        service.processPendingTrackersForGuild(guildId),
+      ).rejects.toThrow('Database error');
+    });
+
+    it('should_throw_error_when_enqueueing_guild_trackers_fails', async () => {
+      const guildId = 'guild_123';
+      const mockTrackers = [{ id: 'tracker_1' }];
+      vi.mocked(
+        mockTrackerRepository.findPendingAndStaleForGuild,
+      ).mockResolvedValue(mockTrackers);
+      vi.mocked(
+        mockScrapingQueueService.addBatchScrapingJobs,
+      ).mockRejectedValue(new Error('Queue error'));
+
+      await expect(
+        service.processPendingTrackersForGuild(guildId),
+      ).rejects.toThrow('Queue error');
     });
   });
 });
