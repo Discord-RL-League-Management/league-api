@@ -45,6 +45,12 @@ export default defineConfig({
         // Main app module (just configuration)
         'src/app.module.ts',
       ],
+      thresholds: {
+        lines: 80,
+        functions: 80,
+        branches: 80,
+        statements: 80,
+      },
     },
 
     // Test timeout
