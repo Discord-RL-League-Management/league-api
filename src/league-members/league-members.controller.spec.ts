@@ -5,15 +5,18 @@
  * Focus: Functional core, state verification, fast execution.
  *
  * Aligned with ISO/IEC/IEEE 29119 standards and Black Box Axiom.
+ * Tests verify inputs, outputs, and observable side effects only.
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Test } from '@nestjs/testing';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { LeagueMembersController } from './league-members.controller';
 import { LeagueMemberService } from './services/league-member.service';
 import { PlayerOwnershipService } from '../players/services/player-ownership.service';
 import { LeaguePermissionService } from '../leagues/services/league-permission.service';
+import { JoinLeagueDto } from './dto/join-league.dto';
+import { UpdateLeagueMemberDto } from './dto/update-league-member.dto';
 import type { AuthenticatedUser } from '../common/interfaces/user.interface';
 
 describe('LeagueMembersController', () => {
@@ -33,14 +36,22 @@ describe('LeagueMembersController', () => {
     lastLoginAt: new Date(),
   };
 
+  const mockLeagueMember = {
+    id: 'member-123',
+    leagueId: 'league-123',
+    playerId: 'player-123',
+    status: 'ACTIVE',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
   beforeEach(async () => {
     mockLeagueMemberService = {
       joinLeague: vi.fn(),
       findByLeagueId: vi.fn(),
-      findByPlayerAndLeague: vi.fn(),
-      findOne: vi.fn(),
-      update: vi.fn(),
       leaveLeague: vi.fn(),
+      findByPlayerAndLeague: vi.fn(),
+      update: vi.fn(),
     } as unknown as LeagueMemberService;
 
     mockPlayerOwnershipService = {
@@ -49,7 +60,6 @@ describe('LeagueMembersController', () => {
 
     mockLeaguePermissionService = {
       checkLeagueAdminOrModeratorAccess: vi.fn(),
-      checkLeagueAdminAccess: vi.fn(),
     } as unknown as LeaguePermissionService;
 
     const module = await Test.createTestingModule({
@@ -70,91 +80,270 @@ describe('LeagueMembersController', () => {
     controller = module.get<LeagueMembersController>(LeagueMembersController);
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   describe('joinLeague', () => {
-    it('should_join_league_when_player_owned_by_user', async () => {
-      const joinDto = { playerId: 'player-1' };
-      const mockMember = { id: 'member-1', leagueId: 'league-1' };
-      vi.mocked(
-        mockPlayerOwnershipService.validatePlayerOwnership,
+    it('should_join_league_when_valid_data_is_provided', async () => {
+      const joinDto: JoinLeagueDto = {
+        playerId: 'player-123',
+      };
+
+      vi.spyOn(
+        mockPlayerOwnershipService,
+        'validatePlayerOwnership',
       ).mockResolvedValue(undefined);
-      vi.mocked(mockLeagueMemberService.joinLeague).mockResolvedValue(
-        mockMember as never,
+      vi.spyOn(mockLeagueMemberService, 'joinLeague').mockResolvedValue(
+        mockLeagueMember as never,
       );
 
-      const result = await controller.joinLeague('league-1', joinDto, mockUser);
+      const result = await controller.joinLeague(
+        'league-123',
+        joinDto,
+        mockUser,
+      );
 
-      expect(result).toEqual(mockMember);
+      expect(result).toEqual(mockLeagueMember);
       expect(
         mockPlayerOwnershipService.validatePlayerOwnership,
-      ).toHaveBeenCalledWith(mockUser.id, joinDto.playerId);
+      ).toHaveBeenCalledWith('user-123', 'player-123');
+      expect(mockLeagueMemberService.joinLeague).toHaveBeenCalledWith(
+        'league-123',
+        joinDto,
+      );
+    });
+
+    it('should_throw_forbidden_when_user_does_not_own_player', async () => {
+      const joinDto: JoinLeagueDto = {
+        playerId: 'player-123',
+      };
+
+      vi.spyOn(
+        mockPlayerOwnershipService,
+        'validatePlayerOwnership',
+      ).mockRejectedValue(new ForbiddenException('Not owner'));
+
+      await expect(
+        controller.joinLeague('league-123', joinDto, mockUser),
+      ).rejects.toThrow(ForbiddenException);
+      expect(
+        mockPlayerOwnershipService.validatePlayerOwnership,
+      ).toHaveBeenCalledWith('user-123', 'player-123');
+      expect(mockLeagueMemberService.joinLeague).not.toHaveBeenCalled();
     });
   });
 
   describe('getLeagueMembers', () => {
-    it('should_return_members_when_league_id_provided', async () => {
-      const mockMembers = { members: [], pagination: {} };
-      vi.mocked(mockLeagueMemberService.findByLeagueId).mockResolvedValue(
+    it('should_return_members_when_league_id_is_provided', async () => {
+      const mockMembers = [mockLeagueMember];
+      vi.spyOn(mockLeagueMemberService, 'findByLeagueId').mockResolvedValue(
         mockMembers as never,
       );
 
-      const result = await controller.getLeagueMembers('league-1', {});
+      const result = await controller.getLeagueMembers('league-123', {});
 
       expect(result).toEqual(mockMembers);
-      expect(mockLeagueMemberService.findByLeagueId).toHaveBeenCalled();
+      expect(mockLeagueMemberService.findByLeagueId).toHaveBeenCalledWith(
+        'league-123',
+        {
+          includePlayer: true,
+          includeLeague: true,
+        },
+      );
     });
-  });
 
-  describe('updateMember', () => {
-    it('should_update_member_when_user_owns_player', async () => {
-      const updateDto = { status: 'ACTIVE' };
-      const mockMember = { id: 'member-1', playerId: 'player-1' };
-      const mockUpdated = { id: 'member-1', ...updateDto };
-      vi.mocked(
-        mockPlayerOwnershipService.validatePlayerOwnership,
-      ).mockResolvedValue(undefined);
-      vi.mocked(
-        mockLeagueMemberService.findByPlayerAndLeague,
-      ).mockResolvedValue(mockMember as never);
-      vi.mocked(mockLeagueMemberService.update).mockResolvedValue(
-        mockUpdated as never,
+    it('should_include_query_options_when_provided', async () => {
+      const queryOptions = { page: 1, limit: 20 };
+      const mockMembers = [mockLeagueMember];
+      vi.spyOn(mockLeagueMemberService, 'findByLeagueId').mockResolvedValue(
+        mockMembers as never,
       );
 
-      const result = await controller.updateMember(
-        'league-1',
-        'player-1',
-        updateDto,
-        mockUser,
-      );
+      await controller.getLeagueMembers('league-123', queryOptions);
 
-      expect(result).toEqual(mockUpdated);
-      expect(mockLeagueMemberService.update).toHaveBeenCalled();
+      expect(mockLeagueMemberService.findByLeagueId).toHaveBeenCalledWith(
+        'league-123',
+        {
+          ...queryOptions,
+          includePlayer: true,
+          includeLeague: true,
+        },
+      );
     });
   });
 
   describe('leaveLeague', () => {
     it('should_leave_league_when_user_owns_player', async () => {
-      vi.mocked(
-        mockPlayerOwnershipService.validatePlayerOwnership,
+      vi.spyOn(
+        mockPlayerOwnershipService,
+        'validatePlayerOwnership',
       ).mockResolvedValue(undefined);
-      vi.mocked(mockLeagueMemberService.leaveLeague).mockResolvedValue(
-        undefined,
+      vi.spyOn(mockLeagueMemberService, 'leaveLeague').mockResolvedValue(
+        mockLeagueMember as never,
       );
 
       const result = await controller.leaveLeague(
-        'league-1',
-        'player-1',
+        'league-123',
+        'player-123',
         mockUser,
       );
 
-      expect(result).toBeUndefined();
+      expect(result).toEqual(mockLeagueMember);
+      expect(
+        mockPlayerOwnershipService.validatePlayerOwnership,
+      ).toHaveBeenCalledWith('user-123', 'player-123');
       expect(mockLeagueMemberService.leaveLeague).toHaveBeenCalledWith(
-        'player-1',
-        'league-1',
+        'player-123',
+        'league-123',
       );
+    });
+
+    it('should_throw_forbidden_when_user_does_not_own_player', async () => {
+      vi.spyOn(
+        mockPlayerOwnershipService,
+        'validatePlayerOwnership',
+      ).mockRejectedValue(new ForbiddenException('Not owner'));
+
+      await expect(
+        controller.leaveLeague('league-123', 'player-123', mockUser),
+      ).rejects.toThrow(ForbiddenException);
+      expect(
+        mockPlayerOwnershipService.validatePlayerOwnership,
+      ).toHaveBeenCalledWith('user-123', 'player-123');
+      expect(mockLeagueMemberService.leaveLeague).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('updateMember', () => {
+    it('should_update_member_when_user_owns_player', async () => {
+      const updateDto: UpdateLeagueMemberDto = {
+        status: 'INACTIVE',
+      };
+
+      const updatedMember = {
+        ...mockLeagueMember,
+        status: 'INACTIVE',
+      };
+
+      vi.spyOn(
+        mockLeagueMemberService,
+        'findByPlayerAndLeague',
+      ).mockResolvedValue(mockLeagueMember as never);
+      vi.spyOn(
+        mockPlayerOwnershipService,
+        'validatePlayerOwnership',
+      ).mockResolvedValue(undefined);
+      vi.spyOn(mockLeagueMemberService, 'update').mockResolvedValue(
+        updatedMember as never,
+      );
+
+      const result = await controller.updateMember(
+        'league-123',
+        'player-123',
+        updateDto,
+        mockUser,
+      );
+
+      expect(result).toEqual(updatedMember);
+      expect(
+        mockLeagueMemberService.findByPlayerAndLeague,
+      ).toHaveBeenCalledWith('player-123', 'league-123');
+      expect(
+        mockPlayerOwnershipService.validatePlayerOwnership,
+      ).toHaveBeenCalledWith('user-123', 'player-123');
+      expect(mockLeagueMemberService.update).toHaveBeenCalledWith(
+        'member-123',
+        updateDto,
+      );
+    });
+
+    it('should_throw_not_found_when_member_does_not_exist', async () => {
+      const updateDto: UpdateLeagueMemberDto = {
+        status: 'INACTIVE',
+      };
+
+      vi.spyOn(
+        mockLeagueMemberService,
+        'findByPlayerAndLeague',
+      ).mockResolvedValue(null as never);
+
+      await expect(
+        controller.updateMember(
+          'league-123',
+          'player-123',
+          updateDto,
+          mockUser,
+        ),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should_update_member_when_user_is_league_admin', async () => {
+      const updateDto: UpdateLeagueMemberDto = {
+        status: 'INACTIVE',
+      };
+
+      const updatedMember = {
+        ...mockLeagueMember,
+        status: 'INACTIVE',
+      };
+
+      vi.spyOn(
+        mockLeagueMemberService,
+        'findByPlayerAndLeague',
+      ).mockResolvedValue(mockLeagueMember as never);
+      vi.spyOn(
+        mockPlayerOwnershipService,
+        'validatePlayerOwnership',
+      ).mockRejectedValue(new ForbiddenException('Not owner'));
+      vi.spyOn(
+        mockLeaguePermissionService,
+        'checkLeagueAdminOrModeratorAccess',
+      ).mockResolvedValue(undefined);
+      vi.spyOn(mockLeagueMemberService, 'update').mockResolvedValue(
+        updatedMember as never,
+      );
+
+      const result = await controller.updateMember(
+        'league-123',
+        'player-123',
+        updateDto,
+        mockUser,
+      );
+
+      expect(result).toEqual(updatedMember);
+      expect(
+        mockLeaguePermissionService.checkLeagueAdminOrModeratorAccess,
+      ).toHaveBeenCalledWith('user-123', 'league-123');
+      expect(mockLeagueMemberService.update).toHaveBeenCalledWith(
+        'member-123',
+        updateDto,
+      );
+    });
+
+    it('should_rethrow_error_when_non_forbidden_exception_occurs', async () => {
+      const updateDto: UpdateLeagueMemberDto = {
+        status: 'INACTIVE',
+      };
+
+      const testError = new Error('Unexpected error');
+
+      vi.spyOn(
+        mockLeagueMemberService,
+        'findByPlayerAndLeague',
+      ).mockResolvedValue(mockLeagueMember as never);
+      vi.spyOn(
+        mockPlayerOwnershipService,
+        'validatePlayerOwnership',
+      ).mockRejectedValue(testError);
+
+      await expect(
+        controller.updateMember(
+          'league-123',
+          'player-123',
+          updateDto,
+          mockUser,
+        ),
+      ).rejects.toThrow('Unexpected error');
+      expect(
+        mockLeaguePermissionService.checkLeagueAdminOrModeratorAccess,
+      ).not.toHaveBeenCalled();
     });
   });
 });

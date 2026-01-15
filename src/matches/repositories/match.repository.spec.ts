@@ -124,4 +124,157 @@ describe('MatchRepository', () => {
       expect(result).toBe(false);
     });
   });
+
+  describe('findAll', () => {
+    it('should_return_matches_when_options_not_provided', async () => {
+      const matches = [mockMatch];
+      vi.mocked(mockPrisma.match.findMany).mockResolvedValue(matches as never);
+      vi.mocked(mockPrisma.match.count).mockResolvedValue(1);
+
+      const result = await repository.findAll();
+
+      expect(result.data).toEqual(matches);
+      expect(result.total).toBe(1);
+      expect(result.page).toBe(1);
+      expect(result.limit).toBe(50);
+      expect(mockPrisma.match.findMany).toHaveBeenCalledWith({
+        skip: 0,
+        take: 50,
+        orderBy: { createdAt: 'desc' },
+      });
+    });
+
+    it('should_return_matches_when_page_and_limit_provided', async () => {
+      const matches = [mockMatch];
+      vi.mocked(mockPrisma.match.findMany).mockResolvedValue(matches as never);
+      vi.mocked(mockPrisma.match.count).mockResolvedValue(10);
+
+      const result = await repository.findAll({ page: 2, limit: 5 });
+
+      expect(result.data).toEqual(matches);
+      expect(result.total).toBe(10);
+      expect(result.page).toBe(2);
+      expect(result.limit).toBe(5);
+      expect(mockPrisma.match.findMany).toHaveBeenCalledWith({
+        skip: 5,
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+      });
+    });
+
+    it('should_cap_limit_at_100_when_limit_exceeds_100', async () => {
+      const matches = [mockMatch];
+      vi.mocked(mockPrisma.match.findMany).mockResolvedValue(matches as never);
+      vi.mocked(mockPrisma.match.count).mockResolvedValue(1);
+
+      const result = await repository.findAll({ page: 1, limit: 200 });
+
+      expect(result.limit).toBe(100);
+      expect(mockPrisma.match.findMany).toHaveBeenCalledWith({
+        skip: 0,
+        take: 100,
+        orderBy: { createdAt: 'desc' },
+      });
+    });
+
+    it('should_use_default_page_when_only_limit_provided', async () => {
+      const matches = [mockMatch];
+      vi.mocked(mockPrisma.match.findMany).mockResolvedValue(matches as never);
+      vi.mocked(mockPrisma.match.count).mockResolvedValue(1);
+
+      const result = await repository.findAll({ limit: 10 });
+
+      expect(result.page).toBe(1);
+      expect(result.limit).toBe(10);
+      expect(mockPrisma.match.findMany).toHaveBeenCalledWith({
+        skip: 0,
+        take: 10,
+        orderBy: { createdAt: 'desc' },
+      });
+    });
+  });
+
+  describe('create', () => {
+    it('should_create_match_when_scheduledAt_provided', async () => {
+      const createDto: CreateMatchDto = {
+        leagueId: 'league-123',
+        scheduledAt: '2024-01-01T00:00:00Z',
+      };
+      const createdMatch = {
+        ...mockMatch,
+        scheduledAt: new Date('2024-01-01T00:00:00Z'),
+      };
+      vi.mocked(mockPrisma.match.create).mockResolvedValue(
+        createdMatch as never,
+      );
+
+      const result = await repository.create(createDto);
+
+      expect(result).toEqual(createdMatch);
+      expect(mockPrisma.match.create).toHaveBeenCalledWith({
+        data: {
+          leagueId: 'league-123',
+          tournamentId: undefined,
+          round: undefined,
+          scheduledAt: new Date('2024-01-01T00:00:00Z'),
+        },
+      });
+    });
+
+    it('should_create_match_when_scheduledAt_not_provided', async () => {
+      const createDto: CreateMatchDto = {
+        leagueId: 'league-123',
+      };
+      vi.mocked(mockPrisma.match.create).mockResolvedValue(mockMatch as never);
+
+      const result = await repository.create(createDto);
+
+      expect(result).toEqual(mockMatch);
+      const callArgs = vi.mocked(mockPrisma.match.create).mock.calls[0]?.[0];
+      expect(callArgs?.data.scheduledAt).toBeUndefined();
+    });
+
+    it('should_create_match_with_tournament_and_round', async () => {
+      const createDto: CreateMatchDto = {
+        leagueId: 'league-123',
+        tournamentId: 'tournament-123',
+        round: 1,
+      };
+      const createdMatch = {
+        ...mockMatch,
+        tournamentId: 'tournament-123',
+        round: 1,
+      };
+      vi.mocked(mockPrisma.match.create).mockResolvedValue(
+        createdMatch as never,
+      );
+
+      const result = await repository.create(createDto);
+
+      expect(result).toEqual(createdMatch);
+      expect(mockPrisma.match.create).toHaveBeenCalledWith({
+        data: {
+          leagueId: 'league-123',
+          tournamentId: 'tournament-123',
+          round: 1,
+          scheduledAt: undefined,
+        },
+      });
+    });
+  });
+
+  describe('delete', () => {
+    it('should_delete_match_when_match_exists', async () => {
+      const id = 'match-123';
+
+      vi.mocked(mockPrisma.match.delete).mockResolvedValue(mockMatch as never);
+
+      const result = await repository.delete(id);
+
+      expect(result).toEqual(mockMatch);
+      expect(mockPrisma.match.delete).toHaveBeenCalledWith({
+        where: { id },
+      });
+    });
+  });
 });

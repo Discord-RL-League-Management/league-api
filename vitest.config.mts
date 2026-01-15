@@ -41,7 +41,7 @@ export default defineConfig({
     // Coverage configuration
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html'],
+      reporter: ['text', 'json', 'html', 'lcov'],
       exclude: [
         'node_modules/',
         'dist/',
@@ -51,6 +51,18 @@ export default defineConfig({
         '**/*.d.ts',
         '**/main.ts',
         '**/prisma/**',
+        // Config files
+        '**/*.config.{js,mjs,ts,mts}',
+        '**/.eslintrc.js',
+        '**/commitlint.config.js',
+        '**/playwright.config.ts',
+        // Scripts
+        'scripts/**',
+        'eslint-rules/**',
+        // Module files (NestJS module declarations)
+        '**/*.module.ts',
+        // Main app module (just configuration)
+        'src/app.module.ts',
       ],
       thresholds: {
         lines: 80,

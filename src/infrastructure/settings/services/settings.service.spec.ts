@@ -3,16 +3,29 @@
  *
  * Demonstrates TDD methodology with Vitest.
  * Focus: Functional core, state verification, fast execution.
+ *
+ * Aligned with ISO/IEC/IEEE 29119 standards and Black Box Axiom.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { SettingsService } from './settings.service';
-import { SettingsRepository } from '../../settings/repositories/settings.repository';
-import { Settings } from '@prisma/client';
+import { SettingsRepository } from '../repositories/settings.repository';
+import { Settings, Prisma } from '@prisma/client';
 
 describe('SettingsService', () => {
   let service: SettingsService;
   let mockRepository: SettingsRepository;
+
+  const mockSettings: Settings = {
+    id: 'settings_123',
+    ownerType: 'Guild',
+    ownerId: 'guild_123',
+    settings: { key: 'value' },
+    schemaVersion: 1,
+    configVersion: '1.0.0',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
 
   beforeEach(() => {
     mockRepository = {
@@ -29,79 +42,63 @@ describe('SettingsService', () => {
   });
 
   describe('getSettings', () => {
-    it('should_return_settings_when_found', async () => {
-      const ownerType = 'guild';
-      const ownerId = 'guild123';
-      const settings: Settings = {
-        id: 'settings123',
-        ownerType,
-        ownerId,
-        settings: { key: 'value' },
-        schemaVersion: 1,
-        configVersion: '1.0.0',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+    it('should_return_settings_when_settings_exist', async () => {
+      const ownerType = 'Guild';
+      const ownerId = 'guild_123';
 
-      vi.mocked(mockRepository.findByOwner).mockResolvedValue(settings);
+      vi.mocked(mockRepository.findByOwner).mockResolvedValue(mockSettings);
 
       const result = await service.getSettings(ownerType, ownerId);
 
-      expect(result).toEqual(settings);
+      expect(result).toEqual(mockSettings);
       expect(mockRepository.findByOwner).toHaveBeenCalledWith(
         ownerType,
         ownerId,
       );
     });
 
-    it('should_return_null_when_settings_not_found', async () => {
-      const ownerType = 'guild';
-      const ownerId = 'guild123';
+    it('should_return_null_when_settings_do_not_exist', async () => {
+      const ownerType = 'Guild';
+      const ownerId = 'guild_123';
 
       vi.mocked(mockRepository.findByOwner).mockResolvedValue(null);
 
       const result = await service.getSettings(ownerType, ownerId);
 
       expect(result).toBeNull();
+      expect(mockRepository.findByOwner).toHaveBeenCalledWith(
+        ownerType,
+        ownerId,
+      );
     });
   });
 
   describe('upsertSettings', () => {
-    it('should_create_settings_when_not_exists', async () => {
-      const ownerType = 'guild';
-      const ownerId = 'guild123';
-      const settingsData = { key: 'value' };
+    it('should_create_settings_when_settings_do_not_exist', async () => {
+      const ownerType = 'Guild';
+      const ownerId = 'guild_123';
+      const settings = { key: 'value' };
       const schemaVersion = 1;
       const configVersion = '1.0.0';
-      const createdSettings: Settings = {
-        id: 'settings123',
-        ownerType,
-        ownerId,
-        settings: settingsData,
-        schemaVersion,
-        configVersion: configVersion || null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
 
-      vi.mocked(mockRepository.upsert).mockResolvedValue(createdSettings);
+      vi.mocked(mockRepository.upsert).mockResolvedValue(mockSettings);
 
       const result = await service.upsertSettings(
         ownerType,
         ownerId,
-        settingsData,
+        settings,
         schemaVersion,
         configVersion,
       );
 
-      expect(result).toEqual(createdSettings);
+      expect(result).toEqual(mockSettings);
       expect(mockRepository.upsert).toHaveBeenCalledWith(
         ownerType,
         ownerId,
         {
           ownerType,
           ownerId,
-          settings: settingsData,
+          settings,
           schemaVersion,
           configVersion,
         },
@@ -109,136 +106,135 @@ describe('SettingsService', () => {
       );
     });
 
-    it('should_update_settings_when_exists', async () => {
-      const ownerType = 'guild';
-      const ownerId = 'guild123';
-      const settingsData = { key: 'updated_value' };
-      const updatedSettings: Settings = {
-        id: 'settings123',
-        ownerType,
-        ownerId,
-        settings: settingsData,
-        schemaVersion: 1,
-        configVersion: '1.0.0',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+    it('should_update_settings_when_settings_exist', async () => {
+      const ownerType = 'Guild';
+      const ownerId = 'guild_123';
+      const settings = { key: 'updated-value' };
+      const updatedSettings = { ...mockSettings, settings };
 
       vi.mocked(mockRepository.upsert).mockResolvedValue(updatedSettings);
 
-      const result = await service.upsertSettings(
-        ownerType,
-        ownerId,
-        settingsData,
-      );
+      const result = await service.upsertSettings(ownerType, ownerId, settings);
 
       expect(result).toEqual(updatedSettings);
-    });
-
-    it('should_support_transaction_client', async () => {
-      const ownerType = 'guild';
-      const ownerId = 'guild123';
-      const settingsData = { key: 'value' };
-      const tx = {} as any;
-      const createdSettings: Settings = {
-        id: 'settings123',
-        ownerType,
-        ownerId,
-        settings: settingsData,
-        schemaVersion: 1,
-        configVersion: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      vi.mocked(mockRepository.upsert).mockResolvedValue(createdSettings);
-
-      const result = await service.upsertSettings(
-        ownerType,
-        ownerId,
-        settingsData,
-        1,
-        undefined,
-        tx,
-      );
-
-      expect(result).toEqual(createdSettings);
       expect(mockRepository.upsert).toHaveBeenCalledWith(
         ownerType,
         ownerId,
-        expect.any(Object),
-        tx,
+        {
+          ownerType,
+          ownerId,
+          settings,
+          schemaVersion: 1,
+          configVersion: undefined,
+        },
+        undefined,
+      );
+    });
+
+    it('should_use_default_schema_version_when_not_provided', async () => {
+      const ownerType = 'Guild';
+      const ownerId = 'guild_123';
+      const settings = { key: 'value' };
+
+      vi.mocked(mockRepository.upsert).mockResolvedValue(mockSettings);
+
+      const result = await service.upsertSettings(ownerType, ownerId, settings);
+
+      expect(result).toEqual(mockSettings);
+      expect(mockRepository.upsert).toHaveBeenCalledWith(
+        ownerType,
+        ownerId,
+        {
+          ownerType,
+          ownerId,
+          settings,
+          schemaVersion: 1,
+          configVersion: undefined,
+        },
+        undefined,
+      );
+    });
+
+    it('should_use_transaction_when_provided', async () => {
+      const ownerType = 'Guild';
+      const ownerId = 'guild_123';
+      const settings = { key: 'value' };
+      const mockTx = {} as Prisma.TransactionClient;
+
+      vi.mocked(mockRepository.upsert).mockResolvedValue(mockSettings);
+
+      const result = await service.upsertSettings(
+        ownerType,
+        ownerId,
+        settings,
+        1,
+        undefined,
+        mockTx,
+      );
+
+      expect(result).toEqual(mockSettings);
+      expect(mockRepository.upsert).toHaveBeenCalledWith(
+        ownerType,
+        ownerId,
+        {
+          ownerType,
+          ownerId,
+          settings,
+          schemaVersion: 1,
+          configVersion: undefined,
+        },
+        mockTx,
       );
     });
   });
 
   describe('updateSettings', () => {
     it('should_update_existing_settings', async () => {
-      const ownerType = 'guild';
-      const ownerId = 'guild123';
-      const settingsData = { key: 'updated_value' };
-      const updatedSettings: Settings = {
-        id: 'settings123',
-        ownerType,
-        ownerId,
-        settings: settingsData,
-        schemaVersion: 1,
-        configVersion: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+      const ownerType = 'Guild';
+      const ownerId = 'guild_123';
+      const settings = { key: 'updated-value' };
+      const updatedSettings = { ...mockSettings, settings };
 
       vi.mocked(mockRepository.update).mockResolvedValue(updatedSettings);
 
-      const result = await service.updateSettings(
-        ownerType,
-        ownerId,
-        settingsData,
-      );
+      const result = await service.updateSettings(ownerType, ownerId, settings);
 
       expect(result).toEqual(updatedSettings);
       expect(mockRepository.update).toHaveBeenCalledWith(
         ownerType,
         ownerId,
         {
-          settings: settingsData,
+          settings,
           updatedAt: expect.any(Date),
         },
         undefined,
       );
     });
 
-    it('should_support_transaction_client', async () => {
-      const ownerType = 'guild';
-      const ownerId = 'guild123';
-      const settingsData = { key: 'value' };
-      const tx = {} as any;
-      const updatedSettings: Settings = {
-        id: 'settings123',
-        ownerType,
-        ownerId,
-        settings: settingsData,
-        schemaVersion: 1,
-        configVersion: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+    it('should_use_transaction_when_provided', async () => {
+      const ownerType = 'Guild';
+      const ownerId = 'guild_123';
+      const settings = { key: 'updated-value' };
+      const mockTx = {} as Prisma.TransactionClient;
 
-      vi.mocked(mockRepository.update).mockResolvedValue(updatedSettings);
+      vi.mocked(mockRepository.update).mockResolvedValue(mockSettings);
 
       const result = await service.updateSettings(
         ownerType,
         ownerId,
-        settingsData,
-        tx,
+        settings,
+        mockTx,
       );
 
-      expect(result).toEqual(updatedSettings);
+      expect(result).toEqual(mockSettings);
       expect(mockRepository.update).toHaveBeenCalledWith(
         ownerType,
         ownerId,
-        expect.any(Object),
-        tx,
+        {
+          settings,
+          updatedAt: expect.any(Date),
+        },
+        mockTx,
       );
     });
   });

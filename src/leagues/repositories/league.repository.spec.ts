@@ -10,7 +10,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { LeagueRepository } from './league.repository';
 import { PrismaService } from '@/prisma/prisma.service';
-import { LeagueStatus, Game } from '@prisma/client';
+import { LeagueStatus, Game, Prisma } from '@prisma/client';
 
 describe('LeagueRepository', () => {
   let repository: LeagueRepository;
@@ -36,6 +36,7 @@ describe('LeagueRepository', () => {
         update: vi.fn(),
         delete: vi.fn(),
       },
+      $transaction: vi.fn(),
     } as unknown as PrismaService;
 
     repository = new LeagueRepository(mockPrisma);
@@ -144,6 +145,132 @@ describe('LeagueRepository', () => {
       const result = await repository.exists('league-999');
 
       expect(result).toBe(false);
+    });
+  });
+
+  describe('delete', () => {
+    it('should_delete_league_when_id_provided', async () => {
+      vi.mocked(mockPrisma.league.delete).mockResolvedValue(
+        mockLeague as never,
+      );
+
+      const result = await repository.delete('league-123');
+
+      expect(result).toEqual(mockLeague);
+      expect(mockPrisma.league.delete).toHaveBeenCalledWith({
+        where: { id: 'league-123' },
+      });
+    });
+  });
+
+  describe('createWithSettings', () => {
+    const leagueData = {
+      name: 'New League',
+      guildId: 'guild-123',
+      game: Game.ROCKET_LEAGUE,
+      createdBy: 'user-123',
+    };
+    const settingsData = { someSetting: 'value' };
+
+    it('should_create_league_with_settings_when_transaction_client_provided', async () => {
+      const mockTransaction = {
+        league: {
+          create: vi.fn().mockResolvedValue(mockLeague),
+        },
+        settings: {
+          upsert: vi.fn().mockResolvedValue({
+            ownerType: 'league',
+            ownerId: 'league-123',
+            settings: settingsData,
+          }),
+        },
+      } as unknown as Prisma.TransactionClient;
+
+      const result = await repository.createWithSettings(
+        leagueData,
+        settingsData,
+        mockTransaction,
+      );
+
+      expect(result).toEqual(mockLeague);
+      expect(mockTransaction.league.create).toHaveBeenCalledWith({
+        data: leagueData,
+      });
+      expect(mockTransaction.settings.upsert).toHaveBeenCalledWith({
+        where: {
+          ownerType_ownerId: {
+            ownerType: 'league',
+            ownerId: 'league-123',
+          },
+        },
+        create: {
+          ownerType: 'league',
+          ownerId: 'league-123',
+          settings: settingsData,
+          schemaVersion: 1,
+        },
+        update: {
+          settings: settingsData,
+        },
+      });
+    });
+
+    it('should_create_league_with_settings_in_new_transaction_when_no_transaction_provided', async () => {
+      const mockTransactionClient = {
+        league: {
+          create: vi.fn().mockResolvedValue(mockLeague),
+        },
+        settings: {
+          upsert: vi.fn().mockResolvedValue({
+            ownerType: 'league',
+            ownerId: 'league-123',
+            settings: settingsData,
+          }),
+        },
+      };
+
+      vi.mocked(mockPrisma.$transaction).mockImplementation(
+        async (callback: any) => {
+          return callback(mockTransactionClient);
+        },
+      );
+
+      const result = await repository.createWithSettings(
+        leagueData,
+        settingsData,
+      );
+
+      expect(result).toEqual(mockLeague);
+      expect(mockPrisma.$transaction).toHaveBeenCalled();
+      expect(mockTransactionClient.league.create).toHaveBeenCalledWith({
+        data: leagueData,
+      });
+    });
+  });
+
+  describe('findByStatus', () => {
+    it('should_find_leagues_by_status_when_status_provided', async () => {
+      const mockLeagues = [mockLeague];
+      vi.mocked(mockPrisma.league.findMany).mockResolvedValue(
+        mockLeagues as never,
+      );
+      vi.mocked(mockPrisma.league.count).mockResolvedValue(1);
+
+      const result = await repository.findByStatus(
+        'guild-123',
+        LeagueStatus.ACTIVE,
+      );
+
+      expect(result.data).toEqual(mockLeagues);
+      expect(result.total).toBe(1);
+      expect(mockPrisma.league.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            guildId: 'guild-123',
+            status: { in: [LeagueStatus.ACTIVE] },
+          }),
+        }),
+      );
     });
   });
 });

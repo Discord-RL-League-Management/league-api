@@ -142,9 +142,8 @@ describe('GuildsService', () => {
       };
 
       // Import ConflictException from the same module the service uses
-      const { ConflictException } = await import(
-        '@/common/exceptions/base.exception.js'
-      );
+      const { ConflictException } =
+        await import('@/common/exceptions/base.exception.js');
       const conflictError = new ConflictException('Conflict');
 
       vi.mocked(mockGuildRepository.exists).mockResolvedValue(false);
@@ -465,6 +464,88 @@ describe('GuildsService', () => {
       // Verify error contains extracted error info
       await expect(service.upsert(createDto)).rejects.toThrow(
         'Failed to upsert guild',
+      );
+    });
+  });
+
+  describe('create - additional error paths', () => {
+    it('should_throw_InternalServerErrorException_when_settings_defaults_fails', async () => {
+      const createDto: CreateGuildDto = {
+        id: '123456789012345678',
+        name: 'Test Guild',
+        ownerId: '987654321098765432',
+      };
+
+      vi.mocked(mockGuildRepository.exists).mockResolvedValue(false);
+      vi.mocked(mockSettingsDefaults.getDefaults).mockImplementation(() => {
+        throw new Error('Settings defaults error');
+      });
+
+      await expect(service.create(createDto)).rejects.toThrow(
+        InternalServerErrorException,
+      );
+    });
+
+    it('should_handle_null_settings_defaults', async () => {
+      const createDto: CreateGuildDto = {
+        id: '123456789012345678',
+        name: 'Test Guild',
+        ownerId: '987654321098765432',
+      };
+
+      vi.mocked(mockGuildRepository.exists).mockResolvedValue(false);
+      vi.mocked(mockSettingsDefaults.getDefaults).mockReturnValue(null as any);
+      vi.mocked(mockGuildRepository.createWithSettings).mockResolvedValue(
+        mockGuild,
+      );
+
+      const result = await service.create(createDto);
+
+      expect(result).toEqual(mockGuild);
+    });
+  });
+
+  describe('update - additional error paths', () => {
+    it('should_handle_repository_error_during_exists_check', async () => {
+      const guildId = '123456789012345678';
+      const updateDto: UpdateGuildDto = { name: 'Updated Name' };
+
+      vi.mocked(mockGuildRepository.exists).mockRejectedValue(
+        new Error('Database connection error'),
+      );
+
+      await expect(service.update(guildId, updateDto)).rejects.toThrow(
+        InternalServerErrorException,
+      );
+    });
+
+    it('should_handle_partial_update_with_null_values', async () => {
+      const guildId = '123456789012345678';
+      const updateDto: UpdateGuildDto = {
+        name: 'Updated Name',
+        icon: null,
+      };
+      const updatedGuild = { ...mockGuild, ...updateDto };
+
+      vi.mocked(mockGuildRepository.exists).mockResolvedValue(true);
+      vi.mocked(mockGuildRepository.update).mockResolvedValue(updatedGuild);
+
+      const result = await service.update(guildId, updateDto);
+
+      expect(result).toEqual(updatedGuild);
+    });
+  });
+
+  describe('remove - additional error paths', () => {
+    it('should_handle_repository_error_during_exists_check', async () => {
+      const guildId = '123456789012345678';
+
+      vi.mocked(mockGuildRepository.exists).mockRejectedValue(
+        new Error('Database connection error'),
+      );
+
+      await expect(service.remove(guildId)).rejects.toThrow(
+        InternalServerErrorException,
       );
     });
   });

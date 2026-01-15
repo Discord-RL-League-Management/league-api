@@ -142,6 +142,32 @@ describe('LogSanitizer', () => {
       expect(sanitized.users[1].password).toBe('[REDACTED]');
     });
 
+    it('should_sanitize_string_items_in_arrays', () => {
+      const obj = {
+        messages: [
+          'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test.token',
+          'api_key=FAKE_BOT_API_KEY_123',
+          'Safe message',
+        ],
+      };
+      const sanitized = LogSanitizer.sanitizeObject(obj);
+      expect(sanitized.messages[0]).toContain('[JWT_TOKEN]');
+      expect(sanitized.messages[1]).toContain('[API_KEY]');
+      expect(sanitized.messages[2]).toBe('Safe message');
+    });
+
+    it('should_preserve_non_string_non_object_items_in_arrays', () => {
+      const obj = {
+        values: [123, true, null, undefined, 'string'],
+      };
+      const sanitized = LogSanitizer.sanitizeObject(obj);
+      expect(sanitized.values[0]).toBe(123);
+      expect(sanitized.values[1]).toBe(true);
+      expect(sanitized.values[2]).toBe(null);
+      expect(sanitized.values[3]).toBe(undefined);
+      expect(sanitized.values[4]).toBe('string');
+    });
+
     it('should_preserve_safe_fields_when_no_sensitive_data_present', () => {
       const obj = { username: 'test', email: 'test@example.com', age: 30 };
       const sanitized = LogSanitizer.sanitizeObject(obj);
@@ -218,6 +244,45 @@ describe('LogSanitizer', () => {
       };
       const sanitized = LogSanitizer.sanitizeHeaders(headers);
       expect(sanitized.Authorization).toBe('[JWT_TOKEN]');
+    });
+
+    it('should_return_headers_unchanged_when_headers_is_null', () => {
+      const sanitized = LogSanitizer.sanitizeHeaders(null as any);
+      expect(sanitized).toBe(null);
+    });
+
+    it('should_return_headers_unchanged_when_headers_is_undefined', () => {
+      const sanitized = LogSanitizer.sanitizeHeaders(undefined as any);
+      expect(sanitized).toBe(undefined);
+    });
+
+    it('should_return_headers_unchanged_when_headers_is_not_an_object', () => {
+      const sanitized = LogSanitizer.sanitizeHeaders('not-an-object' as any);
+      expect(sanitized).toBe('not-an-object');
+    });
+
+    it('should_return_headers_unchanged_when_headers_is_a_number', () => {
+      const sanitized = LogSanitizer.sanitizeHeaders(123 as any);
+      expect(sanitized).toBe(123);
+    });
+
+    it('should_sanitize_authorization_header_with_non_jwt_non_api_key_content', () => {
+      const headers = {
+        authorization: 'Bearer Basic dXNlcjpwYXNz',
+        'content-type': 'application/json',
+      };
+      const sanitized = LogSanitizer.sanitizeHeaders(headers);
+      expect(sanitized.authorization).toBe('Bearer Basic dXNlcjpwYXNz');
+      expect(sanitized['content-type']).toBe('application/json');
+    });
+
+    it('should_sanitize_cookie_header_with_jwt_token', () => {
+      const headers = {
+        cookie:
+          'session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.test',
+      };
+      const sanitized = LogSanitizer.sanitizeHeaders(headers);
+      expect(sanitized.cookie).toContain('[JWT_TOKEN]');
     });
   });
 });

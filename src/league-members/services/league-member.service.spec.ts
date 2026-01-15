@@ -617,4 +617,77 @@ describe('LeagueMemberService', () => {
       );
     });
   });
+
+  describe('joinLeague - edge cases', () => {
+    it('should_handle_cooldown_at_boundary_when_cooldown_just_expired', async () => {
+      const leagueId = 'league_123';
+      const joinDto: JoinLeagueDto = { playerId: 'player_123' };
+      const playerWithExpiredCooldown = {
+        ...mockPlayer,
+        lastLeftLeagueAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
+        lastLeftLeagueId: 'league_123',
+      };
+
+      vi.mocked(mockLeagueRepository.findById).mockResolvedValue(mockLeague);
+      vi.mocked(mockPlayerService.findOne).mockResolvedValue(
+        playerWithExpiredCooldown as any,
+      );
+      vi.mocked(mockPlayerService.ensurePlayerExists).mockResolvedValue(
+        playerWithExpiredCooldown as any,
+      );
+      vi.mocked(mockLeagueSettings.getSettings).mockResolvedValue({
+        membership: {
+          cooldownAfterLeave: 7,
+          requireApproval: false,
+        },
+      } as any);
+      vi.mocked(mockJoinValidation.validateJoin).mockResolvedValue(undefined);
+      vi.mocked(mockRepository.findByPlayerAndLeague).mockResolvedValue(null);
+      vi.mocked(mockPrisma.$transaction).mockImplementation(
+        async (callback) => {
+          const mockTx = {} as Prisma.TransactionClient;
+          return await callback(mockTx);
+        },
+      );
+      vi.mocked(mockRepository.create).mockResolvedValue(mockLeagueMember);
+
+      const result = await service.joinLeague(leagueId, joinDto);
+
+      expect(result).toEqual(mockLeagueMember);
+    });
+
+    it('should_handle_approval_workflow_when_approval_required', async () => {
+      const leagueId = 'league_123';
+      const joinDto: JoinLeagueDto = { playerId: 'player_123' };
+
+      vi.mocked(mockLeagueRepository.findById).mockResolvedValue(mockLeague);
+      vi.mocked(mockPlayerService.findOne).mockResolvedValue(mockPlayer as any);
+      vi.mocked(mockPlayerService.ensurePlayerExists).mockResolvedValue(
+        mockPlayer as any,
+      );
+      vi.mocked(mockLeagueSettings.getSettings).mockResolvedValue({
+        membership: {
+          cooldownAfterLeave: 0,
+          requireApproval: true,
+        },
+      } as any);
+      vi.mocked(mockJoinValidation.validateJoin).mockResolvedValue(undefined);
+      vi.mocked(mockRepository.findByPlayerAndLeague).mockResolvedValue(null);
+      vi.mocked(mockPrisma.$transaction).mockImplementation(
+        async (callback) => {
+          const mockTx = {} as Prisma.TransactionClient;
+          return await callback(mockTx);
+        },
+      );
+      const pendingMember = {
+        ...mockLeagueMember,
+        status: LeagueMemberStatus.PENDING_APPROVAL,
+      };
+      vi.mocked(mockRepository.create).mockResolvedValue(pendingMember);
+
+      const result = await service.joinLeague(leagueId, joinDto);
+
+      expect(result.status).toBe(LeagueMemberStatus.PENDING_APPROVAL);
+    });
+  });
 });

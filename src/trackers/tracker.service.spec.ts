@@ -50,6 +50,9 @@ describe('TrackerService', () => {
       softDelete: vi.fn(),
       checkUrlUniqueness: vi.fn(),
       findBestForUser: vi.fn(),
+      findAllAdmin: vi.fn(),
+      getScrapingStatusOverview: vi.fn(),
+      findScrapingLogs: vi.fn(),
     } as unknown as TrackerRepository;
 
     mockSeasonService = {
@@ -501,6 +504,169 @@ describe('TrackerService', () => {
 
       expect(result).toBeNull();
       expect(mockRepository.findBestForUser).toHaveBeenCalledWith(userId);
+    });
+  });
+
+  describe('createTracker - validation edge cases', () => {
+    it('should_handle_duplicate_url_detection_when_url_exists', async () => {
+      const url =
+        'https://rocketleague.tracker.network/rocket-league/profile/steam/testuser/overview';
+      const game = Game.ROCKET_LEAGUE;
+      const platform = GamePlatform.STEAM;
+      const username = 'testuser';
+      const userId = 'user_123';
+
+      // Mock that URL already exists
+      vi.mocked(mockRepository.findByUrl).mockResolvedValue(mockTracker);
+      vi.mocked(mockRepository.create).mockRejectedValue(
+        new Error('Unique constraint violation'),
+      );
+
+      await expect(
+        service.createTracker(url, game, platform, username, userId),
+      ).rejects.toThrow();
+    });
+  });
+
+  describe('getTrackersByUserId - batch operation edge cases', () => {
+    it('should_handle_empty_result_when_user_has_no_trackers', async () => {
+      const userId = 'user_999';
+      const emptyResult = {
+        data: [],
+        pagination: {
+          page: 1,
+          limit: 50,
+          total: 0,
+          pages: 0,
+        },
+      };
+
+      vi.mocked(mockRepository.findByUserId).mockResolvedValue(
+        emptyResult as any,
+      );
+
+      const result = await service.getTrackersByUserId(userId);
+
+      expect(result.data).toEqual([]);
+      expect(result.pagination.total).toBe(0);
+    });
+
+    it('should_handle_large_result_set_with_pagination', async () => {
+      const userId = 'user_123';
+      const largeResult = {
+        data: Array.from({ length: 100 }, (_, i) => ({
+          ...mockTracker,
+          id: `tracker_${i}`,
+        })),
+        pagination: {
+          page: 1,
+          limit: 50,
+          total: 100,
+          pages: 2,
+        },
+      };
+
+      vi.mocked(mockRepository.findByUserId).mockResolvedValue(
+        largeResult as any,
+      );
+
+      const result = await service.getTrackersByUserId(userId, { limit: 50 });
+
+      expect(result.data.length).toBe(100);
+      expect(result.pagination.pages).toBe(2);
+    });
+  });
+
+  describe('findAllAdmin', () => {
+    it('should_delegate_to_repository_findAllAdmin', async () => {
+      const options = {
+        status: TrackerScrapingStatus.PENDING,
+        page: 1,
+        limit: 50,
+      };
+      const mockResult = {
+        data: [mockTracker],
+        pagination: { page: 1, limit: 50, total: 1, pages: 1 },
+      };
+
+      vi.mocked(mockRepository.findAllAdmin).mockResolvedValue(
+        mockResult as any,
+      );
+
+      const result = await service.findAllAdmin(options);
+
+      expect(result).toEqual(mockResult);
+      expect(mockRepository.findAllAdmin).toHaveBeenCalledWith(options);
+    });
+
+    it('should_call_findAllAdmin_without_options', async () => {
+      const mockResult = {
+        data: [mockTracker],
+        pagination: { page: 1, limit: 50, total: 1, pages: 1 },
+      };
+
+      vi.mocked(mockRepository.findAllAdmin).mockResolvedValue(
+        mockResult as any,
+      );
+
+      const result = await service.findAllAdmin();
+
+      expect(result).toEqual(mockResult);
+      expect(mockRepository.findAllAdmin).toHaveBeenCalledWith(undefined);
+    });
+  });
+
+  describe('getScrapingStatusOverview', () => {
+    it('should_delegate_to_repository_getScrapingStatusOverview', async () => {
+      const mockOverview = {
+        PENDING: 5,
+        PROCESSING: 3,
+        COMPLETED: 10,
+      };
+
+      vi.mocked(mockRepository.getScrapingStatusOverview).mockResolvedValue(
+        mockOverview as any,
+      );
+
+      const result = await service.getScrapingStatusOverview();
+
+      expect(result).toEqual(mockOverview);
+      expect(mockRepository.getScrapingStatusOverview).toHaveBeenCalledWith();
+    });
+  });
+
+  describe('getScrapingLogs', () => {
+    it('should_delegate_to_repository_findScrapingLogs', async () => {
+      const options = { trackerId: 'tracker_123', page: 1, limit: 50 };
+      const mockResult = {
+        data: [],
+        pagination: { page: 1, limit: 50, total: 0, pages: 0 },
+      };
+
+      vi.mocked(mockRepository.findScrapingLogs).mockResolvedValue(
+        mockResult as any,
+      );
+
+      const result = await service.getScrapingLogs(options);
+
+      expect(result).toEqual(mockResult);
+      expect(mockRepository.findScrapingLogs).toHaveBeenCalledWith(options);
+    });
+
+    it('should_call_findScrapingLogs_without_options', async () => {
+      const mockResult = {
+        data: [],
+        pagination: { page: 1, limit: 50, total: 0, pages: 0 },
+      };
+
+      vi.mocked(mockRepository.findScrapingLogs).mockResolvedValue(
+        mockResult as any,
+      );
+
+      const result = await service.getScrapingLogs();
+
+      expect(result).toEqual(mockResult);
+      expect(mockRepository.findScrapingLogs).toHaveBeenCalledWith(undefined);
     });
   });
 });

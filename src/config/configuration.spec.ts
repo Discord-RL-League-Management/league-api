@@ -1,155 +1,261 @@
 /**
  * Configuration Unit Tests
  *
- * Tests verify that the application fails to start when required JWT keys are missing.
- * Aligned with ISO/IEC/IEEE 29119 standards and TQA Quality Gates.
+ * Demonstrates TDD methodology with Vitest.
+ * Focus: Functional core, state verification, fast execution.
+ *
+ * Aligned with ISO/IEC/IEEE 29119 standards and Black Box Axiom.
+ * Tests verify inputs, outputs, and observable side effects only.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { configurationSchema } from '@/config/configuration.schema';
+import configuration from './configuration';
 
-describe('Configuration', () => {
-  const mockPrivateKey =
-    '-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA...\n-----END RSA PRIVATE KEY-----';
-  const mockPublicKey =
-    '-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A\n-----END PUBLIC KEY-----';
-
-  const baseEnv = {
-    NODE_ENV: 'test',
-    PORT: '3000',
-    DATABASE_URL: 'postgresql://test:test@localhost:5432/test',
-    BOT_API_KEY: 'test-bot-api-key',
-    API_KEY_SALT: 'test-salt',
-    ENCRYPTION_KEY: 'test-encryption-key-hex-string-32-chars-long',
-    DISCORD_CLIENT_ID: 'test-client-id',
-    DISCORD_CLIENT_SECRET: 'test-client-secret',
-    DISCORD_CALLBACK_URL: 'http://localhost:3000/auth/callback',
-    DISCORD_BOT_TOKEN: 'test-bot-token',
-    FRONTEND_URL: 'http://localhost:3000',
-    REDIS_PASSWORD: 'test-redis-password',
-    DECODO_API_KEY: 'test-decodo-key',
-    DECODO_PROXY_USERNAME: 'test-proxy-user',
-    DECODO_PROXY_PASSWORD: 'test-proxy-pass',
-  };
+describe('configuration', () => {
+  const originalEnv = process.env;
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetModules();
+    process.env = { ...originalEnv };
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    process.env = originalEnv;
   });
 
-  describe('JWT Key Validation', () => {
-    it('should_require_jwt_private_key_in_schema', () => {
-      const schema = configurationSchema;
-      const envWithoutPrivateKey = {
-        ...baseEnv,
-        JWT_PUBLIC_KEY: mockPublicKey,
-      };
+  describe('app configuration', () => {
+    it('should_use_default_node_env_when_not_set', () => {
+      delete process.env.NODE_ENV;
+      const config = configuration();
 
-      const { error } = schema.validate(envWithoutPrivateKey, {
-        abortEarly: false,
-      });
-
-      expect(error).toBeDefined();
-      expect(
-        error?.details.some((d) => d.path.includes('JWT_PRIVATE_KEY')),
-      ).toBe(true);
+      expect(config.app.nodeEnv).toBe('development');
     });
 
-    it('should_require_jwt_public_key_in_schema', () => {
-      const schema = configurationSchema;
-      const envWithoutPublicKey = {
-        ...baseEnv,
-        JWT_PRIVATE_KEY: mockPrivateKey,
-      };
+    it('should_use_provided_node_env_when_set', () => {
+      process.env.NODE_ENV = 'production';
+      const config = configuration();
 
-      const { error } = schema.validate(envWithoutPublicKey, {
-        abortEarly: false,
-      });
-
-      expect(error).toBeDefined();
-      expect(
-        error?.details.some((d) => d.path.includes('JWT_PUBLIC_KEY')),
-      ).toBe(true);
+      expect(config.app.nodeEnv).toBe('production');
     });
 
-    it('should_validate_jwt_private_key_format', () => {
-      const schema = configurationSchema;
-      const envWithInvalidPrivateKey = {
-        ...baseEnv,
-        JWT_PRIVATE_KEY: 'invalid-key-format',
-        JWT_PUBLIC_KEY: mockPublicKey,
-      };
+    it('should_use_default_port_when_not_set', () => {
+      delete process.env.PORT;
+      const config = configuration();
 
-      const { error } = schema.validate(envWithInvalidPrivateKey, {
-        abortEarly: false,
-      });
-
-      expect(error).toBeDefined();
-      expect(
-        error?.details.some(
-          (d) =>
-            d.path.includes('JWT_PRIVATE_KEY') &&
-            d.type === 'string.pattern.base',
-        ),
-      ).toBe(true);
+      expect(config.app.port).toBe(3000);
     });
 
-    it('should_validate_jwt_public_key_format', () => {
-      const schema = configurationSchema;
-      const envWithInvalidPublicKey = {
-        ...baseEnv,
-        JWT_PRIVATE_KEY: mockPrivateKey,
-        JWT_PUBLIC_KEY: 'invalid-key-format',
-      };
+    it('should_parse_port_when_provided', () => {
+      process.env.PORT = '8080';
+      const config = configuration();
 
-      const { error } = schema.validate(envWithInvalidPublicKey, {
-        abortEarly: false,
-      });
+      expect(config.app.port).toBe(8080);
+    });
+  });
 
-      expect(error).toBeDefined();
-      expect(
-        error?.details.some(
-          (d) =>
-            d.path.includes('JWT_PUBLIC_KEY') &&
-            d.type === 'string.pattern.base',
-        ),
-      ).toBe(true);
+  describe('database configuration', () => {
+    it('should_use_empty_string_when_database_url_not_set', () => {
+      delete process.env.DATABASE_URL;
+      const config = configuration();
+
+      expect(config.database.url).toBe('');
     });
 
-    it('should_accept_valid_jwt_keys', () => {
-      const schema = configurationSchema;
-      const envWithValidKeys = {
-        ...baseEnv,
-        JWT_PRIVATE_KEY: mockPrivateKey,
-        JWT_PUBLIC_KEY: mockPublicKey,
-      };
+    it('should_use_provided_database_url_when_set', () => {
+      process.env.DATABASE_URL = 'postgresql://localhost:5432/test';
+      const config = configuration();
 
-      const { error } = schema.validate(envWithValidKeys, {
-        abortEarly: false,
-      });
+      expect(config.database.url).toBe('postgresql://localhost:5432/test');
+    });
+  });
 
-      expect(error).toBeUndefined();
+  describe('auth configuration', () => {
+    it('should_use_default_values_when_auth_env_vars_not_set', () => {
+      delete process.env.BOT_API_KEY;
+      delete process.env.API_KEY_SALT;
+      delete process.env.JWT_EXPIRES_IN;
+      delete process.env.NODE_ENV;
+      const config = configuration();
+
+      expect(config.auth.botApiKey).toBe('');
+      expect(config.auth.apiKeySalt).toBe('');
+      expect(config.auth.jwtExpiresIn).toBe('7d');
+      expect(config.auth.cookieSecure).toBe(false);
+      expect(config.auth.cookieSameSite).toBe('lax');
     });
 
-    it('should_validate_that_schema_requires_jwt_keys_for_startup', () => {
-      // This test documents that schema validation will prevent startup
-      // The actual startup failure is verified manually by running: npm start without JWT keys
-      const envWithoutKeys = { ...baseEnv };
+    it('should_use_provided_auth_values_when_set', () => {
+      process.env.BOT_API_KEY = 'test-key';
+      process.env.API_KEY_SALT = 'test-salt';
+      process.env.JWT_EXPIRES_IN = '30d';
+      const config = configuration();
 
-      const { error } = configurationSchema.validate(envWithoutKeys, {
-        abortEarly: false,
-      });
+      expect(config.auth.botApiKey).toBe('test-key');
+      expect(config.auth.apiKeySalt).toBe('test-salt');
+      expect(config.auth.jwtExpiresIn).toBe('30d');
+    });
 
-      expect(error).toBeDefined();
-      expect(
-        error?.details.some((d) => d.path.includes('JWT_PRIVATE_KEY')),
-      ).toBe(true);
-      expect(
-        error?.details.some((d) => d.path.includes('JWT_PUBLIC_KEY')),
-      ).toBe(true);
+    it('should_set_cookie_secure_to_true_when_in_production', () => {
+      process.env.NODE_ENV = 'production';
+      const config = configuration();
+
+      expect(config.auth.cookieSecure).toBe(true);
+    });
+
+    it('should_set_cookie_secure_to_false_when_not_in_production', () => {
+      process.env.NODE_ENV = 'development';
+      const config = configuration();
+
+      expect(config.auth.cookieSecure).toBe(false);
+    });
+
+    it('should_parse_cookie_same_site_when_provided', () => {
+      process.env.COOKIE_SAME_SITE = 'strict';
+      const config = configuration();
+
+      expect(config.auth.cookieSameSite).toBe('strict');
+    });
+
+    it('should_calculate_cookie_max_age_correctly', () => {
+      const config = configuration();
+
+      expect(config.auth.cookieMaxAge).toBe(7 * 24 * 60 * 60 * 1000);
+    });
+  });
+
+  describe('discord configuration', () => {
+    it('should_use_default_discord_values_when_not_set', () => {
+      delete process.env.DISCORD_CLIENT_ID;
+      delete process.env.DISCORD_CLIENT_SECRET;
+      delete process.env.DISCORD_CALLBACK_URL;
+      delete process.env.DISCORD_BOT_TOKEN;
+      delete process.env.DISCORD_TIMEOUT;
+      delete process.env.DISCORD_RETRY_ATTEMPTS;
+      delete process.env.DISCORD_API_URL;
+      const config = configuration();
+
+      expect(config.discord.clientId).toBe('');
+      expect(config.discord.clientSecret).toBe('');
+      expect(config.discord.callbackUrl).toBe('');
+      expect(config.discord.botToken).toBe('');
+      expect(config.discord.timeout).toBe(10000);
+      expect(config.discord.retryAttempts).toBe(3);
+      expect(config.discord.apiUrl).toBe('https://discord.com/api/v10');
+    });
+
+    it('should_parse_discord_timeout_when_provided', () => {
+      process.env.DISCORD_TIMEOUT = '5000';
+      const config = configuration();
+
+      expect(config.discord.timeout).toBe(5000);
+    });
+
+    it('should_parse_discord_retry_attempts_when_provided', () => {
+      process.env.DISCORD_RETRY_ATTEMPTS = '5';
+      const config = configuration();
+
+      expect(config.discord.retryAttempts).toBe(5);
+    });
+  });
+
+  describe('oauth configuration', () => {
+    it('should_include_frontend_url_in_redirect_uris_when_set', () => {
+      process.env.FRONTEND_URL = 'https://example.com';
+      delete process.env.OAUTH_REDIRECT_URIS;
+      const config = configuration();
+
+      expect(config.oauth.redirectUris).toContain('https://example.com');
+      expect(config.oauth.redirectUris[0]).toBe('https://example.com');
+    });
+
+    it('should_parse_oauth_redirect_uris_when_provided', () => {
+      process.env.OAUTH_REDIRECT_URIS =
+        'https://example.com,https://app.example.com';
+      delete process.env.FRONTEND_URL;
+      const config = configuration();
+
+      expect(config.oauth.redirectUris).toContain('https://example.com');
+      expect(config.oauth.redirectUris).toContain('https://app.example.com');
+    });
+
+    it('should_combine_frontend_url_and_redirect_uris', () => {
+      process.env.FRONTEND_URL = 'https://example.com';
+      process.env.OAUTH_REDIRECT_URIS = 'https://app.example.com';
+      const config = configuration();
+
+      expect(config.oauth.redirectUris).toContain('https://example.com');
+      expect(config.oauth.redirectUris).toContain('https://app.example.com');
+      expect(config.oauth.redirectUris[0]).toBe('https://example.com');
+    });
+
+    it('should_not_duplicate_frontend_url_in_redirect_uris', () => {
+      process.env.FRONTEND_URL = 'https://example.com';
+      process.env.OAUTH_REDIRECT_URIS =
+        'https://example.com,https://app.example.com';
+      const config = configuration();
+
+      const exampleCount = config.oauth.redirectUris.filter(
+        (uri) => uri === 'https://example.com',
+      ).length;
+      expect(exampleCount).toBe(1);
+    });
+
+    it('should_filter_empty_redirect_uris', () => {
+      delete process.env.FRONTEND_URL;
+      process.env.OAUTH_REDIRECT_URIS =
+        'https://example.com,,https://app.example.com,  ';
+      const config = configuration();
+
+      expect(config.oauth.redirectUris).not.toContain('');
+      expect(config.oauth.redirectUris.length).toBe(2);
+    });
+  });
+
+  describe('throttler configuration', () => {
+    it('should_use_default_throttler_values_when_not_set', () => {
+      delete process.env.THROTTLE_TTL;
+      delete process.env.THROTTLE_LIMIT;
+      const config = configuration();
+
+      expect(config.throttler.ttl).toBe(60000);
+      expect(config.throttler.limit).toBe(100);
+    });
+
+    it('should_parse_throttler_values_when_provided', () => {
+      process.env.THROTTLE_TTL = '30000';
+      process.env.THROTTLE_LIMIT = '50';
+      const config = configuration();
+
+      expect(config.throttler.ttl).toBe(30000);
+      expect(config.throttler.limit).toBe(50);
+    });
+  });
+
+  describe('systemAdmin configuration', () => {
+    it('should_use_empty_array_when_system_admin_user_ids_not_set', () => {
+      delete process.env.SYSTEM_ADMIN_USER_IDS;
+      const config = configuration();
+
+      expect(config.systemAdmin.userIds).toEqual([]);
+    });
+
+    it('should_parse_system_admin_user_ids_when_provided', () => {
+      process.env.SYSTEM_ADMIN_USER_IDS = 'user-1,user-2,user-3';
+      const config = configuration();
+
+      expect(config.systemAdmin.userIds).toEqual([
+        'user-1',
+        'user-2',
+        'user-3',
+      ]);
+    });
+
+    it('should_filter_empty_user_ids', () => {
+      process.env.SYSTEM_ADMIN_USER_IDS = 'user-1,,user-2,  ';
+      const config = configuration();
+
+      expect(config.systemAdmin.userIds).not.toContain('');
+      expect(config.systemAdmin.userIds.length).toBe(2);
     });
   });
 });

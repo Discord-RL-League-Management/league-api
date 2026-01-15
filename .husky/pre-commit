@@ -4,11 +4,16 @@
 # Run lint-staged to check staged files
 npx lint-staged
 
-# Run test suite
-echo "🧪 Running test suite..."
-npm test
+# Run unit test suite with coverage to enforce 80% threshold
+echo "🧪 Running unit test suite with coverage checks..."
+pnpm test:unit:coverage
 if [ $? -ne 0 ]; then
-  echo "❌ Tests failed. Please fix failing tests before committing."
+  echo "❌ Coverage check failed. All categories must meet 80% threshold:"
+  echo "   - Statements: ≥ 80%"
+  echo "   - Branches: ≥ 80%"
+  echo "   - Functions: ≥ 80%"
+  echo "   - Lines: ≥ 80%"
+  echo "Please add tests to improve coverage before committing."
   exit 1
 fi
 

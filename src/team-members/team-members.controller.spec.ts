@@ -5,16 +5,28 @@
  * Focus: Functional core, state verification, fast execution.
  *
  * Aligned with ISO/IEC/IEEE 29119 standards and Black Box Axiom.
+ * Tests verify inputs, outputs, and observable side effects only.
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Test } from '@nestjs/testing';
 import { TeamMembersController } from './team-members.controller';
 import { TeamMemberService } from './services/team-member.service';
+import { CreateTeamMemberDto } from './dto/create-team-member.dto';
+import { UpdateTeamMemberDto } from './dto/update-team-member.dto';
 
 describe('TeamMembersController', () => {
   let controller: TeamMembersController;
   let mockTeamMemberService: TeamMemberService;
+
+  const mockTeamMember = {
+    id: 'member-123',
+    teamId: 'team-123',
+    playerId: 'player-123',
+    role: 'CAPTAIN',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
 
   beforeEach(async () => {
     mockTeamMemberService = {
@@ -34,68 +46,79 @@ describe('TeamMembersController', () => {
     controller = module.get<TeamMembersController>(TeamMembersController);
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   describe('getMembers', () => {
-    it('should_return_members_when_team_id_provided', async () => {
-      const mockMembers = [{ id: 'member-1', teamId: 'team-1' }];
-      vi.mocked(mockTeamMemberService.findByTeamId).mockResolvedValue(
+    it('should_return_members_when_team_id_is_provided', async () => {
+      const mockMembers = [mockTeamMember];
+      vi.spyOn(mockTeamMemberService, 'findByTeamId').mockResolvedValue(
         mockMembers as never,
       );
 
-      const result = await controller.getMembers('team-1');
+      const result = await controller.getMembers('team-123');
 
       expect(result).toEqual(mockMembers);
-      expect(mockTeamMemberService.findByTeamId).toHaveBeenCalledWith('team-1');
+      expect(mockTeamMemberService.findByTeamId).toHaveBeenCalledWith(
+        'team-123',
+      );
     });
   });
 
   describe('addMember', () => {
-    it('should_add_member_when_dto_valid', async () => {
-      const createDto = { playerId: 'player-1' };
-      const mockMember = { id: 'member-1', ...createDto, teamId: 'team-1' };
-      vi.mocked(mockTeamMemberService.addMember).mockResolvedValue(
-        mockMember as never,
+    it('should_add_member_when_valid_data_is_provided', async () => {
+      const createDto: CreateTeamMemberDto = {
+        playerId: 'player-123',
+        role: 'CAPTAIN',
+      };
+
+      vi.spyOn(mockTeamMemberService, 'addMember').mockResolvedValue(
+        mockTeamMember as never,
       );
 
-      const result = await controller.addMember('team-1', createDto);
+      const result = await controller.addMember('team-123', createDto);
 
-      expect(result).toEqual(mockMember);
-      expect(mockTeamMemberService.addMember).toHaveBeenCalled();
+      expect(result).toEqual(mockTeamMember);
+      expect(mockTeamMemberService.addMember).toHaveBeenCalledWith({
+        ...createDto,
+        teamId: 'team-123',
+      });
     });
   });
 
   describe('updateMember', () => {
-    it('should_update_member_when_dto_valid', async () => {
-      const updateDto = { role: 'CAPTAIN' };
-      const mockUpdated = { id: 'member-1', ...updateDto };
-      vi.mocked(mockTeamMemberService.update).mockResolvedValue(
-        mockUpdated as never,
+    it('should_update_member_when_valid_data_is_provided', async () => {
+      const updateDto: UpdateTeamMemberDto = {
+        role: 'MEMBER',
+      };
+
+      const updatedMember = {
+        ...mockTeamMember,
+        role: 'MEMBER',
+      };
+
+      vi.spyOn(mockTeamMemberService, 'update').mockResolvedValue(
+        updatedMember as never,
       );
 
-      const result = await controller.updateMember('member-1', updateDto);
+      const result = await controller.updateMember('member-123', updateDto);
 
-      expect(result).toEqual(mockUpdated);
+      expect(result).toEqual(updatedMember);
       expect(mockTeamMemberService.update).toHaveBeenCalledWith(
-        'member-1',
+        'member-123',
         updateDto,
       );
     });
   });
 
   describe('removeMember', () => {
-    it('should_remove_member_when_id_provided', async () => {
-      vi.mocked(mockTeamMemberService.removeMember).mockResolvedValue(
-        undefined,
+    it('should_remove_member_when_id_is_provided', async () => {
+      vi.spyOn(mockTeamMemberService, 'removeMember').mockResolvedValue(
+        mockTeamMember as never,
       );
 
-      const result = await controller.removeMember('member-1');
+      const result = await controller.removeMember('member-123');
 
-      expect(result).toBeUndefined();
+      expect(result).toEqual(mockTeamMember);
       expect(mockTeamMemberService.removeMember).toHaveBeenCalledWith(
-        'member-1',
+        'member-123',
       );
     });
   });
