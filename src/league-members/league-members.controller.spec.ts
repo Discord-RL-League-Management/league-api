@@ -109,6 +109,25 @@ describe('LeagueMembersController', () => {
         joinDto,
       );
     });
+
+    it('should_throw_forbidden_when_user_does_not_own_player', async () => {
+      const joinDto: JoinLeagueDto = {
+        playerId: 'player-123',
+      };
+
+      vi.spyOn(
+        mockPlayerOwnershipService,
+        'validatePlayerOwnership',
+      ).mockRejectedValue(new ForbiddenException('Not owner'));
+
+      await expect(
+        controller.joinLeague('league-123', joinDto, mockUser),
+      ).rejects.toThrow(ForbiddenException);
+      expect(
+        mockPlayerOwnershipService.validatePlayerOwnership,
+      ).toHaveBeenCalledWith('user-123', 'player-123');
+      expect(mockLeagueMemberService.joinLeague).not.toHaveBeenCalled();
+    });
   });
 
   describe('getLeagueMembers', () => {
@@ -174,6 +193,21 @@ describe('LeagueMembersController', () => {
         'player-123',
         'league-123',
       );
+    });
+
+    it('should_throw_forbidden_when_user_does_not_own_player', async () => {
+      vi.spyOn(
+        mockPlayerOwnershipService,
+        'validatePlayerOwnership',
+      ).mockRejectedValue(new ForbiddenException('Not owner'));
+
+      await expect(
+        controller.leaveLeague('league-123', 'player-123', mockUser),
+      ).rejects.toThrow(ForbiddenException);
+      expect(
+        mockPlayerOwnershipService.validatePlayerOwnership,
+      ).toHaveBeenCalledWith('user-123', 'player-123');
+      expect(mockLeagueMemberService.leaveLeague).not.toHaveBeenCalled();
     });
   });
 
@@ -281,6 +315,35 @@ describe('LeagueMembersController', () => {
         'member-123',
         updateDto,
       );
+    });
+
+    it('should_rethrow_error_when_non_forbidden_exception_occurs', async () => {
+      const updateDto: UpdateLeagueMemberDto = {
+        status: 'INACTIVE',
+      };
+
+      const testError = new Error('Unexpected error');
+
+      vi.spyOn(
+        mockLeagueMemberService,
+        'findByPlayerAndLeague',
+      ).mockResolvedValue(mockLeagueMember as never);
+      vi.spyOn(
+        mockPlayerOwnershipService,
+        'validatePlayerOwnership',
+      ).mockRejectedValue(testError);
+
+      await expect(
+        controller.updateMember(
+          'league-123',
+          'player-123',
+          updateDto,
+          mockUser,
+        ),
+      ).rejects.toThrow('Unexpected error');
+      expect(
+        mockLeaguePermissionService.checkLeagueAdminOrModeratorAccess,
+      ).not.toHaveBeenCalled();
     });
   });
 });

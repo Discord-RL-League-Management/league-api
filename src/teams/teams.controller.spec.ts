@@ -21,8 +21,8 @@ describe('TeamsController', () => {
 
   const mockTeam = {
     id: 'team-123',
-    name: 'Test Team',
     leagueId: 'league-123',
+    name: 'Test Team',
     organizationId: 'org-123',
     createdAt: new Date(),
     updatedAt: new Date(),
