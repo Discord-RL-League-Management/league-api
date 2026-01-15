@@ -233,5 +233,48 @@ describe('MatchRepository', () => {
       const callArgs = vi.mocked(mockPrisma.match.create).mock.calls[0]?.[0];
       expect(callArgs?.data.scheduledAt).toBeUndefined();
     });
+
+    it('should_create_match_with_tournament_and_round', async () => {
+      const createDto: CreateMatchDto = {
+        leagueId: 'league-123',
+        tournamentId: 'tournament-123',
+        round: 1,
+      };
+      const createdMatch = {
+        ...mockMatch,
+        tournamentId: 'tournament-123',
+        round: 1,
+      };
+      vi.mocked(mockPrisma.match.create).mockResolvedValue(
+        createdMatch as never,
+      );
+
+      const result = await repository.create(createDto);
+
+      expect(result).toEqual(createdMatch);
+      expect(mockPrisma.match.create).toHaveBeenCalledWith({
+        data: {
+          leagueId: 'league-123',
+          tournamentId: 'tournament-123',
+          round: 1,
+          scheduledAt: undefined,
+        },
+      });
+    });
+  });
+
+  describe('delete', () => {
+    it('should_delete_match_when_match_exists', async () => {
+      const id = 'match-123';
+
+      vi.mocked(mockPrisma.match.delete).mockResolvedValue(mockMatch as never);
+
+      const result = await repository.delete(id);
+
+      expect(result).toEqual(mockMatch);
+      expect(mockPrisma.match.delete).toHaveBeenCalledWith({
+        where: { id },
+      });
+    });
   });
 });
