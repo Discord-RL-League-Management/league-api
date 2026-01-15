@@ -76,6 +76,18 @@ describe('RequestContextService', () => {
 
       expect(result).toBe('unknown');
     });
+
+    it('should_return_request_ip_when_x_forwarded_for_is_array', () => {
+      const mockRequest = {
+        headers: { 'x-forwarded-for': ['192.168.1.1, 10.0.0.1', '1.2.3.4'] },
+        ip: '127.0.0.1',
+        socket: { remoteAddress: '127.0.0.1' },
+      } as unknown as Request;
+
+      const result = service.getIpAddress(mockRequest);
+
+      expect(result).toBe('127.0.0.1');
+    });
   });
 
   describe('getUserAgent', () => {
@@ -92,6 +104,36 @@ describe('RequestContextService', () => {
     it('should_return_unknown_when_no_user_agent_header', () => {
       const mockRequest = {
         headers: {},
+      } as unknown as Request;
+
+      const result = service.getUserAgent(mockRequest);
+
+      expect(result).toBe('unknown');
+    });
+
+    it('should_return_first_element_when_user_agent_is_array', () => {
+      const mockRequest = {
+        headers: { 'user-agent': ['Mozilla/5.0 Chrome/120.0.0.0', 'Other'] },
+      } as unknown as Request;
+
+      const result = service.getUserAgent(mockRequest);
+
+      expect(result).toBe('Mozilla/5.0 Chrome/120.0.0.0');
+    });
+
+    it('should_return_unknown_when_user_agent_array_is_empty', () => {
+      const mockRequest = {
+        headers: { 'user-agent': [] },
+      } as unknown as Request;
+
+      const result = service.getUserAgent(mockRequest);
+
+      expect(result).toBe('unknown');
+    });
+
+    it('should_return_unknown_when_user_agent_array_has_non_string_first_element', () => {
+      const mockRequest = {
+        headers: { 'user-agent': [123, 'Mozilla/5.0'] },
       } as unknown as Request;
 
       const result = service.getUserAgent(mockRequest);

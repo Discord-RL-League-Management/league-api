@@ -145,6 +145,47 @@ describe('LeaguesService', () => {
       );
       expect(result.leagues).toEqual([mockLeague]);
     });
+
+    it('should_throw_internal_error_when_find_by_guild_fails', async () => {
+      vi.mocked(mockLeagueRepository.findByGuild).mockRejectedValue(
+        new Error('Database error'),
+      );
+
+      await expect(service.findByGuild('guild-123')).rejects.toThrow(
+        InternalServerErrorException,
+      );
+    });
+  });
+
+  describe('findByGame', () => {
+    it('should_return_leagues_for_game_when_found', async () => {
+      const mockResult = {
+        data: [mockLeague],
+        total: 1,
+        page: 1,
+        limit: 50,
+      };
+      vi.mocked(mockLeagueRepository.findByGame).mockResolvedValue(mockResult);
+
+      const result = await service.findByGame('guild-123', 'test-game');
+
+      expect(mockLeagueRepository.findByGame).toHaveBeenCalledWith(
+        'guild-123',
+        'test-game',
+        undefined,
+      );
+      expect(result.leagues).toEqual([mockLeague]);
+    });
+
+    it('should_throw_internal_error_when_find_by_game_fails', async () => {
+      vi.mocked(mockLeagueRepository.findByGame).mockRejectedValue(
+        new Error('Database error'),
+      );
+
+      await expect(
+        service.findByGame('guild-123', 'test-game'),
+      ).rejects.toThrow(InternalServerErrorException);
+    });
   });
 
   describe('findOne', () => {
@@ -286,6 +327,17 @@ describe('LeaguesService', () => {
         service.updateStatus('nonexistent', LeagueStatus.PAUSED),
       ).rejects.toThrow(LeagueNotFoundException);
     });
+
+    it('should_throw_internal_error_when_update_fails', async () => {
+      vi.mocked(mockLeagueRepository.findOne).mockResolvedValue(mockLeague);
+      vi.mocked(mockLeagueRepository.update).mockRejectedValue(
+        new Error('Database error'),
+      );
+
+      await expect(
+        service.updateStatus('league-123', LeagueStatus.PAUSED),
+      ).rejects.toThrow(InternalServerErrorException);
+    });
   });
 
   describe('remove', () => {
@@ -304,6 +356,17 @@ describe('LeaguesService', () => {
 
       await expect(service.remove('league-123')).rejects.toThrow(
         LeagueNotFoundException,
+      );
+    });
+
+    it('should_throw_internal_error_when_delete_fails', async () => {
+      vi.mocked(mockLeagueRepository.exists).mockResolvedValue(true);
+      vi.mocked(mockLeagueRepository.delete).mockRejectedValue(
+        new Error('Database error'),
+      );
+
+      await expect(service.remove('league-123')).rejects.toThrow(
+        InternalServerErrorException,
       );
     });
   });

@@ -169,6 +169,33 @@ describe('DiscordMessageService', () => {
       ).rejects.toThrow('Message send failed');
     });
 
+    it('should_handle_error_with_response_data_message', async () => {
+      const axiosError = new AxiosError('Network error');
+      axiosError.response = {
+        data: { message: 'Custom error message' },
+        status: 500,
+      } as never;
+      vi.mocked(mockHttpService.post).mockReturnValue(
+        throwError(() => axiosError),
+      );
+
+      await expect(
+        service.sendDirectMessage('user-1', { content: 'test' }),
+      ).rejects.toThrow();
+    });
+
+    it('should_handle_error_without_response_data', async () => {
+      const axiosError = new AxiosError('Network error');
+      axiosError.response = { status: 500 } as never;
+      vi.mocked(mockHttpService.post).mockReturnValue(
+        throwError(() => axiosError),
+      );
+
+      await expect(
+        service.sendDirectMessage('user-1', { content: 'test' }),
+      ).rejects.toThrow();
+    });
+
     it('should_throw_error_when_circuit_breaker_open', async () => {
       const { service: testService, httpService: testHttpService } =
         await createServiceWithCircuitBreakerConfig(1, 60000);
@@ -262,6 +289,15 @@ describe('DiscordMessageService', () => {
 
       expect(mockHttpService.post).toHaveBeenCalled();
     });
+
+    it('should_handle_error_without_response_object', async () => {
+      const error = new Error('Generic error');
+      vi.mocked(mockHttpService.post).mockReturnValue(throwError(() => error));
+
+      await expect(
+        service.sendMessage('channel-1', { content: 'test' }),
+      ).rejects.toThrow('Generic error');
+    });
   });
 
   describe('sendEphemeralFollowUp', () => {
@@ -325,6 +361,47 @@ describe('DiscordMessageService', () => {
       await expect(
         service.sendEphemeralFollowUp('valid-token', { content: 'test' }),
       ).rejects.toThrow('Server error');
+    });
+
+    it('should_handle_error_with_response_data_message', async () => {
+      const axiosError = new AxiosError('Server error');
+      axiosError.response = {
+        data: { message: 'Custom error message' },
+        status: 500,
+      } as never;
+      vi.mocked(mockHttpService.post).mockReturnValue(
+        throwError(() => axiosError),
+      );
+
+      await expect(
+        service.sendEphemeralFollowUp('valid-token', { content: 'test' }),
+      ).rejects.toThrow();
+    });
+
+    it('should_handle_error_without_response', async () => {
+      const axiosError = new AxiosError('Network error');
+      axiosError.response = undefined;
+      vi.mocked(mockHttpService.post).mockReturnValue(
+        throwError(() => axiosError),
+      );
+
+      await expect(
+        service.sendEphemeralFollowUp('valid-token', { content: 'test' }),
+      ).rejects.toThrow();
+    });
+
+    it('should_handle_whitespace_only_token', async () => {
+      await expect(
+        service.sendEphemeralFollowUp('   ', { content: 'test' }),
+      ).rejects.toThrow('Invalid interaction token provided');
+    });
+
+    it('should_use_token_prefix_in_log_when_token_length_less_than_10', async () => {
+      vi.mocked(mockHttpService.post).mockReturnValue(of({ data: {} }));
+
+      await service.sendEphemeralFollowUp('abc', { content: 'test' });
+
+      expect(mockHttpService.post).toHaveBeenCalled();
     });
 
     it('should_throw_error_when_bot_token_not_configured', async () => {

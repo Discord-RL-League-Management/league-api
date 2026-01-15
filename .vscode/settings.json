@@ -1,0 +1,12 @@
+{
+  "vitest.include": [
+    "vitest.config.mts",
+    "vitest.api.config.mts"
+  ],
+  "vitest.exclude": [
+    "**/node_modules/**",
+    "**/dist/**"
+  ],
+  "vitest.nodeEnv": {},
+  "vitest.commandLine": "vitest"
+}

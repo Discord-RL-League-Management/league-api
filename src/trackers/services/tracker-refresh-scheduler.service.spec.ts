@@ -10,6 +10,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
+import { CronJob } from 'cron';
 import { TrackerRefreshSchedulerService } from './tracker-refresh-scheduler.service';
 import { TrackerRepository } from '../repositories/tracker.repository';
 import { TrackerScrapingQueueService } from '../queues/tracker-scraping.queue';
@@ -122,6 +123,92 @@ describe('TrackerRefreshSchedulerService', () => {
     });
   });
 
+  describe('onModuleInit', () => {
+    it('should_initialize_cron_job_with_default_expression_when_not_provided', () => {
+      const configWithoutCron = {
+        ...mockTrackerConfig,
+        refreshCron: undefined,
+      };
+      vi.mocked(mockConfigService.get).mockReturnValue(configWithoutCron);
+
+      const mockCronJob = {
+        start: vi.fn(),
+      };
+      vi.spyOn(CronJob.prototype, 'constructor' as any).mockImplementation(
+        () => mockCronJob,
+      );
+
+      const newService = new TrackerRefreshSchedulerService(
+        mockTrackerRepository,
+        mockScrapingQueueService,
+        mockBatchRefreshService,
+        mockConfigService,
+        mockSchedulerRegistry,
+        mockProcessingGuard,
+      );
+
+      newService.onModuleInit();
+
+      expect(mockSchedulerRegistry.addCronJob).toHaveBeenCalled();
+    });
+
+    it('should_initialize_cron_job_with_custom_expression', () => {
+      const mockCronJob = {
+        start: vi.fn(),
+      };
+      vi.spyOn(CronJob.prototype, 'constructor' as any).mockImplementation(
+        () => mockCronJob,
+      );
+
+      service.onModuleInit();
+
+      expect(mockSchedulerRegistry.addCronJob).toHaveBeenCalled();
+    });
+  });
+
+  describe('scheduledRefresh', () => {
+    it('should_trigger_manual_refresh_when_called', async () => {
+      vi.spyOn(service, 'triggerManualRefresh').mockResolvedValue(undefined);
+
+      await service.scheduledRefresh();
+
+      expect(service.triggerManualRefresh).toHaveBeenCalled();
+    });
+  });
+
+  describe('triggerManualRefresh', () => {
+    it('should_handle_error_during_refresh', async () => {
+      const error = new Error('Refresh failed');
+      vi.spyOn(mockBatchRefreshService, 'refreshTrackers').mockRejectedValue(
+        error,
+      );
+
+      await expect(service.triggerManualRefresh(['tracker-1'])).rejects.toThrow(
+        'Refresh failed',
+      );
+    });
+
+    it('should_handle_error_when_refreshing_all_trackers', async () => {
+      const mockTrackers = [{ id: 'tracker-1' }];
+      vi.spyOn(mockTrackerRepository, 'findPendingAndStale').mockResolvedValue(
+        mockTrackers as never,
+      );
+      vi.spyOn(
+        mockProcessingGuard,
+        'filterProcessableTrackers',
+      ).mockResolvedValue(['tracker-1']);
+      const error = new Error('Batch refresh failed');
+      vi.spyOn(
+        mockBatchRefreshService,
+        'refreshTrackersInBatches',
+      ).mockRejectedValue(error);
+
+      await expect(service.triggerManualRefresh()).rejects.toThrow(
+        'Batch refresh failed',
+      );
+    });
+  });
+
   describe('onApplicationShutdown', () => {
     it('should_stop_cron_job_on_shutdown', async () => {
       const mockCronJob = {
@@ -135,6 +222,49 @@ describe('TrackerRefreshSchedulerService', () => {
       expect(mockSchedulerRegistry.deleteCronJob).toHaveBeenCalledWith(
         'tracker-refresh',
       );
+    });
+
+    it('should_handle_error_when_stopping_cron_job', async () => {
+      const mockCronJob = {
+        stop: vi.fn().mockRejectedValue(new Error('Stop failed')),
+      };
+      (service as any).cronJob = mockCronJob;
+
+      await service.onApplicationShutdown('SIGTERM');
+
+      expect(mockCronJob.stop).toHaveBeenCalled();
+      expect(mockSchedulerRegistry.deleteCronJob).toHaveBeenCalledWith(
+        'tracker-refresh',
+      );
+    });
+
+    it('should_handle_shutdown_when_cron_job_not_registered', async () => {
+      vi.mocked(mockSchedulerRegistry.doesExist).mockReturnValue(false);
+      (service as any).cronJob = null;
+
+      await service.onApplicationShutdown('SIGTERM');
+
+      expect(mockSchedulerRegistry.deleteCronJob).not.toHaveBeenCalled();
+    });
+
+    it('should_handle_shutdown_when_no_cron_job_exists', async () => {
+      (service as any).cronJob = null;
+      vi.mocked(mockSchedulerRegistry.doesExist).mockReturnValue(false);
+
+      await service.onApplicationShutdown();
+
+      expect(mockSchedulerRegistry.deleteCronJob).not.toHaveBeenCalled();
+    });
+
+    it('should_handle_shutdown_without_signal', async () => {
+      const mockCronJob = {
+        stop: vi.fn().mockResolvedValue(undefined),
+      };
+      (service as any).cronJob = mockCronJob;
+
+      await service.onApplicationShutdown();
+
+      expect(mockCronJob.stop).toHaveBeenCalled();
     });
   });
 });

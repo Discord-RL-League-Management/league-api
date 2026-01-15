@@ -507,6 +507,29 @@ describe('ScheduledTrackerProcessingService', () => {
       expect(mockScheduleRepository.findPending).toHaveBeenCalled();
     });
 
+    it('should_filter_out_past_schedules_when_loading_pending', async () => {
+      const pastSchedule = {
+        ...mockSchedule,
+        id: 'schedule-past',
+        scheduledAt: new Date(Date.now() - 86400000), // 1 day ago
+      };
+      const futureSchedule = {
+        ...mockSchedule,
+        id: 'schedule-future',
+        scheduledAt: new Date(Date.now() + 86400000), // 1 day from now
+      };
+      const schedules = [pastSchedule, futureSchedule];
+
+      vi.mocked(mockScheduleRepository.findPending).mockResolvedValue(
+        schedules as any,
+      );
+
+      await service.onModuleInit();
+
+      expect(CronJob).toHaveBeenCalledTimes(1);
+      expect(mockSchedulerRegistry.addCronJob).toHaveBeenCalledTimes(1);
+    });
+
     it('should_schedule_all_loaded_pending_schedules', async () => {
       const schedule1 = {
         ...mockSchedule,
@@ -807,6 +830,121 @@ describe('ScheduledTrackerProcessingService', () => {
 
       expect(mockCronJobInstance.stop).toHaveBeenCalled();
       expect(mockSchedulerRegistry.deleteCronJob).toHaveBeenCalledWith(jobId);
+    });
+
+    it('should_handle_database_update_failure_when_updating_to_failed_status', async () => {
+      const guildId = '987654321098765432';
+      const scheduleId = 'schedule-123';
+      const scheduledAt = new Date(Date.now() + 86400000);
+      const createdBy = '123456789012345678';
+      let executionCallback: (() => Promise<void>) | undefined;
+
+      vi.mocked(mockGuildRepository.findById).mockResolvedValue(
+        mockGuild as any,
+      );
+      vi.mocked(mockScheduleRepository.create).mockResolvedValue({
+        ...mockSchedule,
+        id: scheduleId,
+      } as any);
+      vi.mocked(
+        mockTrackerProcessingService.processPendingTrackersForGuild,
+      ).mockRejectedValue(new Error('Processing failed'));
+
+      vi.mocked(CronJob).mockImplementation((cronExpr, onTick) => {
+        executionCallback = onTick as () => Promise<void>;
+        return mockCronJobInstance as any;
+      });
+
+      await service.createSchedule(guildId, scheduledAt, createdBy);
+
+      expect(executionCallback).toBeDefined();
+      vi.mocked(mockScheduleRepository.update)
+        .mockResolvedValueOnce({
+          ...mockSchedule,
+          executedAt: new Date(),
+        } as any)
+        .mockRejectedValueOnce(new Error('Database update failed'));
+
+      await executionCallback!();
+
+      expect(mockScheduleRepository.update).toHaveBeenCalledTimes(2);
+    });
+
+    it('should_handle_scheduler_registry_deletion_error_in_finally_block', async () => {
+      const guildId = '987654321098765432';
+      const scheduleId = 'schedule-123';
+      const scheduledAt = new Date(Date.now() + 86400000);
+      const createdBy = '123456789012345678';
+      let executionCallback: (() => Promise<void>) | undefined;
+
+      vi.mocked(mockGuildRepository.findById).mockResolvedValue(
+        mockGuild as any,
+      );
+      vi.mocked(mockScheduleRepository.create).mockResolvedValue({
+        ...mockSchedule,
+        id: scheduleId,
+      } as any);
+      vi.mocked(
+        mockTrackerProcessingService.processPendingTrackersForGuild,
+      ).mockResolvedValue({ processed: 5, trackers: ['tracker1'] });
+
+      vi.mocked(CronJob).mockImplementation((cronExpr, onTick) => {
+        executionCallback = onTick as () => Promise<void>;
+        return mockCronJobInstance as any;
+      });
+      vi.mocked(mockSchedulerRegistry.doesExist).mockReturnValue(true);
+      vi.mocked(mockSchedulerRegistry.deleteCronJob).mockImplementation(() => {
+        throw new Error('Registry deletion failed');
+      });
+      const jobId = `scheduled-processing-${scheduleId}`;
+
+      await service.createSchedule(guildId, scheduledAt, createdBy);
+
+      expect(executionCallback).toBeDefined();
+      vi.mocked(mockScheduleRepository.update)
+        .mockResolvedValueOnce({
+          ...mockSchedule,
+          executedAt: new Date(),
+        } as any)
+        .mockResolvedValueOnce({
+          ...mockSchedule,
+          status: ScheduledProcessingStatus.COMPLETED,
+        } as any);
+
+      await executionCallback!();
+
+      expect(mockSchedulerRegistry.deleteCronJob).toHaveBeenCalledWith(jobId);
+    });
+
+    it('should_handle_async_stop_method_when_stopping_job', async () => {
+      const guildId = '987654321098765432';
+      const scheduleId = 'schedule-123';
+      const scheduledAt = new Date(Date.now() + 86400000);
+      const createdBy = '123456789012345678';
+      const asyncStopJob = {
+        start: vi.fn(),
+        stop: vi.fn().mockResolvedValue(undefined),
+      };
+
+      vi.mocked(mockGuildRepository.findById).mockResolvedValue(
+        mockGuild as any,
+      );
+      vi.mocked(mockScheduleRepository.create).mockResolvedValue({
+        ...mockSchedule,
+        id: scheduleId,
+      } as any);
+
+      vi.mocked(CronJob).mockImplementation(() => asyncStopJob as any);
+
+      await service.createSchedule(guildId, scheduledAt, createdBy);
+
+      const scheduledJobsMap = (service as any).scheduledJobs;
+      const jobId = `scheduled-processing-${scheduleId}`;
+      const job = scheduledJobsMap.get(jobId);
+
+      await (service as any).stopJobSafely(job, jobId);
+
+      expect(asyncStopJob.stop).toHaveBeenCalled();
     });
   });
 });

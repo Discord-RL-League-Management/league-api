@@ -371,5 +371,50 @@ describe('OutboxService', () => {
 
       expect(result.status).toBe(OutboxStatus.PENDING);
     });
+
+    it('should_throw_invalid_transition_when_from_pending_to_failed', async () => {
+      const pendingEvent = {
+        ...mockOutboxEvent,
+        status: OutboxStatus.PENDING,
+      };
+
+      vi.spyOn(mockRepository, 'findById').mockResolvedValue(
+        pendingEvent as never,
+      );
+
+      await expect(
+        service.updateStatus('outbox-123', OutboxStatus.FAILED),
+      ).rejects.toThrow(InvalidOutboxStatusException);
+    });
+
+    it('should_throw_invalid_transition_when_from_failed_to_completed', async () => {
+      const failedEvent = {
+        ...mockOutboxEvent,
+        status: OutboxStatus.FAILED,
+      };
+
+      vi.spyOn(mockRepository, 'findById').mockResolvedValue(
+        failedEvent as never,
+      );
+
+      await expect(
+        service.updateStatus('outbox-123', OutboxStatus.COMPLETED),
+      ).rejects.toThrow(InvalidOutboxStatusException);
+    });
+
+    it('should_throw_invalid_transition_when_from_completed_to_failed', async () => {
+      const completedEvent = {
+        ...mockOutboxEvent,
+        status: OutboxStatus.COMPLETED,
+      };
+
+      vi.spyOn(mockRepository, 'findById').mockResolvedValue(
+        completedEvent as never,
+      );
+
+      await expect(
+        service.updateStatus('outbox-123', OutboxStatus.FAILED),
+      ).rejects.toThrow(InvalidOutboxStatusException);
+    });
   });
 });

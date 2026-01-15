@@ -23,6 +23,7 @@
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
     "test:unit:coverage": "vitest run --coverage",
+    "test:coverage:lcov": "vitest run --coverage --coverage.reporter=lcov && vitest run --coverage --coverage.reporter=lcov --config vitest.api.config.mts",
     "test:api": "vitest run --config vitest.api.config.mts",
     "test:api:watch": "vitest --config vitest.api.config.mts",
     "test:e2e": "playwright test",

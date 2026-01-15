@@ -291,6 +291,84 @@ describe('TrackerProcessingService', () => {
         mockQueueOrchestrator.enqueueTrackerWithGuard,
       ).toHaveBeenCalledTimes(2);
     });
+
+    it('should_register_trackers_with_optional_parameters_when_provided', async () => {
+      const userId = 'user_123';
+      const urls = [
+        'https://rocketleague.tracker.network/rocket-league/profile/steam/testuser/overview',
+      ];
+      const userData = {
+        username: 'testuser',
+        globalName: 'Test User',
+        avatar: 'avatar_url',
+      };
+      const channelId = 'channel_123';
+      const interactionToken = 'token_123';
+      const parsedResult = {
+        game: Game.ROCKET_LEAGUE,
+        platform: GamePlatform.STEAM,
+        username: 'testuser',
+      };
+
+      vi.mocked(mockTrackerService.getTrackersByUserId).mockResolvedValue({
+        data: [],
+        pagination: { page: 1, limit: 10, total: 0, pages: 0 },
+      });
+      vi.mocked(
+        mockValidationService.batchCheckUrlUniqueness,
+      ).mockResolvedValue(new Map([[urls[0], true]]));
+      vi.mocked(mockValidationService.validateTrackerUrl).mockResolvedValue(
+        parsedResult as never,
+      );
+      vi.mocked(mockTrackerService.createTracker).mockResolvedValue(
+        mockTracker as never,
+      );
+
+      await service.registerTrackers(
+        userId,
+        urls,
+        userData,
+        channelId,
+        interactionToken,
+      );
+
+      expect(mockUserOrchestrator.ensureUserExists).toHaveBeenCalledWith(
+        userId,
+        userData,
+      );
+      expect(mockTrackerService.createTracker).toHaveBeenCalledWith(
+        urls[0],
+        parsedResult.game,
+        parsedResult.platform,
+        parsedResult.username,
+        userId,
+        undefined,
+        channelId,
+        interactionToken,
+      );
+    });
+
+    it('should_throw_error_when_parsed_results_index_out_of_bounds', async () => {
+      const userId = 'user_123';
+      const urls = [
+        'https://rocketleague.tracker.network/rocket-league/profile/steam/testuser/overview',
+      ];
+
+      vi.mocked(mockTrackerService.getTrackersByUserId).mockResolvedValue({
+        data: [],
+        pagination: { page: 1, limit: 10, total: 0, pages: 0 },
+      });
+      vi.mocked(
+        mockValidationService.batchCheckUrlUniqueness,
+      ).mockResolvedValue(new Map([[urls[0], true]]));
+      vi.mocked(mockValidationService.validateTrackerUrl).mockResolvedValue(
+        null as never,
+      );
+
+      await expect(service.registerTrackers(userId, urls)).rejects.toThrow(
+        'Index 0 out of bounds for parsedResults',
+      );
+    });
   });
 
   describe('addTracker', () => {
@@ -394,6 +472,58 @@ describe('TrackerProcessingService', () => {
       const result = await service.addTracker(userId, url);
 
       expect(result).toEqual(mockTracker);
+    });
+
+    it('should_create_tracker_with_channel_id_and_interaction_token_when_provided', async () => {
+      const userId = 'user_123';
+      const url =
+        'https://rocketleague.tracker.network/rocket-league/profile/steam/testuser/overview';
+      const channelId = 'channel_123';
+      const interactionToken = 'token_123';
+      const userData = {
+        username: 'testuser',
+        globalName: 'Test User',
+        avatar: 'avatar_url',
+      };
+      const parsedResult = {
+        game: Game.ROCKET_LEAGUE,
+        platform: GamePlatform.STEAM,
+        username: 'testuser',
+      };
+
+      vi.mocked(mockTrackerService.getTrackersByUserId).mockResolvedValue({
+        data: [],
+        pagination: { page: 1, limit: 10, total: 0, pages: 0 },
+      });
+      vi.mocked(mockValidationService.validateTrackerUrl).mockResolvedValue(
+        parsedResult as never,
+      );
+      vi.mocked(mockTrackerService.createTracker).mockResolvedValue(
+        mockTracker as never,
+      );
+
+      await service.addTracker(
+        userId,
+        url,
+        userData,
+        channelId,
+        interactionToken,
+      );
+
+      expect(mockUserOrchestrator.ensureUserExists).toHaveBeenCalledWith(
+        userId,
+        userData,
+      );
+      expect(mockTrackerService.createTracker).toHaveBeenCalledWith(
+        url,
+        parsedResult.game,
+        parsedResult.platform,
+        parsedResult.username,
+        userId,
+        undefined,
+        channelId,
+        interactionToken,
+      );
     });
   });
 
