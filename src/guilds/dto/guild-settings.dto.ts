@@ -231,6 +231,42 @@ export class GuildSettingsDto {
   @Type(() => ChannelConfigDto)
   register_command_channels?: ChannelConfigDto[];
 
+  @ApiPropertyOptional({
+    type: [ChannelConfigDto],
+    description:
+      'Channels where test commands can be used. Empty = all channels.',
+    isArray: true,
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ChannelConfigDto)
+  test_command_channels?: ChannelConfigDto[];
+
+  @ApiPropertyOptional({
+    type: [ChannelConfigDto],
+    description:
+      'Channels where public commands can be used. Empty = all channels.',
+    isArray: true,
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ChannelConfigDto)
+  public_command_channels?: ChannelConfigDto[];
+
+  @ApiPropertyOptional({
+    type: [ChannelConfigDto],
+    description:
+      'Channels where staff commands can be used. Empty = all channels.',
+    isArray: true,
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ChannelConfigDto)
+  staff_command_channels?: ChannelConfigDto[];
+
   @ApiPropertyOptional({ type: MmrCalculationConfigDto })
   @IsOptional()
   @ValidateNested()

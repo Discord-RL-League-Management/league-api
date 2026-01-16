@@ -300,6 +300,133 @@ describe('SettingsValidationService (Guilds)', () => {
         'trackerProcessing.enabled must be a boolean',
       );
     });
+
+    it('should_validate_test_command_channels', async () => {
+      const guildId = 'guild123';
+      const settings = {
+        test_command_channels: [{ id: '123456789012345678', name: 'test' }],
+      };
+
+      vi.mocked(mockDiscordValidation.validateChannelId).mockResolvedValue(
+        true,
+      );
+
+      await service.validate(settings, guildId);
+
+      expect(mockDiscordValidation.validateChannelId).toHaveBeenCalledWith(
+        guildId,
+        '123456789012345678',
+      );
+    });
+
+    it('should_validate_public_command_channels', async () => {
+      const guildId = 'guild123';
+      const settings = {
+        public_command_channels: [{ id: '123456789012345678', name: 'public' }],
+      };
+
+      vi.mocked(mockDiscordValidation.validateChannelId).mockResolvedValue(
+        true,
+      );
+
+      await service.validate(settings, guildId);
+
+      expect(mockDiscordValidation.validateChannelId).toHaveBeenCalledWith(
+        guildId,
+        '123456789012345678',
+      );
+    });
+
+    it('should_validate_staff_command_channels', async () => {
+      const guildId = 'guild123';
+      const settings = {
+        staff_command_channels: [{ id: '123456789012345678', name: 'staff' }],
+      };
+
+      vi.mocked(mockDiscordValidation.validateChannelId).mockResolvedValue(
+        true,
+      );
+
+      await service.validate(settings, guildId);
+
+      expect(mockDiscordValidation.validateChannelId).toHaveBeenCalledWith(
+        guildId,
+        '123456789012345678',
+      );
+    });
+
+    it('should_throw_BadRequestException_when_test_command_channels_has_invalid_channel_id', async () => {
+      const guildId = 'guild123';
+      const settings = {
+        test_command_channels: [{ id: 'invalid', name: 'test' }],
+      };
+
+      await expect(service.validate(settings, guildId)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.validate(settings, guildId)).rejects.toThrow(
+        'Invalid Discord channel ID format',
+      );
+    });
+
+    it('should_throw_BadRequestException_when_public_command_channels_has_duplicate_ids', async () => {
+      const guildId = 'guild123';
+      const channelId = '123456789012345678';
+      const settings = {
+        public_command_channels: [
+          { id: channelId, name: 'public1' },
+          { id: channelId, name: 'public2' },
+        ],
+      };
+
+      vi.mocked(mockDiscordValidation.validateChannelId).mockResolvedValue(
+        true,
+      );
+
+      await expect(service.validate(settings, guildId)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.validate(settings, guildId)).rejects.toThrow(
+        'Duplicate channel ID',
+      );
+    });
+
+    it('should_throw_BadRequestException_when_staff_command_channels_channel_not_exists', async () => {
+      const guildId = 'guild123';
+      const settings = {
+        staff_command_channels: [{ id: '123456789012345678', name: 'staff' }],
+      };
+
+      vi.mocked(mockDiscordValidation.validateChannelId).mockResolvedValue(
+        false,
+      );
+
+      await expect(service.validate(settings, guildId)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.validate(settings, guildId)).rejects.toThrow(
+        'does not exist in Discord guild',
+      );
+    });
+
+    it('should_throw_BadRequestException_when_test_command_channels_name_too_long', async () => {
+      const guildId = 'guild123';
+      const longName = 'a'.repeat(101);
+      const settings = {
+        test_command_channels: [{ id: '123456789012345678', name: longName }],
+      };
+
+      vi.mocked(mockDiscordValidation.validateChannelId).mockResolvedValue(
+        true,
+      );
+
+      await expect(service.validate(settings, guildId)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.validate(settings, guildId)).rejects.toThrow(
+        'Channel name too long',
+      );
+    });
   });
 
   describe('validateStructure', () => {

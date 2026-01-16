@@ -18,20 +18,20 @@ export interface ChannelConfig {
  * Configuration metadata for versioning and migration tracking
  */
 export interface ConfigMetadata {
-  version: string; // Semantic version (e.g., "1.0.0")
-  schemaVersion: number; // Schema version for migrations
+  version: string;
+  schemaVersion: number;
   lastMigrated?: Date;
-  migratedBy?: string; // User ID who triggered migration
+  migratedBy?: string;
 }
 
 /**
  * MMR calculation weights configuration
  */
 export interface MmrWeights {
-  ones?: number; // Weight for 1v1 MMR (0-1)
-  twos?: number; // Weight for 2v2 MMR (0-1)
-  threes?: number; // Weight for 3v3 MMR (0-1)
-  fours?: number; // Weight for 4v4 MMR (0-1)
+  ones?: number;
+  twos?: number;
+  threes?: number;
+  fours?: number;
 }
 
 /**
@@ -113,9 +113,12 @@ export interface TrackerProcessingConfig {
  * Complete guild settings structure
  */
 export interface GuildSettings {
-  _metadata?: ConfigMetadata; // Versioning info (optional for backward compatibility)
+  _metadata?: ConfigMetadata;
   bot_command_channels: ChannelConfig[];
-  register_command_channels?: ChannelConfig[]; // Optional: Specific channels for /register command
+  register_command_channels?: ChannelConfig[];
+  test_command_channels?: ChannelConfig[];
+  public_command_channels?: ChannelConfig[];
+  staff_command_channels?: ChannelConfig[];
   roles?: {
     admin?: Array<{ id: string; name?: string } | string>;
     moderator?: Array<{ id: string; name?: string } | string>;

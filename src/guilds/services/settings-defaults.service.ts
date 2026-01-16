@@ -31,6 +31,9 @@ export class SettingsDefaultsService {
       _metadata: this.getDefaultMetadata(),
       bot_command_channels: [], // Empty = listen on all channels
       register_command_channels: [], // Empty = use bot_command_channels fallback
+      test_command_channels: [], // Empty = all channels
+      public_command_channels: [], // Empty = all channels
+      staff_command_channels: [], // Empty = all channels
       roles: {
         admin: [],
         moderator: [],
