@@ -27,6 +27,9 @@ describe('SettingsDefaultsService (Guilds)', () => {
         _metadata: expect.anything(),
         bot_command_channels: expect.anything(),
         register_command_channels: expect.anything(),
+        test_command_channels: expect.anything(),
+        public_command_channels: expect.anything(),
+        staff_command_channels: expect.anything(),
         roles: expect.anything(),
       });
       expect(result).toMatchObject({
@@ -53,6 +56,24 @@ describe('SettingsDefaultsService (Guilds)', () => {
       const result = service.getDefaults();
 
       expect(result.register_command_channels).toEqual([]);
+    });
+
+    it('should_have_empty_test_command_channels_by_default', () => {
+      const result = service.getDefaults();
+
+      expect(result.test_command_channels).toEqual([]);
+    });
+
+    it('should_have_empty_public_command_channels_by_default', () => {
+      const result = service.getDefaults();
+
+      expect(result.public_command_channels).toEqual([]);
+    });
+
+    it('should_have_empty_staff_command_channels_by_default', () => {
+      const result = service.getDefaults();
+
+      expect(result.staff_command_channels).toEqual([]);
     });
 
     it('should_have_empty_roles_arrays_by_default', () => {

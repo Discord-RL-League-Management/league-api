@@ -37,6 +37,27 @@ export class SettingsValidationService {
       );
     }
 
+    if (settings.test_command_channels) {
+      await this.validateBotCommandChannels(
+        settings.test_command_channels,
+        guildId,
+      );
+    }
+
+    if (settings.public_command_channels) {
+      await this.validateBotCommandChannels(
+        settings.public_command_channels,
+        guildId,
+      );
+    }
+
+    if (settings.staff_command_channels) {
+      await this.validateBotCommandChannels(
+        settings.staff_command_channels,
+        guildId,
+      );
+    }
+
     if (settings.mmrCalculation) {
       this.validateMmrCalculation(settings.mmrCalculation);
     }
