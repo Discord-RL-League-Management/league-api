@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuthModule } from '../auth/auth.module';
 import { TrackersModule } from '../trackers/trackers.module';
@@ -16,7 +16,13 @@ import { PlayerRepository } from './repositories/player.repository';
   imports: [
     PrismaModule,
     AuthModule,
-    TrackersModule,
+    // INTENTIONAL: Circular dependency with TrackersModule is properly handled.
+    // - PlayersModule needs TrackersModule for player validation (checking if user has trackers)
+    // - TrackersModule needs PlayersModule for automatic player creation after tracker scraping
+    // - Using forwardRef() is the NestJS-recommended pattern for module-level circular dependencies
+    // Reference: https://docs.nestjs.com/fundamentals/circular-dependency
+    // eslint-disable-next-line @trilon/detect-circular-reference
+    forwardRef(() => TrackersModule),
     GuildMembersModule,
     GuildsModule,
     InfrastructureModule,

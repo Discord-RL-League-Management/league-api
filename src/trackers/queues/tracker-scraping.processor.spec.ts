@@ -21,6 +21,8 @@ import { TrackerService } from '../tracker.service';
 import { TrackerNotificationService } from '../services/tracker-notification.service';
 import { ActivityLogService } from '../../infrastructure/activity-log/services/activity-log.service';
 import { MmrCalculationIntegrationService } from '../../mmr-calculation/services/mmr-calculation-integration.service';
+import { GuildMembersService } from '../../guild-members/guild-members.service';
+import { PlayerService } from '../../players/player.service';
 import { TrackerScrapingStatus, Game, GamePlatform } from '@prisma/client';
 import type {
   ScrapingJobData,
@@ -39,6 +41,8 @@ describe('TrackerScrapingProcessor', () => {
   let mockNotificationService: TrackerNotificationService;
   let mockActivityLogService: ActivityLogService;
   let mockMmrCalculationIntegration: MmrCalculationIntegrationService;
+  let mockGuildMembersService: GuildMembersService;
+  let mockPlayerService: PlayerService;
 
   const mockTracker = {
     id: 'tracker_123',
@@ -146,6 +150,14 @@ describe('TrackerScrapingProcessor', () => {
       calculateMmrForUser: vi.fn().mockResolvedValue(undefined),
     } as unknown as MmrCalculationIntegrationService;
 
+    mockGuildMembersService = {
+      findMembersByUser: vi.fn().mockResolvedValue([]),
+    } as unknown as GuildMembersService;
+
+    mockPlayerService = {
+      ensurePlayerExists: vi.fn().mockResolvedValue({ id: 'player_123' }),
+    } as unknown as PlayerService;
+
     const module = await Test.createTestingModule({
       providers: [
         TrackerScrapingProcessor,
@@ -167,6 +179,8 @@ describe('TrackerScrapingProcessor', () => {
           provide: MmrCalculationIntegrationService,
           useValue: mockMmrCalculationIntegration,
         },
+        { provide: GuildMembersService, useValue: mockGuildMembersService },
+        { provide: PlayerService, useValue: mockPlayerService },
       ],
     }).compile();
 
@@ -184,6 +198,9 @@ describe('TrackerScrapingProcessor', () => {
         mockTracker,
       );
       vi.spyOn(mockScraperService, 'scrapeSeasons').mockResolvedValue([]);
+      vi.spyOn(mockGuildMembersService, 'findMembersByUser').mockResolvedValue(
+        [],
+      );
 
       const result = await processor.process(job);
 
@@ -209,6 +226,9 @@ describe('TrackerScrapingProcessor', () => {
       );
       vi.spyOn(mockScraperService, 'scrapeSeasons').mockResolvedValue(
         mockSeasons,
+      );
+      vi.spyOn(mockGuildMembersService, 'findMembersByUser').mockResolvedValue(
+        [],
       );
 
       const result = await processor.process(job);
@@ -243,6 +263,9 @@ describe('TrackerScrapingProcessor', () => {
       vi.spyOn(mockSeasonService, 'bulkUpsertSeasons').mockRejectedValue(
         new Error('Bulk upsert failed'),
       );
+      vi.spyOn(mockGuildMembersService, 'findMembersByUser').mockResolvedValue(
+        [],
+      );
 
       const result = await processor.process(job);
 
@@ -270,6 +293,9 @@ describe('TrackerScrapingProcessor', () => {
       vi.spyOn(mockSeasonService, 'createOrUpdateSeason')
         .mockResolvedValueOnce(undefined)
         .mockRejectedValueOnce(new Error('Season upsert failed'));
+      vi.spyOn(mockGuildMembersService, 'findMembersByUser').mockResolvedValue(
+        [],
+      );
 
       const result = await processor.process(job);
 
@@ -288,6 +314,9 @@ describe('TrackerScrapingProcessor', () => {
         mockTracker,
       );
       vi.spyOn(mockScraperService, 'scrapeSeasons').mockResolvedValue([]);
+      vi.spyOn(mockGuildMembersService, 'findMembersByUser').mockResolvedValue(
+        [],
+      );
 
       await processor.process(job);
 
@@ -307,6 +336,9 @@ describe('TrackerScrapingProcessor', () => {
         mockTracker,
       );
       vi.spyOn(mockScraperService, 'scrapeSeasons').mockResolvedValue([]);
+      vi.spyOn(mockGuildMembersService, 'findMembersByUser').mockResolvedValue(
+        [],
+      );
 
       await processor.process(job);
 
@@ -327,6 +359,9 @@ describe('TrackerScrapingProcessor', () => {
       vi.spyOn(mockScraperService, 'scrapeSeasons').mockResolvedValue(
         mockSeasons,
       );
+      vi.spyOn(mockGuildMembersService, 'findMembersByUser').mockResolvedValue(
+        [],
+      );
 
       await processor.process(job);
 
@@ -345,6 +380,9 @@ describe('TrackerScrapingProcessor', () => {
       );
       vi.spyOn(mockScraperService, 'scrapeSeasons').mockResolvedValue(
         mockSeasons,
+      );
+      vi.spyOn(mockGuildMembersService, 'findMembersByUser').mockResolvedValue(
+        [],
       );
 
       await processor.process(job);
@@ -452,6 +490,9 @@ describe('TrackerScrapingProcessor', () => {
       vi.spyOn(mockScraperService, 'scrapeSeasons').mockResolvedValue(
         mockSeasons,
       );
+      vi.spyOn(mockGuildMembersService, 'findMembersByUser').mockResolvedValue(
+        [],
+      );
 
       await processor.process(job);
 
@@ -500,6 +541,9 @@ describe('TrackerScrapingProcessor', () => {
       vi.spyOn(mockScraperService, 'scrapeSeasons').mockResolvedValue(
         mockSeasons,
       );
+      vi.spyOn(mockGuildMembersService, 'findMembersByUser').mockResolvedValue(
+        [],
+      );
 
       await processor.process(job);
 
@@ -518,6 +562,9 @@ describe('TrackerScrapingProcessor', () => {
       vi.spyOn(mockScraperService, 'scrapeSeasons').mockResolvedValue(
         mockSeasons,
       );
+      vi.spyOn(mockGuildMembersService, 'findMembersByUser').mockResolvedValue(
+        [],
+      );
 
       await processor.process(job);
 
@@ -525,6 +572,98 @@ describe('TrackerScrapingProcessor', () => {
         mockTracker.url,
         3, // First-time scraping (lastScrapedAt is null), so maxSeasons = 3
       );
+    });
+
+    it('should_create_players_for_all_guilds_when_scraping_succeeds', async () => {
+      const job = createMockJob({ trackerId: 'tracker_123' });
+      const guildMembers = [{ guildId: 'guild_1' }, { guildId: 'guild_2' }];
+
+      vi.spyOn(mockTrackerRepository, 'findById').mockResolvedValue(
+        mockTracker,
+      );
+      vi.spyOn(mockScraperService, 'scrapeSeasons').mockResolvedValue(
+        mockSeasons,
+      );
+      vi.spyOn(mockGuildMembersService, 'findMembersByUser').mockResolvedValue(
+        guildMembers,
+      );
+      vi.spyOn(mockPlayerService, 'ensurePlayerExists').mockResolvedValue({
+        id: 'player_1',
+      });
+
+      const result = await processor.process(job);
+
+      expect(result.success).toBe(true);
+      expect(mockPlayerService.ensurePlayerExists).toHaveBeenCalledTimes(2);
+      expect(mockPlayerService.ensurePlayerExists).toHaveBeenCalledWith(
+        'user_123',
+        'guild_1',
+      );
+      expect(mockPlayerService.ensurePlayerExists).toHaveBeenCalledWith(
+        'user_123',
+        'guild_2',
+      );
+    });
+
+    it('should_continue_when_player_creation_fails_for_some_guilds', async () => {
+      const job = createMockJob({ trackerId: 'tracker_123' });
+      const guildMembers = [{ guildId: 'guild_1' }, { guildId: 'guild_2' }];
+
+      vi.spyOn(mockTrackerRepository, 'findById').mockResolvedValue(
+        mockTracker,
+      );
+      vi.spyOn(mockScraperService, 'scrapeSeasons').mockResolvedValue(
+        mockSeasons,
+      );
+      vi.spyOn(mockGuildMembersService, 'findMembersByUser').mockResolvedValue(
+        guildMembers,
+      );
+      vi.spyOn(mockPlayerService, 'ensurePlayerExists')
+        .mockResolvedValueOnce({ id: 'player_1' })
+        .mockRejectedValueOnce(new Error('Player creation failed'));
+
+      const result = await processor.process(job);
+
+      expect(result.success).toBe(true);
+      expect(mockPlayerService.ensurePlayerExists).toHaveBeenCalledTimes(2);
+    });
+
+    it('should_not_create_players_when_user_has_no_guild_memberships', async () => {
+      const job = createMockJob({ trackerId: 'tracker_123' });
+
+      vi.spyOn(mockTrackerRepository, 'findById').mockResolvedValue(
+        mockTracker,
+      );
+      vi.spyOn(mockScraperService, 'scrapeSeasons').mockResolvedValue(
+        mockSeasons,
+      );
+      vi.spyOn(mockGuildMembersService, 'findMembersByUser').mockResolvedValue(
+        [],
+      );
+
+      const result = await processor.process(job);
+
+      expect(result.success).toBe(true);
+      expect(mockPlayerService.ensurePlayerExists).not.toHaveBeenCalled();
+    });
+
+    it('should_not_affect_scraping_result_when_player_creation_fails', async () => {
+      const job = createMockJob({ trackerId: 'tracker_123' });
+
+      vi.spyOn(mockTrackerRepository, 'findById').mockResolvedValue(
+        mockTracker,
+      );
+      vi.spyOn(mockScraperService, 'scrapeSeasons').mockResolvedValue(
+        mockSeasons,
+      );
+      vi.spyOn(mockGuildMembersService, 'findMembersByUser').mockRejectedValue(
+        new Error('Service failed'),
+      );
+
+      const result = await processor.process(job);
+
+      expect(result.success).toBe(true);
+      expect(result.seasonsScraped).toBe(2);
     });
   });
 });

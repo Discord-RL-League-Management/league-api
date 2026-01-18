@@ -21,6 +21,8 @@ import { UsersService } from '../users/users.service';
 import { GuildMemberQueryService } from './services/guild-member-query.service';
 import { GuildMemberStatisticsService } from './services/guild-member-statistics.service';
 import { GuildMemberSyncService } from './services/guild-member-sync.service';
+import { TrackerService } from '../trackers/tracker.service';
+import { PlayerService } from '../players/player.service';
 import { CreateGuildMemberDto } from './dto/create-guild-member.dto';
 import { UpdateGuildMemberDto } from './dto/update-guild-member.dto';
 
@@ -31,6 +33,8 @@ describe('GuildMembersService', () => {
   let mockGuildMemberQueryService: GuildMemberQueryService;
   let mockGuildMemberStatisticsService: GuildMemberStatisticsService;
   let mockGuildMemberSyncService: GuildMemberSyncService;
+  let mockTrackerService: TrackerService;
+  let mockPlayerService: PlayerService;
 
   const mockGuildMember = {
     id: 'member-123',
@@ -74,6 +78,14 @@ describe('GuildMembersService', () => {
       updateMemberRoles: vi.fn(),
     } as unknown as GuildMemberSyncService;
 
+    mockTrackerService = {
+      getTrackersByUserId: vi.fn().mockResolvedValue({ data: [] }),
+    } as unknown as TrackerService;
+
+    mockPlayerService = {
+      ensurePlayerExists: vi.fn().mockResolvedValue({ id: 'player_123' }),
+    } as unknown as PlayerService;
+
     const module = await Test.createTestingModule({
       providers: [
         GuildMembersService,
@@ -91,6 +103,8 @@ describe('GuildMembersService', () => {
           provide: GuildMemberSyncService,
           useValue: mockGuildMemberSyncService,
         },
+        { provide: TrackerService, useValue: mockTrackerService },
+        { provide: PlayerService, useValue: mockPlayerService },
       ],
     }).compile();
 
@@ -110,6 +124,9 @@ describe('GuildMembersService', () => {
       vi.spyOn(mockGuildMemberRepository, 'upsert').mockResolvedValue(
         mockGuildMember as never,
       );
+      vi.spyOn(mockTrackerService, 'getTrackersByUserId').mockResolvedValue({
+        data: [],
+      });
 
       const result = await service.create(createDto);
 
@@ -127,6 +144,9 @@ describe('GuildMembersService', () => {
       };
 
       vi.spyOn(mockUsersService, 'exists').mockResolvedValue(false);
+      vi.spyOn(mockTrackerService, 'getTrackersByUserId').mockResolvedValue({
+        data: [],
+      });
 
       await expect(service.create(createDto)).rejects.toThrow(
         NotFoundException,
@@ -152,6 +172,9 @@ describe('GuildMembersService', () => {
       vi.spyOn(mockGuildMemberRepository, 'upsert').mockRejectedValue(
         prismaError,
       );
+      vi.spyOn(mockTrackerService, 'getTrackersByUserId').mockResolvedValue({
+        data: [],
+      });
 
       await expect(service.create(createDto)).rejects.toThrow(
         NotFoundException,
@@ -176,6 +199,9 @@ describe('GuildMembersService', () => {
       vi.spyOn(mockGuildMemberRepository, 'upsert').mockRejectedValue(
         prismaError,
       );
+      vi.spyOn(mockTrackerService, 'getTrackersByUserId').mockResolvedValue({
+        data: [],
+      });
 
       await expect(service.create(createDto)).rejects.toThrow(
         NotFoundException,
@@ -194,10 +220,162 @@ describe('GuildMembersService', () => {
       vi.spyOn(mockGuildMemberRepository, 'upsert').mockRejectedValue(
         new Error('Unexpected error'),
       );
+      vi.spyOn(mockTrackerService, 'getTrackersByUserId').mockResolvedValue({
+        data: [],
+      });
 
       await expect(service.create(createDto)).rejects.toThrow(
         InternalServerErrorException,
       );
+    });
+
+    it('should_create_player_when_user_has_active_trackers', async () => {
+      const createDto: CreateGuildMemberDto = {
+        userId: 'user-123',
+        guildId: 'guild-123',
+        username: 'testuser',
+        roles: ['role-1'],
+      };
+
+      const activeTracker = {
+        id: 'tracker_123',
+        userId: 'user-123',
+        isActive: true,
+        isDeleted: false,
+      };
+
+      vi.spyOn(mockUsersService, 'exists').mockResolvedValue(true);
+      vi.spyOn(mockGuildMemberRepository, 'upsert').mockResolvedValue(
+        mockGuildMember as never,
+      );
+      vi.spyOn(mockTrackerService, 'getTrackersByUserId').mockResolvedValue({
+        data: [activeTracker],
+      });
+      vi.spyOn(mockPlayerService, 'ensurePlayerExists').mockResolvedValue({
+        id: 'player_123',
+      });
+
+      const result = await service.create(createDto);
+
+      expect(result).toEqual(mockGuildMember);
+      expect(mockPlayerService.ensurePlayerExists).toHaveBeenCalledWith(
+        'user-123',
+        'guild-123',
+      );
+    });
+
+    it('should_not_create_player_when_user_has_no_trackers', async () => {
+      const createDto: CreateGuildMemberDto = {
+        userId: 'user-123',
+        guildId: 'guild-123',
+        username: 'testuser',
+        roles: ['role-1'],
+      };
+
+      vi.spyOn(mockUsersService, 'exists').mockResolvedValue(true);
+      vi.spyOn(mockGuildMemberRepository, 'upsert').mockResolvedValue(
+        mockGuildMember as never,
+      );
+      vi.spyOn(mockTrackerService, 'getTrackersByUserId').mockResolvedValue({
+        data: [],
+      });
+
+      const result = await service.create(createDto);
+
+      expect(result).toEqual(mockGuildMember);
+      expect(mockPlayerService.ensurePlayerExists).not.toHaveBeenCalled();
+    });
+
+    it('should_not_create_player_when_user_has_only_inactive_trackers', async () => {
+      const createDto: CreateGuildMemberDto = {
+        userId: 'user-123',
+        guildId: 'guild-123',
+        username: 'testuser',
+        roles: ['role-1'],
+      };
+
+      const inactiveTracker = {
+        id: 'tracker_123',
+        userId: 'user-123',
+        isActive: false,
+        isDeleted: false,
+      };
+      const deletedTracker = {
+        id: 'tracker_456',
+        userId: 'user-123',
+        isActive: true,
+        isDeleted: true,
+      };
+
+      vi.spyOn(mockUsersService, 'exists').mockResolvedValue(true);
+      vi.spyOn(mockGuildMemberRepository, 'upsert').mockResolvedValue(
+        mockGuildMember as never,
+      );
+      vi.spyOn(mockTrackerService, 'getTrackersByUserId').mockResolvedValue({
+        data: [inactiveTracker, deletedTracker],
+      });
+
+      const result = await service.create(createDto);
+
+      expect(result).toEqual(mockGuildMember);
+      expect(mockPlayerService.ensurePlayerExists).not.toHaveBeenCalled();
+    });
+
+    it('should_not_affect_member_creation_when_player_creation_fails', async () => {
+      const createDto: CreateGuildMemberDto = {
+        userId: 'user-123',
+        guildId: 'guild-123',
+        username: 'testuser',
+        roles: ['role-1'],
+      };
+
+      const activeTracker = {
+        id: 'tracker_123',
+        userId: 'user-123',
+        isActive: true,
+        isDeleted: false,
+      };
+
+      vi.spyOn(mockUsersService, 'exists').mockResolvedValue(true);
+      vi.spyOn(mockGuildMemberRepository, 'upsert').mockResolvedValue(
+        mockGuildMember as never,
+      );
+      vi.spyOn(mockTrackerService, 'getTrackersByUserId').mockResolvedValue({
+        data: [activeTracker],
+      });
+      vi.spyOn(mockPlayerService, 'ensurePlayerExists').mockRejectedValue(
+        new Error('Player creation failed'),
+      );
+
+      const result = await service.create(createDto);
+
+      expect(result).toEqual(mockGuildMember);
+      expect(mockPlayerService.ensurePlayerExists).toHaveBeenCalledWith(
+        'user-123',
+        'guild-123',
+      );
+    });
+
+    it('should_not_affect_member_creation_when_tracker_service_fails', async () => {
+      const createDto: CreateGuildMemberDto = {
+        userId: 'user-123',
+        guildId: 'guild-123',
+        username: 'testuser',
+        roles: ['role-1'],
+      };
+
+      vi.spyOn(mockUsersService, 'exists').mockResolvedValue(true);
+      vi.spyOn(mockGuildMemberRepository, 'upsert').mockResolvedValue(
+        mockGuildMember as never,
+      );
+      vi.spyOn(mockTrackerService, 'getTrackersByUserId').mockRejectedValue(
+        new Error('Tracker service failed'),
+      );
+
+      const result = await service.create(createDto);
+
+      expect(result).toEqual(mockGuildMember);
+      expect(mockPlayerService.ensurePlayerExists).not.toHaveBeenCalled();
     });
   });
 

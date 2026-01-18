@@ -148,7 +148,6 @@ model User {
   guildMembers     GuildMember[]
   trackers         Tracker[]
   enteredSnapshots TrackerSnapshot[]
-  players          Player[]
 
   @@index([isBanned])
   @@index([isDeleted])
@@ -193,8 +192,9 @@ model GuildMember {
   updatedAt DateTime @updatedAt
 
   // Relationships
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guild    Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  players  Player[]
 
   // Indexes for performance
   @@unique([userId, guildId])
@@ -441,25 +441,26 @@ model Player {
   id               String       @id @default(cuid())
   userId           String       @db.VarChar(20)
   guildId          String       @db.VarChar(20)
+  guildMemberId    String
   status           PlayerStatus @default(ACTIVE)
   lastLeftLeagueAt DateTime?
   lastLeftLeagueId String?
-  createdAt        DateTime     @default(now())
+  createdAt      DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 
   // Relationships
-  user                   User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  guild                  Guild                   @relation(fields: [guildId], references: [id], onDelete: Cascade)
-  leagueMembers          LeagueMember[]
-  teamMembers            TeamMember[]
-  captainOf              Team[]                  @relation("TeamCaptain")
-  matchParticipants      MatchParticipant[]
-  stats                  PlayerLeagueStats[]
-  ratings                PlayerLeagueRating[]
-  tournamentParticipants TournamentParticipant[]
-  organizationMembers    OrganizationMember[]
+  guildMember              GuildMember              @relation(fields: [guildMemberId], references: [id], onDelete: Cascade)
+  guild                    Guild                    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  leagueMembers            LeagueMember[]
+  teamMembers              TeamMember[]
+  captainOf                Team[]                   @relation("TeamCaptain")
+  matchParticipants        MatchParticipant[]
+  stats                    PlayerLeagueStats[]
+  ratings                  PlayerLeagueRating[]
+  tournamentParticipants   TournamentParticipant[]
+  organizationMembers      OrganizationMember[]
 
-  @@unique([userId, guildId])
+  @@unique([userId, guildMemberId])
   @@index([guildId, status])
   @@index([userId])
   @@map("players")

@@ -35,8 +35,10 @@ export class OrganizationAuthorizationService {
     const gms =
       await this.organizationRepository.findGeneralManagers(organizationId);
     const member = gms.find((m) => {
-      const memberWithPlayer = m as { player?: { user?: { id?: string } } };
-      return memberWithPlayer?.player?.user?.id === userId;
+      const memberWithPlayer = m as {
+        player?: { guildMember?: { user?: { id?: string } } };
+      };
+      return memberWithPlayer?.player?.guildMember?.user?.id === userId;
     });
 
     return !!member;

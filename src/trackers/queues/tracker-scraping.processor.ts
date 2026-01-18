@@ -16,6 +16,9 @@ import { ActivityLogService } from '../../infrastructure/activity-log/services/a
 import { MmrCalculationIntegrationService } from '../../mmr-calculation/services/mmr-calculation-integration.service';
 import { TrackerRepository } from '../repositories/tracker.repository';
 import { TrackerScrapingLogRepository } from '../repositories/tracker-scraping-log.repository';
+import { GuildMembersService } from '../../guild-members/guild-members.service';
+import { GuildMemberWithGuild } from '../../guild-members/services/guild-member-query.service';
+import { PlayerService } from '../../players/player.service';
 
 @Processor(TRACKER_SCRAPING_QUEUE)
 @Injectable()
@@ -32,6 +35,8 @@ export class TrackerScrapingProcessor extends WorkerHost {
     private readonly notificationService: TrackerNotificationService,
     private readonly activityLogService: ActivityLogService,
     private readonly mmrCalculationIntegration: MmrCalculationIntegrationService,
+    private readonly guildMembersService: GuildMembersService,
+    private readonly playerService: PlayerService,
   ) {
     super();
   }
@@ -215,6 +220,14 @@ export class TrackerScrapingProcessor extends WorkerHost {
         `Successfully scraped tracker ${trackerId}: ${seasonsScraped} seasons scraped, ${seasonsFailed} failed`,
       );
 
+      // Fire-and-forget: Create players for all guilds where user is a member
+      void this.createPlayersForUserGuilds(tracker.userId).catch((err) => {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        this.logger.warn(
+          `Failed to create players for user ${tracker.userId} after tracker scraping: ${errorMessage}`,
+        );
+      });
+
       const trackerUserId = tracker.userId;
       const trackerUrl = tracker.url;
       await this.prisma
@@ -361,5 +374,31 @@ export class TrackerScrapingProcessor extends WorkerHost {
         error: errorMessage,
       };
     }
+  }
+
+  /**
+   * Create players for all guilds where user is a member
+   * Single Responsibility: Player creation for user's guild memberships
+   */
+  private async createPlayersForUserGuilds(userId: string): Promise<void> {
+    const guildMembers =
+      await this.guildMembersService.findMembersByUser(userId);
+
+    await Promise.allSettled(
+      guildMembers.map(async (guildMember: GuildMemberWithGuild) => {
+        try {
+          await this.playerService.ensurePlayerExists(
+            userId,
+            guildMember.guildId,
+          );
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          this.logger.warn(
+            `Failed to create player for user ${userId} in guild ${guildMember.guildId}: ${errorMessage}`,
+          );
+        }
+      }),
+    );
   }
 }

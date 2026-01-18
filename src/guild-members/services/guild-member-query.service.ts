@@ -7,6 +7,14 @@ import { Prisma } from '@prisma/client';
 import { GuildMemberRepository } from '../repositories/guild-member.repository';
 
 /**
+ * Type for GuildMember with guild relation included
+ * Used by findMembersByUser and related methods
+ */
+export type GuildMemberWithGuild = Prisma.GuildMemberGetPayload<{
+  include: { guild: true };
+}>;
+
+/**
  * GuildMemberQueryService - Handles complex queries and search operations
  * Single Responsibility: Complex queries, search, and pagination
  *
@@ -96,7 +104,7 @@ export class GuildMemberQueryService {
    * fetch them separately using GuildSettingsService or pass undefined to
    * permission service methods which will handle fetching.
    */
-  async findMembersByUser(userId: string): Promise<any[]> {
+  async findMembersByUser(userId: string): Promise<GuildMemberWithGuild[]> {
     try {
       return await this.guildMemberRepository.findByUserId(userId, {
         guild: true,

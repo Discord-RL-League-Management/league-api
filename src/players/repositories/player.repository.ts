@@ -39,7 +39,11 @@ export class PlayerRepository implements BaseRepository<
 
     const include: Prisma.PlayerInclude = {};
     if (opts.includeUser) {
-      include.user = true;
+      include.guildMember = {
+        include: {
+          user: true,
+        },
+      };
     }
     if (opts.includeGuild) {
       include.guild = true;
@@ -95,17 +99,36 @@ export class PlayerRepository implements BaseRepository<
 
     const include: Prisma.PlayerInclude = {};
     if (opts.includeUser) {
-      include.user = true;
+      include.guildMember = {
+        include: {
+          user: true,
+        },
+      };
     }
     if (opts.includeGuild) {
       include.guild = true;
     }
 
-    return client.player.findUnique({
+    // First find GuildMember by (userId, guildId) to get guildMemberId
+    const guildMember = await client.guildMember.findUnique({
       where: {
         userId_guildId: {
           userId,
           guildId,
+        },
+      },
+    });
+
+    if (!guildMember) {
+      return null;
+    }
+
+    // Then find Player using the unique constraint (userId, guildMemberId)
+    return client.player.findUnique({
+      where: {
+        userId_guildMemberId: {
+          userId,
+          guildMemberId: guildMember.id,
         },
       },
       include: Object.keys(include).length > 0 ? include : undefined,
@@ -139,7 +162,11 @@ export class PlayerRepository implements BaseRepository<
 
     const include: Prisma.PlayerInclude = {};
     if (opts.includeUser) {
-      include.user = true;
+      include.guildMember = {
+        include: {
+          user: true,
+        },
+      };
     }
     if (opts.includeGuild) {
       include.guild = true;
@@ -198,7 +225,11 @@ export class PlayerRepository implements BaseRepository<
 
     const include: Prisma.PlayerInclude = {};
     if (opts.includeUser) {
-      include.user = true;
+      include.guildMember = {
+        include: {
+          user: true,
+        },
+      };
     }
     if (opts.includeGuild) {
       include.guild = true;
@@ -232,9 +263,11 @@ export class PlayerRepository implements BaseRepository<
 
   /**
    * Create a new player
+   * Note: guildMemberId must be provided by the service layer
+   * The service layer should look up GuildMember from userId/guildId and pass guildMemberId here
    */
   async create(
-    data: CreatePlayerDto,
+    data: CreatePlayerDto & { guildMemberId: string },
     tx?: Prisma.TransactionClient,
   ): Promise<Player> {
     const client = tx || this.prisma;
@@ -242,6 +275,7 @@ export class PlayerRepository implements BaseRepository<
       data: {
         userId: data.userId,
         guildId: data.guildId,
+        guildMemberId: data.guildMemberId,
         status: data.status || 'ACTIVE',
       },
     });

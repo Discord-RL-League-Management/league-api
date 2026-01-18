@@ -36,6 +36,7 @@ describe('PlayersController', () => {
   const mockPlayer = {
     id: 'player-123',
     userId: 'user-123',
+    guildMemberId: 'guild-member-123',
     displayName: 'Test Player',
     createdAt: new Date(),
     updatedAt: new Date(),

@@ -425,8 +425,10 @@ describe('OrganizationMemberService', () => {
           role: OrganizationMemberRole.GENERAL_MANAGER,
           player: {
             id: playerId,
-            user: {
-              id: userId,
+            guildMember: {
+              user: {
+                id: userId,
+              },
             },
           },
         },
@@ -451,8 +453,10 @@ describe('OrganizationMemberService', () => {
           role: OrganizationMemberRole.GENERAL_MANAGER,
           player: {
             id: playerId,
-            user: {
-              id: 'other-user-id',
+            guildMember: {
+              user: {
+                id: 'other-user-id',
+              },
             },
           },
         },

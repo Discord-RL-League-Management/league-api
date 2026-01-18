@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { HttpModule } from '@nestjs/axios';
 import { BullModule } from '@nestjs/bullmq';
@@ -37,6 +37,7 @@ import { TrackerResponseMapperService } from './services/tracker-response-mapper
 import { TrackerAuthorizationService } from './services/tracker-authorization.service';
 import { TrackerAccessGuard } from './guards/tracker-access.guard';
 import { GuildMembersModule } from '../guild-members/guild-members.module';
+import { PlayersModule } from '../players/players.module';
 import { PermissionCheckModule } from '../permissions/modules/permission-check/permission-check.module';
 import { AuthorizationModule } from '../common/authorization/authorization.module';
 import { UsersModule } from '../users/users.module';
@@ -47,7 +48,20 @@ import { UsersModule } from '../users/users.module';
     InfrastructureModule,
     MmrCalculationModule,
     GuildsModule,
-    GuildMembersModule,
+    // INTENTIONAL: Circular dependency with GuildMembersModule is properly handled.
+    // - TrackersModule needs GuildMembersService to find user's guild memberships for player creation
+    // - GuildMembersModule needs TrackerService to check if user has trackers for player creation
+    // - Using forwardRef() is the NestJS-recommended pattern for module-level circular dependencies
+    // Reference: https://docs.nestjs.com/fundamentals/circular-dependency
+    // eslint-disable-next-line @trilon/detect-circular-reference
+    forwardRef(() => GuildMembersModule),
+    // INTENTIONAL: Circular dependency with PlayersModule is properly handled.
+    // - TrackersModule needs PlayerService for automatic player creation after tracker scraping
+    // - PlayersModule needs TrackersModule for player validation (checking if user has trackers)
+    // - Using forwardRef() is the NestJS-recommended pattern for module-level circular dependencies
+    // Reference: https://docs.nestjs.com/fundamentals/circular-dependency
+    // eslint-disable-next-line @trilon/detect-circular-reference
+    forwardRef(() => PlayersModule),
     PermissionCheckModule,
     AuthorizationModule,
     UsersModule,
