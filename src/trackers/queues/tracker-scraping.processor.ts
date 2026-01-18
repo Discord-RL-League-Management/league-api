@@ -72,7 +72,29 @@ export class TrackerScrapingProcessor extends WorkerHost {
         scrapingError: null,
       });
 
-      const seasons = await this.scraperService.scrapeAllSeasons(tracker.url);
+      // Check if this is first-time scraping (never scraped before)
+      const isFirstScrape =
+        trackerRecord.lastScrapedAt === null ||
+        (await this.seasonService.getSeasonsByTracker(trackerId)).length === 0;
+
+      // Limit to 3 most recent historical seasons for first-time scraping
+      // Subsequent scrapes only fetch current season (maxSeasons: 0)
+      const maxSeasons = isFirstScrape ? 3 : 0;
+
+      if (isFirstScrape) {
+        this.logger.log(
+          `First-time scraping for tracker ${trackerId}, limiting to 3 most recent historical seasons`,
+        );
+      } else {
+        this.logger.log(
+          `Subsequent scraping for tracker ${trackerId}, only fetching current season`,
+        );
+      }
+
+      const seasons = await this.scraperService.scrapeSeasons(
+        tracker.url,
+        maxSeasons,
+      );
 
       if (!seasons || seasons.length === 0) {
         this.logger.warn(`No seasons found for tracker ${trackerId}`);

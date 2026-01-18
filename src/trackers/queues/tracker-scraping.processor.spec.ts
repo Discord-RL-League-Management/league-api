@@ -121,12 +121,14 @@ describe('TrackerScrapingProcessor', () => {
     } as unknown as PrismaService;
 
     mockScraperService = {
+      scrapeSeasons: vi.fn(),
       scrapeAllSeasons: vi.fn(),
     } as unknown as TrackerScraperService;
 
     mockSeasonService = {
       bulkUpsertSeasons: vi.fn().mockResolvedValue(undefined),
       createOrUpdateSeason: vi.fn().mockResolvedValue(undefined),
+      getSeasonsByTracker: vi.fn().mockResolvedValue([]),
     } as unknown as TrackerSeasonService;
 
     mockTrackerService = {} as unknown as TrackerService;
@@ -181,13 +183,17 @@ describe('TrackerScrapingProcessor', () => {
       vi.spyOn(mockTrackerRepository, 'findById').mockResolvedValue(
         mockTracker,
       );
-      vi.spyOn(mockScraperService, 'scrapeAllSeasons').mockResolvedValue([]);
+      vi.spyOn(mockScraperService, 'scrapeSeasons').mockResolvedValue([]);
 
       const result = await processor.process(job);
 
       expect(result.success).toBe(true);
       expect(result.seasonsScraped).toBe(0);
       expect(result.seasonsFailed).toBe(0);
+      expect(mockScraperService.scrapeSeasons).toHaveBeenCalledWith(
+        mockTracker.url,
+        3, // First-time scraping, so maxSeasons = 3
+      );
       expect(mockTrackerRepository.update).toHaveBeenCalledWith(
         'tracker_123',
         expect.objectContaining({
@@ -201,7 +207,7 @@ describe('TrackerScrapingProcessor', () => {
       vi.spyOn(mockTrackerRepository, 'findById').mockResolvedValue(
         mockTracker,
       );
-      vi.spyOn(mockScraperService, 'scrapeAllSeasons').mockResolvedValue(
+      vi.spyOn(mockScraperService, 'scrapeSeasons').mockResolvedValue(
         mockSeasons,
       );
 
@@ -210,6 +216,10 @@ describe('TrackerScrapingProcessor', () => {
       expect(result.success).toBe(true);
       expect(result.seasonsScraped).toBe(2);
       expect(result.seasonsFailed).toBe(0);
+      expect(mockScraperService.scrapeSeasons).toHaveBeenCalledWith(
+        mockTracker.url,
+        3, // First-time scraping, so maxSeasons = 3
+      );
       expect(mockSeasonService.bulkUpsertSeasons).toHaveBeenCalledWith(
         'tracker_123',
         mockSeasons,
@@ -227,7 +237,7 @@ describe('TrackerScrapingProcessor', () => {
       vi.spyOn(mockTrackerRepository, 'findById').mockResolvedValue(
         mockTracker,
       );
-      vi.spyOn(mockScraperService, 'scrapeAllSeasons').mockResolvedValue(
+      vi.spyOn(mockScraperService, 'scrapeSeasons').mockResolvedValue(
         mockSeasons,
       );
       vi.spyOn(mockSeasonService, 'bulkUpsertSeasons').mockRejectedValue(
@@ -239,6 +249,10 @@ describe('TrackerScrapingProcessor', () => {
       expect(result.success).toBe(true);
       expect(result.seasonsScraped).toBe(2);
       expect(result.seasonsFailed).toBe(0);
+      expect(mockScraperService.scrapeSeasons).toHaveBeenCalledWith(
+        mockTracker.url,
+        3, // First-time scraping, so maxSeasons = 3
+      );
       expect(mockSeasonService.createOrUpdateSeason).toHaveBeenCalledTimes(2);
     });
 
@@ -247,7 +261,7 @@ describe('TrackerScrapingProcessor', () => {
       vi.spyOn(mockTrackerRepository, 'findById').mockResolvedValue(
         mockTracker,
       );
-      vi.spyOn(mockScraperService, 'scrapeAllSeasons').mockResolvedValue(
+      vi.spyOn(mockScraperService, 'scrapeSeasons').mockResolvedValue(
         mockSeasons,
       );
       vi.spyOn(mockSeasonService, 'bulkUpsertSeasons').mockRejectedValue(
@@ -262,6 +276,10 @@ describe('TrackerScrapingProcessor', () => {
       expect(result.success).toBe(true);
       expect(result.seasonsScraped).toBe(1);
       expect(result.seasonsFailed).toBe(1);
+      expect(mockScraperService.scrapeSeasons).toHaveBeenCalledWith(
+        mockTracker.url,
+        3, // First-time scraping, so maxSeasons = 3
+      );
     });
 
     it('should_create_scraping_log_when_processing_starts', async () => {
@@ -269,7 +287,7 @@ describe('TrackerScrapingProcessor', () => {
       vi.spyOn(mockTrackerRepository, 'findById').mockResolvedValue(
         mockTracker,
       );
-      vi.spyOn(mockScraperService, 'scrapeAllSeasons').mockResolvedValue([]);
+      vi.spyOn(mockScraperService, 'scrapeSeasons').mockResolvedValue([]);
 
       await processor.process(job);
 
@@ -288,7 +306,7 @@ describe('TrackerScrapingProcessor', () => {
       vi.spyOn(mockTrackerRepository, 'findById').mockResolvedValue(
         mockTracker,
       );
-      vi.spyOn(mockScraperService, 'scrapeAllSeasons').mockResolvedValue([]);
+      vi.spyOn(mockScraperService, 'scrapeSeasons').mockResolvedValue([]);
 
       await processor.process(job);
 
@@ -306,7 +324,7 @@ describe('TrackerScrapingProcessor', () => {
       vi.spyOn(mockTrackerRepository, 'findById').mockResolvedValue(
         mockTracker,
       );
-      vi.spyOn(mockScraperService, 'scrapeAllSeasons').mockResolvedValue(
+      vi.spyOn(mockScraperService, 'scrapeSeasons').mockResolvedValue(
         mockSeasons,
       );
 
@@ -325,7 +343,7 @@ describe('TrackerScrapingProcessor', () => {
       vi.spyOn(mockTrackerRepository, 'findById').mockResolvedValue(
         mockTracker,
       );
-      vi.spyOn(mockScraperService, 'scrapeAllSeasons').mockResolvedValue(
+      vi.spyOn(mockScraperService, 'scrapeSeasons').mockResolvedValue(
         mockSeasons,
       );
 
@@ -360,7 +378,7 @@ describe('TrackerScrapingProcessor', () => {
       vi.spyOn(mockTrackerRepository, 'findById').mockResolvedValue(
         mockTracker,
       );
-      vi.spyOn(mockScraperService, 'scrapeAllSeasons').mockRejectedValue(
+      vi.spyOn(mockScraperService, 'scrapeSeasons').mockRejectedValue(
         new Error('Scraper error'),
       );
 
@@ -368,6 +386,10 @@ describe('TrackerScrapingProcessor', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Scraper error');
+      expect(mockScraperService.scrapeSeasons).toHaveBeenCalledWith(
+        mockTracker.url,
+        3, // First-time scraping, so maxSeasons = 3
+      );
       expect(mockTrackerRepository.update).toHaveBeenCalledWith(
         'tracker_123',
         expect.objectContaining({
@@ -381,7 +403,7 @@ describe('TrackerScrapingProcessor', () => {
       vi.spyOn(mockTrackerRepository, 'findById').mockResolvedValue(
         mockTracker,
       );
-      vi.spyOn(mockScraperService, 'scrapeAllSeasons').mockRejectedValue(
+      vi.spyOn(mockScraperService, 'scrapeSeasons').mockRejectedValue(
         new Error('Scraper error'),
       );
 
@@ -408,7 +430,7 @@ describe('TrackerScrapingProcessor', () => {
       vi.spyOn(mockTrackerRepository, 'findById')
         .mockResolvedValueOnce(mockTracker)
         .mockResolvedValueOnce(trackerWithAttempts);
-      vi.spyOn(mockScraperService, 'scrapeAllSeasons').mockRejectedValue(
+      vi.spyOn(mockScraperService, 'scrapeSeasons').mockRejectedValue(
         new Error('Scraper error'),
       );
 
@@ -427,7 +449,7 @@ describe('TrackerScrapingProcessor', () => {
       vi.spyOn(mockTrackerRepository, 'findById').mockResolvedValue(
         mockTracker,
       );
-      vi.spyOn(mockScraperService, 'scrapeAllSeasons').mockResolvedValue(
+      vi.spyOn(mockScraperService, 'scrapeSeasons').mockResolvedValue(
         mockSeasons,
       );
 
@@ -448,7 +470,7 @@ describe('TrackerScrapingProcessor', () => {
       vi.spyOn(mockTrackerRepository, 'findById').mockResolvedValue(
         mockTracker,
       );
-      vi.spyOn(mockScraperService, 'scrapeAllSeasons').mockRejectedValue(
+      vi.spyOn(mockScraperService, 'scrapeSeasons').mockRejectedValue(
         new Error('Scraper error'),
       );
 
@@ -460,6 +482,48 @@ describe('TrackerScrapingProcessor', () => {
           status: TrackerScrapingStatus.FAILED,
           errorMessage: expect.stringContaining('Scraper error'),
         }),
+      );
+    });
+
+    it('should_use_maxSeasons_0_for_subsequent_scraping', async () => {
+      const job = createMockJob({ trackerId: 'tracker_123' });
+      const trackerWithScrapeHistory = {
+        ...mockTracker,
+        lastScrapedAt: new Date(),
+      };
+      vi.spyOn(mockTrackerRepository, 'findById').mockResolvedValue(
+        trackerWithScrapeHistory,
+      );
+      vi.spyOn(mockSeasonService, 'getSeasonsByTracker').mockResolvedValue(
+        mockSeasons,
+      );
+      vi.spyOn(mockScraperService, 'scrapeSeasons').mockResolvedValue(
+        mockSeasons,
+      );
+
+      await processor.process(job);
+
+      expect(mockScraperService.scrapeSeasons).toHaveBeenCalledWith(
+        trackerWithScrapeHistory.url,
+        0, // Subsequent scraping, so maxSeasons = 0 (only current season)
+      );
+    });
+
+    it('should_use_maxSeasons_3_when_lastScrapedAt_is_null_but_seasons_exist', async () => {
+      const job = createMockJob({ trackerId: 'tracker_123' });
+      vi.spyOn(mockTrackerRepository, 'findById').mockResolvedValue(
+        mockTracker, // lastScrapedAt is null
+      );
+      vi.spyOn(mockSeasonService, 'getSeasonsByTracker').mockResolvedValue([]); // No seasons exist
+      vi.spyOn(mockScraperService, 'scrapeSeasons').mockResolvedValue(
+        mockSeasons,
+      );
+
+      await processor.process(job);
+
+      expect(mockScraperService.scrapeSeasons).toHaveBeenCalledWith(
+        mockTracker.url,
+        3, // First-time scraping (lastScrapedAt is null), so maxSeasons = 3
       );
     });
   });

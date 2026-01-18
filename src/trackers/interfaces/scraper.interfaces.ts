@@ -9,6 +9,8 @@ export interface PlaylistData {
   rating: number | null; // Matchmaking Rating (MMR)
   matchesPlayed: number | null;
   winStreak: number | null;
+  peakRating: number | null; // Current season peak from playlist segment
+  allTimePeakRating: number | null; // All-time peak from peak-rating segments
 }
 
 /**

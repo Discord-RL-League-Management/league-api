@@ -118,10 +118,14 @@ export class TrackerScraperService {
   }
 
   /**
-   * Scrape all available seasons for a tracker
+   * Scrape seasons for a tracker with a configurable limit on historical seasons
    * @param trnUrl - TRN profile URL
+   * @param maxSeasons - Maximum number of historical seasons to scrape (0 = only current season, >0 = limit to N most recent)
    */
-  async scrapeAllSeasons(trnUrl: string): Promise<SeasonData[]> {
+  async scrapeSeasons(
+    trnUrl: string,
+    maxSeasons: number,
+  ): Promise<SeasonData[]> {
     try {
       const baseData = await this.scrapeTrackerData(trnUrl);
 
@@ -157,9 +161,23 @@ export class TrackerScraperService {
         : null;
 
       // Filter out current season from availableSeasons to avoid duplicate scraping
-      const seasonsToScrape = availableSeasons.filter(
+      let seasonsToScrape = availableSeasons.filter(
         (season) => season !== currentSeason,
       );
+
+      // Apply maxSeasons limit if provided (limit to most recent N historical seasons)
+      const originalCount = seasonsToScrape.length;
+      if (maxSeasons === 0) {
+        seasonsToScrape = [];
+        this.logger.debug(
+          'Skipping all historical seasons, only scraping current season',
+        );
+      } else if (maxSeasons > 0 && originalCount > maxSeasons) {
+        seasonsToScrape = seasonsToScrape.slice(0, maxSeasons);
+        this.logger.debug(
+          `Limiting scraping to ${maxSeasons} most recent historical seasons (${originalCount} available)`,
+        );
+      }
 
       // Scrape each season (excluding current season which we already have)
       const seasonDataPromises = seasonsToScrape.map(async (seasonNum) => {
@@ -193,17 +211,38 @@ export class TrackerScraperService {
 
       validSeasons.sort((a, b) => b.seasonNumber - a.seasonNumber);
 
-      this.logger.log(
-        `Successfully scraped ${validSeasons.length} of ${availableSeasons.length} seasons (including current season from base data)`,
-      );
+      const totalSeasons = originalCount + (currentSeasonData ? 1 : 0);
+      const scrapedCount = validSeasons.length;
+      if (maxSeasons === 0) {
+        this.logger.log(
+          `Successfully scraped current season only (${scrapedCount} season)`,
+        );
+      } else if (originalCount > maxSeasons) {
+        this.logger.log(
+          `Successfully scraped ${scrapedCount} of ${totalSeasons} seasons (limited to ${maxSeasons} historical + current season)`,
+        );
+      } else {
+        this.logger.log(
+          `Successfully scraped ${scrapedCount} of ${totalSeasons} seasons (including current season from base data)`,
+        );
+      }
 
       return validSeasons;
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      this.logger.error(`Failed to scrape all seasons: ${errorMessage}`, error);
+      this.logger.error(`Failed to scrape seasons: ${errorMessage}`, error);
       throw error;
     }
+  }
+
+  /**
+   * Scrape all available seasons for a tracker (rare use case)
+   * @param trnUrl - TRN profile URL
+   */
+  async scrapeAllSeasons(trnUrl: string): Promise<SeasonData[]> {
+    // Use scrapeSeasons with a very large number to effectively scrape all seasons
+    return this.scrapeSeasons(trnUrl, Number.MAX_SAFE_INTEGER);
   }
 
   /**
@@ -269,6 +308,75 @@ export class TrackerScraperService {
       }
     }
 
+    // Extract all-time peaks from peak-rating segments
+    const peakRatingSegments = segments.filter(
+      (seg) => seg.type === 'peak-rating',
+    );
+
+    // Build map of all-time peaks per playlist
+    const allTimePeakMap = new Map<
+      'playlist1v1' | 'playlist2v2' | 'playlist3v3' | 'playlist4v4',
+      number
+    >();
+
+    for (const segment of peakRatingSegments) {
+      const playlistId = segment.attributes.playlistId;
+      if (!playlistId || typeof playlistId !== 'number') {
+        continue;
+      }
+
+      const fieldName = PLAYLIST_ID_MAP.get(playlistId);
+      if (!fieldName) {
+        // Skip unsupported playlists (Hoops, Rumble, etc.)
+        continue;
+      }
+
+      const peakRating = segment.stats?.peakRating;
+      if (!peakRating) {
+        continue;
+      }
+
+      // Parse numeric value (may be string with commas like "2,772")
+      let peakValue: number | null = null;
+      if (typeof peakRating.value === 'number') {
+        peakValue = peakRating.value;
+      } else if (peakRating.value != null) {
+        // Handle string values (remove commas and parse)
+        const valueStr = String(peakRating.value);
+        const numericString = valueStr.replace(/,/g, '');
+        const parsed = Number(numericString);
+        if (!isNaN(parsed)) {
+          peakValue = parsed;
+        }
+      }
+
+      if (peakValue !== null) {
+        // Update map with maximum value per playlist
+        const currentMax = allTimePeakMap.get(fieldName);
+        if (currentMax === undefined || peakValue > currentMax) {
+          allTimePeakMap.set(fieldName, peakValue);
+        }
+      }
+    }
+
+    // Update PlaylistData objects with allTimePeakRating
+    if (seasonData.playlist1v1) {
+      seasonData.playlist1v1.allTimePeakRating =
+        allTimePeakMap.get('playlist1v1') ?? null;
+    }
+    if (seasonData.playlist2v2) {
+      seasonData.playlist2v2.allTimePeakRating =
+        allTimePeakMap.get('playlist2v2') ?? null;
+    }
+    if (seasonData.playlist3v3) {
+      seasonData.playlist3v3.allTimePeakRating =
+        allTimePeakMap.get('playlist3v3') ?? null;
+    }
+    if (seasonData.playlist4v4) {
+      seasonData.playlist4v4.allTimePeakRating =
+        allTimePeakMap.get('playlist4v4') ?? null;
+    }
+
     return seasonData;
   }
 
@@ -305,6 +413,7 @@ export class TrackerScraperService {
       const rating = stats.rating;
       const matchesPlayed = stats.matchesPlayed;
       const winStreak = stats.winStreak;
+      const peakRating = stats.peakRating;
 
       return {
         rank: tier?.metadata?.name || null,
@@ -317,6 +426,9 @@ export class TrackerScraperService {
           typeof matchesPlayed?.value === 'number' ? matchesPlayed.value : null,
         winStreak:
           typeof winStreak?.value === 'number' ? winStreak.value : null,
+        peakRating:
+          typeof peakRating?.value === 'number' ? peakRating.value : null,
+        allTimePeakRating: null, // Will be populated in parseSegments
       };
     } catch (error) {
       const errorMessage =
