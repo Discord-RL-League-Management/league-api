@@ -5,8 +5,15 @@ import {
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
-import { firstValueFrom, timeout, retry, catchError, throwError } from 'rxjs';
-import { AxiosError } from 'axios';
+import {
+  firstValueFrom,
+  timeout,
+  retry,
+  catchError,
+  throwError,
+  of,
+} from 'rxjs';
+import { AxiosError, AxiosResponse } from 'axios';
 import { Inject } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
@@ -330,6 +337,105 @@ export class DiscordBotService {
     } catch (error) {
       this.logger.error(
         `Failed to fetch channels for guild ${guildId}:`,
+        error,
+      );
+      if (error instanceof ServiceUnavailableException) {
+        throw error;
+      }
+      throw new ServiceUnavailableException('Discord API unavailable');
+    }
+  }
+
+  /**
+   * Get guild member by user ID using bot token
+   * Single Responsibility: Fetch guild member data for a specific user
+   *
+   * Following: https://discord.com/developers/docs/resources/guild#get-guild-member
+   * Requires bot to be in the guild and have proper permissions/intents
+   */
+  async getGuildMemberByUserId(
+    guildId: string,
+    userId: string,
+  ): Promise<{
+    roles: string[];
+    user?: { id: string; username: string };
+  } | null> {
+    if (!this.botToken) {
+      this.logger.error('Discord bot token is not configured');
+      throw new ServiceUnavailableException(
+        'Discord bot token is not configured. Please set DISCORD_BOT_TOKEN environment variable.',
+      );
+    }
+
+    try {
+      const cacheKey = `discord:member:${guildId}:${userId}`;
+      const cached = await this.cacheManager.get<{
+        roles: string[];
+        user?: { id: string; username: string };
+      } | null>(cacheKey);
+
+      if (cached !== undefined) {
+        this.logger.debug(
+          `Member cache hit for user ${userId} in guild ${guildId}`,
+        );
+        return cached;
+      }
+
+      const response = (await firstValueFrom(
+        this.httpService
+          .get<{
+            roles?: string[];
+            user?: { id: string; username: string };
+          }>(`${this.apiUrl}/guilds/${guildId}/members/${userId}`, {
+            headers: { Authorization: `Bot ${this.botToken}` },
+          })
+          .pipe(
+            timeout(this.requestTimeout),
+            retry({ count: this.retryAttempts }),
+            catchError((error: AxiosError) => {
+              if (error.response?.status === 404) {
+                // User not in guild - return null response
+                return of({
+                  data: null,
+                } as AxiosResponse<{
+                  roles?: string[];
+                  user?: { id: string; username: string };
+                } | null>);
+              }
+              return this.handleDiscordApiError(error);
+            }),
+          ),
+      )) as AxiosResponse<{
+        roles?: string[];
+        user?: { id: string; username: string };
+      } | null>;
+
+      const memberData = response.data;
+
+      if (!memberData) {
+        await this.cacheManager.set(cacheKey, null, this.cacheTtl);
+        this.logger.log(`User ${userId} is not a member of guild ${guildId}`);
+        return null;
+      }
+
+      const result = {
+        roles: memberData.roles || [],
+        user: memberData.user
+          ? {
+              id: String(memberData.user.id),
+              username: memberData.user.username || '',
+            }
+          : undefined,
+      };
+
+      await this.cacheManager.set(cacheKey, result, this.cacheTtl);
+      this.logger.log(
+        `Successfully fetched member data for user ${userId} in guild ${guildId}`,
+      );
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Failed to fetch guild member ${userId} from guild ${guildId}:`,
         error,
       );
       if (error instanceof ServiceUnavailableException) {
