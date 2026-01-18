@@ -7,9 +7,20 @@ import { UserRepository } from './repositories/user.repository';
 import { UserOrchestratorService } from './services/user-orchestrator.service';
 import { EncryptionModule } from '../common/encryption.module';
 import { PrismaModule } from '../prisma/prisma.module';
+import { TrackersModule } from '../trackers/trackers.module';
+import { GuildsModule } from '../guilds/guilds.module';
+import { DiscordModule } from '../discord/discord.module';
+import { PermissionCheckModule } from '../permissions/modules/permission-check/permission-check.module';
 
 @Module({
-  imports: [EncryptionModule, PrismaModule],
+  imports: [
+    EncryptionModule,
+    PrismaModule,
+    TrackersModule,
+    GuildsModule,
+    DiscordModule,
+    PermissionCheckModule,
+  ],
   controllers: [InternalUsersController, UsersController],
   providers: [
     UsersService,

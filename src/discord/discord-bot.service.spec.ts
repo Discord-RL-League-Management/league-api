@@ -551,4 +551,186 @@ describe('DiscordBotService', () => {
       );
     });
   });
+
+  describe('getGuildMemberByUserId', () => {
+    it('should_throw_service_unavailable_when_bot_token_not_configured', async () => {
+      const configServiceNoToken = {
+        get: vi.fn().mockImplementation((key: string) => {
+          if (key === 'discord.botToken') return '';
+          if (key === 'discord.apiUrl') return 'https://discord.com/api/v10';
+          if (key === 'discord.timeout') return 10000;
+          if (key === 'discord.retryAttempts') return 3;
+          return undefined;
+        }),
+      } as unknown as ConfigService;
+
+      const module = await Test.createTestingModule({
+        providers: [
+          DiscordBotService,
+          { provide: HttpService, useValue: mockHttpService },
+          { provide: ConfigService, useValue: configServiceNoToken },
+          { provide: CACHE_MANAGER, useValue: mockCacheManager },
+        ],
+      }).compile();
+
+      const serviceNoToken = module.get<DiscordBotService>(DiscordBotService);
+
+      await expect(
+        serviceNoToken.getGuildMemberByUserId('guild-123', 'user-123'),
+      ).rejects.toThrow(ServiceUnavailableException);
+    });
+
+    it('should_return_cached_member_when_cache_hit', async () => {
+      const cachedMember = {
+        roles: ['role-1', 'role-2'],
+        user: { id: 'user-123', username: 'testuser' },
+      };
+
+      vi.mocked(mockCacheManager.get).mockResolvedValue(cachedMember);
+
+      const result = await service.getGuildMemberByUserId(
+        'guild-123',
+        'user-123',
+      );
+
+      expect(result).toEqual(cachedMember);
+      expect(mockCacheManager.get).toHaveBeenCalledWith(
+        'discord:member:guild-123:user-123',
+      );
+      expect(mockHttpService.get).not.toHaveBeenCalled();
+    });
+
+    it('should_return_null_when_user_not_in_guild', async () => {
+      const axiosError = new AxiosError('Not found');
+      axiosError.response = {
+        status: 404,
+        statusText: 'Not Found',
+        data: {},
+        headers: {},
+        config: {} as never,
+      };
+
+      const mockResponse: AxiosResponse = {
+        data: null,
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: {} as never,
+      };
+
+      vi.mocked(mockCacheManager.get).mockResolvedValue(undefined);
+      vi.mocked(mockHttpService.get).mockReturnValue(
+        throwError(() => axiosError).pipe() as never,
+      );
+
+      firstValueFromSpy = vi
+        .spyOn(rxjs, 'firstValueFrom')
+        .mockResolvedValue(mockResponse);
+
+      const result = await service.getGuildMemberByUserId(
+        'guild-123',
+        'user-123',
+      );
+
+      expect(result).toBeNull();
+      expect(mockCacheManager.set).toHaveBeenCalledWith(
+        'discord:member:guild-123:user-123',
+        null,
+        expect.any(Number),
+      );
+      firstValueFromSpy.mockRestore();
+    });
+
+    it('should_fetch_and_cache_member_when_cache_miss', async () => {
+      const mockApiMember = {
+        roles: ['role-1', 'role-2'],
+        user: { id: 'user-123', username: 'testuser' },
+      };
+
+      const mockResponse: AxiosResponse = {
+        data: mockApiMember,
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: {} as never,
+      };
+
+      vi.mocked(mockCacheManager.get).mockResolvedValue(undefined);
+      vi.mocked(mockHttpService.get).mockReturnValue(
+        of(mockResponse).pipe() as never,
+      );
+      vi.mocked(mockCacheManager.set).mockResolvedValue(undefined);
+
+      firstValueFromSpy = vi
+        .spyOn(rxjs, 'firstValueFrom')
+        .mockResolvedValue(mockResponse);
+
+      const result = await service.getGuildMemberByUserId(
+        'guild-123',
+        'user-123',
+      );
+
+      expect(result).toEqual({
+        roles: ['role-1', 'role-2'],
+        user: { id: 'user-123', username: 'testuser' },
+      });
+      expect(mockCacheManager.set).toHaveBeenCalled();
+      firstValueFromSpy.mockRestore();
+    });
+
+    it('should_return_member_without_user_when_user_not_in_response', async () => {
+      const mockApiMember = {
+        roles: ['role-1'],
+      };
+
+      const mockResponse: AxiosResponse = {
+        data: mockApiMember,
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: {} as never,
+      };
+
+      vi.mocked(mockCacheManager.get).mockResolvedValue(undefined);
+      vi.mocked(mockHttpService.get).mockReturnValue(
+        of(mockResponse).pipe() as never,
+      );
+
+      firstValueFromSpy = vi
+        .spyOn(rxjs, 'firstValueFrom')
+        .mockResolvedValue(mockResponse);
+
+      const result = await service.getGuildMemberByUserId(
+        'guild-123',
+        'user-123',
+      );
+
+      expect(result).toEqual({
+        roles: ['role-1'],
+        user: undefined,
+      });
+      firstValueFromSpy.mockRestore();
+    });
+
+    it('should_throw_service_unavailable_when_api_call_fails', async () => {
+      vi.mocked(mockCacheManager.get).mockResolvedValue(undefined);
+
+      const axiosError = new AxiosError('Request failed');
+      axiosError.response = {
+        status: 500,
+        statusText: 'Internal Server Error',
+        data: {},
+        headers: {},
+        config: {} as never,
+      };
+
+      vi.mocked(mockHttpService.get).mockReturnValue(
+        throwError(() => axiosError) as never,
+      );
+
+      await expect(
+        service.getGuildMemberByUserId('guild-123', 'user-123'),
+      ).rejects.toThrow(ServiceUnavailableException);
+    });
+  });
 });

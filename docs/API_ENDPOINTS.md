@@ -619,13 +619,22 @@ curl -H "Authorization: Bearer JWT_TOKEN" \
 | `GET` | `/internal/users` | List all users | ✅ API Key |
 | `GET` | `/internal/users/:id` | Get user by ID | ✅ API Key |
 | `POST` | `/internal/users` | Create new user | ✅ API Key |
+| `POST` | `/internal/users/register-by-staff` | Register user with trackers by staff member | ✅ API Key |
 | `PATCH` | `/internal/users/:id` | Update user | ✅ API Key |
 | `DELETE` | `/internal/users/:id` | Delete user | ✅ API Key |
 
 **Example Bot Request:**
 ```bash
+# List all users
 curl -H "Authorization: Bearer BOT_API_KEY" \
   http://localhost:3000/internal/users
+
+# Register user by staff
+curl -H "Authorization: Bearer BOT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{"staffUserId":"123456789012345678","guildId":"987654321098765432","userId":"111222333444555666","urls":["https://rocketleague.tracker.network/rocket-league/profile/steam/76561198051701160/overview"]}' \
+  http://localhost:3000/internal/users/register-by-staff
 ```
 
 ### League Management (Bot)
