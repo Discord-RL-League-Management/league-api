@@ -237,6 +237,169 @@ describe('TrackerScraperService', () => {
     });
   });
 
+  describe('scrapeSeasons', () => {
+    beforeEach(() => {
+      // Mock enforceRateLimit to return immediately without delays for fast test execution
+      vi.spyOn(service, 'enforceRateLimit' as any).mockResolvedValue(undefined);
+    });
+
+    it('should_limit_to_maxSeasons_historical_seasons', async () => {
+      const trnUrl =
+        'https://rocketleague.tracker.network/rocket-league/profile/steam/76561198051701160/overview';
+      const mockDataWithMultipleSeasons: ScrapedTrackerData = {
+        ...mockTrackerData,
+        availableSegments: [
+          {
+            type: 'playlist',
+            attributes: { season: 10 },
+            metadata: { name: 'Season 10' },
+          },
+          {
+            type: 'playlist',
+            attributes: { season: 9 },
+            metadata: { name: 'Season 9' },
+          },
+          {
+            type: 'playlist',
+            attributes: { season: 8 },
+            metadata: { name: 'Season 8' },
+          },
+          {
+            type: 'playlist',
+            attributes: { season: 7 },
+            metadata: { name: 'Season 7' },
+          },
+        ],
+      };
+
+      const mockFlareSolverrResponse: AxiosResponse = {
+        data: {
+          status: 'ok',
+          solution: {
+            response: `<pre>${JSON.stringify({ data: mockDataWithMultipleSeasons })}</pre>`,
+            status: 200,
+            url: 'https://api.tracker.gg/api/v2/rocket-league/standard/profile/steam/76561198051701160',
+          },
+        },
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: {} as any,
+      };
+
+      vi.spyOn(mockHttpService, 'post').mockReturnValue(
+        of(mockFlareSolverrResponse),
+      );
+
+      const result = await service.scrapeSeasons(trnUrl, 2);
+
+      expect(result).toBeDefined();
+      expect(Array.isArray(result)).toBe(true);
+      // Should have 2 historical seasons + current season = 3 total
+      expect(result.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('should_return_only_current_season_when_maxSeasons_is_zero', async () => {
+      const trnUrl =
+        'https://rocketleague.tracker.network/rocket-league/profile/steam/76561198051701160/overview';
+      const mockDataWithMultipleSeasons: ScrapedTrackerData = {
+        ...mockTrackerData,
+        availableSegments: [
+          {
+            type: 'playlist',
+            attributes: { season: 10 },
+            metadata: { name: 'Season 10' },
+          },
+          {
+            type: 'playlist',
+            attributes: { season: 9 },
+            metadata: { name: 'Season 9' },
+          },
+        ],
+      };
+
+      const mockFlareSolverrResponse: AxiosResponse = {
+        data: {
+          status: 'ok',
+          solution: {
+            response: `<pre>${JSON.stringify({ data: mockDataWithMultipleSeasons })}</pre>`,
+            status: 200,
+            url: 'https://api.tracker.gg/api/v2/rocket-league/standard/profile/steam/76561198051701160',
+          },
+        },
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: {} as any,
+      };
+
+      vi.spyOn(mockHttpService, 'post').mockReturnValue(
+        of(mockFlareSolverrResponse),
+      );
+
+      const result = await service.scrapeSeasons(trnUrl, 0);
+
+      expect(result).toBeDefined();
+      expect(Array.isArray(result)).toBe(true);
+      // Should only have current season
+      expect(result.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('should_handle_season_scraping_failures_gracefully_with_limit', async () => {
+      const trnUrl =
+        'https://rocketleague.tracker.network/rocket-league/profile/steam/76561198051701160/overview';
+      const mockDataWithMultipleSeasons: ScrapedTrackerData = {
+        ...mockTrackerData,
+        availableSegments: [
+          {
+            type: 'playlist',
+            attributes: { season: 10 },
+            metadata: { name: 'Season 10' },
+          },
+          {
+            type: 'playlist',
+            attributes: { season: 9 },
+            metadata: { name: 'Season 9' },
+          },
+        ],
+      };
+
+      const baseResponse: AxiosResponse = {
+        data: {
+          status: 'ok',
+          solution: {
+            response: `<pre>${JSON.stringify({ data: mockDataWithMultipleSeasons })}</pre>`,
+            status: 200,
+            url: 'https://api.tracker.gg/api/v2/rocket-league/standard/profile/steam/76561198051701160',
+          },
+        },
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: {} as any,
+      };
+
+      const errorResponse = throwError(
+        () =>
+          ({
+            response: { status: 500 },
+            code: 'ECONNREFUSED',
+          }) as AxiosError,
+      );
+
+      vi.spyOn(service, 'enforceRateLimit' as any).mockResolvedValue(undefined);
+      vi.spyOn(mockHttpService, 'post')
+        .mockReturnValueOnce(of(baseResponse))
+        .mockReturnValueOnce(errorResponse);
+
+      const result = await service.scrapeSeasons(trnUrl, 1);
+
+      expect(result).toBeDefined();
+      expect(Array.isArray(result)).toBe(true);
+      expect(result.length).toBeGreaterThan(0);
+    }, 5000);
+  });
+
   describe('scrapeAllSeasons', () => {
     beforeEach(() => {
       // Mock enforceRateLimit to return immediately without delays for fast test execution

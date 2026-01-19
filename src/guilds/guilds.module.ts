@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { CacheModule } from '@nestjs/cache-manager';
 import { GuildsController } from './guilds.controller';
 import { InternalGuildsController } from './internal-guilds.controller';
@@ -32,7 +32,13 @@ import { IGUILD_ACCESS_PROVIDER } from '../common/tokens/injection.tokens';
 
 @Module({
   imports: [
-    TokenManagementModule,
+    // INTENTIONAL: Circular dependency with TokenManagementModule is properly handled.
+    // - GuildsModule needs TokenManagementService for guild authorization (GuildAuthorizationService, GuildAccessValidationService)
+    // - TokenManagementModule needs UsersModule which depends on GuildsModule, creating a cycle
+    // - Using forwardRef() is the NestJS-recommended pattern for module-level circular dependencies
+    // Reference: https://docs.nestjs.com/fundamentals/circular-dependency
+    // eslint-disable-next-line @trilon/detect-circular-reference
+    forwardRef(() => TokenManagementModule),
     GuildMembersModule,
     DiscordModule,
     PermissionCheckModule,
@@ -41,7 +47,14 @@ import { IGUILD_ACCESS_PROVIDER } from '../common/tokens/injection.tokens';
     ActivityLogModule,
     FormulaValidationModule,
     RequestContextModule,
-    UsersModule,
+    // INTENTIONAL: Circular dependency with UsersModule is properly handled.
+    // - GuildsModule needs UsersService for guild member operations
+    // - UsersModule is part of a cycle: TokenManagementModule → UsersModule → GuildsModule → TokenManagementModule
+    // - Both sides of the cycle must use forwardRef() for proper initialization
+    // - Using forwardRef() is the NestJS-recommended pattern for module-level circular dependencies
+    // Reference: https://docs.nestjs.com/fundamentals/circular-dependency
+    // eslint-disable-next-line @trilon/detect-circular-reference
+    forwardRef(() => UsersModule),
     CacheModule.register(cacheModuleOptions),
   ],
   controllers: [

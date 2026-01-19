@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MmrCalculationController } from './mmr-calculation.controller';
 import { MMRCalculatorDemoController } from './mmr-calculator-demo.controller';
 import { MmrCalculationService } from './services/mmr-calculation.service';
@@ -20,7 +20,17 @@ import { FormulaValidationModule } from '../formula-validation/formula-validatio
  * - FormulaValidationModule: Provides FormulaValidationService (shared utility)
  */
 @Module({
-  imports: [PrismaModule, GuildsModule, FormulaValidationModule],
+  imports: [
+    PrismaModule,
+    // INTENTIONAL: Circular dependency with GuildsModule is properly handled.
+    // - MmrCalculationModule needs GuildSettingsService for MMR calculation logic
+    // - GuildsModule is part of a cycle: TokenManagementModule → UsersModule → GuildsModule → TokenManagementModule
+    // - Using forwardRef() is the NestJS-recommended pattern for module-level circular dependencies
+    // Reference: https://docs.nestjs.com/fundamentals/circular-dependency
+    // eslint-disable-next-line @trilon/detect-circular-reference
+    forwardRef(() => GuildsModule),
+    FormulaValidationModule,
+  ],
   controllers: [MmrCalculationController, MMRCalculatorDemoController],
   providers: [
     MmrCalculationService,

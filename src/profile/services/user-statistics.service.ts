@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { GuildMemberQueryService } from '../../guild-members/services/guild-member-query.service';
+import {
+  GuildMemberQueryService,
+  GuildMemberWithGuild,
+} from '../../guild-members/services/guild-member-query.service';
 
 /**
  * UserStatisticsService - Aggregates statistics for user profiles
@@ -28,16 +30,11 @@ export class UserStatisticsService {
     activeGuildsCount: number;
   }> {
     try {
-      const memberships =
+      const memberships: GuildMemberWithGuild[] =
         await this.guildMemberQueryService.findMembersByUser(userId);
 
-      type GuildMemberWithGuild = Prisma.GuildMemberGetPayload<{
-        include: { guild: true };
-      }>;
-      const typedMemberships = memberships as GuildMemberWithGuild[];
-
-      const guildsCount = typedMemberships.length;
-      const activeGuildsCount = typedMemberships.filter(
+      const guildsCount = memberships.length;
+      const activeGuildsCount = memberships.filter(
         (m) => m.guild && m.guild.isActive !== false,
       ).length;
 

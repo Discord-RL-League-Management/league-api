@@ -22,6 +22,7 @@ describe('PlayerOwnershipService', () => {
     id: 'player_123',
     userId: 'user_123',
     guildId: 'guild_123',
+    guildMemberId: 'guild-member-123',
     status: PlayerStatus.ACTIVE,
     lastLeftLeagueAt: null,
     lastLeftLeagueId: null,

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { GuildMembersService } from '../guild-members/guild-members.service';
+import { GuildMemberWithGuild } from '../guild-members/services/guild-member-query.service';
 import { DiscordApiService } from '../discord/discord-api.service';
 import { TokenManagementService } from '../auth/services/token-management.service';
 import { PermissionCheckService } from '../permissions/modules/permission-check/permission-check.service';
@@ -45,15 +46,10 @@ export class UserGuildsService {
     try {
       const guilds = await this.filterUserGuilds(userId);
 
-      const memberships =
+      const memberships: GuildMemberWithGuild[] =
         await this.guildMembersService.findMembersByUser(userId);
 
-      const membershipMap = new Map(
-        memberships.map((m) => [
-          (m as { guildId: string }).guildId,
-          m as { guildId: string; roles: string[] },
-        ]),
-      );
+      const membershipMap = new Map(memberships.map((m) => [m.guildId, m]));
 
       // Enrich guilds with permission information
       // For performance, we pass undefined for settings and let the
@@ -98,11 +94,11 @@ export class UserGuildsService {
     userGuilds: Array<DiscordGuild & { roles?: string[] }>,
   ): Promise<void> {
     try {
-      const existingMemberships =
+      const existingMemberships: GuildMemberWithGuild[] =
         await this.guildMembersService.findMembersByUser(userId);
 
       const existingGuildIds = new Set(
-        existingMemberships.map((m) => (m as { guildId: string }).guildId),
+        existingMemberships.map((m) => m.guildId),
       );
 
       const newMemberships = userGuilds

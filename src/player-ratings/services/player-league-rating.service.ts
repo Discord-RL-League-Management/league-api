@@ -6,6 +6,7 @@ import { PlayerLeagueRatingRepository } from '../repositories/player-league-rati
 interface RatingUpdateInput {
   ratingSystem?: string;
   currentRating?: number;
+  rawRating?: number;
   initialRating?: number;
   ratingData?: Prisma.InputJsonValue;
   matchesPlayed?: number;
@@ -56,6 +57,7 @@ export class PlayerLeagueRatingService {
         leagueId,
         ratingSystem: rating.ratingSystem || 'DEFAULT',
         currentRating: rating.currentRating || 1000,
+        rawRating: rating.rawRating ?? null,
         initialRating: rating.initialRating || rating.currentRating || 1000,
         peakRating: rating.currentRating || 1000,
         peakRatingAt: new Date(),
@@ -69,6 +71,9 @@ export class PlayerLeagueRatingService {
       update: {
         ...(rating.currentRating !== undefined && {
           currentRating: rating.currentRating,
+        }),
+        ...(rating.rawRating !== undefined && {
+          rawRating: rating.rawRating ?? null,
         }),
         ...(rating.ratingData !== undefined && {
           ratingData: rating.ratingData,

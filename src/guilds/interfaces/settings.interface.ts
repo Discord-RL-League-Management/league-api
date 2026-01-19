@@ -81,6 +81,7 @@ export interface MmrCalculationConfig {
    * For CUSTOM algorithm - the formula string
    * Available variables:
    * - ones, twos, threes, fours (MMR values)
+   * - onesPeak, twosPeak, threesPeak, foursPeak (Peak MMR values)
    * - onesGames, twosGames, threesGames, foursGames (games played)
    * - totalGames (sum of all games)
    * Available functions: Math.* functions (abs, max, min, sqrt, pow, etc.)

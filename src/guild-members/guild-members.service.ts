@@ -3,6 +3,8 @@ import {
   NotFoundException,
   InternalServerErrorException,
   Logger,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { UsersService } from '../users/users.service';
@@ -12,6 +14,9 @@ import { GuildMemberRepository } from './repositories/guild-member.repository';
 import { GuildMemberQueryService } from './services/guild-member-query.service';
 import { GuildMemberStatisticsService } from './services/guild-member-statistics.service';
 import { GuildMemberSyncService } from './services/guild-member-sync.service';
+import { GuildMemberWithGuild } from './services/guild-member-query.service';
+import { TrackerService } from '../trackers/tracker.service';
+import { PlayerService } from '../players/player.service';
 
 /**
  * GuildMembersService - Business logic layer for GuildMember CRUD operations
@@ -30,6 +35,10 @@ export class GuildMembersService {
     private guildMemberQueryService: GuildMemberQueryService,
     private guildMemberStatisticsService: GuildMemberStatisticsService,
     private guildMemberSyncService: GuildMemberSyncService,
+    private trackerService: TrackerService,
+    // eslint-disable-next-line @trilon/detect-circular-reference
+    @Inject(forwardRef(() => PlayerService))
+    private playerService: PlayerService,
   ) {}
 
   /**
@@ -47,7 +56,20 @@ export class GuildMembersService {
         );
       }
 
-      return await this.guildMemberRepository.upsert(createGuildMemberDto);
+      const guildMember =
+        await this.guildMemberRepository.upsert(createGuildMemberDto);
+
+      // Fire-and-forget: Check if user has trackers and create player if needed
+      void this.ensurePlayerIfUserHasTrackers(
+        createGuildMemberDto.userId,
+        createGuildMemberDto.guildId,
+      ).catch((err) => {
+        this.logger.warn(
+          `Failed to create player for user ${createGuildMemberDto.userId} in guild ${createGuildMemberDto.guildId} after member creation: ${err}`,
+        );
+      });
+
+      return guildMember;
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -237,7 +259,7 @@ export class GuildMembersService {
    * Find all memberships for a user with guild data
    * Single Responsibility: Delegate to query service
    */
-  async findMembersByUser(userId: string) {
+  async findMembersByUser(userId: string): Promise<GuildMemberWithGuild[]> {
     return this.guildMemberQueryService.findMembersByUser(userId);
   }
 
@@ -291,5 +313,24 @@ export class GuildMembersService {
    */
   async getMemberStats(guildId: string) {
     return this.guildMemberStatisticsService.getMemberStats(guildId);
+  }
+
+  /**
+   * Ensure player exists if user has active trackers
+   * Single Responsibility: Player creation when user has trackers
+   */
+  private async ensurePlayerIfUserHasTrackers(
+    userId: string,
+    guildId: string,
+  ): Promise<void> {
+    const trackersResult =
+      await this.trackerService.getTrackersByUserId(userId);
+    const activeTrackers = trackersResult.data.filter(
+      (t) => t.isActive && !t.isDeleted,
+    );
+
+    if (activeTrackers.length > 0) {
+      await this.playerService.ensurePlayerExists(userId, guildId);
+    }
   }
 }

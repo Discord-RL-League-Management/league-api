@@ -43,6 +43,7 @@ describe('PlayerService', () => {
     id: playerId,
     userId,
     guildId,
+    guildMemberId: 'guild-member-123',
     status: PlayerStatus.ACTIVE,
     lastLeftLeagueId: null,
     lastLeftLeagueAt: null,
@@ -221,7 +222,15 @@ describe('PlayerService', () => {
       );
       vi.mocked(mockPrisma.$transaction).mockImplementation(
         async (callback) => {
-          const mockTx = {} as Prisma.TransactionClient;
+          const mockTx = {
+            guildMember: {
+              findUnique: vi.fn().mockResolvedValue({
+                id: 'guild-member-123',
+                userId,
+                guildId,
+              }),
+            },
+          } as unknown as Prisma.TransactionClient;
           return await callback(mockTx);
         },
       );
@@ -233,7 +242,10 @@ describe('PlayerService', () => {
       expect(result.userId).toBe(userId);
       expect(result.guildId).toBe(guildId);
       expect(mockPlayerRepository.create).toHaveBeenCalledWith(
-        createDto,
+        {
+          ...createDto,
+          guildMemberId: 'guild-member-123',
+        },
         expect.anything(),
       );
     });
@@ -327,12 +339,23 @@ describe('PlayerService', () => {
     });
 
     it('should_auto_create_player_when_player_does_not_exist', async () => {
-      vi.mocked(mockPlayerRepository.findByUserIdAndGuildId)
-        .mockResolvedValueOnce(null) // First call before transaction
-        .mockResolvedValueOnce(null); // Second call in transaction
+      vi.mocked(
+        mockPlayerRepository.findByUserIdAndGuildId,
+      ).mockResolvedValueOnce(null); // First call before transaction
       vi.mocked(mockPrisma.$transaction).mockImplementation(
         async (callback) => {
-          const mockTx = {} as Prisma.TransactionClient;
+          const mockTx = {
+            guildMember: {
+              findUnique: vi.fn().mockResolvedValue({
+                id: 'guild-member-123',
+                userId,
+                guildId,
+              }),
+            },
+            player: {
+              findUnique: vi.fn().mockResolvedValue(null), // Second check in transaction
+            },
+          } as unknown as Prisma.TransactionClient;
           return await callback(mockTx);
         },
       );
@@ -346,6 +369,7 @@ describe('PlayerService', () => {
         {
           userId,
           guildId,
+          guildMemberId: 'guild-member-123',
           status: PlayerStatus.ACTIVE,
         },
         expect.anything(),
@@ -353,12 +377,23 @@ describe('PlayerService', () => {
     });
 
     it('should_return_existing_player_from_transaction_when_created_concurrently', async () => {
-      vi.mocked(mockPlayerRepository.findByUserIdAndGuildId)
-        .mockResolvedValueOnce(null) // First call before transaction
-        .mockResolvedValueOnce(mockPlayer); // Second call in transaction finds existing
+      vi.mocked(
+        mockPlayerRepository.findByUserIdAndGuildId,
+      ).mockResolvedValueOnce(null); // First call before transaction
       vi.mocked(mockPrisma.$transaction).mockImplementation(
         async (callback) => {
-          const mockTx = {} as Prisma.TransactionClient;
+          const mockTx = {
+            guildMember: {
+              findUnique: vi.fn().mockResolvedValue({
+                id: 'guild-member-123',
+                userId,
+                guildId,
+              }),
+            },
+            player: {
+              findUnique: vi.fn().mockResolvedValue(mockPlayer), // Second check in transaction finds existing
+            },
+          } as unknown as Prisma.TransactionClient;
           return await callback(mockTx);
         },
       );

@@ -3,6 +3,8 @@ import {
   Logger,
   NotFoundException,
   InternalServerErrorException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { Prisma, PlayerStatus, Player } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -31,6 +33,8 @@ export class PlayerService {
 
   constructor(
     private playerRepository: PlayerRepository,
+    // eslint-disable-next-line @trilon/detect-circular-reference
+    @Inject(forwardRef(() => PlayerValidationService))
     private validationService: PlayerValidationService,
     private prisma: PrismaService,
     private activityLogService: ActivityLogService,
@@ -116,7 +120,36 @@ export class PlayerService {
       }
 
       return await this.prisma.$transaction(async (tx) => {
-        const player = await this.playerRepository.create(createPlayerDto, tx);
+        // Look up GuildMember to get guildMemberId
+        const guildMember = await tx.guildMember.findUnique({
+          where: {
+            userId_guildId: {
+              userId: createPlayerDto.userId,
+              guildId: createPlayerDto.guildId,
+            },
+          },
+        });
+
+        if (!guildMember) {
+          throw new NotFoundException(
+            `GuildMember not found for userId ${createPlayerDto.userId} and guildId ${createPlayerDto.guildId}`,
+          );
+        }
+
+        // Validate that userId matches (data integrity check)
+        if (guildMember.userId !== createPlayerDto.userId) {
+          throw new InternalServerErrorException(
+            `GuildMember userId ${guildMember.userId} does not match provided userId ${createPlayerDto.userId}`,
+          );
+        }
+
+        const player = await this.playerRepository.create(
+          {
+            ...createPlayerDto,
+            guildMemberId: guildMember.id,
+          },
+          tx,
+        );
 
         await this.activityLogService.logActivity(
           tx,
@@ -172,13 +205,32 @@ export class PlayerService {
     await this.validationService.validateGuildMembership(userId, guildId);
 
     return await this.prisma.$transaction(async (tx) => {
+      // Find GuildMember first to get guildMemberId
+      const guildMember = await tx.guildMember.findUnique({
+        where: {
+          userId_guildId: {
+            userId,
+            guildId,
+          },
+        },
+      });
+
+      if (!guildMember) {
+        throw new NotFoundException(
+          `GuildMember not found for userId ${userId} and guildId ${guildId}`,
+        );
+      }
+
       // Double-check in transaction to prevent race condition where player is created concurrently
-      const existing = await this.playerRepository.findByUserIdAndGuildId(
-        userId,
-        guildId,
-        undefined,
-        tx,
-      );
+      // Use unique constraint (userId, guildMemberId) to check if player exists
+      const existing = await tx.player.findUnique({
+        where: {
+          userId_guildMemberId: {
+            userId,
+            guildMemberId: guildMember.id,
+          },
+        },
+      });
 
       if (existing) {
         return existing;
@@ -188,6 +240,7 @@ export class PlayerService {
         {
           userId,
           guildId,
+          guildMemberId: guildMember.id,
           status: PlayerStatus.ACTIVE,
         },
         tx,

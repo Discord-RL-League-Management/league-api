@@ -42,7 +42,11 @@ export class SettingsDefaultsService {
         tournament_manager: [],
       },
       mmrCalculation: {
-        algorithm: 'WEIGHTED_AVERAGE',
+        algorithm: 'ASCENDANCY',
+        ascendancyWeights: {
+          current: 0.25,
+          peak: 0.75,
+        },
         weights: {
           ones: 0.1,
           twos: 0.3,

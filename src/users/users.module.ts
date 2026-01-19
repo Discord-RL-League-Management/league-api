@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { InternalUsersController } from './internal-users.controller';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
@@ -16,8 +16,20 @@ import { PermissionCheckModule } from '../permissions/modules/permission-check/p
   imports: [
     EncryptionModule,
     PrismaModule,
-    TrackersModule,
-    GuildsModule,
+    // INTENTIONAL: Circular dependency with TrackersModule is properly handled.
+    // - UsersModule needs TrackerProcessingService for registerByStaff endpoint in InternalUsersController
+    // - TrackersModule needs UsersService for tracker user operations (via TrackerUserOrchestratorService)
+    // - Using forwardRef() is the NestJS-recommended pattern for module-level circular dependencies
+    // Reference: https://docs.nestjs.com/fundamentals/circular-dependency
+    // eslint-disable-next-line @trilon/detect-circular-reference
+    forwardRef(() => TrackersModule),
+    // INTENTIONAL: Circular dependency with GuildsModule is properly handled.
+    // - UsersModule needs GuildSettingsService for registerByStaff endpoint in InternalUsersController
+    // - GuildsModule needs TokenManagementModule which depends on UsersModule, creating a cycle
+    // - Using forwardRef() is the NestJS-recommended pattern for module-level circular dependencies
+    // Reference: https://docs.nestjs.com/fundamentals/circular-dependency
+    // eslint-disable-next-line @trilon/detect-circular-reference
+    forwardRef(() => GuildsModule),
     DiscordModule,
     PermissionCheckModule,
   ],

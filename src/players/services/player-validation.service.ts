@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PlayerStatus } from '@prisma/client';
 import {
@@ -20,6 +20,8 @@ export class PlayerValidationService {
   constructor(
     private prisma: PrismaService,
     private trackerService: TrackerService,
+    // eslint-disable-next-line @trilon/detect-circular-reference
+    @Inject(forwardRef(() => GuildMembersService))
     private guildMembersService: GuildMembersService,
   ) {}
 

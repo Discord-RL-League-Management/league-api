@@ -24,6 +24,7 @@ describe('PlayerLeagueRatingService', () => {
     leagueId: 'league_123',
     ratingSystem: 'DEFAULT',
     currentRating: 1500,
+    rawRating: null,
     initialRating: 1000,
     peakRating: 1600,
     peakRatingAt: new Date('2024-01-15'),

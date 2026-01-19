@@ -29,7 +29,9 @@ export class OrganizationRepository implements BaseRepository<
       where: { id },
       include: {
         members: {
-          include: { player: { include: { user: true } } },
+          include: {
+            player: { include: { guildMember: { include: { user: true } } } },
+          },
         },
         teams: true,
         league: true,
@@ -45,7 +47,9 @@ export class OrganizationRepository implements BaseRepository<
       where: { id, leagueId },
       include: {
         members: {
-          include: { player: { include: { user: true } } },
+          include: {
+            player: { include: { guildMember: { include: { user: true } } } },
+          },
         },
         teams: true,
       },
@@ -58,7 +62,9 @@ export class OrganizationRepository implements BaseRepository<
       include: {
         members: {
           where: { status: 'ACTIVE' },
-          include: { player: { include: { user: true } } },
+          include: {
+            player: { include: { guildMember: { include: { user: true } } } },
+          },
         },
         teams: true,
       },
@@ -142,7 +148,7 @@ export class OrganizationRepository implements BaseRepository<
       where: { id: memberId },
       include: {
         organization: true,
-        player: { include: { user: true } },
+        player: { include: { guildMember: { include: { user: true } } } },
         league: true,
       },
     });
@@ -157,7 +163,7 @@ export class OrganizationRepository implements BaseRepository<
         status: OrganizationMemberStatus.ACTIVE, // Only return active members
       },
       include: {
-        player: { include: { user: true } },
+        player: { include: { guildMember: { include: { user: true } } } },
       },
       orderBy: { joinedAt: 'desc' },
     });
@@ -176,7 +182,7 @@ export class OrganizationRepository implements BaseRepository<
       },
       include: {
         organization: true,
-        player: { include: { user: true } },
+        player: { include: { guildMember: { include: { user: true } } } },
       },
     });
 
@@ -198,7 +204,7 @@ export class OrganizationRepository implements BaseRepository<
         status: OrganizationMemberStatus.ACTIVE,
       },
       include: {
-        player: { include: { user: true } },
+        player: { include: { guildMember: { include: { user: true } } } },
       },
     });
   }
@@ -246,7 +252,7 @@ export class OrganizationRepository implements BaseRepository<
         },
         include: {
           organization: true,
-          player: { include: { user: true } },
+          player: { include: { guildMember: { include: { user: true } } } },
         },
       });
     });
@@ -265,7 +271,7 @@ export class OrganizationRepository implements BaseRepository<
       },
       include: {
         organization: true,
-        player: { include: { user: true } },
+        player: { include: { guildMember: { include: { user: true } } } },
       },
     });
   }
@@ -279,7 +285,7 @@ export class OrganizationRepository implements BaseRepository<
       },
       include: {
         organization: true,
-        player: { include: { user: true } },
+        player: { include: { guildMember: { include: { user: true } } } },
       },
     });
   }

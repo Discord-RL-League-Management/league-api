@@ -69,8 +69,10 @@ describe('OrganizationAuthorizationService', () => {
           role: 'GENERAL_MANAGER' as const,
           player: {
             id: 'player-123',
-            user: {
-              id: userId,
+            guildMember: {
+              user: {
+                id: userId,
+              },
             },
           },
         },
@@ -103,8 +105,10 @@ describe('OrganizationAuthorizationService', () => {
           role: 'GENERAL_MANAGER' as const,
           player: {
             id: 'player-456',
-            user: {
-              id: 'user-456',
+            guildMember: {
+              user: {
+                id: 'user-456',
+              },
             },
           },
         },
