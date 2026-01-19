@@ -49,6 +49,10 @@ export class TrackerDataExtractionService {
         twosGamesPlayed: playlist2v2?.matchesPlayed ?? undefined,
         threesGamesPlayed: playlist3v3?.matchesPlayed ?? undefined,
         foursGamesPlayed: playlist4v4?.matchesPlayed ?? undefined,
+        onesPeak: playlist1v1?.allTimePeakRating ?? undefined,
+        twosPeak: playlist2v2?.allTimePeakRating ?? undefined,
+        threesPeak: playlist3v3?.allTimePeakRating ?? undefined,
+        foursPeak: playlist4v4?.allTimePeakRating ?? undefined,
       };
     } catch (error: unknown) {
       const errorMessage =

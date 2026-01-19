@@ -59,6 +59,30 @@ export class TrackerDataDto {
   @IsInt()
   @Min(0)
   foursGamesPlayed?: number;
+
+  @ApiPropertyOptional({ description: '1v1 Peak MMR', example: 1300 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  onesPeak?: number;
+
+  @ApiPropertyOptional({ description: '2v2 Peak MMR', example: 1500 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  twosPeak?: number;
+
+  @ApiPropertyOptional({ description: '3v3 Peak MMR', example: 1700 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  threesPeak?: number;
+
+  @ApiPropertyOptional({ description: '4v4 Peak MMR', example: 1100 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  foursPeak?: number;
 }
 
 /**

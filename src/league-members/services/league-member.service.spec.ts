@@ -462,6 +462,7 @@ describe('LeagueMemberService', () => {
         leagueId: 'league_123',
         ratingSystem: 'MMR',
         currentRating: {} as any,
+        rawRating: null,
         ratingData: null,
         matchesPlayed: 0,
         wins: 0,

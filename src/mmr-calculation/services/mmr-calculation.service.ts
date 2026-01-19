@@ -15,6 +15,24 @@ export interface TrackerData {
   twosGamesPlayed?: number;
   threesGamesPlayed?: number;
   foursGamesPlayed?: number;
+  onesPeak?: number;
+  twosPeak?: number;
+  threesPeak?: number;
+  foursPeak?: number;
+}
+
+/**
+ * AscendancyData - Data structure for ASCENDANCY MMR calculation
+ */
+export interface AscendancyData {
+  mmr2sCurrent: number;
+  mmr2sPeak: number;
+  games2sCurrSeason: number;
+  games2sPrevSeason: number;
+  mmr3sCurrent: number;
+  mmr3sPeak: number;
+  games3sCurrSeason: number;
+  games3sPrevSeason: number;
 }
 
 /**
@@ -144,14 +162,13 @@ export class MmrCalculationService {
     const Q = weights.current;
     const R = weights.peak;
 
-    // Peak data not available in tracker data structure; using current value for both current and peak
     const twosCurrent = trackerData.twos || 0;
-    const twosPeak = trackerData.twos || 0;
+    const twosPeak = (trackerData.twosPeak ?? trackerData.twos) || 0;
     const twosScore =
       Q + R > 0 ? (twosCurrent * Q + twosPeak * R) / (Q + R) : 0;
 
     const threesCurrent = trackerData.threes || 0;
-    const threesPeak = trackerData.threes || 0;
+    const threesPeak = (trackerData.threesPeak ?? trackerData.threes) || 0;
     const threesScore =
       Q + R > 0 ? (threesCurrent * Q + threesPeak * R) / (Q + R) : 0;
 
@@ -177,6 +194,81 @@ export class MmrCalculationService {
       (twosScore * twosPercent + threesScore * threesPercent) / totalPercent;
 
     return Math.round(finalScore);
+  }
+
+  /**
+   * Calculate Ascendancy MMR using weighted average pattern
+   * Single Responsibility: ASCENDANCY algorithm calculation with previous season data
+   *
+   * Replicates Google Sheets AVERAGE.WEIGHTED logic:
+   * 1. Calculate total games (current + previous seasons)
+   * 2. Calculate 2s Score and 3s Score using weighted average of Current and Peak
+   * 3. Calculate bracket percentages
+   * 4. Final Score = weighted average of 2s Score and 3s Score using percentages
+   *
+   * @param data - Ascendancy data with current/peak MMRs and games from current/previous seasons
+   * @param config - Guild MMR calculation configuration
+   * @returns Calculated MMR value (rounded integer)
+   */
+  calculateAscendancyMmr(
+    data: AscendancyData,
+    config: MmrCalculationConfig,
+  ): number {
+    const weights = config.ascendancyWeights || { current: 0.25, peak: 0.75 };
+    const WEIGHT_CURRENT = weights.current;
+    const WEIGHT_PEAK = weights.peak;
+
+    // Replicates Google Sheets AVERAGE.WEIGHTED logic
+    const weightedAverage = (values: number[], weights: number[]): number => {
+      const sumWeights = weights.reduce((acc, w) => acc + w, 0);
+      if (sumWeights === 0) return 0;
+
+      // Calculate weighted sum by pairing values and weights
+      // Create pairs upfront with explicit bounds to ensure safe access
+      const length = Math.min(values.length, weights.length);
+      const pairs: Array<{ value: number; weight: number }> = [];
+      for (const [index, value] of values.entries()) {
+        if (index >= length) break;
+        // Index comes from Array.entries() and is bounded by length check above
+        // eslint-disable-next-line security/detect-object-injection
+        const weight = weights[index];
+        pairs.push({ value, weight });
+      }
+
+      const weightedSum = pairs.reduce(
+        (acc, pair) => acc + pair.value * pair.weight,
+        0,
+      );
+      return weightedSum / sumWeights;
+    };
+
+    // 1. Total Games = SUM(current + previous)
+    const total2sGames = data.games2sCurrSeason + data.games2sPrevSeason;
+    const total3sGames = data.games3sCurrSeason + data.games3sPrevSeason;
+    const totalGames = total2sGames + total3sGames;
+
+    // Handle division by zero if player has no games
+    if (totalGames === 0) return 0;
+
+    // 2. 2s Score & 3s Score = AVERAGE.WEIGHTED(current, peak)
+    const score2s = weightedAverage(
+      [data.mmr2sCurrent, data.mmr2sPeak],
+      [WEIGHT_CURRENT, WEIGHT_PEAK],
+    );
+
+    const score3s = weightedAverage(
+      [data.mmr3sCurrent, data.mmr3sPeak],
+      [WEIGHT_CURRENT, WEIGHT_PEAK],
+    );
+
+    // 3. Bracket Percentages (%)
+    const pct2s = total2sGames / totalGames;
+    const pct3s = total3sGames / totalGames;
+
+    // 4. Raw Score = AVERAGE.WEIGHTED(2s Score:3s Score, 2s %:3s %)
+    const finalRawScore = weightedAverage([score2s, score3s], [pct2s, pct3s]);
+
+    return Math.round(finalRawScore);
   }
 
   /**
@@ -266,6 +358,10 @@ export class MmrCalculationService {
           (trackerData.twosGamesPlayed || 0) +
           (trackerData.threesGamesPlayed || 0) +
           (trackerData.foursGamesPlayed || 0),
+        onesPeak: trackerData.onesPeak || 0,
+        twosPeak: trackerData.twosPeak || 0,
+        threesPeak: trackerData.threesPeak || 0,
+        foursPeak: trackerData.foursPeak || 0,
       };
 
       const expr = this.math.parse(config.customFormula);
@@ -353,6 +449,10 @@ export class MmrCalculationService {
       twosGamesPlayed: 300,
       threesGamesPlayed: 500,
       foursGamesPlayed: 50,
+      onesPeak: 1300,
+      twosPeak: 1500,
+      threesPeak: 1700,
+      foursPeak: 1100,
     };
   }
 }

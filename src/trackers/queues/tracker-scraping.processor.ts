@@ -221,15 +221,14 @@ export class TrackerScrapingProcessor extends WorkerHost {
       );
 
       // Fire-and-forget: Create players for all guilds where user is a member
-      void this.createPlayersForUserGuilds(tracker.userId).catch((err) => {
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        this.logger.warn(
-          `Failed to create players for user ${tracker.userId} after tracker scraping: ${errorMessage}`,
-        );
-      });
-
       const trackerUserId = tracker.userId;
       const trackerUrl = tracker.url;
+      void this.createPlayersForUserGuilds(trackerUserId).catch((err) => {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        this.logger.warn(
+          `Failed to create players for user ${trackerUserId} after tracker scraping: ${errorMessage}`,
+        );
+      });
       await this.prisma
         .$transaction(async (tx) => {
           await this.activityLogService.logActivity(

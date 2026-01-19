@@ -36,6 +36,12 @@ describe('TrackerDataExtractionService', () => {
         name: 'Division II',
       },
     },
+    allTimePeakRating: 1800,
+    peakRating: null,
+    rank: null,
+    rankValue: null,
+    divisionValue: null,
+    winStreak: null,
   };
 
   const mockSeason: TrackerSeason = {
@@ -93,6 +99,10 @@ describe('TrackerDataExtractionService', () => {
       expect(result?.twosGamesPlayed).toBe(200);
       expect(result?.threesGamesPlayed).toBe(300);
       expect(result?.foursGamesPlayed).toBe(50);
+      expect(result?.onesPeak).toBe(1800);
+      expect(result?.twosPeak).toBe(1800);
+      expect(result?.threesPeak).toBe(1800);
+      expect(result?.foursPeak).toBe(1800);
     });
 
     it('should_return_null_when_no_season_found', async () => {
@@ -204,6 +214,55 @@ describe('TrackerDataExtractionService', () => {
       const result = await service.extractTrackerData('tracker_123');
 
       expect(result).toBeNull();
+    });
+
+    it('should_extract_peak_data_when_available', async () => {
+      const seasonWithPeakData = {
+        ...mockSeason,
+        playlist2v2: {
+          ...mockPlaylistData,
+          rating: 1600,
+          matchesPlayed: 200,
+          allTimePeakRating: 2000,
+        },
+        playlist3v3: {
+          ...mockPlaylistData,
+          rating: 1700,
+          matchesPlayed: 300,
+          allTimePeakRating: 2100,
+        },
+      };
+      vi.spyOn(mockPrisma.trackerSeason, 'findFirst').mockResolvedValue(
+        seasonWithPeakData,
+      );
+
+      const result = await service.extractTrackerData('tracker_123');
+
+      expect(result).toBeDefined();
+      expect(result?.twosPeak).toBe(2000);
+      expect(result?.threesPeak).toBe(2100);
+      expect(result?.onesPeak).toBe(1800);
+      expect(result?.foursPeak).toBe(1800);
+    });
+
+    it('should_handle_missing_peak_rating_gracefully', async () => {
+      const playlistWithoutPeak = {
+        ...mockPlaylistData,
+        allTimePeakRating: null,
+      };
+      const seasonWithMissingPeak = {
+        ...mockSeason,
+        playlist1v1: playlistWithoutPeak,
+      };
+      vi.spyOn(mockPrisma.trackerSeason, 'findFirst').mockResolvedValue(
+        seasonWithMissingPeak,
+      );
+
+      const result = await service.extractTrackerData('tracker_123');
+
+      expect(result).toBeDefined();
+      expect(result?.onesPeak).toBeUndefined();
+      expect(result?.ones).toBe(1500);
     });
   });
 });

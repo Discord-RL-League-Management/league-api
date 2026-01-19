@@ -106,9 +106,9 @@ export class GuildMemberQueryService {
    */
   async findMembersByUser(userId: string): Promise<GuildMemberWithGuild[]> {
     try {
-      return await this.guildMemberRepository.findByUserId(userId, {
+      return (await this.guildMemberRepository.findByUserId(userId, {
         guild: true,
-      });
+      })) as GuildMemberWithGuild[];
     } catch (error) {
       this.logger.error(
         `Failed to fetch memberships for user ${userId}:`,

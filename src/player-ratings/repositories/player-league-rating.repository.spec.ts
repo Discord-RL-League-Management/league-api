@@ -20,13 +20,19 @@ describe('PlayerLeagueRatingRepository', () => {
     id: 'rating_123',
     playerId: 'player_123',
     leagueId: 'league_123',
+    ratingSystem: 'DEFAULT',
     currentRating: 1200,
+    rawRating: null,
+    ratingData: {},
+    initialRating: 1000,
     peakRating: 1300,
-    gamesPlayed: 10,
+    peakRatingAt: null,
+    matchesPlayed: 10,
     wins: 6,
     losses: 4,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    draws: 0,
+    lastMatchId: null,
+    lastUpdatedAt: new Date(),
   };
 
   beforeEach(() => {
@@ -96,7 +102,7 @@ describe('PlayerLeagueRatingRepository', () => {
       const data: Partial<PlayerLeagueRating> = {
         currentRating: 1200,
         peakRating: 1200,
-        gamesPlayed: 0,
+        matchesPlayed: 0,
         wins: 0,
         losses: 0,
       };
@@ -123,7 +129,7 @@ describe('PlayerLeagueRatingRepository', () => {
         update: {
           currentRating: data.currentRating,
           peakRating: data.peakRating,
-          gamesPlayed: data.gamesPlayed,
+          matchesPlayed: data.matchesPlayed,
           wins: data.wins,
           losses: data.losses,
         },
@@ -135,7 +141,7 @@ describe('PlayerLeagueRatingRepository', () => {
       const leagueId = 'league_123';
       const data: Partial<PlayerLeagueRating> = {
         currentRating: 1300,
-        gamesPlayed: 15,
+        matchesPlayed: 15,
       };
       const updatedRating = { ...mockRating, ...data };
 

@@ -33,6 +33,10 @@ describe('MMRCalculatorDemoController', () => {
     twosGamesPlayed: 300,
     threesGamesPlayed: 500,
     foursGamesPlayed: 50,
+    onesPeak: 1300,
+    twosPeak: 1500,
+    threesPeak: 1700,
+    foursPeak: 1100,
   };
 
   const mockMmrConfig: MmrCalculationConfig = {

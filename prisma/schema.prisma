@@ -668,6 +668,7 @@ model PlayerLeagueRating {
   leagueId      String
   ratingSystem  String    @db.VarChar(50)
   currentRating Decimal   @db.Decimal(10, 2)
+  rawRating     Decimal?  @db.Decimal(10, 2)
   ratingData    Json
   initialRating Decimal   @db.Decimal(10, 2)
   peakRating    Decimal?  @db.Decimal(10, 2)
@@ -685,6 +686,8 @@ model PlayerLeagueRating {
 
   @@unique([playerId, leagueId])
   @@index([leagueId, currentRating])
+  @@index([leagueId, rawRating])
+  @@index([leagueId, lastUpdatedAt])
   @@map("player_league_ratings")
 }
 
