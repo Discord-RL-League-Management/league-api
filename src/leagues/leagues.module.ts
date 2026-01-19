@@ -40,7 +40,13 @@ import {
     InfrastructureModule,
     CacheModule.register(),
     AuthModule,
-    GuildsModule,
+    // INTENTIONAL: Circular dependency with GuildsModule is properly handled.
+    // - LeaguesModule needs GuildsService for league operations
+    // - GuildsModule is part of a cycle: TokenManagementModule → UsersModule → GuildsModule → TokenManagementModule
+    // - Using forwardRef() is the NestJS-recommended pattern for module-level circular dependencies
+    // Reference: https://docs.nestjs.com/fundamentals/circular-dependency
+    // eslint-disable-next-line @trilon/detect-circular-reference
+    forwardRef(() => GuildsModule),
     PlayersModule,
     PermissionCheckModule,
     // INTENTIONAL: Circular dependency with LeagueMembersModule is properly handled.

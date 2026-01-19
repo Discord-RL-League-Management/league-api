@@ -3,6 +3,8 @@ import {
   NotFoundException,
   InternalServerErrorException,
   Logger,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { UsersService } from '../users/users.service';
@@ -34,6 +36,8 @@ export class GuildMembersService {
     private guildMemberStatisticsService: GuildMemberStatisticsService,
     private guildMemberSyncService: GuildMemberSyncService,
     private trackerService: TrackerService,
+    // eslint-disable-next-line @trilon/detect-circular-reference
+    @Inject(forwardRef(() => PlayerService))
     private playerService: PlayerService,
   ) {}
 

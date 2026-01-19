@@ -93,7 +93,10 @@ describe('SettingsDefaultsService (Guilds)', () => {
       const result = service.getDefaults();
 
       expect(result.mmrCalculation).toBeDefined();
-      expect(result.mmrCalculation!.algorithm).toBe('WEIGHTED_AVERAGE');
+      expect(result.mmrCalculation!.algorithm).toBe('ASCENDANCY');
+      expect(result.mmrCalculation!.ascendancyWeights).toBeDefined();
+      expect(result.mmrCalculation!.ascendancyWeights!.current).toBe(0.25);
+      expect(result.mmrCalculation!.ascendancyWeights!.peak).toBe(0.75);
       expect(result.mmrCalculation!.weights).toBeDefined();
       expect(result.mmrCalculation!.minGamesPlayed).toBeDefined();
     });

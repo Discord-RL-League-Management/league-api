@@ -3,6 +3,8 @@ import {
   Logger,
   NotFoundException,
   InternalServerErrorException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { Prisma, PlayerStatus, Player } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -31,6 +33,8 @@ export class PlayerService {
 
   constructor(
     private playerRepository: PlayerRepository,
+    // eslint-disable-next-line @trilon/detect-circular-reference
+    @Inject(forwardRef(() => PlayerValidationService))
     private validationService: PlayerValidationService,
     private prisma: PrismaService,
     private activityLogService: ActivityLogService,

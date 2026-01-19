@@ -81,7 +81,52 @@ export class MMRCalculatorDemoController {
         );
       }
 
-      const result = this.mmrService.calculateMmr(body.trackerData, mmrConfig);
+      // Validate that exactly one data source is provided
+      if (!body.trackerData && !body.ascendancyData) {
+        throw new BadRequestException(
+          'Either trackerData or ascendancyData must be provided',
+        );
+      }
+
+      if (body.trackerData && body.ascendancyData) {
+        throw new BadRequestException(
+          'Cannot provide both trackerData and ascendancyData',
+        );
+      }
+
+      let result: number;
+
+      // Handle ASCENDANCY algorithm with ascendancyData
+      if (body.ascendancyData) {
+        if (mmrConfig.algorithm !== 'ASCENDANCY') {
+          throw new BadRequestException(
+            'ascendancyData can only be used with ASCENDANCY algorithm',
+          );
+        }
+
+        // Convert AscendancyDataDto to AscendancyData interface
+        const ascendancyData = {
+          mmr2sCurrent: body.ascendancyData.mmr2sCurrent,
+          mmr2sPeak: body.ascendancyData.mmr2sPeak,
+          games2sCurrSeason: body.ascendancyData.games2sCurrSeason,
+          games2sPrevSeason: body.ascendancyData.games2sPrevSeason,
+          mmr3sCurrent: body.ascendancyData.mmr3sCurrent,
+          mmr3sPeak: body.ascendancyData.mmr3sPeak,
+          games3sCurrSeason: body.ascendancyData.games3sCurrSeason,
+          games3sPrevSeason: body.ascendancyData.games3sPrevSeason,
+        };
+
+        result = this.mmrService.calculateAscendancyMmr(
+          ascendancyData,
+          mmrConfig,
+        );
+      } else {
+        // Use existing trackerData flow for other algorithms
+        if (!body.trackerData) {
+          throw new BadRequestException('trackerData is required');
+        }
+        result = this.mmrService.calculateMmr(body.trackerData, mmrConfig);
+      }
 
       return {
         result,

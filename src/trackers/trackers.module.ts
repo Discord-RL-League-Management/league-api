@@ -47,7 +47,13 @@ import { UsersModule } from '../users/users.module';
     PrismaModule,
     InfrastructureModule,
     MmrCalculationModule,
-    GuildsModule,
+    // INTENTIONAL: Circular dependency with GuildsModule is properly handled.
+    // - TrackersModule needs GuildsService for tracker operations
+    // - GuildsModule is part of a cycle: TokenManagementModule → UsersModule → GuildsModule → TokenManagementModule
+    // - Using forwardRef() is the NestJS-recommended pattern for module-level circular dependencies
+    // Reference: https://docs.nestjs.com/fundamentals/circular-dependency
+    // eslint-disable-next-line @trilon/detect-circular-reference
+    forwardRef(() => GuildsModule),
     // INTENTIONAL: Circular dependency with GuildMembersModule is properly handled.
     // - TrackersModule needs GuildMembersService to find user's guild memberships for player creation
     // - GuildMembersModule needs TrackerService to check if user has trackers for player creation
@@ -64,7 +70,13 @@ import { UsersModule } from '../users/users.module';
     forwardRef(() => PlayersModule),
     PermissionCheckModule,
     AuthorizationModule,
-    UsersModule,
+    // INTENTIONAL: Circular dependency with UsersModule is properly handled.
+    // - TrackersModule needs UsersService for tracker user operations (via TrackerUserOrchestratorService)
+    // - UsersModule needs TrackerProcessingService for registerByStaff endpoint in InternalUsersController
+    // - Using forwardRef() is the NestJS-recommended pattern for module-level circular dependencies
+    // Reference: https://docs.nestjs.com/fundamentals/circular-dependency
+    // eslint-disable-next-line @trilon/detect-circular-reference
+    forwardRef(() => UsersModule),
     HttpModule,
     BullModule.forRootAsync({
       imports: [ConfigModule],
