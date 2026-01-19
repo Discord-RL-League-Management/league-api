@@ -157,7 +157,23 @@ export class InternalUsersController {
       dto.interactionToken,
     );
 
-    // 4. Get user object
+    // 4. Force process trackers if requested (bypasses guild toggle)
+    if (dto.forceProcess === true) {
+      // Reset any trackers that may have been marked as FAILED by the guard
+      const trackerIds = trackers.map((tracker) => tracker.id);
+      await this.trackerProcessingService.resetTrackersToPending(trackerIds);
+
+      // Process trackers for the guild (bypasses toggle)
+      await this.trackerProcessingService.processPendingTrackersForGuild(
+        dto.guildId,
+      );
+
+      this.logger.log(
+        `Force processed ${trackerIds.length} tracker(s) for guild ${dto.guildId}`,
+      );
+    }
+
+    // 5. Get user object
     const user = await this.usersService.findOne(dto.userId);
     if (!user) {
       throw new NotFoundException(
@@ -165,7 +181,7 @@ export class InternalUsersController {
       );
     }
 
-    // 5. Format response with user and tracker status information
+    // 6. Format response with user and tracker status information
     return {
       user,
       trackers: {

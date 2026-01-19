@@ -635,6 +635,24 @@ curl -H "Authorization: Bearer BOT_API_KEY" \
   -X POST \
   -d '{"staffUserId":"123456789012345678","guildId":"987654321098765432","userId":"111222333444555666","urls":["https://rocketleague.tracker.network/rocket-league/profile/steam/76561198051701160/overview"]}' \
   http://localhost:3000/internal/users/register-by-staff
+
+# Register user by staff with force processing (bypasses guild toggle)
+curl -H "Authorization: Bearer BOT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{"staffUserId":"123456789012345678","guildId":"987654321098765432","userId":"111222333444555666","urls":["https://rocketleague.tracker.network/rocket-league/profile/steam/76561198051701160/overview"],"forceProcess":true}' \
+  http://localhost:3000/internal/users/register-by-staff
+```
+
+**Request Body Parameters:**
+- `staffUserId` (required): Discord user ID of staff member calling the command
+- `guildId` (required): Discord guild ID where command was called
+- `userId` (required): Discord user ID of user to register
+- `urls` (required): Array of 1-4 tracker URLs
+- `userData` (optional): User data from Discord (username, globalName, avatar)
+- `channelId` (optional): Discord channel ID where registration command was called
+- `interactionToken` (optional): Discord interaction token for ephemeral follow-up messages
+- `forceProcess` (optional, default: false): When `true`, forces immediate processing of trackers, bypassing guild processing toggle. This allows staff members to force process trackers even when the guild has processing disabled.
 ```
 
 ### League Management (Bot)

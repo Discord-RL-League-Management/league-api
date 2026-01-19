@@ -265,4 +265,40 @@ export class TrackerProcessingService {
   ): Promise<{ processed: number; trackers: string[] }> {
     return this.batchProcessor.processPendingTrackersForGuild(guildId);
   }
+
+  /**
+   * Reset trackers to PENDING status (compensation for guard side effects)
+   * Single Responsibility: Reset tracker status for force processing
+   *
+   * Used when force processing is enabled to undo side effects from
+   * processing guard checks that may have marked trackers as FAILED.
+   *
+   * @param trackerIds - Array of tracker IDs to reset
+   */
+  async resetTrackersToPending(trackerIds: string[]): Promise<void> {
+    if (trackerIds.length === 0) {
+      return;
+    }
+
+    await Promise.all(
+      trackerIds.map((trackerId) =>
+        this.trackerRepository
+          .update(trackerId, {
+            scrapingStatus: TrackerScrapingStatus.PENDING,
+            scrapingError: null,
+          })
+          .catch((error) => {
+            const errorMessage =
+              error instanceof Error ? error.message : String(error);
+            this.logger.error(
+              `Failed to reset tracker ${trackerId} to PENDING: ${errorMessage}`,
+            );
+          }),
+      ),
+    );
+
+    this.logger.log(
+      `Reset ${trackerIds.length} tracker(s) to PENDING status for force processing`,
+    );
+  }
 }

@@ -7,6 +7,7 @@ import {
   ArrayMaxSize,
   IsUrl,
   IsNotEmpty,
+  IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -103,4 +104,14 @@ export class RegisterByStaffDto {
   @IsOptional()
   @IsString()
   interactionToken?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Force immediate processing of trackers, bypassing guild processing toggle',
+    example: false,
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  forceProcess?: boolean;
 }

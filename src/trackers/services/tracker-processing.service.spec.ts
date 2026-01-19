@@ -618,4 +618,59 @@ describe('TrackerProcessingService', () => {
       ).toHaveBeenCalledWith(guildId);
     });
   });
+
+  describe('resetTrackersToPending', () => {
+    it('should_reset_trackers_to_pending_when_ids_provided', async () => {
+      const trackerIds = ['tracker_1', 'tracker_2', 'tracker_3'];
+      const updatedTracker = {
+        ...mockTracker,
+        scrapingStatus: TrackerScrapingStatus.PENDING,
+        scrapingError: null,
+      };
+
+      vi.mocked(mockTrackerRepository.update).mockResolvedValue(
+        updatedTracker as never,
+      );
+
+      await service.resetTrackersToPending(trackerIds);
+
+      expect(mockTrackerRepository.update).toHaveBeenCalledTimes(3);
+      expect(mockTrackerRepository.update).toHaveBeenCalledWith('tracker_1', {
+        scrapingStatus: TrackerScrapingStatus.PENDING,
+        scrapingError: null,
+      });
+      expect(mockTrackerRepository.update).toHaveBeenCalledWith('tracker_2', {
+        scrapingStatus: TrackerScrapingStatus.PENDING,
+        scrapingError: null,
+      });
+      expect(mockTrackerRepository.update).toHaveBeenCalledWith('tracker_3', {
+        scrapingStatus: TrackerScrapingStatus.PENDING,
+        scrapingError: null,
+      });
+    });
+
+    it('should_handle_update_errors_gracefully', async () => {
+      const trackerIds = ['tracker_1', 'tracker_2', 'tracker_3'];
+      const updatedTracker = {
+        ...mockTracker,
+        scrapingStatus: TrackerScrapingStatus.PENDING,
+        scrapingError: null,
+      };
+
+      vi.mocked(mockTrackerRepository.update)
+        .mockResolvedValueOnce(updatedTracker as never)
+        .mockRejectedValueOnce(new Error('Update failed'))
+        .mockResolvedValueOnce(updatedTracker as never);
+
+      await service.resetTrackersToPending(trackerIds);
+
+      expect(mockTrackerRepository.update).toHaveBeenCalledTimes(3);
+    });
+
+    it('should_return_early_when_no_tracker_ids', async () => {
+      await service.resetTrackersToPending([]);
+
+      expect(mockTrackerRepository.update).not.toHaveBeenCalled();
+    });
+  });
 });

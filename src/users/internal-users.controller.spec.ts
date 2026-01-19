@@ -58,6 +58,8 @@ describe('InternalUsersController', () => {
 
     mockTrackerProcessingService = {
       registerTrackers: vi.fn(),
+      resetTrackersToPending: vi.fn(),
+      processPendingTrackersForGuild: vi.fn(),
     } as unknown as TrackerProcessingService;
 
     mockPermissionCheckService = {
@@ -463,6 +465,98 @@ describe('InternalUsersController', () => {
 
       expect(result.trackers.count).toBe(2);
       expect(result.trackers.items).toHaveLength(2);
+    });
+
+    it('should_process_trackers_immediately_when_forceProcess_is_true', async () => {
+      const forceProcessDto: RegisterByStaffDto = {
+        ...registerDto,
+        forceProcess: true,
+      };
+
+      const mockFailedTrackers = [
+        {
+          ...mockTrackers[0],
+          scrapingStatus: TrackerScrapingStatus.FAILED,
+        },
+      ];
+
+      vi.spyOn(mockGuildSettingsService, 'getSettings').mockResolvedValue(
+        mockGuildSettings as never,
+      );
+      vi.spyOn(mockDiscordBotService, 'getGuildMemberByUserId')
+        .mockResolvedValueOnce(mockStaffMember)
+        .mockResolvedValueOnce(mockTargetMember);
+      vi.spyOn(mockPermissionCheckService, 'checkAdminRoles').mockResolvedValue(
+        true,
+      );
+      vi.spyOn(
+        mockTrackerProcessingService,
+        'registerTrackers',
+      ).mockResolvedValue(mockFailedTrackers as never);
+      vi.spyOn(
+        mockTrackerProcessingService,
+        'resetTrackersToPending',
+      ).mockResolvedValue();
+      vi.spyOn(
+        mockTrackerProcessingService,
+        'processPendingTrackersForGuild',
+      ).mockResolvedValue({ processed: 1, trackers: ['tracker-1'] });
+      vi.spyOn(mockUsersService, 'findOne').mockResolvedValue(mockUser);
+
+      const result = await controller.registerByStaff(forceProcessDto);
+
+      expect(result).toEqual({
+        user: mockUser,
+        trackers: {
+          count: 1,
+          items: [
+            {
+              id: 'tracker-1',
+              url: 'https://rocketleague.tracker.network/rocket-league/profile/steam/76561198051701160/overview',
+              status: TrackerScrapingStatus.FAILED,
+              game: Game.ROCKET_LEAGUE,
+              platform: GamePlatform.STEAM,
+            },
+          ],
+        },
+      });
+      expect(
+        mockTrackerProcessingService.resetTrackersToPending,
+      ).toHaveBeenCalledWith(['tracker-1']);
+      expect(
+        mockTrackerProcessingService.processPendingTrackersForGuild,
+      ).toHaveBeenCalledWith('guild-123');
+    });
+
+    it('should_not_process_trackers_when_forceProcess_is_false', async () => {
+      const noForceProcessDto: RegisterByStaffDto = {
+        ...registerDto,
+        forceProcess: false,
+      };
+
+      vi.spyOn(mockGuildSettingsService, 'getSettings').mockResolvedValue(
+        mockGuildSettings as never,
+      );
+      vi.spyOn(mockDiscordBotService, 'getGuildMemberByUserId')
+        .mockResolvedValueOnce(mockStaffMember)
+        .mockResolvedValueOnce(mockTargetMember);
+      vi.spyOn(mockPermissionCheckService, 'checkAdminRoles').mockResolvedValue(
+        true,
+      );
+      vi.spyOn(
+        mockTrackerProcessingService,
+        'registerTrackers',
+      ).mockResolvedValue(mockTrackers as never);
+      vi.spyOn(mockUsersService, 'findOne').mockResolvedValue(mockUser);
+
+      await controller.registerByStaff(noForceProcessDto);
+
+      expect(
+        mockTrackerProcessingService.resetTrackersToPending,
+      ).not.toHaveBeenCalled();
+      expect(
+        mockTrackerProcessingService.processPendingTrackersForGuild,
+      ).not.toHaveBeenCalled();
     });
   });
 });
