@@ -545,4 +545,17 @@ export class TrackerRepository {
     });
     return tracker?.userId || null;
   }
+
+  /**
+   * Find all trackers with the same registration interaction token
+   * Single Responsibility: Group trackers from the same registration
+   *
+   * @param interactionToken - Discord interaction token used during registration
+   * @returns Array of trackers with the same registration token
+   */
+  async findByRegistrationToken(interactionToken: string): Promise<Tracker[]> {
+    return this.prisma.tracker.findMany({
+      where: { registrationInteractionToken: interactionToken },
+    });
+  }
 }

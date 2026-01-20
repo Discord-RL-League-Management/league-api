@@ -107,6 +107,15 @@ export class RegisterByStaffDto {
 
   @ApiPropertyOptional({
     description:
+      'Discord application ID for webhook-based registration summary notifications',
+    example: '123456789012345678',
+  })
+  @IsOptional()
+  @IsString()
+  applicationId?: string;
+
+  @ApiPropertyOptional({
+    description:
       'Force immediate processing of trackers, bypassing guild processing toggle',
     example: false,
     default: false,

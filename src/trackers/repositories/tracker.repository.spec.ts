@@ -1732,4 +1732,44 @@ describe('TrackerRepository', () => {
       expect(mockPrisma.tracker.findMany).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe('findByRegistrationToken', () => {
+    it('should_find_trackers_by_registration_token_when_token_exists', async () => {
+      const interactionToken = 'interaction_token_123';
+      const mockTrackers = [
+        {
+          id: 'tracker_1',
+          url: 'https://tracker.gg/profile/steam/user1',
+          registrationInteractionToken: interactionToken,
+        },
+        {
+          id: 'tracker_2',
+          url: 'https://tracker.gg/profile/epic/user1',
+          registrationInteractionToken: interactionToken,
+        },
+      ];
+      vi.mocked(mockPrisma.tracker.findMany).mockResolvedValue(
+        mockTrackers as never,
+      );
+
+      const result = await repository.findByRegistrationToken(interactionToken);
+
+      expect(result).toEqual(mockTrackers);
+      expect(mockPrisma.tracker.findMany).toHaveBeenCalledWith({
+        where: { registrationInteractionToken: interactionToken },
+      });
+    });
+
+    it('should_return_empty_array_when_token_not_found', async () => {
+      const interactionToken = 'non_existent_token';
+      vi.mocked(mockPrisma.tracker.findMany).mockResolvedValue([] as never);
+
+      const result = await repository.findByRegistrationToken(interactionToken);
+
+      expect(result).toEqual([]);
+      expect(mockPrisma.tracker.findMany).toHaveBeenCalledWith({
+        where: { registrationInteractionToken: interactionToken },
+      });
+    });
+  });
 });

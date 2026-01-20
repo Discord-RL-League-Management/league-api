@@ -30,6 +30,9 @@ export default () => {
       retryAttempts: parseInt(process.env.DISCORD_RETRY_ATTEMPTS || '3', 10),
       apiUrl: process.env.DISCORD_API_URL || 'https://discord.com/api/v10',
     },
+    bot: {
+      webhookUrl: process.env.BOT_WEBHOOK_URL || '',
+    },
     frontend: {
       url: process.env.FRONTEND_URL || '',
     },

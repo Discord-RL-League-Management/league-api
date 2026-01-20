@@ -17,6 +17,7 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "NODE_ENV=production node dist/main",
+    "prisma:studio": "pnpm exec prisma studio",
     "migrate:prod": "NODE_ENV=production pnpm exec prisma migrate deploy",
     "lint": "eslint \"{src,apps,libs}/**/*.ts\" --fix",
     "test": "vitest run",
@@ -38,7 +39,8 @@
     "prepare": "husky install",
     "docker:build": "docker build -t league-api .",
     "docker:run": "docker run --rm --env-file .env -p 3000:3000 league-api",
-    "docker:test": "pnpm run docker:build && docker run --rm --env-file .env -p 3000:3000 --health-cmd='wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1' --health-interval=10s --health-timeout=5s --health-retries=3 league-api"
+    "docker:test": "pnpm run docker:build && docker run --rm --env-file .env -p 3000:3000 --health-cmd='wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1' --health-interval=10s --health-timeout=5s --health-retries=3 league-api",
+    "docker:stop": "docker compose stop api"
   },
   "lint-staged": {
     "*.{ts,js}": [

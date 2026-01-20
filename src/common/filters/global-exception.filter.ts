@@ -133,21 +133,73 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     request: Request,
     errorResponse: ErrorResponse,
   ): void {
-    const { method, url, ip, headers } = request;
+    const method = request.method;
+    const url = request.url;
+    const ip = request.ip;
+    const headers = request.headers;
+    const body: unknown = request.body;
     const userAgent = headers['user-agent'] || 'Unknown';
 
     const sanitizedMessage = LogSanitizer.sanitizeString(errorResponse.message);
-    const logMessage = `${method} ${url} - ${errorResponse.statusCode} - ${sanitizedMessage}`;
+
+    // Extract validation errors if present for better observability
+    let validationErrors:
+      | Array<{
+          property: string;
+          constraints?: Record<string, string>;
+          value?: unknown;
+        }>
+      | undefined = undefined;
+
+    if (
+      exception instanceof HttpException &&
+      errorResponse.statusCode === 400
+    ) {
+      const exceptionResponse = exception.getResponse();
+      if (
+        typeof exceptionResponse === 'object' &&
+        exceptionResponse !== null &&
+        'errors' in exceptionResponse &&
+        Array.isArray(exceptionResponse.errors)
+      ) {
+        validationErrors = exceptionResponse.errors as Array<{
+          property: string;
+          constraints?: Record<string, string>;
+          value?: unknown;
+        }>;
+      }
+    }
+
+    // Build log message with validation errors if present
+    let logMessage = `${method} ${url} - ${errorResponse.statusCode} - ${sanitizedMessage}`;
+    if (validationErrors && validationErrors.length > 0) {
+      const errorsSummary = validationErrors
+        .map((err) => {
+          const constraints = err.constraints
+            ? Object.values(err.constraints).join(', ')
+            : 'validation failed';
+          return `${err.property}: ${constraints}`;
+        })
+        .join('; ');
+      logMessage = `${logMessage} | Validation errors: ${errorsSummary}`;
+    }
 
     const sanitizedHeaders = LogSanitizer.sanitizeHeaders(
       headers as Record<string, unknown>,
     );
+
+    // Sanitize request body for logging
+    const sanitizedBody = body
+      ? LogSanitizer.sanitizeObject(body as Record<string, unknown>)
+      : undefined;
+
     const sanitizedRequest = {
       method,
       url,
       ip,
       userAgent,
       headers: sanitizedHeaders,
+      body: sanitizedBody,
     };
 
     const sanitizedException =
@@ -159,17 +211,23 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       errorResponse,
     ) as ErrorResponse;
 
+    const logContext: Record<string, unknown> = {
+      request: sanitizedRequest,
+      error: sanitizedError,
+    };
+
+    if (validationErrors) {
+      logContext.validationErrors =
+        LogSanitizer.sanitizeObject(validationErrors);
+    }
+
     if (errorResponse.statusCode >= 500) {
       this.logger.error(logMessage, {
+        ...logContext,
         exception: sanitizedException,
-        request: sanitizedRequest,
-        error: sanitizedError,
       });
     } else {
-      this.logger.warn(logMessage, {
-        request: sanitizedRequest,
-        error: sanitizedError,
-      });
+      this.logger.warn(logMessage, logContext);
     }
   }
 }

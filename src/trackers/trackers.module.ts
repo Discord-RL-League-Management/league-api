@@ -150,6 +150,7 @@ import { UsersModule } from '../users/users.module';
   exports: [
     TrackerService,
     TrackerProcessingService,
+    TrackerNotificationService,
     TrackerSnapshotService,
     TrackerScrapingQueueService,
     TrackerSeasonService,

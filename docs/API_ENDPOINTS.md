@@ -652,7 +652,7 @@ curl -H "Authorization: Bearer BOT_API_KEY" \
 - `userData` (optional): User data from Discord (username, globalName, avatar)
 - `channelId` (optional): Discord channel ID where registration command was called
 - `interactionToken` (optional): Discord interaction token for ephemeral follow-up messages
-- `forceProcess` (optional, default: false): When `true`, forces immediate processing of trackers, bypassing guild processing toggle. This allows staff members to force process trackers even when the guild has processing disabled.
+- `forceProcess` (optional, default: false): When `true`, forces immediate processing of trackers, bypassing guild processing toggle. This allows staff members to force process trackers even when the guild has processing disabled. When `forceProcess` is `true` and `interactionToken` is provided, the API will send a summary notification (as structured JSON data) via ephemeral follow-up when all trackers from the registration complete processing. The bot is responsible for formatting this JSON data into a user-friendly embed.
 ```
 
 ### League Management (Bot)

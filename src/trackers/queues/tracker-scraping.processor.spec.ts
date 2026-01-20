@@ -110,6 +110,7 @@ describe('TrackerScrapingProcessor', () => {
     mockTrackerRepository = {
       findById: vi.fn(),
       update: vi.fn().mockResolvedValue(mockTracker),
+      findByRegistrationToken: vi.fn(),
     } as unknown as TrackerRepository;
 
     mockScrapingLogRepository = {
@@ -140,6 +141,8 @@ describe('TrackerScrapingProcessor', () => {
     mockNotificationService = {
       sendScrapingCompleteNotification: vi.fn().mockResolvedValue(undefined),
       sendScrapingFailedNotification: vi.fn().mockResolvedValue(undefined),
+      sendRegistrationSummary: vi.fn().mockResolvedValue(undefined),
+      getApplicationId: vi.fn().mockReturnValue(undefined),
     } as unknown as TrackerNotificationService;
 
     mockActivityLogService = {
@@ -665,5 +668,194 @@ describe('TrackerScrapingProcessor', () => {
       expect(result.success).toBe(true);
       expect(result.seasonsScraped).toBe(2);
     });
+  });
+
+  describe('registration summary', () => {
+    const interactionToken = 'interaction_token_123';
+
+    it('should_check_and_send_summary_when_all_trackers_complete', async () => {
+      const trackerWithToken = {
+        ...mockTracker,
+        registrationInteractionToken: interactionToken,
+      };
+      const job = createMockJob({ trackerId: 'tracker_123' });
+
+      const allTrackers = [
+        {
+          ...trackerWithToken,
+          id: 'tracker_1',
+          scrapingStatus: TrackerScrapingStatus.COMPLETED,
+        },
+        {
+          ...trackerWithToken,
+          id: 'tracker_2',
+          scrapingStatus: TrackerScrapingStatus.COMPLETED,
+        },
+      ];
+
+      vi.spyOn(mockTrackerRepository, 'findById').mockResolvedValue(
+        trackerWithToken,
+      );
+      vi.spyOn(mockScraperService, 'scrapeSeasons').mockResolvedValue(
+        mockSeasons,
+      );
+      vi.spyOn(
+        mockTrackerRepository,
+        'findByRegistrationToken',
+      ).mockResolvedValue(allTrackers as never);
+      vi.spyOn(mockNotificationService, 'getApplicationId').mockReturnValue(
+        undefined,
+      );
+      vi.spyOn(
+        mockNotificationService,
+        'sendRegistrationSummary',
+      ).mockResolvedValue(undefined);
+
+      await processor.process(job);
+
+      // Wait for async operations to complete
+      await vi.waitFor(
+        () => {
+          expect(
+            mockNotificationService.sendRegistrationSummary,
+          ).toHaveBeenCalledWith(interactionToken, allTrackers, undefined);
+        },
+        { timeout: 1000 },
+      );
+    }, 2000);
+
+    it('should_not_send_summary_when_trackers_still_processing', async () => {
+      const trackerWithToken = {
+        ...mockTracker,
+        registrationInteractionToken: interactionToken,
+      };
+      const job = createMockJob({ trackerId: 'tracker_123' });
+
+      const allTrackers = [
+        {
+          ...trackerWithToken,
+          id: 'tracker_1',
+          scrapingStatus: TrackerScrapingStatus.COMPLETED,
+        },
+        {
+          ...trackerWithToken,
+          id: 'tracker_2',
+          scrapingStatus: TrackerScrapingStatus.IN_PROGRESS,
+        },
+      ];
+
+      vi.spyOn(mockTrackerRepository, 'findById').mockResolvedValue(
+        trackerWithToken,
+      );
+      vi.spyOn(mockScraperService, 'scrapeSeasons').mockResolvedValue(
+        mockSeasons,
+      );
+      vi.spyOn(
+        mockTrackerRepository,
+        'findByRegistrationToken',
+      ).mockResolvedValue(allTrackers as never);
+      vi.spyOn(
+        mockNotificationService,
+        'sendRegistrationSummary',
+      ).mockResolvedValue(undefined);
+
+      await processor.process(job);
+
+      // Wait a bit for async operations
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      expect(
+        mockNotificationService.sendRegistrationSummary,
+      ).not.toHaveBeenCalled();
+    }, 200);
+
+    it('should_not_send_summary_when_no_interaction_token', async () => {
+      const trackerWithoutToken = {
+        ...mockTracker,
+        registrationInteractionToken: null,
+      };
+      const job = createMockJob({ trackerId: 'tracker_123' });
+
+      vi.spyOn(mockTrackerRepository, 'findById').mockResolvedValue(
+        trackerWithoutToken,
+      );
+      vi.spyOn(mockScraperService, 'scrapeSeasons').mockResolvedValue(
+        mockSeasons,
+      );
+      vi.spyOn(
+        mockNotificationService,
+        'sendRegistrationSummary',
+      ).mockResolvedValue(undefined);
+
+      await processor.process(job);
+
+      // Wait a bit for async operations, then verify it wasn't called
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      expect(
+        mockNotificationService.sendRegistrationSummary,
+      ).not.toHaveBeenCalled();
+    }, 200);
+
+    it('should_prevent_duplicate_summaries', async () => {
+      const trackerWithToken = {
+        ...mockTracker,
+        registrationInteractionToken: interactionToken,
+      };
+      const job1 = createMockJob({ trackerId: 'tracker_1' });
+      const job2 = createMockJob({ trackerId: 'tracker_2' });
+
+      const allTrackers = [
+        {
+          ...trackerWithToken,
+          id: 'tracker_1',
+          scrapingStatus: TrackerScrapingStatus.COMPLETED,
+        },
+        {
+          ...trackerWithToken,
+          id: 'tracker_2',
+          scrapingStatus: TrackerScrapingStatus.COMPLETED,
+        },
+      ];
+
+      vi.spyOn(mockTrackerRepository, 'findById')
+        .mockResolvedValueOnce({
+          ...trackerWithToken,
+          id: 'tracker_1',
+        })
+        .mockResolvedValueOnce({
+          ...trackerWithToken,
+          id: 'tracker_2',
+        });
+      vi.spyOn(mockScraperService, 'scrapeSeasons')
+        .mockResolvedValueOnce(mockSeasons)
+        .mockResolvedValueOnce(mockSeasons);
+      vi.spyOn(
+        mockTrackerRepository,
+        'findByRegistrationToken',
+      ).mockResolvedValue(allTrackers as never);
+      vi.spyOn(mockNotificationService, 'getApplicationId').mockReturnValue(
+        undefined,
+      );
+      vi.spyOn(
+        mockNotificationService,
+        'sendRegistrationSummary',
+      ).mockResolvedValue(undefined);
+
+      // Process first job
+      await processor.process(job1);
+      // Small delay to ensure first summary is sent
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      // Process second job
+      await processor.process(job2);
+      // Wait for async operations to complete
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      // Should only be called once despite both trackers completing
+      // (first one sends, second one sees it's already sent)
+      expect(
+        mockNotificationService.sendRegistrationSummary,
+      ).toHaveBeenCalledTimes(1);
+    }, 2000);
   });
 });

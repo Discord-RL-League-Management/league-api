@@ -37,6 +37,15 @@ export const configurationSchema = Joi.object({
   DISCORD_RETRY_ATTEMPTS: Joi.number().default(3),
   DISCORD_API_URL: Joi.string().default('https://discord.com/api/v10'),
 
+  // Bot Webhook Configuration
+  BOT_WEBHOOK_URL: Joi.string()
+    .optional()
+    .allow('')
+    .default('')
+    .description(
+      'Base URL for bot webhook endpoints (e.g., http://localhost:3001 for local dev)',
+    ),
+
   // Cookie settings
   COOKIE_SAME_SITE: Joi.string().valid('strict', 'lax', 'none').default('lax'),
 

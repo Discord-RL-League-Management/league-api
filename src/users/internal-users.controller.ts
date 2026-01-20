@@ -21,6 +21,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { ParseCUIDPipe } from '../common/pipes';
 import { RegisterByStaffDto } from '../internal/dto/register-by-staff.dto';
 import { TrackerProcessingService } from '../trackers/services/tracker-processing.service';
+import { TrackerNotificationService } from '../trackers/services/tracker-notification.service';
 import { PermissionCheckService } from '../permissions/modules/permission-check/permission-check.service';
 import { GuildSettingsService } from '../guilds/guild-settings.service';
 import { DiscordBotService } from '../discord/discord-bot.service';
@@ -40,6 +41,7 @@ export class InternalUsersController {
   constructor(
     private usersService: UsersService,
     private trackerProcessingService: TrackerProcessingService,
+    private trackerNotificationService: TrackerNotificationService,
     private permissionCheckService: PermissionCheckService,
     private guildSettingsService: GuildSettingsService,
     private discordBotService: DiscordBotService,
@@ -159,6 +161,17 @@ export class InternalUsersController {
 
     // 4. Force process trackers if requested (bypasses guild toggle)
     if (dto.forceProcess === true) {
+      // Register applicationId mapping if both interactionToken and applicationId are provided
+      if (dto.interactionToken && dto.applicationId) {
+        this.trackerNotificationService.registerApplicationId(
+          dto.interactionToken,
+          dto.applicationId,
+        );
+        this.logger.debug(
+          `Registered applicationId for force-processed registration with token ${dto.interactionToken.substring(0, 10)}...`,
+        );
+      }
+
       // Reset any trackers that may have been marked as FAILED by the guard
       const trackerIds = trackers.map((tracker) => tracker.id);
       await this.trackerProcessingService.resetTrackersToPending(trackerIds);

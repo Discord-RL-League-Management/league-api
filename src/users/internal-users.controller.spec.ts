@@ -18,6 +18,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from '@prisma/client';
 import { RegisterByStaffDto } from '../internal/dto/register-by-staff.dto';
 import { TrackerProcessingService } from '../trackers/services/tracker-processing.service';
+import { TrackerNotificationService } from '../trackers/services/tracker-notification.service';
 import { PermissionCheckService } from '../permissions/modules/permission-check/permission-check.service';
 import { GuildSettingsService } from '../guilds/guild-settings.service';
 import { DiscordBotService } from '../discord/discord-bot.service';
@@ -27,6 +28,7 @@ describe('InternalUsersController', () => {
   let controller: InternalUsersController;
   let mockUsersService: UsersService;
   let mockTrackerProcessingService: TrackerProcessingService;
+  let mockTrackerNotificationService: TrackerNotificationService;
   let mockPermissionCheckService: PermissionCheckService;
   let mockGuildSettingsService: GuildSettingsService;
   let mockDiscordBotService: DiscordBotService;
@@ -62,6 +64,10 @@ describe('InternalUsersController', () => {
       processPendingTrackersForGuild: vi.fn(),
     } as unknown as TrackerProcessingService;
 
+    mockTrackerNotificationService = {
+      registerApplicationId: vi.fn(),
+    } as unknown as TrackerNotificationService;
+
     mockPermissionCheckService = {
       checkAdminRoles: vi.fn(),
     } as unknown as PermissionCheckService;
@@ -81,6 +87,10 @@ describe('InternalUsersController', () => {
         {
           provide: TrackerProcessingService,
           useValue: mockTrackerProcessingService,
+        },
+        {
+          provide: TrackerNotificationService,
+          useValue: mockTrackerNotificationService,
         },
         {
           provide: PermissionCheckService,

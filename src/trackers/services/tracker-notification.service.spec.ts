@@ -11,11 +11,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Test } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
+import { HttpService } from '@nestjs/axios';
+import { of, throwError } from 'rxjs';
 import { TrackerNotificationService } from './tracker-notification.service';
 import { TrackerRepository } from '../repositories/tracker.repository';
 import { UserRepository } from '../../users/repositories/user.repository';
-import { DiscordMessageService } from './discord-message.service';
-import { NotificationBuilderService } from './notification-builder.service';
 import { Game, GamePlatform, TrackerScrapingStatus } from '@prisma/client';
 import type { Tracker, User } from '@prisma/client';
 
@@ -24,8 +24,7 @@ describe('TrackerNotificationService', () => {
   let mockConfigService: ConfigService;
   let mockTrackerRepository: TrackerRepository;
   let mockUserRepository: UserRepository;
-  let mockDiscordMessageService: DiscordMessageService;
-  let mockNotificationBuilderService: NotificationBuilderService;
+  let mockHttpService: HttpService;
 
   const mockUser: User = {
     id: 'user_123',
@@ -61,17 +60,12 @@ describe('TrackerNotificationService', () => {
     updatedAt: new Date(),
   };
 
-  const mockEmbed = {
-    title: 'Test Embed',
-    description: 'Test Description',
-    color: 0x00ff00,
-    fields: [],
-  };
-
   beforeEach(async () => {
     mockConfigService = {
       get: vi.fn().mockImplementation((key: string) => {
         if (key === 'frontend.url') return 'https://example.com';
+        if (key === 'bot.webhookUrl') return 'http://localhost:3001';
+        if (key === 'auth.botApiKey') return 'test-api-key';
         return undefined;
       }),
     } as unknown as ConfigService;
@@ -84,15 +78,9 @@ describe('TrackerNotificationService', () => {
       findById: vi.fn(),
     } as unknown as UserRepository;
 
-    mockDiscordMessageService = {
-      sendDirectMessage: vi.fn().mockResolvedValue(undefined),
-      sendEphemeralFollowUp: vi.fn().mockResolvedValue(undefined),
-    } as unknown as DiscordMessageService;
-
-    mockNotificationBuilderService = {
-      buildScrapingCompleteEmbed: vi.fn().mockReturnValue(mockEmbed),
-      buildScrapingFailedEmbed: vi.fn().mockReturnValue(mockEmbed),
-    } as unknown as NotificationBuilderService;
+    mockHttpService = {
+      post: vi.fn().mockReturnValue(of({ data: {} })),
+    } as unknown as HttpService;
 
     const module = await Test.createTestingModule({
       providers: [
@@ -100,11 +88,7 @@ describe('TrackerNotificationService', () => {
         { provide: ConfigService, useValue: mockConfigService },
         { provide: TrackerRepository, useValue: mockTrackerRepository },
         { provide: UserRepository, useValue: mockUserRepository },
-        { provide: DiscordMessageService, useValue: mockDiscordMessageService },
-        {
-          provide: NotificationBuilderService,
-          useValue: mockNotificationBuilderService,
-        },
+        { provide: HttpService, useValue: mockHttpService },
       ],
     }).compile();
 
@@ -118,7 +102,7 @@ describe('TrackerNotificationService', () => {
   });
 
   describe('sendScrapingCompleteNotification', () => {
-    it('should_send_notification_when_user_and_tracker_exist', async () => {
+    it('should_send_webhook_when_user_and_tracker_exist', async () => {
       vi.spyOn(mockUserRepository, 'findById').mockResolvedValue(mockUser);
       vi.spyOn(mockTrackerRepository, 'findById').mockResolvedValue(
         mockTracker,
@@ -135,22 +119,37 @@ describe('TrackerNotificationService', () => {
       expect(mockTrackerRepository.findById).toHaveBeenCalledWith(
         'tracker_123',
       );
-      expect(
-        mockNotificationBuilderService.buildScrapingCompleteEmbed,
-      ).toHaveBeenCalledWith(
-        mockTracker,
-        mockUser,
-        'https://example.com',
-        5,
-        0,
-      );
-      expect(mockDiscordMessageService.sendDirectMessage).toHaveBeenCalledWith(
-        'user_123',
-        { embeds: [mockEmbed] },
+      expect(mockHttpService.post).toHaveBeenCalledWith(
+        'http://localhost:3001/webhooks/tracker-scraping-complete',
+        {
+          type: 'tracker_scraping_complete',
+          userId: 'user_123',
+          trackerId: 'tracker_123',
+          tracker: {
+            url: mockTracker.url,
+            platform: mockTracker.platform,
+            game: mockTracker.game,
+            username: mockTracker.username,
+          },
+          user: {
+            id: mockUser.id,
+            username: mockUser.username,
+            globalName: mockUser.globalName,
+          },
+          seasonsScraped: 5,
+          seasonsFailed: 0,
+          frontendUrl: 'https://example.com',
+        },
+        {
+          headers: {
+            Authorization: 'Bearer test-api-key',
+            'Content-Type': 'application/json',
+          },
+        },
       );
     });
 
-    it('should_not_send_notification_when_user_not_found', async () => {
+    it('should_not_send_webhook_when_user_not_found', async () => {
       vi.spyOn(mockUserRepository, 'findById').mockResolvedValue(null);
       vi.spyOn(mockTrackerRepository, 'findById').mockResolvedValue(
         mockTracker,
@@ -164,12 +163,10 @@ describe('TrackerNotificationService', () => {
       );
 
       expect(mockUserRepository.findById).toHaveBeenCalledWith('user_123');
-      expect(
-        mockDiscordMessageService.sendDirectMessage,
-      ).not.toHaveBeenCalled();
+      expect(mockHttpService.post).not.toHaveBeenCalled();
     });
 
-    it('should_not_send_notification_when_tracker_not_found', async () => {
+    it('should_not_send_webhook_when_tracker_not_found', async () => {
       vi.spyOn(mockUserRepository, 'findById').mockResolvedValue(mockUser);
       vi.spyOn(mockTrackerRepository, 'findById').mockResolvedValue(null);
 
@@ -183,9 +180,7 @@ describe('TrackerNotificationService', () => {
       expect(mockTrackerRepository.findById).toHaveBeenCalledWith(
         'tracker_123',
       );
-      expect(
-        mockDiscordMessageService.sendDirectMessage,
-      ).not.toHaveBeenCalled();
+      expect(mockHttpService.post).not.toHaveBeenCalled();
     });
 
     it('should_use_default_values_when_seasons_not_provided', async () => {
@@ -196,26 +191,61 @@ describe('TrackerNotificationService', () => {
 
       await service.sendScrapingCompleteNotification('tracker_123', 'user_123');
 
-      expect(
-        mockNotificationBuilderService.buildScrapingCompleteEmbed,
-      ).toHaveBeenCalledWith(
-        mockTracker,
-        mockUser,
-        'https://example.com',
-        0,
-        0,
+      expect(mockHttpService.post).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          seasonsScraped: 0,
+          seasonsFailed: 0,
+        }),
+        expect.any(Object),
       );
     });
 
-    it('should_handle_discord_message_service_errors_gracefully', async () => {
+    it('should_not_send_webhook_when_bot_webhook_url_not_configured', async () => {
+      const configWithoutWebhook = {
+        get: vi.fn().mockImplementation((key: string) => {
+          if (key === 'frontend.url') return 'https://example.com';
+          if (key === 'bot.webhookUrl') return '';
+          if (key === 'auth.botApiKey') return 'test-api-key';
+          return undefined;
+        }),
+      } as unknown as ConfigService;
+
+      const module = await Test.createTestingModule({
+        providers: [
+          TrackerNotificationService,
+          { provide: ConfigService, useValue: configWithoutWebhook },
+          { provide: TrackerRepository, useValue: mockTrackerRepository },
+          { provide: UserRepository, useValue: mockUserRepository },
+          { provide: HttpService, useValue: mockHttpService },
+        ],
+      }).compile();
+
+      const serviceWithoutWebhook = module.get<TrackerNotificationService>(
+        TrackerNotificationService,
+      );
+
       vi.spyOn(mockUserRepository, 'findById').mockResolvedValue(mockUser);
       vi.spyOn(mockTrackerRepository, 'findById').mockResolvedValue(
         mockTracker,
       );
-      vi.spyOn(
-        mockDiscordMessageService,
-        'sendDirectMessage',
-      ).mockRejectedValue(new Error('Discord API error'));
+
+      await serviceWithoutWebhook.sendScrapingCompleteNotification(
+        'tracker_123',
+        'user_123',
+      );
+
+      expect(mockHttpService.post).not.toHaveBeenCalled();
+    });
+
+    it('should_handle_webhook_errors_gracefully', async () => {
+      vi.spyOn(mockUserRepository, 'findById').mockResolvedValue(mockUser);
+      vi.spyOn(mockTrackerRepository, 'findById').mockResolvedValue(
+        mockTracker,
+      );
+      vi.spyOn(mockHttpService, 'post').mockReturnValue(
+        throwError(() => new Error('Webhook error')) as any,
+      );
 
       await expect(
         service.sendScrapingCompleteNotification('tracker_123', 'user_123'),
@@ -224,68 +254,7 @@ describe('TrackerNotificationService', () => {
   });
 
   describe('sendScrapingFailedNotification', () => {
-    it('should_send_ephemeral_followup_when_interaction_token_exists', async () => {
-      const trackerWithToken = {
-        ...mockTracker,
-        registrationInteractionToken: 'token_123',
-      };
-      vi.spyOn(mockTrackerRepository, 'findById').mockResolvedValue(
-        trackerWithToken,
-      );
-      vi.spyOn(mockUserRepository, 'findById').mockResolvedValue(mockUser);
-
-      await service.sendScrapingFailedNotification(
-        'tracker_123',
-        'user_123',
-        'Test error',
-      );
-
-      expect(
-        mockNotificationBuilderService.buildScrapingFailedEmbed,
-      ).toHaveBeenCalledWith(
-        trackerWithToken,
-        mockUser,
-        'Test error',
-        'https://example.com',
-      );
-      expect(
-        mockDiscordMessageService.sendEphemeralFollowUp,
-      ).toHaveBeenCalledWith('token_123', { embeds: [mockEmbed] });
-      expect(
-        mockDiscordMessageService.sendDirectMessage,
-      ).not.toHaveBeenCalled();
-    });
-
-    it('should_fallback_to_dm_when_ephemeral_fails', async () => {
-      const trackerWithToken = {
-        ...mockTracker,
-        registrationInteractionToken: 'token_123',
-      };
-      vi.spyOn(mockTrackerRepository, 'findById').mockResolvedValue(
-        trackerWithToken,
-      );
-      vi.spyOn(mockUserRepository, 'findById').mockResolvedValue(mockUser);
-      vi.spyOn(
-        mockDiscordMessageService,
-        'sendEphemeralFollowUp',
-      ).mockRejectedValue(new Error('Token expired'));
-
-      await service.sendScrapingFailedNotification(
-        'tracker_123',
-        'user_123',
-        'Test error',
-      );
-
-      expect(
-        mockDiscordMessageService.sendEphemeralFollowUp,
-      ).toHaveBeenCalled();
-      expect(mockDiscordMessageService.sendDirectMessage).toHaveBeenCalledWith(
-        'user_123',
-        { embeds: [mockEmbed] },
-      );
-    });
-
-    it('should_send_dm_when_no_interaction_token', async () => {
+    it('should_send_webhook_when_user_and_tracker_exist', async () => {
       vi.spyOn(mockTrackerRepository, 'findById').mockResolvedValue(
         mockTracker,
       );
@@ -297,16 +266,71 @@ describe('TrackerNotificationService', () => {
         'Test error',
       );
 
-      expect(mockDiscordMessageService.sendDirectMessage).toHaveBeenCalledWith(
-        'user_123',
-        { embeds: [mockEmbed] },
+      expect(mockTrackerRepository.findById).toHaveBeenCalledWith(
+        'tracker_123',
       );
-      expect(
-        mockDiscordMessageService.sendEphemeralFollowUp,
-      ).not.toHaveBeenCalled();
+      expect(mockUserRepository.findById).toHaveBeenCalledWith('user_123');
+      expect(mockHttpService.post).toHaveBeenCalledWith(
+        'http://localhost:3001/webhooks/tracker-scraping-failed',
+        {
+          type: 'tracker_scraping_failed',
+          userId: 'user_123',
+          trackerId: 'tracker_123',
+          tracker: {
+            url: mockTracker.url,
+            platform: mockTracker.platform,
+            game: mockTracker.game,
+            username: mockTracker.username,
+            registrationInteractionToken: null,
+            registrationChannelId: null,
+          },
+          user: {
+            id: mockUser.id,
+            username: mockUser.username,
+            globalName: mockUser.globalName,
+          },
+          error: 'Test error',
+          frontendUrl: 'https://example.com',
+        },
+        {
+          headers: {
+            Authorization: 'Bearer test-api-key',
+            'Content-Type': 'application/json',
+          },
+        },
+      );
     });
 
-    it('should_not_send_notification_when_tracker_not_found', async () => {
+    it('should_include_registration_context_when_available', async () => {
+      const trackerWithToken = {
+        ...mockTracker,
+        registrationInteractionToken: 'token_123',
+        registrationChannelId: 'channel_123',
+      };
+      vi.spyOn(mockTrackerRepository, 'findById').mockResolvedValue(
+        trackerWithToken,
+      );
+      vi.spyOn(mockUserRepository, 'findById').mockResolvedValue(mockUser);
+
+      await service.sendScrapingFailedNotification(
+        'tracker_123',
+        'user_123',
+        'Test error',
+      );
+
+      expect(mockHttpService.post).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          tracker: expect.objectContaining({
+            registrationInteractionToken: 'token_123',
+            registrationChannelId: 'channel_123',
+          }),
+        }),
+        expect.any(Object),
+      );
+    });
+
+    it('should_not_send_webhook_when_tracker_not_found', async () => {
       vi.spyOn(mockTrackerRepository, 'findById').mockResolvedValue(null);
 
       await service.sendScrapingFailedNotification(
@@ -315,15 +339,10 @@ describe('TrackerNotificationService', () => {
         'Test error',
       );
 
-      expect(
-        mockDiscordMessageService.sendDirectMessage,
-      ).not.toHaveBeenCalled();
-      expect(
-        mockDiscordMessageService.sendEphemeralFollowUp,
-      ).not.toHaveBeenCalled();
+      expect(mockHttpService.post).not.toHaveBeenCalled();
     });
 
-    it('should_not_send_notification_when_user_not_found', async () => {
+    it('should_not_send_webhook_when_user_not_found', async () => {
       vi.spyOn(mockTrackerRepository, 'findById').mockResolvedValue(
         mockTracker,
       );
@@ -335,23 +354,55 @@ describe('TrackerNotificationService', () => {
         'Test error',
       );
 
-      expect(
-        mockDiscordMessageService.sendDirectMessage,
-      ).not.toHaveBeenCalled();
-      expect(
-        mockDiscordMessageService.sendEphemeralFollowUp,
-      ).not.toHaveBeenCalled();
+      expect(mockHttpService.post).not.toHaveBeenCalled();
     });
 
-    it('should_handle_discord_message_service_errors_gracefully', async () => {
+    it('should_not_send_webhook_when_bot_webhook_url_not_configured', async () => {
+      const configWithoutWebhook = {
+        get: vi.fn().mockImplementation((key: string) => {
+          if (key === 'frontend.url') return 'https://example.com';
+          if (key === 'bot.webhookUrl') return '';
+          if (key === 'auth.botApiKey') return 'test-api-key';
+          return undefined;
+        }),
+      } as unknown as ConfigService;
+
+      const module = await Test.createTestingModule({
+        providers: [
+          TrackerNotificationService,
+          { provide: ConfigService, useValue: configWithoutWebhook },
+          { provide: TrackerRepository, useValue: mockTrackerRepository },
+          { provide: UserRepository, useValue: mockUserRepository },
+          { provide: HttpService, useValue: mockHttpService },
+        ],
+      }).compile();
+
+      const serviceWithoutWebhook = module.get<TrackerNotificationService>(
+        TrackerNotificationService,
+      );
+
       vi.spyOn(mockTrackerRepository, 'findById').mockResolvedValue(
         mockTracker,
       );
       vi.spyOn(mockUserRepository, 'findById').mockResolvedValue(mockUser);
-      vi.spyOn(
-        mockDiscordMessageService,
-        'sendDirectMessage',
-      ).mockRejectedValue(new Error('Discord API error'));
+
+      await serviceWithoutWebhook.sendScrapingFailedNotification(
+        'tracker_123',
+        'user_123',
+        'Test error',
+      );
+
+      expect(mockHttpService.post).not.toHaveBeenCalled();
+    });
+
+    it('should_handle_webhook_errors_gracefully', async () => {
+      vi.spyOn(mockTrackerRepository, 'findById').mockResolvedValue(
+        mockTracker,
+      );
+      vi.spyOn(mockUserRepository, 'findById').mockResolvedValue(mockUser);
+      vi.spyOn(mockHttpService, 'post').mockReturnValue(
+        throwError(() => new Error('Webhook error')) as any,
+      );
 
       await expect(
         service.sendScrapingFailedNotification(
@@ -371,6 +422,149 @@ describe('TrackerNotificationService', () => {
           total: 10,
         });
       }).not.toThrow();
+    });
+  });
+
+  describe('sendRegistrationSummary', () => {
+    const interactionToken = 'interaction_token_123';
+    const mockTrackers: Tracker[] = [
+      {
+        ...mockTracker,
+        id: 'tracker_1',
+        url: 'https://tracker.gg/profile/steam/user1',
+        platform: GamePlatform.STEAM,
+        scrapingStatus: TrackerScrapingStatus.COMPLETED,
+        scrapingError: null,
+        registrationInteractionToken: interactionToken,
+      },
+      {
+        ...mockTracker,
+        id: 'tracker_2',
+        url: 'https://tracker.gg/profile/epic/user1',
+        platform: GamePlatform.EPIC,
+        scrapingStatus: TrackerScrapingStatus.COMPLETED,
+        scrapingError: null,
+        registrationInteractionToken: interactionToken,
+      },
+      {
+        ...mockTracker,
+        id: 'tracker_3',
+        url: 'https://tracker.gg/profile/xbox/user1',
+        platform: GamePlatform.XBOX,
+        scrapingStatus: TrackerScrapingStatus.FAILED,
+        scrapingError: 'Test error',
+        registrationInteractionToken: interactionToken,
+      },
+    ];
+
+    it('should_send_webhook_with_structured_data', async () => {
+      await service.sendRegistrationSummary(interactionToken, mockTrackers);
+
+      expect(mockHttpService.post).toHaveBeenCalledWith(
+        'http://localhost:3001/webhooks/registration-summary',
+        {
+          interactionToken,
+          applicationId: '',
+          summary: {
+            total: 3,
+            successful: 2,
+            failed: 1,
+            trackers: [
+              {
+                url: 'https://tracker.gg/profile/steam/user1',
+                platform: GamePlatform.STEAM,
+                status: 'COMPLETED',
+              },
+              {
+                url: 'https://tracker.gg/profile/epic/user1',
+                platform: GamePlatform.EPIC,
+                status: 'COMPLETED',
+              },
+              {
+                url: 'https://tracker.gg/profile/xbox/user1',
+                platform: GamePlatform.XBOX,
+                status: 'FAILED',
+                error: 'Test error',
+              },
+            ],
+          },
+        },
+        {
+          headers: {
+            Authorization: 'Bearer test-api-key',
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+    });
+
+    it('should_use_application_id_from_map_when_available', async () => {
+      const applicationId = 'app_123';
+      service.registerApplicationId(interactionToken, applicationId);
+
+      await service.sendRegistrationSummary(interactionToken, mockTrackers);
+
+      expect(mockHttpService.post).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          applicationId,
+        }),
+        expect.any(Object),
+      );
+    });
+
+    it('should_handle_webhook_errors_gracefully', async () => {
+      vi.spyOn(mockHttpService, 'post').mockReturnValue(
+        throwError(() => new Error('Webhook error')) as any,
+      );
+
+      await expect(
+        service.sendRegistrationSummary(interactionToken, mockTrackers),
+      ).resolves.not.toThrow();
+    });
+
+    it('should_not_send_when_interaction_token_missing', async () => {
+      await service.sendRegistrationSummary('', mockTrackers);
+
+      expect(mockHttpService.post).not.toHaveBeenCalled();
+    });
+
+    it('should_not_send_when_no_trackers', async () => {
+      await service.sendRegistrationSummary(interactionToken, []);
+
+      expect(mockHttpService.post).not.toHaveBeenCalled();
+    });
+
+    it('should_not_send_when_bot_webhook_url_not_configured', async () => {
+      const configWithoutWebhook = {
+        get: vi.fn().mockImplementation((key: string) => {
+          if (key === 'frontend.url') return 'https://example.com';
+          if (key === 'bot.webhookUrl') return '';
+          if (key === 'auth.botApiKey') return 'test-api-key';
+          return undefined;
+        }),
+      } as unknown as ConfigService;
+
+      const module = await Test.createTestingModule({
+        providers: [
+          TrackerNotificationService,
+          { provide: ConfigService, useValue: configWithoutWebhook },
+          { provide: TrackerRepository, useValue: mockTrackerRepository },
+          { provide: UserRepository, useValue: mockUserRepository },
+          { provide: HttpService, useValue: mockHttpService },
+        ],
+      }).compile();
+
+      const serviceWithoutWebhook = module.get<TrackerNotificationService>(
+        TrackerNotificationService,
+      );
+
+      await serviceWithoutWebhook.sendRegistrationSummary(
+        interactionToken,
+        mockTrackers,
+      );
+
+      expect(mockHttpService.post).not.toHaveBeenCalled();
     });
   });
 });

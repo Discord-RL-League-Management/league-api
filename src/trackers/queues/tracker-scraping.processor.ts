@@ -1,7 +1,7 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { Injectable, Logger } from '@nestjs/common';
-import { TrackerScrapingStatus } from '@prisma/client';
+import { TrackerScrapingStatus, Tracker } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TRACKER_SCRAPING_QUEUE } from './tracker-scraping.queue';
 import {
@@ -24,6 +24,8 @@ import { PlayerService } from '../../players/player.service';
 @Injectable()
 export class TrackerScrapingProcessor extends WorkerHost {
   private readonly logger = new Logger(TrackerScrapingProcessor.name);
+  // In-memory Set to prevent duplicate summary sends (clears on restart, acceptable for this use case)
+  private readonly sentSummaries = new Set<string>();
 
   constructor(
     private readonly trackerRepository: TrackerRepository,
@@ -161,6 +163,19 @@ export class TrackerScrapingProcessor extends WorkerHost {
             );
           });
 
+        // Check if all trackers from registration are complete (for force-processed registrations)
+        if (trackerRecord.registrationInteractionToken) {
+          void this.checkAndSendRegistrationSummary(
+            trackerRecord.registrationInteractionToken,
+          ).catch((err) => {
+            const errorMessage =
+              err instanceof Error ? err.message : String(err);
+            this.logger.warn(
+              `Failed to check registration summary for token: ${errorMessage}`,
+            );
+          });
+        }
+
         return {
           success: true,
           seasonsScraped: 0,
@@ -272,6 +287,18 @@ export class TrackerScrapingProcessor extends WorkerHost {
           );
         });
 
+      // Check if all trackers from registration are complete (for force-processed registrations)
+      if (trackerRecord.registrationInteractionToken) {
+        void this.checkAndSendRegistrationSummary(
+          trackerRecord.registrationInteractionToken,
+        ).catch((err) => {
+          const errorMessage = err instanceof Error ? err.message : String(err);
+          this.logger.warn(
+            `Failed to check registration summary for token: ${errorMessage}`,
+          );
+        });
+      }
+
       const mmrUserId = tracker.userId;
       // Fire-and-forget: Calculate MMR asynchronously (errors are logged but don't block processing)
       void this.mmrCalculationIntegration
@@ -366,6 +393,19 @@ export class TrackerScrapingProcessor extends WorkerHost {
           });
       }
 
+      // Check if all trackers from registration are complete (for force-processed registrations)
+      const failedTracker = await this.trackerRepository.findById(trackerId);
+      if (failedTracker?.registrationInteractionToken) {
+        void this.checkAndSendRegistrationSummary(
+          failedTracker.registrationInteractionToken,
+        ).catch((err) => {
+          const errorMessage = err instanceof Error ? err.message : String(err);
+          this.logger.warn(
+            `Failed to check registration summary for token: ${errorMessage}`,
+          );
+        });
+      }
+
       return {
         success: false,
         seasonsScraped: 0,
@@ -399,5 +439,80 @@ export class TrackerScrapingProcessor extends WorkerHost {
         }
       }),
     );
+  }
+
+  /**
+   * Check if all trackers from a registration are complete
+   * Single Responsibility: Determine if all trackers have finished processing
+   *
+   * @param trackers - Array of trackers to check
+   * @returns true if all trackers are COMPLETED or FAILED, false otherwise
+   */
+  private areAllTrackersComplete(trackers: Tracker[]): boolean {
+    return trackers.every(
+      (tracker) =>
+        tracker.scrapingStatus === TrackerScrapingStatus.COMPLETED ||
+        tracker.scrapingStatus === TrackerScrapingStatus.FAILED,
+    );
+  }
+
+  /**
+   * Check if all trackers from a registration are complete and send summary if so
+   * Single Responsibility: Coordinate registration summary notification
+   *
+   * @param interactionToken - Discord interaction token for the registration
+   */
+  private async checkAndSendRegistrationSummary(
+    interactionToken: string,
+  ): Promise<void> {
+    try {
+      // Prevent duplicate summaries using in-memory Set
+      if (this.sentSummaries.has(interactionToken)) {
+        this.logger.debug(
+          `Summary already sent for token ${interactionToken.substring(0, 10)}..., skipping`,
+        );
+        return;
+      }
+
+      // Find all trackers with this token
+      const allTrackers =
+        await this.trackerRepository.findByRegistrationToken(interactionToken);
+
+      if (allTrackers.length === 0) {
+        this.logger.warn(
+          `No trackers found for registration token ${interactionToken.substring(0, 10)}...`,
+        );
+        return;
+      }
+
+      // Check if all are complete
+      if (this.areAllTrackersComplete(allTrackers)) {
+        // Mark as sent before sending to prevent race conditions
+        this.sentSummaries.add(interactionToken);
+
+        // Retrieve applicationId from mapping (if available)
+        const applicationId =
+          this.notificationService.getApplicationId(interactionToken);
+
+        // Send summary (only once)
+        // applicationId will be passed if available, otherwise method will look it up or use fallback
+        await this.notificationService.sendRegistrationSummary(
+          interactionToken,
+          allTrackers,
+          applicationId,
+        );
+
+        this.logger.log(
+          `Sent registration summary for ${allTrackers.length} tracker(s) with token ${interactionToken.substring(0, 10)}...`,
+        );
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.warn(
+        `Failed to check registration summary for token: ${errorMessage}`,
+      );
+      // Don't throw - summary failures shouldn't break processing
+    }
   }
 }
